@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { FiUpload, FiPlus, FiX, FiArrowRight, FiCheck } from 'react-icons/fi';
+import { WelcomeDialog, createOnboardingState } from '@avplan/onboarding-core';
 import { useStore } from '../../store/useStore';
 import type { EditMode } from '../../types';
 
-const SEEN_KEY = 'mcplan-assistant-seen';
+const LEGACY_SEEN_KEY = 'mcplan-assistant-seen';
 
 // Ordered steps of the "New Plan" wizard (issue #43): draw the floor plan, then
 // the stages, then objects/persons, and finally the cameras.
@@ -17,13 +18,24 @@ const WIZARD_STEPS: { mode: EditMode; title: string; hint: string }[] = [
 export default function StartupAssistant() {
   const { loadProject, setEditMode } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const seen = typeof window !== 'undefined' && window.sessionStorage.getItem(SEEN_KEY) === '1';
-  const [phase, setPhase] = useState<'choose' | 'wizard' | 'done'>(seen ? 'done' : 'choose');
+  // Bewusst sessionStorage: der Assistent darf pro Sitzung einmal erscheinen
+  // (nicht nur einmal pro Installation). Dialog-UI und Seen-State kommen aus
+  // dem suite-weiten @avplan/onboarding-core.
+  const onboarding = useMemo(
+    () =>
+      createOnboardingState({
+        appId: 'multicam-planner',
+        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+        migrateFrom: [{ key: LEGACY_SEEN_KEY, flag: 'welcome' }],
+      }),
+    [],
+  );
+  const [phase, setPhase] = useState<'choose' | 'wizard' | 'done'>(
+    onboarding.hasSeen('welcome') ? 'done' : 'choose',
+  );
   const [stepIndex, setStepIndex] = useState(0);
 
-  const markSeen = useCallback(() => {
-    try { window.sessionStorage.setItem(SEEN_KEY, '1'); } catch { /* ignore */ }
-  }, []);
+  const markSeen = useCallback(() => onboarding.markSeen('welcome'), [onboarding]);
 
   const dismiss = useCallback(() => { markSeen(); setPhase('done'); }, [markSeen]);
 
@@ -90,39 +102,37 @@ export default function StartupAssistant() {
     );
   }
 
-  // phase === 'choose'
+  // phase === 'choose' — suite-einheitlicher Welcome-Dialog
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-[440px] max-w-[92vw] rounded-2xl border border-bc-border bg-bc-panel shadow-2xl p-6 relative">
-        <button onClick={dismiss} className="absolute top-3 right-3 p-1 text-gray-500 hover:text-white" title="Close">
-          <FiX size={16} />
-        </button>
-        <h2 className="text-white font-bold text-lg">Welcome to MultiCam Planner</h2>
-        <p className="text-gray-400 text-sm mt-1">How would you like to start?</p>
-        <div className="grid grid-cols-1 gap-3 mt-5">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-3 rounded-xl border border-bc-border bg-bc-dark px-4 py-3 text-left hover:border-bc-accent transition-colors"
-          >
-            <FiUpload size={20} className="text-bc-accent shrink-0" />
-            <span>
-              <span className="block text-white text-sm font-medium">Load Plan</span>
-              <span className="block text-gray-500 text-xs">Open an existing .mcplan file and jump to camera editing</span>
-            </span>
-          </button>
-          <button
-            onClick={startWizard}
-            className="flex items-center gap-3 rounded-xl border border-bc-border bg-bc-dark px-4 py-3 text-left hover:border-bc-accent transition-colors"
-          >
-            <FiPlus size={20} className="text-bc-yellow shrink-0" />
-            <span>
-              <span className="block text-white text-sm font-medium">New Plan</span>
-              <span className="block text-gray-500 text-xs">Step through floor plan → stages → objects → cameras</span>
-            </span>
-          </button>
-        </div>
-        <input ref={fileInputRef} type="file" accept=".mcplan,.json" className="hidden" onChange={handleFileChange} />
-      </div>
-    </div>
+    <>
+      <WelcomeDialog
+        open
+        lang="en"
+        theme="dark"
+        accent="#3b82f6"
+        title="Welcome to MultiCam Planner"
+        intro="How would you like to start?"
+        onDismiss={dismiss}
+        actions={[
+          {
+            id: 'load',
+            title: 'Load Plan',
+            description: 'Open an existing .mcplan file and jump to camera editing',
+            icon: <FiUpload size={20} />,
+            accent: '#3b82f6',
+            onSelect: () => fileInputRef.current?.click(),
+          },
+          {
+            id: 'new',
+            title: 'New Plan',
+            description: 'Step through floor plan → stages → objects → cameras',
+            icon: <FiPlus size={20} />,
+            accent: '#eab308',
+            onSelect: startWizard,
+          },
+        ]}
+      />
+      <input ref={fileInputRef} type="file" accept=".mcplan,.json" className="hidden" onChange={handleFileChange} />
+    </>
   );
 }

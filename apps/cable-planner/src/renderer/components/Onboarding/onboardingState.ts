@@ -1,24 +1,17 @@
+import { createOnboardingState } from '@avplan/onboarding-core'
 import { STORAGE_KEYS } from '../../lib/storageKeys'
 
-const TOUR_STORAGE_KEY = STORAGE_KEYS.tourSeenV1
-
 /**
- * Persistence helpers for the onboarding tour. A `localStorage` flag is
- * written once the user finishes (or dismisses) the tour; `hasSeenTour`
- * gates the automatic first-launch opening.
+ * Persistence helpers for the onboarding tour — seit dem Monorepo-Zusammenzug
+ * ueber den geteilten Seen-State aus `@avplan/onboarding-core`. Der alte
+ * Einzel-Key (`cable-planner.tour.seen.v1` = '1') wird per `migrateFrom`
+ * uebernommen, damit Bestandsnutzer die Tour nicht erneut sehen.
  */
-export const hasSeenTour = (): boolean => {
-  try {
-    return window.localStorage.getItem(TOUR_STORAGE_KEY) === '1'
-  } catch {
-    return true
-  }
-}
+const state = createOnboardingState({
+  appId: 'cable-planner',
+  migrateFrom: [{ key: STORAGE_KEYS.tourSeenV1, flag: 'tour' }],
+})
 
-export const markTourSeen = (): void => {
-  try {
-    window.localStorage.setItem(TOUR_STORAGE_KEY, '1')
-  } catch {
-    /* storage unavailable — skip */
-  }
-}
+export const hasSeenTour = (): boolean => state.hasSeen('tour')
+
+export const markTourSeen = (): void => state.markSeen('tour')

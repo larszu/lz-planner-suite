@@ -18,6 +18,7 @@ Git-History) aus ihren Einzel-Repos zusammengeführt.
 | Paket | Pfad | Beschreibung |
 |---|---|---|
 | **@avplan/inventory-core** | [`packages/inventory-core`](packages/inventory-core) | Geteiltes Inventar-Domänenmodell (`InventoryItem`, `StorageNode`, `InventorySet`, `InventoryUnit`, …) + portables Wire-Format `avplan-inventory` (`serializeInventory`/`parseInventory`/`resolveInventoryCode`). Ersetzt die früher dreifach kopierten Dateien `types.ts`/`portable.ts` in den Apps. Der Wire-Contract ist per Test eingefroren (`test/contract.test.ts`) — bewusste Format-Änderungen erfordern einen Sprung von `INVENTORY_FORMAT_VERSION`. |
+| **@avplan/onboarding-core** | [`packages/onboarding-core`](packages/onboarding-core) | Suite-einheitliches Onboarding: `WelcomeDialog` (Erststart-Aktionen) + `TourDialog` (Erste-Schritte-Tour mit Schrittzähler/Punkten) + `createOnboardingState` (Seen-Flags mit injizierbarem Storage und Migration alter Einzel-Keys) + de/en-Strings. Alle drei Apps rendern damit denselben Dialog-Look; Sprache, Icons und Akzentfarbe liefert die App. |
 
 ## Setup
 

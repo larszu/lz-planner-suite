@@ -1,24 +1,17 @@
-import { useEffect, useState } from 'react'
-import { ModalShell } from '../shared/ModalShell'
-import { format, useTranslation } from '../../lib/i18n'
+import { TourDialog, type TourStep } from '@avplan/onboarding-core'
+import { useTranslation } from '../../lib/i18n'
+import { useUiStore } from '../../store/uiStore'
 import { markTourSeen } from './onboardingState'
 
 /**
  * One-time onboarding tour shown on first launch (and re-openable from the
- * Help menu). Renders as a centered modal with sequential slides. We avoid
- * real DOM spotlights on purpose — they are fragile across panel resizes and
- * platform-specific scrollbars, and the slides describe relocations more
- * concisely as plain text.
+ * Help menu). Rendering und Mechanik kommen aus `@avplan/onboarding-core`
+ * (suite-einheitlich); dieses Modul liefert nur noch die Cable-Planner-Slides,
+ * die i18n-Strings und die Persistenz.
  *
  * Persistence helpers (`hasSeenTour` / `markTourSeen`) live in
  * `./onboardingState` so this module only exports the component.
  */
-
-interface TourStep {
-  title: string
-  body: string
-  hint?: string
-}
 
 const stepsForLang = (
   t: (key: string, fallback?: string) => string,
@@ -85,98 +78,28 @@ interface OnboardingTourProps {
 
 export const OnboardingTour = ({ open, onClose }: OnboardingTourProps) => {
   const t = useTranslation()
-  const [step, setStep] = useState(0)
-  const STEPS = stepsForLang(t)
+  const theme = useUiStore((state) => state.canvasTheme)
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Beim Öffnen auf den ersten Schritt zurücksetzen
-    if (open) setStep(0)
-  }, [open])
-
-  if (!open) return null
-
-  const isLast = step >= STEPS.length - 1
-  const current = STEPS[step]
   const finish = () => {
     markTourSeen()
     onClose()
   }
 
   return (
-    <ModalShell
+    <TourDialog
       open={open}
+      steps={stepsForLang(t)}
       onClose={finish}
-      title={
-        <span className="text-[11px] uppercase tracking-wider text-cp-text-muted">
-          {format(t('onboarding.header', 'Erste-Schritte-Tour · Schritt {step} / {total}'), {
-            step: step + 1,
-            total: STEPS.length,
-          })}
-        </span>
-      }
-      maxWidth="lg"
-      footer={
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={finish}
-            className="text-cp-xs text-cp-text-faint hover:text-cp-text-secondary"
-          >
-            {t('onboarding.end', 'Tour beenden')}
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              {STEPS.map((_, index) => (
-                <span
-                  key={index}
-                  className={`h-1.5 w-4 rounded-full ${
-                    index === step
-                      ? 'bg-orange-500'
-                      : index < step
-                        ? 'bg-orange-700/60'
-                        : 'bg-cp-surface-4'
-                  }`}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setStep((index) => Math.max(0, index - 1))}
-              disabled={step === 0}
-              className="rounded bg-cp-surface-4 px-3 py-1 text-cp-xs hover:bg-cp-surface-5 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {t('onboarding.back', 'Zurück')}
-            </button>
-            {isLast ? (
-              <button
-                type="button"
-                onClick={finish}
-                className="rounded bg-orange-600 px-3 py-1 text-cp-xs font-semibold text-white hover:bg-orange-500"
-              >
-                {t('onboarding.start', "Los geht's")}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setStep((index) => Math.min(STEPS.length - 1, index + 1))}
-                className="rounded bg-orange-600 px-3 py-1 text-cp-xs font-semibold text-white hover:bg-orange-500"
-              >
-                {t('onboarding.next', 'Weiter')}
-              </button>
-            )}
-          </div>
-        </div>
-      }
-    >
-      <div className="space-y-3">
-        <h2 className="text-cp-xl font-semibold text-cp-text">{current.title}</h2>
-        <p className="text-cp-base leading-relaxed text-cp-text-secondary">{current.body}</p>
-        {current.hint && (
-          <div className="rounded border border-cp-border-muted bg-cp-surface-3/40 px-2 py-1 text-[11px] text-cp-text-muted">
-            {t('onboarding.tip', 'Tipp:')} {current.hint}
-          </div>
-        )}
-      </div>
-    </ModalShell>
+      theme={theme}
+      accent="#ea580c"
+      strings={{
+        stepHeader: t('onboarding.header', 'Erste-Schritte-Tour · Schritt {step} / {total}'),
+        back: t('onboarding.back', 'Zurück'),
+        next: t('onboarding.next', 'Weiter'),
+        finish: t('onboarding.start', "Los geht's"),
+        endTour: t('onboarding.end', 'Tour beenden'),
+        tip: t('onboarding.tip', 'Tipp:'),
+      }}
+    />
   )
 }

@@ -29,6 +29,7 @@ import { jpegToPdfBlob, dataUrlToBytes } from './utils/pdfExport';
 import { composePlot } from './utils/plotExport';
 import AboutDialog from './components/AboutDialog';
 import { Icon } from './components/Icon';
+import Onboarding from './components/Onboarding';
 import InventoryDialog from './inventory/InventoryDialog';
 import { drawHeatMapLegend } from './utils/heatmapLegend';
 import { useHost } from './integration/hostContext';
@@ -1605,6 +1606,7 @@ const App: React.FC = () => {
         <Icon name="library" size={16} /> Lager
       </button>
       {inventoryOpen && <InventoryDialog onClose={() => setInventoryOpen(false)} />}
+      <Onboarding onUploadFloorPlan={handleUploadFloorPlan} />
     </div>
   );
 };
