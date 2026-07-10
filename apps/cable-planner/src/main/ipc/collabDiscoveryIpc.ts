@@ -17,7 +17,12 @@
 // automatisch übernimmt).
 
 import { ipcMain } from 'electron'
-import { Bonjour, type Service } from 'bonjour-service'
+import { Bonjour, Service } from 'bonjour-service'
+
+// bonjour-service exportiert `Bonjour`/`Service` im Paket-Root als Werte
+// (Klassen-Konstruktoren), nicht als Typen — Instanztypen daraus ableiten.
+type BonjourInstance = InstanceType<typeof Bonjour>
+type ServiceInstance = InstanceType<typeof Service>
 
 /** Bonjour-Service-Type → "_cableplanner._tcp.local". */
 const SERVICE_TYPE = 'cableplanner'
@@ -48,7 +53,7 @@ export interface DiscoveredCollabSession {
 }
 
 // Eine aktive Bewerbung gleichzeitig (genau eine Session pro Instanz).
-let advertiseBonjour: Bonjour | null = null
+let advertiseBonjour: BonjourInstance | null = null
 
 const stopAdvertise = (): void => {
   const b = advertiseBonjour
@@ -113,7 +118,7 @@ export const registerCollabDiscoveryIpc = (): void => {
       const bonjour = new Bonjour()
       const found = new Map<string, DiscoveredCollabSession>()
       const browser = bonjour.find({ type: SERVICE_TYPE })
-      const onUp = (svc: Service) => {
+      const onUp = (svc: ServiceInstance) => {
         const txt = (svc.txt && typeof svc.txt === 'object' ? svc.txt : {}) as Record<string, unknown>
         const room = String(txt.room ?? '').trim()
         if (!room) return // kein/kaputter TXT-Record → keine unserer Sessions

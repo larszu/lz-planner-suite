@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+@import '@avplan/ui/styles.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+
+/* Die av-*-Design-Tokens (aus @avplan/ui) an Tailwind-Utilities binden, damit
+ * das Shell-Layout bg-av-surface-1, text-av-text, border-av-border … nutzen
+ * kann. Farben leben nur hier als Tokens — keine hartcodierten Hex-Werte im
+ * Shell-Code. */
+@theme inline {
+  --color-av-bg: var(--av-bg);
+  --color-av-surface-1: var(--av-surface-1);
+  --color-av-surface-2: var(--av-surface-2);
+  --color-av-surface-3: var(--av-surface-3);
+  --color-av-surface-4: var(--av-surface-4);
+  --color-av-border: var(--av-border);
+  --color-av-border-muted: var(--av-border-muted);
+  --color-av-text: var(--av-text);
+  --color-av-text-secondary: var(--av-text-secondary);
+  --color-av-text-muted: var(--av-text-muted);
+  --color-av-text-faint: var(--av-text-faint);
+  --color-av-accent: var(--av-accent);
+  --color-av-ok: var(--av-ok);
+  --color-av-warn: var(--av-warn);
+  --color-av-danger: var(--av-danger);
+
+  --radius-av-control: var(--av-r-control);
+  --radius-av-card: var(--av-r-card);
+  --radius-av-modal: var(--av-r-modal);
+
+  --font-sans: var(--av-font-sans);
+  --font-mono: var(--av-font-mono);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--av-bg);
+  color: var(--av-text);
+  font-family: var(--av-font-sans);
+  -webkit-font-smoothing: antialiased;
+}

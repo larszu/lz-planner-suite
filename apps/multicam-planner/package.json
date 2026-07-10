@@ -79,6 +79,7 @@
   "dependencies": {
     "@avplan/inventory-core": "*",
     "@avplan/onboarding-core": "*",
+    "@avplan/ui": "*",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "flexlayout-react": "^0.9.1",

@@ -1,6 +1,10 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { Atem, AtemConnectionStatus } from 'atem-connection'
-import { Bonjour, type Service } from 'bonjour-service'
+import { Bonjour, Service } from 'bonjour-service'
+
+// bonjour-service exportiert `Service` im Paket-Root als Wert (Klassen-
+// Konstruktor), nicht als Typ — der Instanztyp wird daraus abgeleitet.
+type ServiceInstance = InstanceType<typeof Service>
 import { mapAtemWindowIndexToCp, mapCpWindowIndexToAtem } from '../util/mvWindowMapping.js'
 
 /**
@@ -561,7 +565,7 @@ export const registerAtemIpc = () => {
       const bonjour = new Bonjour()
       const found = new Map<string, { name: string; ip: string; port: number; model?: string }>()
       const browser = bonjour.find({ type: 'blackmagic' })
-      const onUp = (svc: Service) => {
+      const onUp = (svc: ServiceInstance) => {
         // ATEM antwortet typisch mit fqdn wie "<HostName>._blackmagic._tcp.local"
         // und addresses=[<IPv4>]. Wir bevorzugen referer.address (= UDP-Reply-
         // Quelle) weil das die garantiert erreichbare Adresse ist, fallen

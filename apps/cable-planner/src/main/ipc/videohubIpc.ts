@@ -1,6 +1,10 @@
 import { ipcMain } from 'electron'
 import net from 'net'
-import { Bonjour, type Service } from 'bonjour-service'
+import { Bonjour, Service } from 'bonjour-service'
+
+// bonjour-service exportiert `Service` im Paket-Root als Wert (Klassen-
+// Konstruktor), nicht als Typ — der Instanztyp wird daraus abgeleitet.
+type ServiceInstance = InstanceType<typeof Service>
 
 /**
  * v7.9.128 — Parser fuer Videohub-Protokoll-State-Dumps.
@@ -367,7 +371,7 @@ export function registerVideohubIpc() {
       const bonjour = new Bonjour()
       const found = new Map<string, { name: string; ip: string; port: number; model?: string }>()
       const browser = bonjour.find({ type: 'blackmagic' })
-      const looksLikeVideohub = (svc: Service): boolean => {
+      const looksLikeVideohub = (svc: ServiceInstance): boolean => {
         const haystack = [
           svc.name,
           svc.fqdn,
@@ -381,7 +385,7 @@ export function registerVideohubIpc() {
           .toLowerCase()
         return /videohub|video hub|smart.?videohub/.test(haystack)
       }
-      const onUp = (svc: Service) => {
+      const onUp = (svc: ServiceInstance) => {
         const ip = svc.referer?.address ?? svc.addresses?.[0]
         if (!ip) return
         if (!looksLikeVideohub(svc)) return

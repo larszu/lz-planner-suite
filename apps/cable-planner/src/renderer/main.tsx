@@ -9,12 +9,17 @@ import '@fontsource/inter/500.css'
 import '@fontsource/inter/600.css'
 import '@fontsource/inter/700.css'
 import './index.css'
+import { connectShellTheme } from '@avplan/ui/embed'
 import App from './App'
 import { ErrorBoundary } from './ErrorBoundary'
 import { cablePlannerApi } from './lib/bridge'
 import { PopoutApp } from './components/Layout/PopoutApp'
 import { initPanelPopoutSync, popoutPanel } from './lib/panelPopout'
 import { initSettingsSync } from './lib/settingsSync'
+
+// In die Suite-Shell eingebettet? Dann folgt das Theme der Shell (No-op im
+// Standalone-/Desktop-Betrieb — window.parent === window).
+connectShellTheme()
 
 // v7.8.2 — Emergency escape hatch: launch with ?reset (or hash #reset)
 // to wipe all cable-planner localStorage entries before any module

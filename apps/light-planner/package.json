@@ -20,6 +20,7 @@
   "dependencies": {
     "@avplan/inventory-core": "*",
     "@avplan/onboarding-core": "*",
+    "@avplan/ui": "*",
     "pdfjs-dist": "^6.0.227",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
