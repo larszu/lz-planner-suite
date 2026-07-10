@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build / run log captures (were accidentally committed)
+/build-out.txt
+/dist-log.txt
+/app-stdout.txt
+/app-stderr.txt
+
+node_modules
+dist
+dist-ssr
+release
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+scripts/rentman-token.txt
+scripts/rentman-all.txt
+scripts/*.txt
+
+scripts/rentman-token.txt
+scripts/rentman-all.txt
+
+# Code-signing secrets — never commit
+build/code-sign.pfx
+build/code-sign.cer
+build/*.pfx
+build/*.p12

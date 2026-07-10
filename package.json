@@ -1,0 +1,23 @@
+{
+  "name": "av-planner-suite",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AV Planner Suite — Monorepo fuer cable-planner, multicam-planner und light-planner plus geteilte Pakete",
+  "author": {
+    "name": "Lars Zumpe",
+    "email": "lars@zumpe.dev"
+  },
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run build --workspace @avplan/inventory-core",
+    "build": "npm run build:packages && npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:cable": "npm run dev --workspace cable-planner",
+    "dev:multicam": "npm run dev --workspace multicam-planner",
+    "dev:light": "npm run dev --workspace light-planner"
+  }
+}

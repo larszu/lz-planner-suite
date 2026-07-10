@@ -1,0 +1,193 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# actions/checkout@v5 and actions/setup-node@v5 ship Node 24 natively.
+# Three actions still don't have a Node-24 release as of May 2026:
+# actions/upload-artifact@v4, actions/download-artifact@v4, and
+# softprops/action-gh-release@v2 — so we keep the env flag to force them
+# onto Node 24 too. Drop it once all four publish a v5.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+# Centralised Node version for the build matrix. Node 24 LTS is the
+# active LTS as of October 2025 — bump here if you move to a newer LTS.
+# Electron 42 ships with Node 22 internally; the build host itself can
+# run on any modern Node (≥22). 24 LTS gives us long-term coverage.
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+            build_args: --win
+          - os: macos-latest
+            name: macos
+            build_args: --mac --x64 --arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          # Node 24 LTS (active LTS since October 2025) — Node 22 still
+          # supported as Maintenance LTS until April 2027 but 24 is the
+          # current default for new projects. electron-builder 26 + vite 8
+          # + electron 42 all support 24.
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync package.json version to tag
+        # Tag und package.json.version driften sonst auseinander, weil
+        # Tags von der Auto-Merge-Automation gesetzt werden während
+        # package.json.version manuell in PRs läuft. electron-builder
+        # liest package.json.version → Filename "Cable.Planner-X.Y.Z.exe"
+        # MUSS dem Tag entsprechen. `npm version --no-git-tag-version`
+        # rewriting package.json + package-lock.json ohne Commit/Tag.
+        # workflow_dispatch (kein Tag-Push) wird übersprungen.
+        shell: bash
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -eu
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "Tag-Version: $TAG_VERSION"
+          npm version "$TAG_VERSION" --no-git-tag-version --allow-same-version
+          node -e "console.log('package.json after sync:', require('./package.json').version)"
+
+      - name: Build renderer + main
+        run: npm run build
+
+      - name: Package with electron-builder
+        # Force bash on every OS. The default Windows shell is pwsh, which in
+        # v0.2.35 swallowed electron-builder's output and exit code: the step
+        # finished in 1.5s with zero stdout/stderr, was reported as success,
+        # and the job then failed at upload-artifact because release/*.exe
+        # didn't exist. Git Bash is preinstalled on windows-latest, matches
+        # what macos-latest uses by default, and propagates non-zero exits
+        # via -eo pipefail. Keep --config explicit so we never depend on
+        # electron-builder's auto-discovery rules for the config filename.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No paid signing certificate available. The macOS config
+          # requests an ad-hoc signature ("identity: '-'") so Apple
+          # Silicon Gatekeeper accepts the binary instead of the
+          # "Cable Planner is damaged and can't be opened" rejection.
+          # We deliberately do NOT set CSC_IDENTITY_AUTO_DISCOVERY=false
+          # because in some electron-builder versions that flag
+          # short-circuits the explicit ad-hoc identity and the build
+          # falls back to a fully-unsigned binary again.
+        run: |
+          set -x
+          node --version
+          ls -la node_modules/electron-builder/cli.js
+          # Invoke cli.js directly via node. Going through `npx electron-builder`
+          # on Windows hit the .cmd shim (and pwsh swallowed both stdout and the
+          # exit code), so the step finished in 1.5s with no output and was
+          # incorrectly marked successful. Direct node invocation bypasses the
+          # shim and lets bash -eo pipefail surface real failures.
+          node node_modules/electron-builder/cli.js --config electron-builder.js ${{ matrix.build_args }} --publish never
+
+      - name: List release/ contents
+        # Make it obvious in the log when electron-builder produces no
+        # artifacts (silent failure mode that bit us on Windows in v0.2.34).
+        shell: bash
+        run: ls -lh release/ || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cable-planner-${{ matrix.name }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.blockmap
+            release/latest*.yml
+          # Fail the job loudly if no artifacts were produced. Previously
+          # 'ignore' caused the Windows job to silently succeed with an
+          # empty artifact, which then yielded a release with only the
+          # macOS DMGs (issue surfaced in v0.2.34).
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.dmg
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Option A (#569): nach dem Release die Tag-Version zurück nach main schreiben,
+  # damit package.json.version nicht hinter den Tags zurückbleibt. Genau diese
+  # Drift (package.json 8.0.10 während v8.2.0 schon released) war die Ursache der
+  # Doku-Sync-Korrekturen in #568. Der Build-Job synct die Version nur im Runner
+  # (für den Installer-Dateinamen) — hier wird sie persistiert.
+  #
+  # Läuft einmalig (kein Matrix), nur bei Tag-Pushes, nach erfolgreichem Release.
+  # Hinweis: Pushes mit GITHUB_TOKEN lösen bewusst KEINE weiteren Workflows aus
+  # (kein Loop). Setzt voraus, dass main direkte Bot-Pushes erlaubt (Branch-
+  # Protection ggf. eine Ausnahme für github-actions[bot] geben).
+  sync-version-to-main:
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: package.json auf Tag-Version setzen und nach main committen
+        shell: bash
+        run: |
+          set -eu
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "Tag-Version: $TAG_VERSION"
+          npm version "$TAG_VERSION" --no-git-tag-version --allow-same-version
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "package.json ist bereits auf $TAG_VERSION — nichts zu committen."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(release): package.json auf v$TAG_VERSION (Tag-Sync)"
+          git pull --rebase origin main
+          git push origin HEAD:main

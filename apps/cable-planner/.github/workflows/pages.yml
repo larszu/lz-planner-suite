@@ -1,0 +1,69 @@
+name: Deploy Web (GitHub Pages)
+
+# Veröffentlicht den Renderer-Build als statische Web-App auf GitHub Pages:
+#   index.html  = voller Editor (Web-Variante)
+#   viewer.html = Zero-Install-Reviewer für .cpviewer-Dateien
+#   mobile.html = Build-Day-Mobile-Viewer
+# Damit gibt es eine echte URL für externe Reviewer + funktionierende
+# Kollaborations-Einladungslinks. Desktop-only Features (Datei-IPC, ATEM/LAN,
+# Auto-Update, Keychain) fallen im Browser sauber auf den Web-Fallback
+# (src/renderer/lib/bridge.ts) zurück.
+#
+# Pages wird per `enablement: true` automatisch aktiviert (build_type=workflow)
+# — kein manueller Settings-Schritt nötig. Falls das durch eine Org-/Account-
+# Policy verboten ist, einmalig: Settings → Pages → Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Node-20-Actions (configure/upload/deploy-pages) auf Node 24 zwingen, solange
+# sie noch keine v-Bump-Releases haben (analog release.yml). Nur Warnung sonst.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+# Immer nur ein Deploy gleichzeitig; laufende abbrechen wenn ein neuer kommt.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+      # keytar (native) braucht beim Kompilieren libsecret; Prebuilds decken
+      # nicht jede Node-ABI ab. Insurance, damit `npm ci` nicht an keytar
+      # scheitert — der Renderer-Build selbst nutzt keytar nicht.
+      - run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
+      - run: npm ci
+      - run: npm run build:renderer
+      # Auto-Aktivierung via `enablement: true` ist hier NICHT möglich: der
+      # GITHUB_TOKEN darf keine Pages-Site anlegen ("Resource not accessible by
+      # integration"). Daher EINMALIG manuell aktivieren:
+      #   Settings → Pages → Build and deployment → Source = "GitHub Actions".
+      # Danach deployt dieser Workflow bei jedem Push auf main automatisch.
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/renderer
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
