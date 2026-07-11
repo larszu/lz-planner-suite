@@ -18,12 +18,14 @@ import {
 import {
   FULL_WIDTH_WIDGETS,
   WIDGET_LABEL,
+  clampSpan,
   defaultDashboardPrefs,
   loadDashboardPrefs,
   saveDashboardPrefs,
   type DashboardPrefs,
   type WidgetId,
 } from './dashboardPrefs'
+import { DashboardGrid, type DashboardItem } from './DashboardGrid'
 
 function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigate: (id: ModuleId) => void }) {
   const c = computeCounts(project)
@@ -236,6 +238,11 @@ export function OverviewSurface({
     ;[order[i], order[j]] = [order[j], order[i]]
     persist({ ...prefs, order })
   }
+  const reorderCards = (order: WidgetId[]) => persist({ ...prefs, order })
+  const resizeCard = (id: WidgetId, span: number) =>
+    persist({ ...prefs, span: { ...prefs.span, [id]: clampSpan(span) } })
+  const closeCard = (id: WidgetId) =>
+    persist({ ...prefs, enabled: { ...prefs.enabled, [id]: false } })
   const resetPrefs = () => persist(defaultDashboardPrefs())
 
   if (!project) return <EmptyState onAssign={onAssign} onNavigate={onNavigate} />
@@ -256,6 +263,7 @@ export function OverviewSurface({
     (id): id is Exclude<WidgetId, 'gewerke' | 'plancheck'> =>
       id !== 'gewerke' && id !== 'plancheck' && prefs.enabled[id],
   )
+  const gridItems: DashboardItem[] = visibleCards.map((id) => ({ id, node: cardRender[id] }))
   const nothingVisible =
     !prefs.enabled.gewerke && !prefs.enabled.plancheck && visibleCards.length === 0
 
@@ -292,12 +300,16 @@ export function OverviewSurface({
         </div>
       )}
 
-      {/* Dashboard-Karten (responsive Masonry, konfigurierbar) */}
-      {visibleCards.length > 0 && (
-        <div className="mt-3 gap-3 [column-fill:_balance] sm:columns-2 xl:columns-3">
-          {visibleCards.map((id) => (
-            <div key={id} className="mb-3 break-inside-avoid">{cardRender[id]}</div>
-          ))}
+      {/* Dashboard-Karten: Drag&Drop anordnen, skalieren, per X ausblenden */}
+      {gridItems.length > 0 && (
+        <div className="mt-3">
+          <DashboardGrid
+            items={gridItems}
+            span={prefs.span}
+            onReorder={reorderCards}
+            onResize={resizeCard}
+            onClose={closeCard}
+          />
         </div>
       )}
 

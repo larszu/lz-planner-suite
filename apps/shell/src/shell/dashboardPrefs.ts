@@ -43,16 +43,30 @@ export const WIDGET_LABEL: Record<WidgetId, string> = {
 
 export const ALL_WIDGETS: WidgetId[] = [...FULL_WIDTH_WIDGETS, ...DEFAULT_CARD_ORDER]
 
+/** Spaltenbreite einer Karte im Grid (1..3), per Resize-Griff skalierbar. */
+export const MAX_SPAN = 3
+
 export interface DashboardPrefs {
   enabled: Record<WidgetId, boolean>
-  /** Reihenfolge der Masonry-Karten. */
+  /** Reihenfolge der Grid-Karten. */
   order: WidgetId[]
+  /** Spalten-Breite je Karte (1..MAX_SPAN). */
+  span: Record<WidgetId, number>
 }
 
 export function defaultDashboardPrefs(): DashboardPrefs {
   const enabled = {} as Record<WidgetId, boolean>
-  for (const id of ALL_WIDGETS) enabled[id] = true
-  return { enabled, order: [...DEFAULT_CARD_ORDER] }
+  const span = {} as Record<WidgetId, number>
+  for (const id of ALL_WIDGETS) {
+    enabled[id] = true
+    span[id] = 1
+  }
+  return { enabled, order: [...DEFAULT_CARD_ORDER], span }
+}
+
+export function clampSpan(n: number): number {
+  if (!Number.isFinite(n)) return 1
+  return Math.max(1, Math.min(MAX_SPAN, Math.round(n)))
 }
 
 const STORAGE_KEY = 'avplan.dashboard'
@@ -73,6 +87,11 @@ export function loadDashboardPrefs(): DashboardPrefs {
     const parsed = JSON.parse(raw) as Partial<DashboardPrefs>
     if (parsed.enabled) base.enabled = { ...base.enabled, ...parsed.enabled }
     if (Array.isArray(parsed.order)) base.order = normalizeOrder(parsed.order)
+    if (parsed.span) {
+      for (const id of ALL_WIDGETS) {
+        if (typeof parsed.span[id] === 'number') base.span[id] = clampSpan(parsed.span[id])
+      }
+    }
   } catch {
     /* Defaults */
   }
