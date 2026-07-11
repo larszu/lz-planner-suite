@@ -126,7 +126,7 @@ export function TabDeck({
       ) : (
         <div className="relative min-h-0 flex-1 p-3">
           {mounted && module.planner && module.plannerUrl ? (
-            <PlannerFrame url={module.plannerUrl} title={module.planner} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} />
+            <PlannerFrame url={module.plannerUrl} title={t(`config.mod.${module.id}.title`, module.title)} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} />
           ) : (
             <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-bg">
               {/* schwebende Werkzeugleiste */}
