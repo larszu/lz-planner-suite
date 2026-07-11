@@ -33,16 +33,7 @@ import { PropertiesPanel } from './shell/PropertiesPanel'
 import { TabDeck } from './shell/TabDeck'
 import { StatusBar } from './shell/StatusBar'
 import { buildCommands } from './shell/buildCommands'
-
-const RAIL: RailModule[] = MODULES.map((m) => ({
-  id: m.id,
-  label: m.label,
-  icon: m.icon,
-  hotkey: m.hotkey,
-  accent: m.accent,
-}))
-
-const RAIL_FOOTER: RailModule[] = [{ id: 'library', label: 'Bibliothek', icon: 'library' }]
+import { LanguageProvider, translate } from './i18n'
 
 const DEFAULT_TAB: Record<ModuleId, string> = {
   overview: 'summary',
@@ -54,6 +45,14 @@ const DEFAULT_TAB: Record<ModuleId, string> = {
 
 export function App() {
   const { theme, preference, setPreference, toggle } = useTheme()
+  // Suite-weite Sprache (gilt gemeinsam, an die Planer gebrückt). Weiter unten
+  // per LanguageProvider in den Baum gereicht; hier oben via translate() genutzt.
+  const [language, setLanguageState] = useState<Language>(loadLanguage)
+  const setLanguage = useCallback((lang: Language) => {
+    saveLanguage(lang)
+    setLanguageState(lang)
+  }, [])
+  const tt = useCallback((key: string, de: string) => translate(language, key, de), [language])
   // Projekt-Historie: zugewiesenes Projekt (oder null) mit Undo/Redo-Stapeln.
   // Startwert: zuletzt gespeichertes Projekt, sonst das Demo-Projekt.
   const [history, setHistory] = useState<{
@@ -101,27 +100,31 @@ export function App() {
     const saved = { ...project, meta: { ...project.meta, saved: true } }
     saveProjectLocal(saved)
     setHistory((h) => ({ ...h, present: saved }))
-    pushToast('Projekt gespeichert', { tone: 'ok' })
-  }, [project, pushToast])
+    pushToast(tt('config.toast.saved', 'Projekt gespeichert'), { tone: 'ok' })
+  }, [project, pushToast, tt])
   const saveProjectAs = useCallback(() => {
     if (!project) return
     downloadProject(project)
     const saved = { ...project, meta: { ...project.meta, saved: true } }
     saveProjectLocal(saved)
     setHistory((h) => ({ ...h, present: saved }))
-    pushToast('Projekt exportiert & gespeichert', { tone: 'ok' })
-  }, [project, pushToast])
+    pushToast(tt('config.toast.exported', 'Projekt exportiert & gespeichert'), { tone: 'ok' })
+  }, [project, pushToast, tt])
 
   // Projektwechsel mit Schutz vor Datenverlust: bei ungespeichertem Stand eine
   // Rückmeldung mit „Rückgängig" (nutzt die Projekt-Historie).
   const switchProject = useCallback(
     (next: SuiteProject | null) => {
       if (project && !project.meta.saved) {
-        pushToast('Ungespeicherte Änderungen verworfen', { tone: 'warn', actionLabel: 'Rückgängig', onAction: undo })
+        pushToast(tt('config.toast.discarded', 'Ungespeicherte Änderungen verworfen'), {
+          tone: 'warn',
+          actionLabel: tt('config.action.undo', 'Rückgängig'),
+          onAction: undo,
+        })
       }
       commitProject(next)
     },
-    [project, pushToast, undo, commitProject],
+    [project, pushToast, undo, commitProject, tt],
   )
   const newProject = useCallback(() => switchProject(blankProject()), [switchProject])
   const importProject = useCallback(
@@ -129,12 +132,13 @@ export function App() {
       try {
         switchProject(parseProject(text))
       } catch (e) {
-        pushToast(`Projekt konnte nicht geladen werden: ${e instanceof Error ? e.message : 'Unbekannter Fehler'}`, {
-          tone: 'warn',
-        })
+        pushToast(
+          `${tt('config.toast.loadFailed', 'Projekt konnte nicht geladen werden')}: ${e instanceof Error ? e.message : tt('config.error.unknown', 'Unbekannter Fehler')}`,
+          { tone: 'warn' },
+        )
       }
     },
-    [switchProject, pushToast],
+    [switchProject, pushToast, tt],
   )
 
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
@@ -170,14 +174,22 @@ export function App() {
     })
   }, [])
 
-  // Suite-weite Sprache (gilt gemeinsam, an die Planer gebrückt).
-  const [language, setLanguageState] = useState<Language>(loadLanguage)
-  const setLanguage = useCallback((lang: Language) => {
-    saveLanguage(lang)
-    setLanguageState(lang)
-  }, [])
-
   const mod = MODULE_BY_ID[moduleId]
+  const RAIL = useMemo<RailModule[]>(
+    () =>
+      MODULES.map((m) => ({
+        id: m.id,
+        label: tt(`config.mod.${m.id}.label`, m.label),
+        icon: m.icon,
+        hotkey: m.hotkey,
+        accent: m.accent,
+      })),
+    [tt],
+  )
+  const RAIL_FOOTER = useMemo<RailModule[]>(
+    () => [{ id: 'library', label: tt('config.rail.library', 'Bibliothek'), icon: 'library' }],
+    [tt],
+  )
   // Ist gerade ein Planer-iframe offen? Dann zielt Undo/Redo auf ihn, sonst auf
   // die Projekt-Historie der Shell.
   const plannerActive = !!mod.planner && mounted[moduleId]
@@ -217,8 +229,8 @@ export function App() {
   const goToModule = useCallback((id: ModuleId) => setModuleId(id), [])
 
   const commands = useMemo(
-    () => buildCommands(mod, { goToModule, setTab, selectItem, toggleTheme: toggle, toggleMount }),
-    [mod, goToModule, setTab, selectItem, toggle, toggleMount],
+    () => buildCommands(mod, { goToModule, setTab, selectItem, toggleTheme: toggle, toggleMount }, tt),
+    [mod, goToModule, setTab, selectItem, toggle, toggleMount, tt],
   )
 
   // Globale Tastenkürzel: Speichern (⌘/Ctrl+S), Rückgängig/Wiederholen (⌘/Ctrl+Z / ⇧Z / Y).
@@ -243,6 +255,7 @@ export function App() {
   }, [saveProject, undoRedo])
 
   return (
+   <LanguageProvider language={language}>
     <div data-module={mod.dataModule} className="flex h-full flex-col bg-av-bg text-av-text">
       <Topbar
         project={project}
@@ -273,7 +286,7 @@ export function App() {
         />
 
         {libraryOpen && (
-          <aside className="flex w-64 flex-none flex-col border-r border-av-border-muted" aria-label="Bibliothek und Ebenen">
+          <aside className="flex w-64 flex-none flex-col border-r border-av-border-muted" aria-label={tt('config.aria.libraryLayers', 'Bibliothek und Ebenen')}>
             <LibraryPanel key={mod.id} module={mod} project={project} />
           </aside>
         )}
@@ -301,7 +314,7 @@ export function App() {
           />
         </main>
 
-        <aside className="hidden w-80 flex-none border-l border-av-border-muted lg:block" aria-label="Eigenschaften">
+        <aside className="hidden w-80 flex-none border-l border-av-border-muted lg:block" aria-label={tt('config.aria.properties', 'Eigenschaften')}>
           <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} />
         </aside>
       </div>
@@ -335,5 +348,6 @@ export function App() {
         onSetLanguage={setLanguage}
       />
     </div>
+   </LanguageProvider>
   )
 }

@@ -30,6 +30,9 @@ export function initShellSettings(): () => void {
         if (Number.isFinite(n)) s.setPixelsPerMeter(n)
         break
       }
+      case 'language':
+        s.setLanguage(value === 'de' ? 'de' : 'en')
+        break
     }
   })
 }

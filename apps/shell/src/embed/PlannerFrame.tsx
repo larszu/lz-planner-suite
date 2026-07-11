@@ -9,6 +9,7 @@ import {
   type ResolvedTheme,
 } from '@avplan/ui'
 import { onPlannerCommand } from './plannerBridge'
+import { useT, format } from '../i18n'
 
 /** Shell-Tokens, die als Palette an die Planer gehen (Farb-Konsistenz). */
 const AV_TOKENS = [
@@ -51,6 +52,7 @@ export interface PlannerFrameProps {
  * eines toten Rahmens einen erklärenden Fallback mit „in neuem Tab öffnen".
  */
 export function PlannerFrame({ url, title, theme, settings, onHistory }: PlannerFrameProps) {
+  const t = useT()
   const ref = useRef<HTMLIFrameElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
 
@@ -111,24 +113,23 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
       />
       {state === 'loading' && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-av-surface-3/80 text-sm text-av-text-muted">
-          {title} wird geladen…
+          {format(t('chrome.frame.loading', '{title} wird geladen…'), { title })}
         </div>
       )}
       {state === 'error' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-av-surface-3 px-8 text-center">
           <Icon name="external" size={28} />
-          <div className="text-base font-semibold text-av-text">{title} ist gerade nicht erreichbar</div>
+          <div className="text-base font-semibold text-av-text">{format(t('chrome.frame.unreachable', '{title} ist gerade nicht erreichbar'), { title })}</div>
           <p className="max-w-md text-sm text-av-text-muted">
-            Der Planer läuft als eigenständige App. Starte ihn per{' '}
-            <code className="font-mono text-av-text-secondary">npm run dev:{title.toLowerCase()}</code> oder öffne ihn
-            direkt.
+            {t('chrome.frame.hintPre', 'Der Planer läuft als eigenständige App. Starte ihn per')}{' '}
+            <code className="font-mono text-av-text-secondary">npm run dev:{title.toLowerCase()}</code> {t('chrome.frame.hintPost', 'oder öffne ihn direkt.')}
           </p>
           <div className="flex gap-2">
             <Button variant="subtle" onClick={() => setState('loading')}>
-              Erneut versuchen
+              {t('chrome.frame.retry', 'Erneut versuchen')}
             </Button>
             <Button variant="primary" onClick={() => window.open(url, '_blank', 'noopener')}>
-              <Icon name="external" size={15} /> In neuem Tab öffnen
+              <Icon name="external" size={15} /> {t('chrome.frame.openNewTab', 'In neuem Tab öffnen')}
             </Button>
           </div>
         </div>

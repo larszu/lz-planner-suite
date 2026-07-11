@@ -1091,7 +1091,7 @@ const PlanCanvas: React.FC<Props> = ({
     ctx.restore(); ctx.restore();
     drawRulers(ctx, w, h);
 
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = pal.text2;
     ctx.font = '11px monospace';
     ctx.fillText(`1m = ${v.scale.toFixed(0)}px | Zoom: ${((v.scale / 40) * 100).toFixed(0)}%`, RULER_SIZE + 10, h - 10);
   }, [fixtures, shapes, persons, stageElements, trusses, walls, ceilings, floorPlan, layers, cameras, selectedIds, showHeatMap, heatMapScale, heatMapTarget, showFocusNotes, planMode, activeTool, screenToWorld, drawRulers, onViewChange]);

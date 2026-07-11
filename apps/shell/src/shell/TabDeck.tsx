@@ -6,6 +6,7 @@ import { PlannerFrame } from '../embed/PlannerFrame'
 import { PlanPreview, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
 import { BoardCanvas } from './BoardCanvas'
+import { useT, format, type TFunc } from '../i18n'
 
 type ToolId = 'select' | 'pan'
 type OverlayId = 'fov' | 'heat'
@@ -22,28 +23,28 @@ interface ToolbarButton {
 
 type CanvasModuleId = 'signal' | 'cameras' | 'licht'
 
-const TOOLBARS: Record<CanvasModuleId, ToolbarButton[]> = {
+const toolbars = (t: TFunc): Record<CanvasModuleId, ToolbarButton[]> => ({
   signal: [
-    { icon: 'cursor', label: 'Auswahl', kind: 'tool', tool: 'select' },
-    { icon: 'hand', label: 'Verschieben', kind: 'tool', tool: 'pan' },
-    { icon: 'plus', label: 'Gerät platzieren (im Planer)', kind: 'edit', sep: true },
-    { icon: 'nodes', label: 'Auto-Route (im Planer)', kind: 'edit' },
+    { icon: 'cursor', label: t('chrome.tabdeck.tool.select', 'Auswahl'), kind: 'tool', tool: 'select' },
+    { icon: 'hand', label: t('chrome.tabdeck.tool.pan', 'Verschieben'), kind: 'tool', tool: 'pan' },
+    { icon: 'plus', label: t('chrome.tabdeck.tool.placeDevice', 'Gerät platzieren (im Planer)'), kind: 'edit', sep: true },
+    { icon: 'nodes', label: t('chrome.tabdeck.tool.autoRoute', 'Auto-Route (im Planer)'), kind: 'edit' },
   ],
   cameras: [
-    { icon: 'cursor', label: 'Auswahl', kind: 'tool', tool: 'select' },
-    { icon: 'hand', label: 'Verschieben', kind: 'tool', tool: 'pan' },
-    { icon: 'camera', label: 'Kamera platzieren (im Planer)', kind: 'edit', sep: true },
-    { icon: 'ruler', label: 'Messen (im Planer)', kind: 'edit' },
-    { icon: 'eye', label: 'FOV anzeigen', kind: 'overlay', overlay: 'fov' },
+    { icon: 'cursor', label: t('chrome.tabdeck.tool.select', 'Auswahl'), kind: 'tool', tool: 'select' },
+    { icon: 'hand', label: t('chrome.tabdeck.tool.pan', 'Verschieben'), kind: 'tool', tool: 'pan' },
+    { icon: 'camera', label: t('chrome.tabdeck.tool.placeCamera', 'Kamera platzieren (im Planer)'), kind: 'edit', sep: true },
+    { icon: 'ruler', label: t('chrome.tabdeck.tool.measure', 'Messen (im Planer)'), kind: 'edit' },
+    { icon: 'eye', label: t('chrome.tabdeck.tool.showFov', 'FOV anzeigen'), kind: 'overlay', overlay: 'fov' },
   ],
   licht: [
-    { icon: 'cursor', label: 'Auswahl', kind: 'tool', tool: 'select' },
-    { icon: 'hand', label: 'Verschieben', kind: 'tool', tool: 'pan' },
-    { icon: 'light', label: 'Fixture platzieren (im Planer)', kind: 'edit', sep: true },
-    { icon: 'ruler', label: 'Messen (im Planer)', kind: 'edit' },
-    { icon: 'eye', label: 'Heatmap', kind: 'overlay', overlay: 'heat' },
+    { icon: 'cursor', label: t('chrome.tabdeck.tool.select', 'Auswahl'), kind: 'tool', tool: 'select' },
+    { icon: 'hand', label: t('chrome.tabdeck.tool.pan', 'Verschieben'), kind: 'tool', tool: 'pan' },
+    { icon: 'light', label: t('chrome.tabdeck.tool.placeFixture', 'Fixture platzieren (im Planer)'), kind: 'edit', sep: true },
+    { icon: 'ruler', label: t('chrome.tabdeck.tool.measure', 'Messen (im Planer)'), kind: 'edit' },
+    { icon: 'eye', label: t('chrome.tabdeck.tool.heatmap', 'Heatmap'), kind: 'overlay', overlay: 'heat' },
   ],
-}
+})
 
 export function TabDeck({
   module,
@@ -79,6 +80,7 @@ export function TabDeck({
   /** Undo/Redo-Zustand des eingebetteten Planers zurück an die Shell. */
   onPlannerHistory?: (state: { canUndo: boolean; canRedo: boolean }) => void
 }) {
+  const t = useT()
   const isOverview = module.id === 'overview'
   const isBoard = module.id === 'board'
 
@@ -96,10 +98,10 @@ export function TabDeck({
           {module.planner && (
             <Button variant={mounted ? 'subtle' : 'primary'} size="sm" onClick={onToggleMount}>
               <Icon name={mounted ? 'grid' : 'external'} size={14} />
-              {mounted ? 'Zur Übersicht' : 'Im Planer öffnen'}
+              {mounted ? t('chrome.tabdeck.toOverview', 'Zur Übersicht') : t('chrome.tabdeck.openInPlanner', 'Im Planer öffnen')}
             </Button>
           )}
-          <Badge tone="accent"><Icon name="grid" size={12} /> Layout: Fokus</Badge>
+          <Badge tone="accent"><Icon name="grid" size={12} /> {t('chrome.tabdeck.layoutFocus', 'Layout: Fokus')}</Badge>
         </div>
       </div>
 
@@ -113,7 +115,7 @@ export function TabDeck({
           <BoardCanvas
             key={project ? project.meta.name : 'scratch'}
             seed={project ? project.show.board : emptyBoard()}
-            title={project ? `${project.meta.name} — Board` : 'Kreativ-Board'}
+            title={project ? format(t('chrome.tabdeck.boardTitle', '{name} — Board'), { name: project.meta.name }) : t('chrome.tabdeck.creativeBoard', 'Kreativ-Board')}
           />
         </div>
       ) : (
@@ -125,7 +127,7 @@ export function TabDeck({
               {/* schwebende Werkzeugleiste */}
               <div className="pointer-events-auto absolute left-1/2 top-4 z-10 -translate-x-1/2">
                 <div className="av-toolbar">
-                  {TOOLBARS[module.id as CanvasModuleId].map((b) => {
+                  {toolbars(t)[module.id as CanvasModuleId].map((b) => {
                     const active =
                       b.kind === 'tool'
                         ? tool === b.tool
@@ -185,8 +187,8 @@ export function TabDeck({
 
               <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-av-control border border-av-border bg-av-surface-2/90 px-3 py-1.5 text-[11.5px] text-av-text-muted">
                 {project
-                  ? <>Vorschau der Shell — <span className="text-av-text-secondary">„Im Planer öffnen"</span> lädt {module.title} zum Bearbeiten</>
-                  : <>Kein Projekt — <span className="text-av-text-secondary">Modul eigenständig nutzbar</span></>}
+                  ? <>{t('chrome.tabdeck.previewPre', 'Vorschau der Shell — ')}<span className="text-av-text-secondary">{t('chrome.tabdeck.openQuoted', '„Im Planer öffnen"')}</span> {format(t('chrome.tabdeck.loadsForEditing', 'lädt {title} zum Bearbeiten'), { title: t(`config.mod.${module.id}.title`, module.title) })}</>
+                  : <>{t('chrome.tabdeck.noProjectPre', 'Kein Projekt — ')}<span className="text-av-text-secondary">{t('chrome.tabdeck.standalone', 'Modul eigenständig nutzbar')}</span></>}
               </div>
             </div>
           )}

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Icon } from '@avplan/ui'
+import { useT } from '../i18n'
 
 export interface ToastMsg {
   id: number
@@ -21,6 +22,7 @@ export function ToastHost({ toasts, onDismiss }: { toasts: ToastMsg[]; onDismiss
 }
 
 function ToastItem({ toast, onDismiss }: { toast: ToastMsg; onDismiss: (id: number) => void }) {
+  const t = useT()
   useEffect(() => {
     const id = window.setTimeout(() => onDismiss(toast.id), toast.actionLabel ? 6000 : 3200)
     return () => window.clearTimeout(id)
@@ -49,7 +51,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMsg; onDismiss: (id: numb
       )}
       <button
         type="button"
-        aria-label="Schließen"
+        aria-label={t('chrome.toast.close', 'Schließen')}
         className="av-focus ml-0.5 grid h-5 w-5 place-items-center rounded text-av-text-faint hover:text-av-text"
         onClick={() => onDismiss(toast.id)}
       >

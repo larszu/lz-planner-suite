@@ -11,6 +11,8 @@ import { getExportRegistry } from '../../store/exportRegistry';
 import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import type Konva from 'konva';
 import { FiCopy, FiLock, FiUnlock, FiTrash2 } from 'react-icons/fi';
+import { useTranslation, format } from '../../i18n';
+import { useDomTheme } from '../../hooks/useDomTheme';
 
 // Shared style for context-menu items (issue #38).
 const ctxItemStyle: React.CSSProperties = {
@@ -29,6 +31,13 @@ const ctxItemStyle: React.CSSProperties = {
 };
 
 export default function Venue2D() {
+  const { t } = useTranslation();
+  // Theme-aware palette: hardcoded dark values gain a light variant that
+  // follows the shell's data-theme (semantic colors stay untouched).
+  const theme = useDomTheme();
+  const pal = theme === 'light'
+    ? { bg: '#e9edf4', grid: '#d3d9e4', gridLabel: '#8a94a6', border: '#c2cbd9', scale: '#6b7688', hintBg: '#ffffffcc', hintText: '#44505f' }
+    : { bg: '#111318', grid: '#1e2030', gridLabel: '#555', border: '#2a2d3a', scale: '#666', hintBg: '#000000aa', hintText: '#9ca3af' };
   const { venue, setVenue, cameras, selectedCameraId, selectCamera, moveCamera, updateCamera, removeCamera, duplicateCamera, showAllFov, pixelsPerMeter, persons, updatePerson, removePerson, duplicatePerson, updateStage, addStage, removeStage, backgroundPlan, setBackgroundPlan, walls, updateWall, addWall, removeWall, wallSnap, editMode, avForeign, showForeign } = useStore();
 
   // Edit-mode locking (issue #43): each mode locks every category except its own.
@@ -533,7 +542,7 @@ export default function Venue2D() {
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', background: 'var(--color-bc-canvas, #0a0b0f)', borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
       {/* Zoom indicator */}
-      <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, background: '#000000aa', padding: '4px 10px', borderRadius: 4, fontSize: 11, color: '#9ca3af', pointerEvents: 'none', backdropFilter: 'blur(4px)' }}>
+      <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, background: pal.hintBg, padding: '4px 10px', borderRadius: 4, fontSize: 11, color: pal.hintText, pointerEvents: 'none', backdropFilter: 'blur(4px)' }}>
         {(zoom * 100).toFixed(0)}%
       </div>
       <Stage
@@ -557,7 +566,7 @@ export default function Venue2D() {
       >
       {/* ── Layer 1: Static background (venue, image, grid, scale bar) ── */}
       <Layer listening={false}>
-        <Rect x={0} y={0} width={W} height={H} fill="#111318" />
+        <Rect x={0} y={0} width={W} height={H} fill={pal.bg} />
         {bgImage && backgroundPlan && (
           <KImage
             image={bgImage}
@@ -570,22 +579,22 @@ export default function Venue2D() {
         )}
         {Array.from({ length: Math.floor(venue.widthM) + 1 }).map((_, i) => (
           <Group key={`vg-${i}`}>
-            <Line points={[i * ppm, 0, i * ppm, H]} stroke="#1e2030" strokeWidth={1} />
-            <Text x={i * ppm + 2} y={2} text={`${i}m`} fontSize={9} fill="#555" />
+            <Line points={[i * ppm, 0, i * ppm, H]} stroke={pal.grid} strokeWidth={1} />
+            <Text x={i * ppm + 2} y={2} text={`${i}m`} fontSize={9} fill={pal.gridLabel} />
           </Group>
         ))}
         {Array.from({ length: Math.floor(venue.heightM) + 1 }).map((_, i) => (
           <Group key={`hg-${i}`}>
-            <Line points={[0, i * ppm, W, i * ppm]} stroke="#1e2030" strokeWidth={1} />
-            <Text x={2} y={i * ppm + 2} text={`${i}m`} fontSize={9} fill="#555" />
+            <Line points={[0, i * ppm, W, i * ppm]} stroke={pal.grid} strokeWidth={1} />
+            <Text x={2} y={i * ppm + 2} text={`${i}m`} fontSize={9} fill={pal.gridLabel} />
           </Group>
         ))}
-        <Rect x={0} y={0} width={W} height={H} stroke="#2a2d3a" strokeWidth={2} />
+        <Rect x={0} y={0} width={W} height={H} stroke={pal.border} strokeWidth={2} />
         {/* Scale bar */}
-        <Line points={[10, H - 20, 10 + 5 * ppm, H - 20]} stroke="#666" strokeWidth={2} />
-        <Line points={[10, H - 25, 10, H - 15]} stroke="#666" strokeWidth={2} />
-        <Line points={[10 + 5 * ppm, H - 25, 10 + 5 * ppm, H - 15]} stroke="#666" strokeWidth={2} />
-        <Text x={10} y={H - 38} text="5m" fontSize={11} fill="#666" />
+        <Line points={[10, H - 20, 10 + 5 * ppm, H - 20]} stroke={pal.scale} strokeWidth={2} />
+        <Line points={[10, H - 25, 10, H - 15]} stroke={pal.scale} strokeWidth={2} />
+        <Line points={[10 + 5 * ppm, H - 25, 10 + 5 * ppm, H - 15]} stroke={pal.scale} strokeWidth={2} />
+        <Text x={10} y={H - 38} text="5m" fontSize={11} fill={pal.scale} />
       </Layer>
 
       {/* ── Layer 2: Interactive objects (FOV, stages, walls, persons, cameras) ── */}
@@ -867,16 +876,16 @@ export default function Venue2D() {
         {menu.kind !== 'wall' && (
           <>
             <button type="button" onClick={() => handleMenuAction('duplicate')} style={ctxItemStyle}>
-              <FiCopy size={13} /> Duplicate
+              <FiCopy size={13} /> {t('venue.duplicate', 'Duplicate')}
             </button>
             <button type="button" onClick={() => handleMenuAction('lock')} style={ctxItemStyle}>
-              {menu.locked ? <FiUnlock size={13} /> : <FiLock size={13} />} {menu.locked ? 'Unlock position' : 'Lock position'}
+              {menu.locked ? <FiUnlock size={13} /> : <FiLock size={13} />} {menu.locked ? t('venue.unlockPosition', 'Unlock position') : t('venue.lockPosition', 'Lock position')}
             </button>
             <div style={{ height: 1, background: '#334155', margin: '4px 6px' }} />
           </>
         )}
         <button type="button" onClick={() => handleMenuAction('delete')} style={{ ...ctxItemStyle, color: '#f87171' }}>
-          <FiTrash2 size={13} /> Delete {menu.kind}
+          <FiTrash2 size={13} /> {format(t('venue.delete', 'Delete {kind}'), { kind: menu.kind })}
         </button>
       </div>
     )}

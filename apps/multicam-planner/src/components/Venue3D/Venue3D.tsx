@@ -13,6 +13,8 @@ import type { FramingState } from '../../store/exportRegistry';
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import type { BackgroundPlan, StageObjectType } from '../../types';
 import robotoFont from '../../assets/fonts/Roboto-Regular.ttf';
+import { useTranslation } from '../../i18n';
+import { useDomTheme } from '../../hooks/useDomTheme';
 
 // ── Apple-Silicon / Electron 3D-view fix (issue #35) ──
 // drei's <Text> uses troika-three-text, which by default does its font
@@ -854,6 +856,14 @@ function PersonMesh({ x, z, height, label, objectType, color }: { x: number; z: 
 }
 
 export default function Venue3D() {
+  const { t } = useTranslation();
+  // Theme-aware scene colors following the shell's data-theme (semantic
+  // stage/camera/person colors stay untouched).
+  const theme = useDomTheme();
+  const isLight = theme === 'light';
+  const scene = isLight
+    ? { bg: '#e9edf4', floor: '#d8deea', cell: '#c2cbd9', section: '#a9b3c4' }
+    : { bg: '#0f1117', floor: '#252a36', cell: '#3a4050', section: '#4a5568' };
   const { venue, cameras, persons, backgroundPlan, walls, updatePerson, selectCamera, selectedCameraId } = useStore();
   const [unlockedCameraId, setUnlockedCameraId] = useState<string | null>(null);
   const [editMode, setEditMode] = useState<CameraEditMode>('move');
@@ -879,13 +889,13 @@ export default function Venue3D() {
         fontSize: 11, color: '#9ca3af', lineHeight: 1.6, backdropFilter: 'blur(4px)',
         pointerEvents: 'none',
       }}>
-        <b style={{ color: '#60a5fa' }}>Select camera</b> → unlock to edit<br/>
-        <b style={{ color: '#60a5fa' }}>XY</b> floor move &nbsp;|&nbsp;
-        <b style={{ color: '#60a5fa' }}>Z</b> height &nbsp;|&nbsp;
-        <b style={{ color: '#60a5fa' }}>Pan/Tilt</b> rotate axes<br/>
-        <b style={{ color: '#60a5fa' }}>WASD</b> Move &nbsp;|&nbsp;
-        <b style={{ color: '#60a5fa' }}>Space/Shift</b> vertical &nbsp;|&nbsp;
-        <b style={{ color: '#60a5fa' }}>Scroll</b> Dolly
+        <b style={{ color: '#60a5fa' }}>{t('venue.selectCamera', 'Select camera')}</b> {t('venue.unlockToEdit', '→ unlock to edit')}<br/>
+        <b style={{ color: '#60a5fa' }}>XY</b> {t('venue.floorMove', 'floor move')} &nbsp;|&nbsp;
+        <b style={{ color: '#60a5fa' }}>Z</b> {t('venue.height', 'height')} &nbsp;|&nbsp;
+        <b style={{ color: '#60a5fa' }}>Pan/Tilt</b> {t('venue.rotateAxes', 'rotate axes')}<br/>
+        <b style={{ color: '#60a5fa' }}>WASD</b> {t('venue.move', 'Move')} &nbsp;|&nbsp;
+        <b style={{ color: '#60a5fa' }}>Space/Shift</b> {t('venue.vertical', 'vertical')} &nbsp;|&nbsp;
+        <b style={{ color: '#60a5fa' }}>Scroll</b> {t('venue.dolly', 'Dolly')}
       </div>
 
       {/* Reset View button */}
@@ -900,10 +910,11 @@ export default function Venue3D() {
         onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#60a5fa'; }}
         onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = '#334155'; }}
       >
-        ↻ Reset View
+        ↻ {t('venue.resetView', 'Reset View')}
       </button>
 
       <Canvas shadows gl={{ preserveDrawingBuffer: true }}>
+        <color attach="background" args={[scene.bg]} />
         <PerspectiveCamera makeDefault position={[venue.widthM / 2, 15, venue.heightM + 10]} fov={50} />
         <FPSControls mouseLookEnabled={unlockedCameraId === null} />
 
@@ -916,7 +927,7 @@ export default function Venue3D() {
         {/* Floor — brighter */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[venue.widthM / 2, 0, venue.heightM / 2]}>
           <planeGeometry args={[venue.widthM, venue.heightM]} />
-          <meshStandardMaterial color="#252a36" />
+          <meshStandardMaterial color={scene.floor} />
         </mesh>
 
         {/* Floor plan overlay */}
@@ -928,10 +939,10 @@ export default function Venue3D() {
           position={[venue.widthM / 2, 0.01, venue.heightM / 2]}
           cellSize={1}
           cellThickness={0.6}
-          cellColor="#3a4050"
+          cellColor={scene.cell}
           sectionSize={5}
           sectionThickness={1.5}
-          sectionColor="#4a5568"
+          sectionColor={scene.section}
         />
 
         {/* Venue walls wireframe */}

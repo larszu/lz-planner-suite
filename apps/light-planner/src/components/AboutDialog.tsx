@@ -14,12 +14,10 @@ const AboutDialog: React.FC<Props> = ({ onClose }) => {
       <h2 className="about-name">{APP_NAME}</h2>
       <div className="about-version">{t('about.version', 'Version')} {APP_VERSION}</div>
       <p className="about-desc">
-        Planung von Veranstaltungs- und Bühnenbeleuchtung – Grundriss-Import,
-        Maßstab, Leuchten mit echten photometrischen Daten, Heatmap, 3D-Vorschau
-        mit Foto-Ansicht, Szenen, Ebenen, DMX-Patch &amp; Export.
+        {t('dlg.about.desc', 'Planung von Veranstaltungs- und Bühnenbeleuchtung – Grundriss-Import, Maßstab, Leuchten mit echten photometrischen Daten, Heatmap, 3D-Vorschau mit Foto-Ansicht, Szenen, Ebenen, DMX-Patch & Export.')}
       </p>
       <div className="about-tech">React · TypeScript · Three.js · Vite</div>
-      <div className="about-copy">© {new Date().getFullYear()} · Alle Berechnungen bleiben nachvollziehbar.</div>
+      <div className="about-copy">© {new Date().getFullYear()} · {t('dlg.about.copy', 'Alle Berechnungen bleiben nachvollziehbar.')}</div>
       <div className="modal-actions">
         <button className="primary" onClick={onClose}>{t('about.close', 'Schließen')}</button>
       </div>

@@ -6,13 +6,15 @@ import {
   type SignalNode,
   type SuiteProject,
 } from '../data/project'
+import { useT, format } from '../i18n'
 
 function StandaloneHint({ label }: { label: string }) {
+  const t = useT()
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-center">
-      <span className="text-[13px] font-medium text-av-text-secondary">Kein Projekt zugewiesen</span>
+      <span className="text-[13px] font-medium text-av-text-secondary">{t('chrome.preview.noProject', 'Kein Projekt zugewiesen')}</span>
       <span className="max-w-xs text-[12px] text-av-text-muted">
-        {label} lässt sich eigenständig nutzen — „Im Planer öffnen" startet das Modul ohne Projekt.
+        {format(t('chrome.preview.standaloneHint', '{label} lässt sich eigenständig nutzen — „Im Planer öffnen" startet das Modul ohne Projekt.'), { label })}
       </span>
     </div>
   )
@@ -43,7 +45,8 @@ export function SignalPreview({
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
-  if (!project) return <StandaloneHint label="Der Signal-Flow" />
+  const t = useT()
+  if (!project) return <StandaloneHint label={t('chrome.preview.signalLabel', 'Der Signal-Flow')} />
   const rects = new Map<string, Rect>(project.nodes.map((n) => [n.id, nodeRect(n)]))
 
   const link = (c: Cable): { d: string; mx: number; my: number } | null => {
@@ -64,8 +67,8 @@ export function SignalPreview({
 
   return (
     <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
-      <text x={project.nodes[0].nx * VB_W} y={project.nodes[0].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">BÜHNE / FLOOR</text>
-      <text x={project.nodes[3].nx * VB_W} y={project.nodes[3].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">REGIE / OB</text>
+      <text x={project.nodes[0].nx * VB_W} y={project.nodes[0].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">{t('chrome.preview.stageFloor', 'BÜHNE / FLOOR')}</text>
+      <text x={project.nodes[3].nx * VB_W} y={project.nodes[3].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">{t('chrome.preview.regieOb', 'REGIE / OB')}</text>
 
       {project.cables.map((c) => {
         const l = link(c)
@@ -124,7 +127,8 @@ export function PlanPreview({
   /** Licht-Heatmap ein-/ausblenden. */
   showHeat?: boolean
 }) {
-  if (!project) return <StandaloneHint label={mode === 'cameras' ? 'Der Kamera-Plan' : 'Der Licht-Plan'} />
+  const t = useT()
+  if (!project) return <StandaloneHint label={mode === 'cameras' ? t('chrome.preview.camerasLabel', 'Der Kamera-Plan') : t('chrome.preview.lichtLabel', 'Der Licht-Plan')} />
   const { hall, stage } = project
   const innerW = 1000 - PLAN_PAD * 2
   const scale = innerW / hall.w
@@ -160,7 +164,7 @@ export function PlanPreview({
 
       {/* Bühne */}
       <rect x={mx(stage.x)} y={my(stage.y)} width={stage.w * scale} height={stage.h * scale} rx={4} fill="var(--av-warn-dim)" className="stroke-[var(--mod-licht)]" strokeWidth={1.2} />
-      <text x={mx(stage.x) + 8} y={my(stage.y) + 18} className="fill-[var(--mod-licht)]" fontSize={12} fontWeight={600}>Bühne {stage.w}×{stage.h} m</text>
+      <text x={mx(stage.x) + 8} y={my(stage.y) + 18} className="fill-[var(--mod-licht)]" fontSize={12} fontWeight={600}>{t('chrome.preview.stage', 'Bühne')} {stage.w}×{stage.h} m</text>
 
       {mode === 'cameras'
         ? project.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} showFov={showFov} />)

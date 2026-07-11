@@ -239,8 +239,9 @@ function surfaceTexture<Id extends string>(preset: SurfacePreset<Id>, color: str
 // so the helper grid and objects stay readable.
 function applyFloorMaterial(ground: THREE.Mesh, floor: FloorMaterial, photo: boolean) {
   const m = ground.material as THREE.MeshStandardMaterial;
+  const light = typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light';
   if (!photo) {
-    m.map = null; m.color.set('#222238'); m.roughness = 0.92;
+    m.map = null; m.color.set(light ? '#d8deea' : '#222238'); m.roughness = 0.92;
   } else {
     const preset = floorPreset(floor.preset);
     const tex = surfaceTexture(preset, floor.color, 400 / preset.tileMeters); // plane is 400 m across
@@ -310,6 +311,10 @@ const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElem
   const litRef = useRef<PlacedFixture[]>([]);
   const onHoverLuxRef = useRef(onHoverLux);
   onHoverLuxRef.current = onHoverLux;
+  // Re-applies theme-dependent colours (background/fog/grid/ground) to the live
+  // scene. Assigned by the scene-owning effect, also called by the photo/data
+  // effect so a photoMode/floor change re-derives the themed background.
+  const applyThemeRef = useRef<() => void>(() => {});
   // Real human model for the photo view (lazy-loaded on first use).
   const [personModel, setPersonModel] = React.useState<PersonModel | null>(null);
   useEffect(() => {
@@ -324,9 +329,12 @@ const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElem
 
     framedRef.current = false; // a fresh scene/camera needs framing again
 
+    // Current shell theme (data-theme on <html>), mirrored onto the scene below.
+    let sceneLight = document.documentElement.dataset.theme === 'light';
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#1a1a2e');
-    scene.fog = new THREE.Fog('#1a1a2e', 50, 120);
+    const initBg = sceneLight ? '#e9edf4' : '#1a1a2e';
+    scene.background = new THREE.Color(initBg);
+    scene.fog = new THREE.Fog(initBg, 50, 120);
 
     const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 200);
     camera.position.set(15, 15, 15);
@@ -345,12 +353,12 @@ const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElem
     controls.target.set(10, 0, 10);
 
     // Ground grid (hidden in the photo view)
-    const grid = new THREE.GridHelper(60, 60, '#3a3a50', '#2a2a3c');
+    const grid = new THREE.GridHelper(60, 60, sceneLight ? '#c2cbd9' : '#3a3a50', sceneLight ? '#d3d9e4' : '#2a2a3c');
     scene.add(grid);
 
     // Ground plane – large so it always reads as a real floor; receives shadows.
     const groundGeo = new THREE.PlaneGeometry(400, 400);
-    const groundMat = new THREE.MeshStandardMaterial({ color: photoModeRef.current ? '#4a4d57' : '#222238', roughness: 0.92, metalness: 0 });
+    const groundMat = new THREE.MeshStandardMaterial({ color: photoModeRef.current ? '#4a4d57' : (sceneLight ? '#d8deea' : '#222238'), roughness: 0.92, metalness: 0 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
@@ -414,6 +422,39 @@ const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElem
 
     const animId = 0;
     sceneRef.current = { scene, camera, renderer, controls, animId, composer, bloom, ambient, hemi, dir: dirLight, sun: sunLight, grid, ground, env, pmrem };
+
+    // ── Theme sync ──────────────────────────────────────────────────────────
+    // Mirror the shell's light/dark theme (data-theme on <html>) onto the
+    // imperative scene: background, fog, the schematic floor and the helper grid
+    // (recoloured only on an actual theme flip). Photo/render mode intentionally
+    // stays dark regardless of theme, so everything is guarded on photoMode.
+    const applyTheme = () => {
+      const light = document.documentElement.dataset.theme === 'light';
+      const s = sceneRef.current;
+      if (!s) return;
+      const photo = photoModeRef.current;
+      const bg = photo ? '#15151c' : (light ? '#e9edf4' : '#1a1a2e');
+      s.scene.background = new THREE.Color(bg);
+      if (s.scene.fog) (s.scene.fog as THREE.Fog).color.set(bg);
+      if (!photo) {
+        const gm = s.ground.material as THREE.MeshStandardMaterial;
+        gm.color.set(light ? '#d8deea' : '#222238');
+        gm.needsUpdate = true;
+      }
+      if (sceneLight !== light) {
+        sceneLight = light;
+        s.scene.remove(s.grid);
+        s.grid.geometry.dispose();
+        (Array.isArray(s.grid.material) ? s.grid.material : [s.grid.material]).forEach((mm) => mm.dispose());
+        const ng = new THREE.GridHelper(60, 60, light ? '#c2cbd9' : '#3a3a50', light ? '#d3d9e4' : '#2a2a3c');
+        ng.visible = !photo;
+        s.scene.add(ng);
+        s.grid = ng;
+      }
+    };
+    applyThemeRef.current = applyTheme;
+    const themeObs = new MutationObserver(() => applyTheme());
+    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // ── WASD keyboard movement ──
     const keys: Record<string, boolean> = {};
@@ -539,6 +580,7 @@ const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElem
       renderer.domElement.removeEventListener('pointerleave', handlePointerLeave);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      themeObs.disconnect();
       obs.disconnect();
       composer.dispose();
       env.dispose();
@@ -578,9 +620,8 @@ const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElem
     }
     s.grid.visible = !photoMode;
     applyFloorMaterial(s.ground, floor, photoMode);
-    const bg = photoMode ? '#15151c' : '#1a1a2e';
-    s.scene.background = new THREE.Color(bg);
-    if (s.scene.fog) (s.scene.fog as THREE.Fog).color.set(bg);
+    // Re-derive the themed background/fog/ground for the new photoMode/floor.
+    applyThemeRef.current();
     // Tone-mapping change requires existing materials to recompile.
     s.scene.traverse((o) => {
       const m = (o as THREE.Mesh).material;

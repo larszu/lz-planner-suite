@@ -17,7 +17,6 @@ import {
 } from './dashboard'
 import {
   FULL_WIDTH_WIDGETS,
-  WIDGET_LABEL,
   clampSpan,
   defaultDashboardPrefs,
   loadDashboardPrefs,
@@ -26,13 +25,21 @@ import {
   type WidgetId,
 } from './dashboardPrefs'
 import { DashboardGrid, type DashboardItem } from './DashboardGrid'
+import { useT, format, type TFunc } from '../i18n'
+import { WIDGET_LABEL as WIDGET_LABEL_DE } from './dashboardPrefs'
+
+/** Widget-Label an die aktuelle Sprache gebunden (DE bleibt Fallback). */
+function widgetLabel(t: TFunc, id: WidgetId): string {
+  return t(`overview.widget.${id}`, WIDGET_LABEL_DE[id])
+}
 
 function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigate: (id: ModuleId) => void }) {
+  const t = useT()
   const c = computeCounts(project)
   const cards = [
-    { id: 'signal' as ModuleId, stat: `${c.cables} Kabel`, sub: `${c.cableTotalM} m · 1 offenes Ende`, tone: 'warn' as const },
-    { id: 'cameras' as ModuleId, stat: `${c.cameras} Kameras`, sub: '4 Objektive · Coverage ok', tone: 'ok' as const },
-    { id: 'licht' as ModuleId, stat: `${c.fixtures} Fixtures`, sub: '3,4 kW · DMX ok', tone: 'ok' as const },
+    { id: 'signal' as ModuleId, stat: format(t('overview.stat.cables', '{n} Kabel'), { n: c.cables }), sub: format(t('overview.stat.cablesSub', '{m} m · 1 offenes Ende'), { m: c.cableTotalM }), tone: 'warn' as const },
+    { id: 'cameras' as ModuleId, stat: format(t('overview.stat.cameras', '{n} Kameras'), { n: c.cameras }), sub: t('overview.stat.camerasSub', '4 Objektive · Coverage ok'), tone: 'ok' as const },
+    { id: 'licht' as ModuleId, stat: format(t('overview.stat.fixtures', '{n} Fixtures'), { n: c.fixtures }), sub: t('overview.stat.fixturesSub', '3,4 kW · DMX ok'), tone: 'ok' as const },
   ]
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -50,7 +57,7 @@ function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigat
               <span className="grid h-7 w-7 place-items-center rounded-md" style={{ background: `color-mix(in srgb, ${mod.accent} 16%, transparent)`, color: mod.accent }}>
                 <Icon name={mod.icon} size={15} />
               </span>
-              <span className="text-[12.5px] font-semibold text-av-text">{mod.title}</span>
+              <span className="text-[12.5px] font-semibold text-av-text">{t(`config.mod.${mod.id}.title`, mod.title)}</span>
               <Icon name="external" size={13} style={{ marginLeft: 'auto', color: 'var(--av-text-faint)' }} />
             </div>
             <div className="av-num text-lg font-bold text-av-text">{card.stat}</div>
@@ -63,16 +70,17 @@ function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigat
 }
 
 function PlanCheckCard() {
+  const t = useT()
   return (
     <div className="rounded-av-card border border-av-border bg-av-surface-1 p-3.5">
       <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-av-text-muted">
-        <Icon name="check" size={13} /> Suite-Plan-Check
+        <Icon name="check" size={13} /> {t('overview.plancheck.title', 'Suite-Plan-Check')}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Badge tone="ok">Signal ↔ Kameras konsistent</Badge>
-        <Badge tone="ok">DMX-Patch kollisionsfrei</Badge>
-        <Badge tone="ok">Strom-Last im Limit</Badge>
-        <Badge tone="warn">CAM 4 nicht verkabelt</Badge>
+        <Badge tone="ok">{t('overview.plancheck.signal', 'Signal ↔ Kameras konsistent')}</Badge>
+        <Badge tone="ok">{t('overview.plancheck.dmx', 'DMX-Patch kollisionsfrei')}</Badge>
+        <Badge tone="ok">{t('overview.plancheck.power', 'Strom-Last im Limit')}</Badge>
+        <Badge tone="warn">{t('overview.plancheck.cam4', 'CAM 4 nicht verkabelt')}</Badge>
       </div>
     </div>
   )
@@ -90,6 +98,7 @@ function CustomizeMenu({
   onMove: (id: WidgetId, dir: -1 | 1) => void
   onReset: () => void
 }) {
+  const t = useT()
   const Row = ({ id, canMove, index, total }: { id: WidgetId; canMove?: boolean; index?: number; total?: number }) => {
     const on = prefs.enabled[id]
     return (
@@ -111,14 +120,14 @@ function CustomizeMenu({
           >
             {on && <Icon name="check" size={12} />}
           </span>
-          {WIDGET_LABEL[id]}
+          {widgetLabel(t, id)}
         </button>
         {canMove && (
           <span className="flex flex-none items-center gap-0.5">
             <button
               type="button"
               className="av-icon-btn av-focus"
-              aria-label={`${WIDGET_LABEL[id]} nach oben`}
+              aria-label={format(t('overview.customize.moveUp', '{label} nach oben'), { label: widgetLabel(t, id) })}
               disabled={index === 0}
               style={{ opacity: index === 0 ? 0.3 : 1, width: 22, height: 22 }}
               onClick={() => onMove(id, -1)}
@@ -128,7 +137,7 @@ function CustomizeMenu({
             <button
               type="button"
               className="av-icon-btn av-focus"
-              aria-label={`${WIDGET_LABEL[id]} nach unten`}
+              aria-label={format(t('overview.customize.moveDown', '{label} nach unten'), { label: widgetLabel(t, id) })}
               disabled={index === (total ?? 0) - 1}
               style={{ opacity: index === (total ?? 0) - 1 ? 0.3 : 1, width: 22, height: 22 }}
               onClick={() => onMove(id, 1)}
@@ -145,15 +154,15 @@ function CustomizeMenu({
     <Menu
       align="right"
       triggerClassName="av-btn"
-      ariaLabel="Dashboard anpassen"
-      button={<><Icon name="grid" size={15} /> Dashboard anpassen</>}
+      ariaLabel={t('overview.customize.aria', 'Dashboard anpassen')}
+      button={<><Icon name="grid" size={15} /> {t('overview.customize.button', 'Dashboard anpassen')}</>}
     >
       {() => (
-        <div className="w-72 p-1" role="group" aria-label="Dashboard-Elemente">
-          <MenuLabel>Bereiche</MenuLabel>
+        <div className="w-72 p-1" role="group" aria-label={t('overview.customize.groupAria', 'Dashboard-Elemente')}>
+          <MenuLabel>{t('overview.customize.sections', 'Bereiche')}</MenuLabel>
           {FULL_WIDTH_WIDGETS.map((id) => <Row key={id} id={id} />)}
           <MenuSeparator />
-          <MenuLabel>Karten (Reihenfolge anpassbar)</MenuLabel>
+          <MenuLabel>{t('overview.customize.cards', 'Karten (Reihenfolge anpassbar)')}</MenuLabel>
           {prefs.order.map((id, i) => (
             <Row key={id} id={id} canMove index={i} total={prefs.order.length} />
           ))}
@@ -163,7 +172,7 @@ function CustomizeMenu({
             className="av-menu-item av-focus w-full"
             onClick={onReset}
           >
-            <Icon name="undo" size={14} /> <span>Standard wiederherstellen</span>
+            <Icon name="undo" size={14} /> <span>{t('overview.customize.reset', 'Standard wiederherstellen')}</span>
           </button>
         </div>
       )}
@@ -172,23 +181,26 @@ function CustomizeMenu({
 }
 
 function EmptyState({ onAssign, onNavigate }: { onAssign: () => void; onNavigate: (id: ModuleId) => void }) {
+  const t = useT()
   return (
     <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 pt-10 text-center">
       <span className="grid h-16 w-16 place-items-center rounded-2xl bg-av-surface-2 text-av-text-muted">
         <Icon name="modules" size={30} />
       </span>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-av-text">Kein Projekt zugewiesen</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-av-text">{t('overview.empty.title', 'Kein Projekt zugewiesen')}</h1>
         <p className="mx-auto mt-2 max-w-lg text-sm text-av-text-muted">
-          Leg ein Projekt an, um Zeitplan, Crew, Budget und Bereitschaft an einem Ort zu sehen —
-          oder nutze jedes Modul direkt und eigenständig, ganz ohne Projekt.
+          {t(
+            'overview.empty.desc',
+            'Leg ein Projekt an, um Zeitplan, Crew, Budget und Bereitschaft an einem Ort zu sehen — oder nutze jedes Modul direkt und eigenständig, ganz ohne Projekt.',
+          )}
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-2">
-        <Button variant="primary" onClick={onAssign}><Icon name="plus" size={15} /> Neues Projekt anlegen</Button>
+        <Button variant="primary" onClick={onAssign}><Icon name="plus" size={15} /> {t('overview.empty.assign', 'Neues Projekt anlegen')}</Button>
       </div>
       <div className="w-full pt-2">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-av-text-faint">Modul direkt öffnen</div>
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-av-text-faint">{t('overview.empty.openModule', 'Modul direkt öffnen')}</div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {MODULES.filter((m) => m.id !== 'overview').map((mod) => (
             <button
@@ -202,8 +214,8 @@ function EmptyState({ onAssign, onNavigate }: { onAssign: () => void; onNavigate
                 <Icon name={mod.icon} size={16} />
               </span>
               <span>
-                <span className="block text-[13px] font-semibold text-av-text">{mod.title}</span>
-                <span className="block text-[11px] text-av-text-muted">eigenständig nutzbar</span>
+                <span className="block text-[13px] font-semibold text-av-text">{t(`config.mod.${mod.id}.title`, mod.title)}</span>
+                <span className="block text-[11px] text-av-text-muted">{t('overview.empty.standalone', 'eigenständig nutzbar')}</span>
               </span>
             </button>
           ))}
@@ -222,6 +234,7 @@ export function OverviewSurface({
   onNavigate: (id: ModuleId) => void
   onAssign: () => void
 }) {
+  const t = useT()
   const [prefs, setPrefs] = useState<DashboardPrefs>(loadDashboardPrefs)
 
   const persist = (next: DashboardPrefs) => {
@@ -272,19 +285,23 @@ export function OverviewSurface({
       {/* Kopf */}
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-av-text-faint">Projekt-Übersicht</div>
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-av-text-faint">{t('overview.header.eyebrow', 'Projekt-Übersicht')}</div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-av-text">{project.meta.name}</h1>
             <Badge tone="accent" dot>{PHASE_LABEL[show.phase]}</Badge>
           </div>
           <p className="mt-1 text-sm text-av-text-muted">
-            {project.meta.venue} · {show.dateLabel} · Version {project.meta.version}
+            {format(t('overview.header.meta', '{venue} · {date} · Version {version}'), {
+              venue: project.meta.venue,
+              date: show.dateLabel,
+              version: project.meta.version,
+            })}
           </p>
           <div className="mt-3 flex items-center gap-3">
             <div className="h-1.5 w-48 overflow-hidden rounded-full bg-av-surface-3">
               <span className="block h-full rounded-full" style={{ width: `${Math.round(show.progress * 100)}%`, background: 'var(--av-accent)' }} />
             </div>
-            <span className="av-num text-[12px] text-av-text-muted">{Math.round(show.progress * 100)}% Planung</span>
+            <span className="av-num text-[12px] text-av-text-muted">{format(t('overview.header.progress', '{n}% Planung'), { n: Math.round(show.progress * 100) })}</span>
           </div>
         </div>
         <CustomizeMenu prefs={prefs} onToggle={toggleWidget} onMove={moveWidget} onReset={resetPrefs} />
@@ -316,7 +333,7 @@ export function OverviewSurface({
       {nothingVisible && (
         <div className="mt-6 rounded-av-card border border-dashed border-av-border bg-av-surface-1 p-8 text-center">
           <p className="text-sm text-av-text-muted">
-            Alle Elemente ausgeblendet. Über <span className="font-medium text-av-text-secondary">„Dashboard anpassen"</span> wieder einblenden.
+            {t('overview.hidden.before', 'Alle Elemente ausgeblendet. Über ')}<span className="font-medium text-av-text-secondary">{t('overview.hidden.link', '„Dashboard anpassen"')}</span>{t('overview.hidden.after', ' wieder einblenden.')}
           </p>
         </div>
       )}

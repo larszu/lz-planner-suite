@@ -13,6 +13,7 @@ import {
   type ScheduleItem,
   type SuiteProject,
 } from '../data/project'
+import { useT, format } from '../i18n'
 
 const fmtEur = (n: number) => `${n.toLocaleString('de-DE')} €`
 
@@ -43,8 +44,9 @@ export function Card({
 
 /* ── Run of Show / Tagesablauf ─────────────────────────────────────────────*/
 export function RunOfShowCard({ schedule }: { schedule: ScheduleItem[] }) {
+  const t = useT()
   return (
-    <Card title="Tagesablauf" icon="grid" action={<Badge tone="accent">{schedule.length} Punkte</Badge>}>
+    <Card title={t('overview.card.runofshow.title', 'Tagesablauf')} icon="grid" action={<Badge tone="accent">{format(t('overview.card.runofshow.points', '{n} Punkte'), { n: schedule.length })}</Badge>}>
       <ol className="flex flex-col gap-0">
         {schedule.map((item, i) => {
           const color = item.dept === 'all' ? 'var(--av-text-faint)' : DEPARTMENT_COLOR[item.dept]
@@ -72,12 +74,13 @@ export function RunOfShowCard({ schedule }: { schedule: ScheduleItem[] }) {
 
 /* ── Crew / Team ───────────────────────────────────────────────────────────*/
 export function CrewCard({ crew }: { crew: CrewMember[] }) {
+  const t = useT()
   const pending = crew.filter((c) => c.status === 'pending').length
   return (
     <Card
-      title="Crew"
+      title={t('overview.card.crew.title', 'Crew')}
       icon="raum"
-      action={pending > 0 ? <Badge tone="warn">{pending} offen</Badge> : <Badge tone="ok">komplett</Badge>}
+      action={pending > 0 ? <Badge tone="warn">{format(t('overview.badge.open', '{n} offen'), { n: pending })}</Badge> : <Badge tone="ok">{t('overview.card.crew.complete', 'komplett')}</Badge>}
     >
       <ul className="flex flex-col gap-1.5">
         {crew.map((c) => (
@@ -98,14 +101,15 @@ export function CrewCard({ crew }: { crew: CrewMember[] }) {
 
 /* ── Budget ────────────────────────────────────────────────────────────────*/
 export function BudgetCard({ budget }: { budget: BudgetLine[] }) {
+  const t = useT()
   const totals = budgetTotals(budget)
   const over = totals.actual > totals.estimated
   return (
-    <Card title="Budget" icon="modules" action={<Badge tone="warn">Rentman ✓</Badge>}>
+    <Card title={t('overview.card.budget.title', 'Budget')} icon="modules" action={<Badge tone="warn">Rentman ✓</Badge>}>
       <div className="mb-3 flex items-baseline justify-between">
         <span className="av-num text-xl font-bold text-av-text">{fmtEur(totals.actual)}</span>
         <span className="text-[12px] text-av-text-muted">
-          von <span className="av-num">{fmtEur(totals.estimated)}</span>
+          {t('overview.card.budget.of', 'von')} <span className="av-num">{fmtEur(totals.estimated)}</span>
         </span>
       </div>
       <ul className="flex flex-col gap-2">
@@ -132,8 +136,8 @@ export function BudgetCard({ budget }: { budget: BudgetLine[] }) {
       </ul>
       <div className="mt-3 text-[11px]" style={{ color: over ? 'var(--av-danger)' : 'var(--av-ok)' }}>
         {over
-          ? `${fmtEur(totals.actual - totals.estimated)} über Plan`
-          : `${fmtEur(totals.estimated - totals.actual)} unter Plan`}
+          ? format(t('overview.card.budget.over', '{amount} über Plan'), { amount: fmtEur(totals.actual - totals.estimated) })
+          : format(t('overview.card.budget.under', '{amount} unter Plan'), { amount: fmtEur(totals.estimated - totals.actual) })}
       </div>
     </Card>
   )
@@ -141,39 +145,41 @@ export function BudgetCard({ budget }: { budget: BudgetLine[] }) {
 
 /* ── Equipment-Bereitschaft (aus @avplan/inventory-core) ───────────────────*/
 export function ReadinessCard({ project }: { project: SuiteProject }) {
+  const t = useT()
   const r = computeReadiness(project.inventory)
   return (
     <Card
-      title="Equipment-Bereitschaft"
+      title={t('overview.card.readiness.title', 'Equipment-Bereitschaft')}
       icon="library"
-      action={<Badge tone={r.openQty === 0 ? 'ok' : 'warn'}>{r.packedPct}% gepackt</Badge>}
+      action={<Badge tone={r.openQty === 0 ? 'ok' : 'warn'}>{format(t('overview.card.readiness.packed', '{n}% gepackt'), { n: r.packedPct })}</Badge>}
     >
       <div className="mb-2 flex items-baseline gap-2">
         <span className="av-num text-xl font-bold text-av-text">{r.packedQty}</span>
-        <span className="text-[12px] text-av-text-muted">von <span className="av-num">{r.totalQty}</span> Stück gepackt</span>
+        <span className="text-[12px] text-av-text-muted">{t('overview.card.readiness.ofPre', 'von ')}<span className="av-num">{r.totalQty}</span>{t('overview.card.readiness.ofPost', ' Stück gepackt')}</span>
       </div>
       <div className="mb-3 h-2 overflow-hidden rounded-full bg-av-surface-3">
         <span className="block h-full rounded-full" style={{ width: `${r.packedPct}%`, background: 'var(--av-accent)' }} />
       </div>
       <div className="flex gap-2 text-[12px]">
-        <span className="flex items-center gap-1.5 text-av-text-secondary"><Icon name="rack" size={13} /> {r.cases} Cases</span>
+        <span className="flex items-center gap-1.5 text-av-text-secondary"><Icon name="rack" size={13} /> {format(t('overview.card.readiness.cases', '{n} Cases'), { n: r.cases })}</span>
         <span className="flex items-center gap-1.5 text-av-text-muted">·</span>
         <span className="flex items-center gap-1.5" style={{ color: r.openQty ? 'var(--av-warn)' : 'var(--av-ok)' }}>
-          {r.openQty} offen
+          {format(t('overview.badge.open', '{n} offen'), { n: r.openQty })}
         </span>
       </div>
-      <p className="mt-2 text-[10.5px] text-av-text-faint">Lager-Daten aus @avplan/inventory-core</p>
+      <p className="mt-2 text-[10.5px] text-av-text-faint">{t('overview.card.readiness.source', 'Lager-Daten aus @avplan/inventory-core')}</p>
     </Card>
   )
 }
 
 /* ── Logistik ──────────────────────────────────────────────────────────────*/
 export function LogisticsCard({ logistics }: { logistics: LogisticsInfo }) {
+  const t = useT()
   return (
-    <Card title="Logistik" icon="external">
+    <Card title={t('overview.card.logistics.title', 'Logistik')} icon="external">
       <div className="mb-2 flex gap-4 text-[12px]">
-        <span className="text-av-text-secondary">Load-in <span className="av-num text-av-text">{logistics.loadIn}</span></span>
-        <span className="text-av-text-secondary">Anfahrt <span className="av-num text-av-text">{logistics.distanceKm} km</span></span>
+        <span className="text-av-text-secondary">{t('overview.card.logistics.loadIn', 'Load-in')} <span className="av-num text-av-text">{logistics.loadIn}</span></span>
+        <span className="text-av-text-secondary">{t('overview.card.logistics.distance', 'Anfahrt')} <span className="av-num text-av-text">{logistics.distanceKm} km</span></span>
       </div>
       <ul className="flex flex-col gap-1.5">
         {logistics.vehicles.map((v) => (
@@ -192,8 +198,9 @@ export function LogisticsCard({ logistics }: { logistics: LogisticsInfo }) {
 
 /* ── Kontakte ──────────────────────────────────────────────────────────────*/
 export function ContactsCard({ contacts }: { contacts: Contact[] }) {
+  const t = useT()
   return (
-    <Card title="Kontakte" icon="raum">
+    <Card title={t('overview.card.contacts.title', 'Kontakte')} icon="raum">
       <ul className="flex flex-col gap-2">
         {contacts.map((c) => (
           <li key={c.name} className="flex items-center gap-2.5">
@@ -214,25 +221,26 @@ export function ContactsCard({ contacts }: { contacts: Contact[] }) {
 
 /* ── Aufgaben / Checkliste ─────────────────────────────────────────────────*/
 export function TasksCard({ tasks }: { tasks: ProjectTask[] }) {
-  const open = tasks.filter((t) => !t.done).length
+  const t = useT()
+  const open = tasks.filter((tk) => !tk.done).length
   return (
-    <Card title="Aufgaben" icon="check" action={<Badge tone={open ? 'warn' : 'ok'}>{open} offen</Badge>}>
+    <Card title={t('overview.card.tasks.title', 'Aufgaben')} icon="check" action={<Badge tone={open ? 'warn' : 'ok'}>{format(t('overview.badge.open', '{n} offen'), { n: open })}</Badge>}>
       <ul className="flex flex-col gap-1.5">
-        {tasks.map((t) => (
-          <li key={t.title} className="flex items-center gap-2.5">
+        {tasks.map((task) => (
+          <li key={task.title} className="flex items-center gap-2.5">
             <span
               className="grid h-4 w-4 flex-none place-items-center rounded"
               style={{
-                border: t.done ? 'none' : '1.5px solid var(--av-border)',
-                background: t.done ? 'var(--av-ok)' : 'transparent',
+                border: task.done ? 'none' : '1.5px solid var(--av-border)',
+                background: task.done ? 'var(--av-ok)' : 'transparent',
                 color: '#fff',
               }}
             >
-              {t.done && <Icon name="check" size={11} />}
+              {task.done && <Icon name="check" size={11} />}
             </span>
-            <span className={`flex-1 text-[13px] ${t.done ? 'text-av-text-faint line-through' : 'text-av-text'}`}>{t.title}</span>
-            {t.owner && <span className="text-[11px] text-av-text-muted">{t.owner}</span>}
-            {t.due && !t.done && <span className="av-num text-[11px] text-av-text-faint">{t.due}</span>}
+            <span className={`flex-1 text-[13px] ${task.done ? 'text-av-text-faint line-through' : 'text-av-text'}`}>{task.title}</span>
+            {task.owner && <span className="text-[11px] text-av-text-muted">{task.owner}</span>}
+            {task.due && !task.done && <span className="av-num text-[11px] text-av-text-faint">{task.due}</span>}
           </li>
         ))}
       </ul>

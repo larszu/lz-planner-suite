@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { Icon } from '@avplan/ui'
 import { clampSpan, type WidgetId } from './dashboardPrefs'
+import { useT } from '../i18n'
 
 const GAP = 12 // entspricht gap-3 (0.75rem)
 
@@ -91,6 +92,7 @@ function DashboardCard({
   onClose: () => void
   children: ReactNode
 }) {
+  const t = useT()
   const ref = useRef<HTMLDivElement>(null)
   const fromHandle = useRef(false)
   const [resizing, setResizing] = useState(false)
@@ -153,8 +155,8 @@ function DashboardCard({
       <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         <button
           type="button"
-          aria-label="Verschieben (ziehen)"
-          title="Ziehen zum Anordnen"
+          aria-label={t('chrome.dash.dragAria', 'Verschieben (ziehen)')}
+          title={t('chrome.dash.dragTitle', 'Ziehen zum Anordnen')}
           className="av-focus grid h-6 w-6 cursor-grab place-items-center rounded-md border border-av-border bg-av-surface-2/90 text-av-text-muted hover:text-av-text active:cursor-grabbing"
           onPointerDown={() => (fromHandle.current = true)}
           onPointerUp={() => (fromHandle.current = false)}
@@ -163,8 +165,8 @@ function DashboardCard({
         </button>
         <button
           type="button"
-          aria-label="Karte ausblenden"
-          title="Ausblenden"
+          aria-label={t('chrome.dash.hideAria', 'Karte ausblenden')}
+          title={t('chrome.dash.hideTitle', 'Ausblenden')}
           className="av-focus grid h-6 w-6 place-items-center rounded-md border border-av-border bg-av-surface-2/90 text-av-text-muted hover:text-av-danger"
           onClick={onClose}
         >
@@ -177,8 +179,8 @@ function DashboardCard({
       {/* Resize-Griff unten rechts. */}
       <button
         type="button"
-        aria-label="Breite skalieren"
-        title="Ziehen zum Skalieren"
+        aria-label={t('chrome.dash.resizeAria', 'Breite skalieren')}
+        title={t('chrome.dash.resizeTitle', 'Ziehen zum Skalieren')}
         onPointerDown={onResizeStart}
         className="av-focus absolute bottom-1 right-1 z-10 grid h-5 w-5 cursor-nwse-resize place-items-center rounded text-av-text-faint opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
         style={{ opacity: resizing ? 1 : undefined }}

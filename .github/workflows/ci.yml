@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Neuere Pushes auf denselben Branch brechen laufende Runs ab.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Lint · Typecheck · Test
+    runs-on: ubuntu-latest
+    env:
+      # In CI wird nie eine Electron-App gestartet, nur gebaut. Das spart den
+      # ~100 MB Binary-Download und macht den Lauf schneller/stabiler.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      # Falls doch eine Postinstall-Kette anspringt: keinen Prompt blockieren.
+      CI: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install (npm ci)
+        run: npm ci
+
+      # Die geteilten Pakete (@avplan/inventory-core, onboarding-core, ui)
+      # muessen zuerst nach dist/ gebaut sein — Apps und Tests importieren sie.
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Lint
+        run: npm run lint --workspaces --if-present
+
+      # tsc -b in den App-Build-Skripten uebernimmt den Typecheck.
+      - name: Build (typecheck + bundle)
+        run: npm run build --workspaces --if-present
+
+      - name: Test
+        run: npm run test --workspaces --if-present

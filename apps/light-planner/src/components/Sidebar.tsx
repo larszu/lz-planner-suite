@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Fixture, FixtureCategory } from '../types';
 import { fixtureLibrary } from '../core/fixtureLibrary';
+import { useTranslation } from '../i18n';
 import FixtureEditor from './FixtureEditor';
 
 interface Props {
@@ -10,23 +11,23 @@ interface Props {
   onSelectFixtureToPlace: (f: Fixture) => void;
 }
 
-const CATEGORY_LABELS: Record<FixtureCategory, string> = {
-  profile: 'Profilscheinwerfer',
-  fresnel: 'Stufenlinsen',
-  par: 'PAR-Scheinwerfer',
-  wash: 'LED Wash',
-  spot: 'LED Spot',
-  beam: 'Beam-Effekt',
-  'moving-wash': 'Moving Head Wash',
-  'moving-spot': 'Moving Head Spot',
-  'moving-beam': 'Moving Head Beam',
-  blinder: 'Blinder / Strobe',
-  cyc: 'Horizontleuchte',
-  flood: 'Fluter',
-  followspot: 'Verfolger',
-  'led-panel': 'LED-Flächenleuchten',
-  custom: 'Eigene',
-};
+const categoryLabels = (t: (key: string, fallback: string) => string): Record<FixtureCategory, string> => ({
+  profile: t('side.cat.profile', 'Profilscheinwerfer'),
+  fresnel: t('side.cat.fresnel', 'Stufenlinsen'),
+  par: t('side.cat.par', 'PAR-Scheinwerfer'),
+  wash: t('side.cat.wash', 'LED Wash'),
+  spot: t('side.cat.spot', 'LED Spot'),
+  beam: t('side.cat.beam', 'Beam-Effekt'),
+  'moving-wash': t('side.cat.movingWash', 'Moving Head Wash'),
+  'moving-spot': t('side.cat.movingSpot', 'Moving Head Spot'),
+  'moving-beam': t('side.cat.movingBeam', 'Moving Head Beam'),
+  blinder: t('side.cat.blinder', 'Blinder / Strobe'),
+  cyc: t('side.cat.cyc', 'Horizontleuchte'),
+  flood: t('side.cat.flood', 'Fluter'),
+  followspot: t('side.cat.followspot', 'Verfolger'),
+  'led-panel': t('side.cat.ledPanel', 'LED-Flächenleuchten'),
+  custom: t('side.cat.custom', 'Eigene'),
+});
 
 const CATEGORIES: FixtureCategory[] = [
   'profile', 'fresnel', 'par', 'wash', 'spot', 'beam',
@@ -40,6 +41,8 @@ const Sidebar: React.FC<Props> = ({
   fixtureToPlace,
   onSelectFixtureToPlace,
 }) => {
+  const { t } = useTranslation();
+  const CATEGORY_LABELS = categoryLabels(t);
   const [search, setSearch] = useState('');
   const [expandedCat, setExpandedCat] = useState<FixtureCategory | null>(null); // all categories collapsed by default
   const [showEditor, setShowEditor] = useState(false);
@@ -70,14 +73,14 @@ const Sidebar: React.FC<Props> = ({
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2>Leuchten-Bibliothek</h2>
-        <span className="sidebar-hint">Drag & Drop oder Klick</span>
+        <h2>{t('side.libraryTitle', 'Leuchten-Bibliothek')}</h2>
+        <span className="sidebar-hint">{t('side.dragHint', 'Drag & Drop oder Klick')}</span>
       </div>
 
       <div className="sidebar-search">
         <input
           type="text"
-          placeholder="Suchen…"
+          placeholder={t('side.searchPlaceholder', 'Suchen…')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -125,7 +128,7 @@ const Sidebar: React.FC<Props> = ({
                     </div>
                     {f.compatibleAttachments && f.compatibleAttachments.length > 0 && (
                       <div className="fixture-item-info attachment-hint">
-                        🔧 {f.compatibleAttachments.length} Vorsätze verfügbar
+                        🔧 {f.compatibleAttachments.length} {t('side.attachmentsAvailable', 'Vorsätze verfügbar')}
                       </div>
                     )}
                   </button>
@@ -139,7 +142,7 @@ const Sidebar: React.FC<Props> = ({
 
       <div className="sidebar-footer">
         <button className="add-fixture-btn" onClick={() => setShowEditor(true)}>
-          + Eigene Leuchte anlegen
+          {t('side.addCustomFixture', '+ Eigene Leuchte anlegen')}
         </button>
       </div>
 

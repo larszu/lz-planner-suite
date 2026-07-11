@@ -14,6 +14,8 @@
     "dist:win": "npm run build && electron-builder --win nsis portable --publish never",
     "dist:mac": "npm run build && electron-builder --mac --x64 --arm64 --publish never",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "venue:check": "node --experimental-strip-types scripts/venue-exchange-check.ts",
     "avplan:check": "node --experimental-strip-types scripts/avplan-check.ts"
   },
@@ -39,9 +41,11 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "happy-dom": "^20.10.6",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.62.0",
-    "vite": "^8.1.0"
+    "vite": "^8.1.0",
+    "vitest": "^4.1.9"
   },
   "build": {
     "appId": "com.larszumpe.lightplanner",

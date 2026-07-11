@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Tool } from '../types';
 import Icon, { type IconName } from './Icon';
+import { useTranslation } from '../i18n';
 
 interface Props {
   activeTool: Tool;
@@ -33,26 +34,33 @@ const GROUPS: Group[] = [
   ],
 ];
 
-const ToolRail: React.FC<Props> = ({ activeTool, onToolChange }) => (
-  <nav className="toolrail" role="toolbar" aria-label="Werkzeuge">
-    {GROUPS.map((group, gi) => (
-      <React.Fragment key={gi}>
-        {gi > 0 && <div className="toolrail-div" />}
-        {group.map((t) => (
-          <button
-            key={t.id}
-            className={`toolrail-btn ${activeTool === t.id ? 'on' : ''}`}
-            onClick={() => onToolChange(t.id)}
-            title={`${t.label} — ${t.hint}`}
-            aria-pressed={activeTool === t.id}
-          >
-            <Icon name={t.icon} size={20} />
-            <span className="toolrail-tip">{t.label}</span>
-          </button>
-        ))}
-      </React.Fragment>
-    ))}
-  </nav>
-);
+const ToolRail: React.FC<Props> = ({ activeTool, onToolChange }) => {
+  const { t } = useTranslation();
+  return (
+    <nav className="toolrail" role="toolbar" aria-label={t('topbar.tools', 'Werkzeuge')}>
+      {GROUPS.map((group, gi) => (
+        <React.Fragment key={gi}>
+          {gi > 0 && <div className="toolrail-div" />}
+          {group.map((tool) => {
+            const label = t(`tool.${tool.id}`, tool.label);
+            const hint = t(`topbar.hint.${tool.id}`, tool.hint);
+            return (
+              <button
+                key={tool.id}
+                className={`toolrail-btn ${activeTool === tool.id ? 'on' : ''}`}
+                onClick={() => onToolChange(tool.id)}
+                title={`${label} — ${hint}`}
+                aria-pressed={activeTool === tool.id}
+              >
+                <Icon name={tool.icon} size={20} />
+                <span className="toolrail-tip">{label}</span>
+              </button>
+            );
+          })}
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+};
 
 export default ToolRail;

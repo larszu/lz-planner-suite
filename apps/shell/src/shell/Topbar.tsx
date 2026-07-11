@@ -12,6 +12,7 @@ import {
   type ResolvedTheme,
 } from '@avplan/ui'
 import type { SuiteProject } from '../data/project'
+import { useT } from '../i18n'
 
 function ProjectPicker({
   project,
@@ -22,11 +23,12 @@ function ProjectPicker({
   onAssign: () => void
   onClear: () => void
 }) {
+  const t = useT()
   return (
     <Menu
       align="left"
       triggerClassName="av-focus flex items-center gap-2 rounded-av-control px-2 py-1 text-sm text-av-text-muted hover:bg-av-surface-2"
-      ariaLabel="Projekt wählen"
+      ariaLabel={t('chrome.topbar.pickProject.aria', 'Projekt wählen')}
       button={
         <>
           <span className="text-av-text-faint">—</span>
@@ -38,7 +40,7 @@ function ProjectPicker({
               <span className="av-num text-av-text-faint">v{project.meta.version}</span>
             </>
           ) : (
-            <span className="font-medium text-av-text-secondary">Kein Projekt · Module einzeln nutzbar</span>
+            <span className="font-medium text-av-text-secondary">{t('chrome.topbar.noProject', 'Kein Projekt · Module einzeln nutzbar')}</span>
           )}
           <Icon name="chevron-down" size={14} />
         </>
@@ -46,7 +48,7 @@ function ProjectPicker({
     >
       {(close) => (
         <>
-          <MenuLabel>Projekt</MenuLabel>
+          <MenuLabel>{t('chrome.topbar.projectLabel', 'Projekt')}</MenuLabel>
           <MenuItem
             icon={<Icon name="modules" size={16} style={{ color: 'var(--av-accent)' }} />}
             active={project !== null}
@@ -61,7 +63,7 @@ function ProjectPicker({
             hint={project === null ? <Icon name="check" size={14} /> : undefined}
             onClick={() => { onClear(); close() }}
           >
-            Kein Projekt
+            {t('chrome.topbar.noProjectShort', 'Kein Projekt')}
           </MenuItem>
         </>
       )}
@@ -70,20 +72,21 @@ function ProjectPicker({
 }
 
 function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT()
   const rows: { keys: string[]; label: string }[] = [
-    { keys: ['⌘', 'K'], label: 'Suchen & Befehle (Command-Palette)' },
-    { keys: ['⌘', 'S'], label: 'Projekt speichern' },
-    { keys: ['⌘', 'Z'], label: 'Rückgängig' },
-    { keys: ['⌘', '⇧', 'Z'], label: 'Wiederholen' },
-    { keys: ['1'], label: 'Übersicht' },
-    { keys: ['2'], label: 'Signal-Flow' },
-    { keys: ['3'], label: 'Kamera-Plan' },
-    { keys: ['4'], label: 'Licht-Plan' },
-    { keys: ['5'], label: 'Kreativ-Board' },
-    { keys: ['Esc'], label: 'Dialog / Auswahl schließen' },
+    { keys: ['⌘', 'K'], label: t('chrome.topbar.sc.palette', 'Suchen & Befehle (Command-Palette)') },
+    { keys: ['⌘', 'S'], label: t('chrome.topbar.sc.save', 'Projekt speichern') },
+    { keys: ['⌘', 'Z'], label: t('chrome.topbar.sc.undo', 'Rückgängig') },
+    { keys: ['⌘', '⇧', 'Z'], label: t('chrome.topbar.sc.redo', 'Wiederholen') },
+    { keys: ['1'], label: t('chrome.topbar.sc.overview', 'Übersicht') },
+    { keys: ['2'], label: t('chrome.topbar.sc.signal', 'Signal-Flow') },
+    { keys: ['3'], label: t('chrome.topbar.sc.cameras', 'Kamera-Plan') },
+    { keys: ['4'], label: t('chrome.topbar.sc.licht', 'Licht-Plan') },
+    { keys: ['5'], label: t('chrome.topbar.sc.board', 'Kreativ-Board') },
+    { keys: ['Esc'], label: t('chrome.topbar.sc.esc', 'Dialog / Auswahl schließen') },
   ]
   return (
-    <Modal open={open} onClose={onClose} title="Tastenkürzel" size="sm">
+    <Modal open={open} onClose={onClose} title={t('chrome.topbar.shortcuts.title', 'Tastenkürzel')} size="sm">
       <ul className="flex flex-col gap-1.5">
         {rows.map((r) => (
           <li key={r.label} className="flex items-center justify-between gap-4 py-0.5">
@@ -129,6 +132,7 @@ export function Topbar({
   canUndo: boolean
   canRedo: boolean
 }) {
+  const t = useT()
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -142,7 +146,7 @@ export function Topbar({
     file
       .text()
       .then(onImport)
-      .catch(() => window.alert('Datei konnte nicht gelesen werden.'))
+      .catch(() => window.alert(t('chrome.topbar.fileReadError', 'Datei konnte nicht gelesen werden.')))
   }
 
   const ghost = 'av-btn'
@@ -158,12 +162,12 @@ export function Topbar({
       </div>
 
       {/* Funktionale Menüleiste (geteiltes Menu) */}
-      <nav className="hidden items-center gap-0.5 md:flex" aria-label="Menü">
-        <Menu button="Datei" triggerClassName={ghost} align="left">
+      <nav className="hidden items-center gap-0.5 md:flex" aria-label={t('chrome.topbar.menu.aria', 'Menü')}>
+        <Menu button={t('chrome.topbar.menu.file', 'Datei')} triggerClassName={ghost} align="left">
           {(close) => (
             <>
-              <MenuItem icon={<Icon name="plus" size={15} />} onClick={() => { onNew(); close() }}>Neues Projekt</MenuItem>
-              <MenuItem icon={<Icon name="external" size={15} />} onClick={() => { close(); openFileDialog() }}>Projekt öffnen…</MenuItem>
+              <MenuItem icon={<Icon name="plus" size={15} />} onClick={() => { onNew(); close() }}>{t('chrome.topbar.file.new', 'Neues Projekt')}</MenuItem>
+              <MenuItem icon={<Icon name="external" size={15} />} onClick={() => { close(); openFileDialog() }}>{t('chrome.topbar.file.open', 'Projekt öffnen…')}</MenuItem>
               <MenuSeparator />
               <MenuItem
                 icon={<Icon name="check" size={15} />}
@@ -171,47 +175,47 @@ export function Topbar({
                 disabled={!project}
                 onClick={() => { onSave(); close() }}
               >
-                Speichern
+                {t('chrome.topbar.file.save', 'Speichern')}
               </MenuItem>
               <MenuItem
                 icon={<Icon name="library" size={15} />}
                 disabled={!project}
                 onClick={() => { onSaveAs(); close() }}
               >
-                Speichern unter…
+                {t('chrome.topbar.file.saveAs', 'Speichern unter…')}
               </MenuItem>
               <MenuSeparator />
-              <MenuLabel>Demo-Projekt</MenuLabel>
-              <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { onAssign(); close() }}>Sommershow 2026 laden</MenuItem>
-              <MenuItem icon={<Icon name="close" size={15} />} onClick={() => { onClear(); close() }}>Kein Projekt (Module einzeln)</MenuItem>
+              <MenuLabel>{t('chrome.topbar.file.demo', 'Demo-Projekt')}</MenuLabel>
+              <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { onAssign(); close() }}>{t('chrome.topbar.file.loadDemo', 'Sommershow 2026 laden')}</MenuItem>
+              <MenuItem icon={<Icon name="close" size={15} />} onClick={() => { onClear(); close() }}>{t('chrome.topbar.file.noProject', 'Kein Projekt (Module einzeln)')}</MenuItem>
             </>
           )}
         </Menu>
-        <Menu button="Ansicht" triggerClassName={ghost} align="left">
+        <Menu button={t('chrome.topbar.menu.view', 'Ansicht')} triggerClassName={ghost} align="left">
           {(close) => (
             <>
               <MenuItem
                 icon={<Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />}
                 onClick={() => { onToggleTheme(); close() }}
               >
-                {theme === 'dark' ? 'Helles Theme' : 'Dunkles Theme'}
+                {theme === 'dark' ? t('chrome.topbar.view.lightTheme', 'Helles Theme') : t('chrome.topbar.view.darkTheme', 'Dunkles Theme')}
               </MenuItem>
               <MenuSeparator />
               <MenuItem
                 icon={<Icon name="settings" size={15} />}
                 onClick={() => { close(); onOpenSettings() }}
               >
-                Einstellungen…
+                {t('chrome.topbar.view.settings', 'Einstellungen…')}
               </MenuItem>
             </>
           )}
         </Menu>
-        <Menu button="Hilfe" triggerClassName={ghost} align="left">
+        <Menu button={t('chrome.topbar.menu.help', 'Hilfe')} triggerClassName={ghost} align="left">
           {(close) => (
             <>
-              <MenuItem icon={<Icon name="search" size={15} />} hint={<span><Kbd>⌘</Kbd><Kbd>K</Kbd></span>} onClick={() => { close(); onOpenPalette() }}>Suchen & Befehle</MenuItem>
+              <MenuItem icon={<Icon name="search" size={15} />} hint={<span><Kbd>⌘</Kbd><Kbd>K</Kbd></span>} onClick={() => { close(); onOpenPalette() }}>{t('chrome.topbar.help.search', 'Suchen & Befehle')}</MenuItem>
               <MenuSeparator />
-              <MenuItem icon={<Icon name="command" size={15} />} onClick={() => { close(); setShortcutsOpen(true) }}>Tastenkürzel…</MenuItem>
+              <MenuItem icon={<Icon name="command" size={15} />} onClick={() => { close(); setShortcutsOpen(true) }}>{t('chrome.topbar.help.shortcuts', 'Tastenkürzel…')}</MenuItem>
             </>
           )}
         </Menu>
@@ -227,10 +231,10 @@ export function Topbar({
           onClick={onOpenPalette}
           className="av-search-trigger av-focus flex h-8 items-center gap-2 rounded-av-control border border-av-border bg-av-surface-3 px-3 text-sm text-av-text-muted transition-colors hover:border-av-accent"
           style={{ minWidth: 220 }}
-          aria-label="Suchen und Befehle öffnen"
+          aria-label={t('chrome.topbar.searchAria', 'Suchen und Befehle öffnen')}
         >
           <Icon name="search" size={15} />
-          <span className="flex-1 text-left">Suchen &amp; Befehle</span>
+          <span className="flex-1 text-left">{t('chrome.topbar.search', 'Suchen & Befehle')}</span>
           <span className="flex items-center gap-0.5">
             <Kbd>⌘</Kbd>
             <Kbd>K</Kbd>
@@ -238,21 +242,21 @@ export function Topbar({
         </button>
 
         <div className="mx-1 flex items-center gap-0.5">
-          <IconButton label="Rückgängig" onClick={onUndo} disabled={!canUndo} style={{ opacity: canUndo ? 1 : 0.4 }}>
+          <IconButton label={t('chrome.topbar.undo', 'Rückgängig')} onClick={onUndo} disabled={!canUndo} style={{ opacity: canUndo ? 1 : 0.4 }}>
             <Icon name="undo" size={17} />
           </IconButton>
-          <IconButton label="Wiederholen" onClick={onRedo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.4 }}>
+          <IconButton label={t('chrome.topbar.redo', 'Wiederholen')} onClick={onRedo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.4 }}>
             <Icon name="redo" size={17} />
           </IconButton>
         </div>
 
-        {project && <Badge tone="ok" dot>{project.meta.saved ? 'Gespeichert' : 'Ungespeichert'}</Badge>}
+        {project && <Badge tone="ok" dot>{project.meta.saved ? t('chrome.topbar.saved', 'Gespeichert') : t('chrome.topbar.unsaved', 'Ungespeichert')}</Badge>}
 
-        <IconButton label={theme === 'dark' ? 'Zu hellem Theme wechseln' : 'Zu dunklem Theme wechseln'} onClick={onToggleTheme}>
+        <IconButton label={theme === 'dark' ? t('chrome.topbar.toLight', 'Zu hellem Theme wechseln') : t('chrome.topbar.toDark', 'Zu dunklem Theme wechseln')} onClick={onToggleTheme}>
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
         </IconButton>
 
-        <IconButton label="Einstellungen" onClick={onOpenSettings}>
+        <IconButton label={t('chrome.topbar.settings', 'Einstellungen')} onClick={onOpenSettings}>
           <Icon name="settings" size={17} />
         </IconButton>
       </div>
