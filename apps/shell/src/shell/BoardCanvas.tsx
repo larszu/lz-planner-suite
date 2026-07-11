@@ -35,6 +35,7 @@ const CARD_META: Record<BoardCardType, { label: string; icon: Parameters<typeof 
   look: { label: 'Look', icon: 'eye' },
   column: { label: 'Spalte', icon: 'layers' },
   board: { label: 'Unterboard', icon: 'board' },
+  image: { label: 'Bild', icon: 'eye' },
 }
 
 const TEMPLATES: { id: TemplateId; label: string }[] = [
@@ -81,8 +82,11 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
   const [connectFrom, setConnectFrom] = useState<string | null>(null)
   const [tempPoint, setTempPoint] = useState<Point | null>(null)
 
+  const [query, setQuery] = useState('')
   const boardRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const dragRef = useRef<{ id: string; dx: number; dy: number; moved: boolean } | null>(null)
+  const resizeRef = useRef<{ id: string; startX: number; startW: number } | null>(null)
 
   const current = useMemo(() => getBoardAtPath(root, path), [root, path])
   const cards = current.cards
@@ -154,6 +158,77 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
   }, [root, title])
 
   const exportPrint = useCallback(() => window.print(), [])
+
+  // ── Foto-Import (Upload / Drag&Drop / Einfügen) ──
+  const addImageFile = useCallback((file: File, at?: Point, index = 0) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const src = String(reader.result)
+      const img = new Image()
+      img.onload = () => {
+        const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1.5
+        const scroll = boardRef.current?.parentElement
+        const base: BoardCard = {
+          id: nextId(), type: 'image', w: 240, ratio, src,
+          title: file.name.replace(/\.[^.]+$/, ''),
+          x: (at?.x ?? (scroll?.scrollLeft ?? 0) + 120) + index * 24,
+          y: (at?.y ?? (scroll?.scrollTop ?? 0) + 120) + index * 24,
+        }
+        mutate((b) => ({ ...b, cards: [...b.cards, base] }))
+        setSelectedId(base.id)
+      }
+      img.src = src
+    }
+    reader.readAsDataURL(file)
+  }, [mutate])
+
+  const handleFiles = useCallback((files: FileList | null, at?: Point) => {
+    if (!files) return
+    Array.from(files).filter((f) => f.type.startsWith('image/')).forEach((f, i) => addImageFile(f, at, i))
+  }, [addImageFile])
+
+  // Einfügen aus der Zwischenablage (Cmd/Ctrl+V) → Bild-Karte.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      const files: File[] = []
+      for (const it of items) if (it.type.startsWith('image/')) { const f = it.getAsFile(); if (f) files.push(f) }
+      if (files.length) {
+        e.preventDefault()
+        files.forEach((f, i) => addImageFile(f, undefined, i))
+      }
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [addImageFile])
+
+  // ── Größe ziehen (Milanote: untere rechte Ecke) ──
+  const onResizePointerDown = (e: React.PointerEvent, card: BoardCard) => {
+    e.stopPropagation()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    resizeRef.current = { id: card.id, startX: toBoard(e.clientX, e.clientY).x, startW: card.w }
+  }
+  const onResizePointerMove = (e: React.PointerEvent) => {
+    const r = resizeRef.current
+    if (!r) return
+    const dx = toBoard(e.clientX, e.clientY).x - r.startX
+    patchCard(r.id, { w: Math.max(90, Math.min(900, r.startW + dx)) })
+  }
+  const onResizePointerUp = (e: React.PointerEvent) => {
+    e.currentTarget.releasePointerCapture(e.pointerId)
+    resizeRef.current = null
+  }
+
+  const q = query.trim().toLowerCase()
+  const matchesQuery = (c: BoardCard): boolean => {
+    if (!q) return true
+    return (
+      (c.title ?? '').toLowerCase().includes(q) ||
+      (c.text ?? '').toLowerCase().includes(q) ||
+      (c.items ?? []).some((i) => i.text.toLowerCase().includes(q))
+    )
+  }
 
   // ── Verschieben (+ Spalten-Detach/Drop) ──
   const onHeaderPointerDown = (e: React.PointerEvent, card: BoardCard) => {
@@ -234,6 +309,16 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
             <Icon name={CARD_META[t].icon} size={15} /> <span className="text-[12px]">{CARD_META[t].label}</span>
           </button>
         ))}
+        <button type="button" className="av-toolbar-btn av-focus" onClick={() => fileInputRef.current?.click()} aria-label="Foto importieren" title="Foto importieren">
+          <Icon name="eye" size={15} /> <span className="text-[12px]">Foto</span>
+        </button>
+        <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files); if (fileInputRef.current) fileInputRef.current.value = '' }} />
+
+        <div className="ml-2 flex min-w-0 items-center gap-1.5 rounded-av-control border border-av-border bg-av-surface-3 px-2">
+          <Icon name="search" size={13} style={{ color: 'var(--av-text-faint)' }} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Board durchsuchen…" aria-label="Board durchsuchen" className="av-focus w-32 bg-transparent py-1 text-[12px] text-av-text outline-none placeholder:text-av-text-faint" />
+        </div>
+
         <div className="ml-auto flex items-center gap-1">
           <Menu label="Vorlage" icon="wand">
             {(close) => TEMPLATES.map((tpl) => (
@@ -279,7 +364,12 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
       </div>
 
       {/* Scroll-Fläche */}
-      <div className="av-scroll relative min-h-0 flex-1 overflow-auto" onPointerDown={(e) => { if (e.target === e.currentTarget) setSelectedId(null) }}>
+      <div
+        className="av-scroll relative min-h-0 flex-1 overflow-auto"
+        onPointerDown={(e) => { if (e.target === e.currentTarget) setSelectedId(null) }}
+        onDragOver={(e) => { e.preventDefault() }}
+        onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files, toBoard(e.clientX, e.clientY)) }}
+      >
         <div
           ref={boardRef}
           className="relative"
@@ -329,7 +419,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
             if (!r) return null
             return (
               <BoardCardView
-                key={card.id} card={card} rect={r}
+                key={card.id} card={card} rect={r} dim={!matchesQuery(card)}
                 selected={selectedId === card.id} editing={editingId === card.id}
                 onHeaderPointerDown={(e) => onHeaderPointerDown(e, card)}
                 onHeaderPointerMove={onHeaderPointerMove}
@@ -338,6 +428,9 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
                 onOpen={() => openBoard(card.id)}
                 onPatch={(patch) => patchCard(card.id, patch)} onDelete={() => removeCard(card.id)}
                 onStartConnect={(e) => { e.stopPropagation(); setConnectFrom(card.id); setTempPoint(toBoard(e.clientX, e.clientY)) }}
+                onResizePointerDown={(e) => onResizePointerDown(e, card)}
+                onResizePointerMove={onResizePointerMove}
+                onResizePointerUp={onResizePointerUp}
               />
             )
           })}
@@ -368,6 +461,7 @@ function PrintBoard({ board, title, level }: { board: Board; title: string; leve
       case 'todo': return <div key={c.id}><strong>{c.title}</strong><ul>{c.items?.map((it, i) => <li key={i}>{it.done ? '☑' : '☐'} {it.text}</li>)}</ul></div>
       case 'color': return <p key={c.id}>■ {c.title} ({c.color})</p>
       case 'look': return <p key={c.id}>Look: {c.title}</p>
+      case 'image': return <div key={c.id}>{c.src ? <img src={c.src} alt={c.title ?? 'Foto'} style={{ maxWidth: 320, display: 'block', margin: '6px 0' }} /> : null}<em>{c.title}</em></div>
       case 'column': return null
       case 'board': return <PrintBoard key={c.id} board={c.board ?? { cards: [], connections: [] }} title={`${c.title ?? 'Unterboard'} (Unterboard)`} level={level + 1} />
     }
@@ -394,21 +488,25 @@ function PrintDoc({ title, board }: { title: string; board: Board }) {
 
 /* ── Einzelne Karte ────────────────────────────────────────────────────────*/
 function BoardCardView({
-  card, rect, selected, editing,
+  card, rect, selected, editing, dim,
   onHeaderPointerDown, onHeaderPointerMove, onHeaderPointerUp,
   onStartEdit, onEndEdit, onOpen, onPatch, onDelete, onStartConnect,
+  onResizePointerDown, onResizePointerMove, onResizePointerUp,
 }: {
-  card: BoardCard; rect: Rect; selected: boolean; editing: boolean
+  card: BoardCard; rect: Rect; selected: boolean; editing: boolean; dim: boolean
   onHeaderPointerDown: (e: React.PointerEvent) => void
   onHeaderPointerMove: (e: React.PointerEvent) => void
   onHeaderPointerUp: (e: React.PointerEvent) => void
   onStartEdit: () => void; onEndEdit: () => void; onOpen: () => void
   onPatch: (patch: Partial<BoardCard>) => void; onDelete: () => void
   onStartConnect: (e: React.PointerEvent) => void
+  onResizePointerDown: (e: React.PointerEvent) => void
+  onResizePointerMove: (e: React.PointerEvent) => void
+  onResizePointerUp: (e: React.PointerEvent) => void
 }) {
   const isBoard = card.type === 'board'
   return (
-    <div data-card-id={card.id} className="absolute select-none" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
+    <div data-card-id={card.id} className="absolute select-none" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h, opacity: dim ? 0.28 : 1 }}>
       {selected && (
         <div className="absolute -top-8 left-0 z-20 flex items-center gap-1 rounded-av-control border border-av-border bg-av-surface-2 p-0.5 shadow-[var(--av-shadow-float)]">
           {(card.type === 'color' || card.type === 'look') && SWATCHES.slice(0, 6).map((s) => (
@@ -432,6 +530,16 @@ function BoardCardView({
           ? <BoardTile card={card} selected={selected} onPatch={onPatch} onOpen={onOpen} />
           : <CardBody card={card} editing={editing} onEndEdit={onEndEdit} onPatch={onPatch} />}
       </div>
+      {selected && card.type !== 'column' && (
+        <div
+          className="absolute z-20 h-3.5 w-3.5 cursor-nwse-resize rounded-sm border border-av-accent bg-av-surface-2"
+          style={{ right: -6, bottom: -6 }}
+          onPointerDown={onResizePointerDown}
+          onPointerMove={onResizePointerMove}
+          onPointerUp={onResizePointerUp}
+          aria-label="Größe ziehen"
+        />
+      )}
     </div>
   )
 }
@@ -514,6 +622,18 @@ function CardBody({ card, editing, onEndEdit, onPatch }: { card: BoardCard; edit
           <span className="truncate text-[11px] text-av-text-secondary">{card.title}</span>
           <span className="av-num text-[10px] text-av-text-faint">{card.color}</span>
         </div>
+      </div>
+    )
+  }
+  if (card.type === 'image') {
+    return (
+      <div className="flex h-full w-full flex-col overflow-hidden border border-av-border bg-av-surface-1">
+        {card.src
+          ? <img src={card.src} alt={card.title ?? 'Foto'} className="min-h-0 flex-1 object-cover" draggable={false} />
+          : <div className="flex-1" style={{ background: 'var(--av-surface-3)' }} />}
+        {editing
+          ? <input autoFocus className="bg-av-surface-1 px-2 py-1 text-[11px] text-av-text outline-none" value={card.title ?? ''} onChange={(e) => onPatch({ title: e.target.value })} onBlur={onEndEdit} onKeyDown={(e) => e.key === 'Enter' && onEndEdit()} />
+          : <div className="truncate bg-av-surface-1 px-2 py-1 text-[11px] text-av-text-secondary">{card.title}</div>}
       </div>
     )
   }

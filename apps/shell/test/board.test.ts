@@ -70,6 +70,14 @@ describe('boardToMarkdown', () => {
     expect(md).toContain('Ziel')
   })
 
+  it('rendert Bild-Karten als Bild-Zeile', () => {
+    const md = boardToMarkdown({
+      cards: [{ id: 'img', type: 'image', x: 0, y: 0, w: 240, src: 'data:image/jpeg;base64,AAAA', ratio: 1.5, title: 'Bühne' }],
+      connections: [],
+    }, 'Root')
+    expect(md).toContain('- Bild: Bühne')
+  })
+
   it('rendert verschachtelte Unterboards als tiefere Abschnitte', () => {
     const md = boardToMarkdown({
       cards: [

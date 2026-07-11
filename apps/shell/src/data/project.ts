@@ -65,7 +65,7 @@ export interface ProjectTask {
 
 /* ── Board (Milanote-artiges Kreativ-Canvas) ───────────────────────────────*/
 
-export type BoardCardType = 'heading' | 'note' | 'link' | 'todo' | 'color' | 'look' | 'column' | 'board'
+export type BoardCardType = 'heading' | 'note' | 'link' | 'todo' | 'color' | 'look' | 'column' | 'board' | 'image'
 
 /** Eine Karte auf dem Board (frei positioniert oder in einer Spalte). */
 export interface BoardCard {
@@ -84,6 +84,10 @@ export interface BoardCard {
   columnId?: string
   /** Für type 'board': das verschachtelte Unterboard (Board in Board). */
   board?: Board
+  /** Für type 'image': Bilddaten als data-URL (offline-tauglich, persistierbar). */
+  src?: string
+  /** Für type 'image': Seitenverhältnis Breite/Höhe (für die Karten-Höhe). */
+  ratio?: number
 }
 
 export interface BoardConnection {

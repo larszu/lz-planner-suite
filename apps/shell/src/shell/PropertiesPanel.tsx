@@ -176,7 +176,7 @@ export function PropertiesPanel({
       return acc
     }, {})
     const TYPE_LABEL: Record<string, string> = {
-      heading: 'Überschriften', note: 'Notizen', link: 'Links', todo: 'To-dos', color: 'Farben', look: 'Looks', column: 'Spalten', board: 'Unterboards',
+      heading: 'Überschriften', note: 'Notizen', link: 'Links', todo: 'To-dos', color: 'Farben', look: 'Looks', column: 'Spalten', board: 'Unterboards', image: 'Bilder',
     }
     return (
       <div className="flex h-full flex-col bg-av-surface-1">

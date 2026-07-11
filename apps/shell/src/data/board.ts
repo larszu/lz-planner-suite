@@ -20,6 +20,7 @@ export function cardHeight(card: BoardCard): number {
     case 'look': return 148
     case 'column': return COL_HEADER + 40
     case 'board': return 116
+    case 'image': return Math.round(card.w / (card.ratio && card.ratio > 0 ? card.ratio : 1.5)) + 24
   }
 }
 
@@ -139,6 +140,7 @@ function cardMarkdown(c: BoardCard): string {
     case 'todo': return [`**${c.title ?? 'To-do'}**`, ...(c.items ?? []).map((i) => `- [${i.done ? 'x' : ' '}] ${i.text}`)].join('\n')
     case 'color': return `- ${c.title ?? 'Farbe'} \`${c.color ?? ''}\``
     case 'look': return `- Look: ${c.title ?? ''}`
+    case 'image': return `- Bild: ${c.title ?? 'Foto'}`
     case 'column': return ''
     case 'board': return ''
   }
