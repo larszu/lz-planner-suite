@@ -11,6 +11,7 @@ import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, type ModuleId } from './modules/registry'
 import { PROJECT, type SuiteProject } from './data/project'
 import { Topbar } from './shell/Topbar'
+import { SettingsModal } from './shell/SettingsModal'
 import { LibraryPanel } from './shell/LibraryPanel'
 import { PropertiesPanel } from './shell/PropertiesPanel'
 import { TabDeck } from './shell/TabDeck'
@@ -36,7 +37,7 @@ const DEFAULT_TAB: Record<ModuleId, string> = {
 }
 
 export function App() {
-  const { theme, toggle } = useTheme()
+  const { theme, preference, setPreference, toggle } = useTheme()
   // Zugewiesenes Projekt oder null — ohne Projekt bleiben alle Module einzeln nutzbar.
   const [project, setProject] = useState<SuiteProject | null>(PROJECT)
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
@@ -57,6 +58,7 @@ export function App() {
   })
   const [libraryOpen, setLibraryOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const mod = MODULE_BY_ID[moduleId]
 
@@ -94,6 +96,9 @@ export function App() {
     <div data-module={mod.dataModule} className="flex h-full flex-col bg-av-bg text-av-text">
       <Topbar
         project={project}
+        theme={theme}
+        onToggleTheme={toggle}
+        onOpenSettings={() => setSettingsOpen(true)}
         onOpenPalette={() => setPaletteOpen(true)}
         onAssign={() => setProject(PROJECT)}
         onClear={() => setProject(null)}
@@ -143,6 +148,17 @@ export function App() {
         onOpenChange={setPaletteOpen}
         commands={commands}
         context={{ moduleId }}
+      />
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        preference={preference}
+        onSetPreference={setPreference}
+        onOpenModule={(id) => {
+          setModuleId(id)
+          setMounted((m) => ({ ...m, [id]: true }))
+        }}
       />
     </div>
   )

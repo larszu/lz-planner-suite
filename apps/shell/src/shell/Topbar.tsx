@@ -9,7 +9,7 @@ import {
   MenuLabel,
   MenuSeparator,
   Modal,
-  useTheme,
+  type ResolvedTheme,
 } from '@avplan/ui'
 import type { SuiteProject } from '../data/project'
 
@@ -95,16 +95,21 @@ function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void 
 
 export function Topbar({
   project,
+  theme,
+  onToggleTheme,
+  onOpenSettings,
   onOpenPalette,
   onAssign,
   onClear,
 }: {
   project: SuiteProject | null
+  theme: ResolvedTheme
+  onToggleTheme: () => void
+  onOpenSettings: () => void
   onOpenPalette: () => void
   onAssign: () => void
   onClear: () => void
 }) {
-  const { theme, toggle } = useTheme()
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   const ghost = 'av-btn'
@@ -131,12 +136,21 @@ export function Topbar({
         </Menu>
         <Menu button="Ansicht" triggerClassName={ghost} align="left">
           {(close) => (
-            <MenuItem
-              icon={<Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />}
-              onClick={() => { toggle(); close() }}
-            >
-              {theme === 'dark' ? 'Helles Theme' : 'Dunkles Theme'}
-            </MenuItem>
+            <>
+              <MenuItem
+                icon={<Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />}
+                onClick={() => { onToggleTheme(); close() }}
+              >
+                {theme === 'dark' ? 'Helles Theme' : 'Dunkles Theme'}
+              </MenuItem>
+              <MenuSeparator />
+              <MenuItem
+                icon={<Icon name="settings" size={15} />}
+                onClick={() => { close(); onOpenSettings() }}
+              >
+                Einstellungen…
+              </MenuItem>
+            </>
           )}
         </Menu>
         <Menu button="Hilfe" triggerClassName={ghost} align="left">
@@ -177,8 +191,12 @@ export function Topbar({
 
         {project && <Badge tone="ok" dot>{project.meta.saved ? 'Gespeichert' : 'Ungespeichert'}</Badge>}
 
-        <IconButton label={theme === 'dark' ? 'Zu hellem Theme wechseln' : 'Zu dunklem Theme wechseln'} onClick={toggle}>
+        <IconButton label={theme === 'dark' ? 'Zu hellem Theme wechseln' : 'Zu dunklem Theme wechseln'} onClick={onToggleTheme}>
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
+        </IconButton>
+
+        <IconButton label="Einstellungen" onClick={onOpenSettings}>
+          <Icon name="settings" size={17} />
         </IconButton>
       </div>
 
