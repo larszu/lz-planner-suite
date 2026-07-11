@@ -6,8 +6,20 @@ import App from './App';
 import './index.css';
 
 // In die Suite-Shell eingebettet? Dann folgt das Theme der Shell (No-op im
-// Standalone-Betrieb — window.parent === window).
-connectShellTheme();
+// Standalone-Betrieb — window.parent === window). Palette der Shell auf die
+// --color-bc-* Variablen abbilden, damit die Farben zur Shell passen.
+connectShellTheme({
+  '--av-bg': '--color-bc-dark',
+  '--av-surface-1': '--color-bc-panel',
+  '--av-surface-2': '--color-bc-panel-2',
+  '--av-border': '--color-bc-border',
+  '--av-text': '--color-bc-text',
+  '--av-text-muted': '--color-bc-text-muted',
+  '--av-accent': '--color-bc-accent',
+  '--av-ok': '--color-bc-green',
+  '--av-warn': '--color-bc-yellow',
+  '--av-danger': '--color-bc-red',
+});
 // Suite-Einstellungen (FOV, Edit-Modus, Wand-Snap, Zoom …) von der Shell übernehmen.
 initShellSettings();
 

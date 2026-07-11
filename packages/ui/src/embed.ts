@@ -10,6 +10,9 @@ export type ResolvedTheme = 'dark' | 'light'
 export interface ThemeMessage {
   type: 'avplan:theme'
   theme: ResolvedTheme
+  /** Aufgelöste Shell-Palette (`--av-*` → Wert), damit die Planer dieselben
+   *  Farben wie die Shell übernehmen (inkl. aktivem Modul-Akzent). */
+  palette?: Record<string, string>
 }
 
 export interface ReadyMessage {
@@ -61,10 +64,14 @@ const isShellMessage = (data: unknown): data is ShellMessage =>
   !!data && typeof data === 'object' && typeof (data as { type?: unknown }).type === 'string' &&
   (data as { type: string }).type.startsWith('avplan:')
 
-/** Shell → iframe: aktuelles Theme senden. */
-export function postThemeToFrame(frame: Window | null | undefined, theme: ResolvedTheme): void {
+/** Shell → iframe: aktuelles Theme (+ optional aufgelöste Palette) senden. */
+export function postThemeToFrame(
+  frame: Window | null | undefined,
+  theme: ResolvedTheme,
+  palette?: Record<string, string>,
+): void {
   try {
-    frame?.postMessage({ type: 'avplan:theme', theme } satisfies ThemeMessage, '*')
+    frame?.postMessage({ type: 'avplan:theme', theme, palette } satisfies ThemeMessage, '*')
   } catch {
     /* iframe noch nicht bereit */
   }
@@ -161,7 +168,7 @@ export function connectShellSettings(apply: (key: string, value: unknown) => voi
  * No-op, wenn die App nicht eingebettet läuft (dann bestimmt sie ihr Theme
  * selbst). Gibt eine Cleanup-Funktion zurück.
  */
-export function connectShellTheme(): () => void {
+export function connectShellTheme(paletteMap?: Record<string, string>): () => void {
   try {
     if (typeof window === 'undefined' || window.parent === window) return () => {}
   } catch {
@@ -171,6 +178,15 @@ export function connectShellTheme(): () => void {
     if (!isShellMessage(e.data)) return
     if (e.data.type === 'avplan:theme') {
       document.documentElement.setAttribute('data-theme', e.data.theme)
+      // Palette der Shell auf die eigenen Root-Variablen abbilden, damit alle
+      // Planer exakt die Shell-Farben (inkl. Modul-Akzent, Light-Mode) zeigen.
+      if (e.data.palette && paletteMap) {
+        const root = document.documentElement
+        for (const [shellToken, plannerVar] of Object.entries(paletteMap)) {
+          const value = e.data.palette[shellToken]
+          if (value) root.style.setProperty(plannerVar, value)
+        }
+      }
     }
   }
   window.addEventListener('message', onMessage)

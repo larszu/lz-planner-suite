@@ -5,7 +5,10 @@
 @theme {
   --color-bc-dark: #0f1117;
   --color-bc-panel: #1a1d27;
+  --color-bc-panel-2: #252a36;
   --color-bc-border: #2a2d3a;
+  --color-bc-text: #e5e7eb;
+  --color-bc-text-muted: #9ca3af;
   --color-bc-accent: #3b82f6;
   --color-bc-green: #22c55e;
   --color-bc-red: #ef4444;
@@ -22,16 +25,16 @@ html, body, #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: #0f1117;
-  color: #e5e7eb;
+  background: var(--color-bc-dark);
+  color: var(--color-bc-text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #1a1d27; }
-::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+::-webkit-scrollbar-track { background: var(--color-bc-panel); }
+::-webkit-scrollbar-thumb { background: var(--color-bc-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-bc-accent); }
 
 /* Range slider */
 input[type="range"] {

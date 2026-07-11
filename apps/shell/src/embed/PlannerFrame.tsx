@@ -10,6 +10,25 @@ import {
 } from '@avplan/ui'
 import { onPlannerCommand } from './plannerBridge'
 
+/** Shell-Tokens, die als Palette an die Planer gehen (Farb-Konsistenz). */
+const AV_TOKENS = [
+  '--av-bg', '--av-surface-1', '--av-surface-2', '--av-surface-3', '--av-surface-4',
+  '--av-border', '--av-border-muted', '--av-text', '--av-text-secondary', '--av-text-muted',
+  '--av-text-faint', '--av-accent', '--av-accent-text', '--av-ok', '--av-warn', '--av-danger',
+]
+
+/** Aufgelöste Palette am iframe-Element lesen (fängt den aktiven Modul-Akzent). */
+function readShellPalette(el: Element | null): Record<string, string> | undefined {
+  if (!el) return undefined
+  const cs = getComputedStyle(el)
+  const palette: Record<string, string> = {}
+  for (const token of AV_TOKENS) {
+    const value = cs.getPropertyValue(token).trim()
+    if (value) palette[token] = value
+  }
+  return palette
+}
+
 export interface PlannerFrameProps {
   url: string
   title: string
@@ -53,10 +72,10 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
     return () => onHistory?.({ canUndo: false, canRedo: false })
   }, [onHistory])
 
-  // Theme in den Rahmen schieben, sobald geladen und bei jedem Theme-Wechsel.
+  // Theme + Palette in den Rahmen schieben, sobald geladen und bei jedem Wechsel.
   useEffect(() => {
     if (state !== 'ready') return
-    postThemeToFrame(ref.current?.contentWindow, theme)
+    postThemeToFrame(ref.current?.contentWindow, theme, readShellPalette(ref.current))
   }, [theme, state])
 
   // Suite-Einstellungen in den Rahmen schieben — beim Laden und bei jeder
@@ -86,7 +105,7 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
         className="h-full w-full border-0 bg-av-surface-3"
         onLoad={() => {
           setState('ready')
-          postThemeToFrame(ref.current?.contentWindow, theme)
+          postThemeToFrame(ref.current?.contentWindow, theme, readShellPalette(ref.current))
           if (settings) postSettingsToFrame(ref.current?.contentWindow, settings)
         }}
       />
