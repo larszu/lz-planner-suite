@@ -32,6 +32,7 @@ const DEFAULT_TAB: Record<ModuleId, string> = {
   signal: 'flow',
   cameras: 'plan2d',
   licht: 'plan2d',
+  board: 'board',
 }
 
 export function App() {
@@ -45,12 +46,14 @@ export function App() {
     signal: 'v012',
     cameras: 'cam2',
     licht: 'lx3',
+    board: null,
   })
   const [mounted, setMounted] = useState<Record<ModuleId, boolean>>({
     overview: false,
     signal: false,
     cameras: false,
     licht: false,
+    board: false,
   })
   const [libraryOpen, setLibraryOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(false)

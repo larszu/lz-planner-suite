@@ -1,9 +1,10 @@
 import { Badge, Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
 import type { ModuleDef, ModuleId } from '../modules/registry'
-import type { SuiteProject } from '../data/project'
+import { emptyBoard, type SuiteProject } from '../data/project'
 import { PlannerFrame } from '../embed/PlannerFrame'
 import { PlanPreview, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
+import { BoardCanvas } from './BoardCanvas'
 
 interface ToolbarButton {
   icon: Parameters<typeof Icon>[0]['name']
@@ -11,7 +12,9 @@ interface ToolbarButton {
   active?: boolean
 }
 
-const TOOLBARS: Record<Exclude<ModuleId, 'overview'>, ToolbarButton[]> = {
+type CanvasModuleId = 'signal' | 'cameras' | 'licht'
+
+const TOOLBARS: Record<CanvasModuleId, ToolbarButton[]> = {
   signal: [
     { icon: 'cursor', label: 'Auswahl', active: true },
     { icon: 'hand', label: 'Verschieben' },
@@ -60,6 +63,7 @@ export function TabDeck({
   onAssign: () => void
 }) {
   const isOverview = module.id === 'overview'
+  const isBoard = module.id === 'board'
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -83,6 +87,10 @@ export function TabDeck({
         <div className="av-scroll min-h-0 flex-1 overflow-auto p-5">
           <OverviewSurface project={project} onNavigate={onNavigate} onAssign={onAssign} />
         </div>
+      ) : isBoard ? (
+        <div className="min-h-0 flex-1 p-3">
+          <BoardCanvas key={project ? project.meta.name : 'scratch'} seed={project ? project.show.board : emptyBoard()} />
+        </div>
       ) : (
         <div className="relative min-h-0 flex-1 p-3">
           {mounted && module.planner && module.plannerUrl ? (
@@ -92,7 +100,7 @@ export function TabDeck({
               {/* schwebende Werkzeugleiste */}
               <div className="pointer-events-auto absolute left-1/2 top-4 z-10 -translate-x-1/2">
                 <div className="av-toolbar">
-                  {TOOLBARS[module.id as Exclude<ModuleId, 'overview'>].map((b, i) => (
+                  {TOOLBARS[module.id as CanvasModuleId].map((b, i) => (
                     <span key={b.label} className="contents">
                       {i === 2 && <span className="av-toolbar-sep" />}
                       <button type="button" className="av-toolbar-btn av-focus" data-active={b.active ? 'true' : undefined} aria-label={b.label} title={b.label}>

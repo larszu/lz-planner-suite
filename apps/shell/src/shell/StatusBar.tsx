@@ -43,6 +43,8 @@ export function StatusBar({
           <span className="av-status-item" style={{ color: 'var(--av-warn)' }}><Icon name="warning" size={13} /> 2 Hinweise (Rig-Check)</span>
           <span className="av-status-item" style={{ color: 'var(--av-ok)' }}>DMX ✓</span>
         </>
+      ) : module === 'board' ? (
+        <span className="av-status-item"><span className="av-num av-status-strong">{project.show.board.cards.length}</span> Karten · {project.show.board.connections.length} Verbindungen</span>
       ) : (
         <span className="av-status-item" style={{ color: 'var(--av-ok)' }}><Icon name="check" size={13} /> Plan-Check ok</span>
       )}

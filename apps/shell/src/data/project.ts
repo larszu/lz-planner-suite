@@ -63,6 +63,36 @@ export interface ProjectTask {
   owner?: string
 }
 
+/* ── Board (Milanote-artiges Kreativ-Canvas) ───────────────────────────────*/
+
+export type BoardCardType = 'heading' | 'note' | 'link' | 'todo' | 'color' | 'look'
+
+/** Eine Karte auf dem Board (frei positioniert). */
+export interface BoardCard {
+  id: string
+  type: BoardCardType
+  x: number
+  y: number
+  w: number
+  title?: string
+  text?: string
+  url?: string
+  /** Farbe für color-/look-Karten (look rendert daraus einen Verlauf). */
+  color?: string
+  items?: { text: string; done: boolean }[]
+}
+
+export interface BoardConnection {
+  id: string
+  from: string
+  to: string
+}
+
+export interface Board {
+  cards: BoardCard[]
+  connections: BoardConnection[]
+}
+
 /** Angereicherte Show-Details fürs Übersichts-Dashboard. */
 export interface ShowDetails {
   dateLabel: string
@@ -75,6 +105,8 @@ export interface ShowDetails {
   logistics: LogisticsInfo
   contacts: Contact[]
   tasks: ProjectTask[]
+  /** Kreativ-Board (Moodboard/Notizen) — die Vor-Produktionsebene der Show. */
+  board: Board
 }
 
 export interface Camera {
@@ -220,6 +252,28 @@ export const PROJECT: SuiteProject = {
       { title: 'Rentman-Kabelmengen zurücksynchen', done: false, owner: 'Lars Z.' },
       { title: 'Rigging-Plan freigegeben', done: true },
     ],
+    board: {
+      cards: [
+        { id: 'b_h', type: 'heading', x: 60, y: 40, w: 320, text: 'Look & Feel — Sommershow' },
+        { id: 'b_l1', type: 'look', x: 60, y: 120, w: 190, title: 'Warmes Bühnenlicht', color: '#f5a623' },
+        { id: 'b_l2', type: 'look', x: 270, y: 120, w: 190, title: 'Kühle Akzente', color: '#38bdf8' },
+        { id: 'b_l3', type: 'look', x: 480, y: 120, w: 190, title: 'Publikum im Dunkel', color: '#1a2130' },
+        { id: 'b_n1', type: 'note', x: 60, y: 300, w: 230, text: 'Host in Key/Fill 2,8 : 1 halten — warmer Vordergrund, kühles Backlight. Abgleich mit Licht-Modul.' },
+        { id: 'b_c1', type: 'color', x: 320, y: 300, w: 110, title: 'L204 · CTB', color: '#f2c26b' },
+        { id: 'b_c2', type: 'color', x: 440, y: 300, w: 110, title: 'R132 · Blau', color: '#5aa9e6' },
+        { id: 'b_t1', type: 'todo', x: 60, y: 430, w: 260, title: 'Kreativ-Freigaben', items: [
+          { text: 'Bühnenbild abgenommen', done: true },
+          { text: 'Kamerapositionen final', done: false },
+          { text: 'Licht-Stimmung Doors', done: false },
+        ] },
+        { id: 'b_lk1', type: 'link', x: 480, y: 300, w: 220, title: 'Referenz-Show 2025', url: 'vimeo.com/nordlicht/sommer25' },
+      ],
+      connections: [
+        { id: 'bc1', from: 'b_h', to: 'b_l1' },
+        { id: 'bc2', from: 'b_n1', to: 'b_c1' },
+        { id: 'bc3', from: 'b_n1', to: 'b_c2' },
+      ],
+    },
   },
   inventory: {
     nodes: [
@@ -334,3 +388,6 @@ export function computeReadiness(inv: { items: InventoryItem[]; nodes: StorageNo
 
 /** Verfügbare Projekte für den Projekt-Wechsler (Erweiterungspunkt). */
 export const PROJECTS: SuiteProject[] = [PROJECT]
+
+/** Leeres Board für den Standalone-Betrieb (ohne zugewiesenes Projekt). */
+export const emptyBoard = (): Board => ({ cards: [], connections: [] })

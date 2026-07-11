@@ -40,6 +40,7 @@
   --mod-cameras: #38bdf8;
   --mod-licht: #f5a623;
   --mod-overview: #5b8cf5;
+  --mod-board: #f472b6;
 
   /* Live-Akzent: folgt dem aktiven Modul (via [data-module]). */
   --av-accent: var(--mod-overview);
@@ -66,6 +67,7 @@
 [data-module='cameras'] { --av-accent: var(--mod-cameras); }
 [data-module='licht'] { --av-accent: var(--mod-licht); }
 [data-module='overview'] { --av-accent: var(--mod-overview); }
+[data-module='board'] { --av-accent: var(--mod-board); }
 
 /* ── Light-Theme ── */
 @media (prefers-color-scheme: light) {
@@ -89,6 +91,7 @@
     --mod-cameras: #0c82c4;
     --mod-licht: #bd7a12;
     --mod-overview: #2f6fe4;
+    --mod-board: #d1477f;
     --av-shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 8px 24px -18px rgba(24, 34, 54, 0.28);
     --av-shadow-pop: 0 24px 64px -28px rgba(24, 34, 54, 0.35);
     --av-shadow-float: 0 10px 30px -14px rgba(24, 34, 54, 0.3);
@@ -114,6 +117,7 @@
   --mod-cameras: #0c82c4;
   --mod-licht: #bd7a12;
   --mod-overview: #2f6fe4;
+  --mod-board: #d1477f;
   --av-shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 8px 24px -18px rgba(24, 34, 54, 0.28);
   --av-shadow-pop: 0 24px 64px -28px rgba(24, 34, 54, 0.35);
   --av-shadow-float: 0 10px 30px -14px rgba(24, 34, 54, 0.3);
@@ -138,6 +142,7 @@
   --mod-cameras: #38bdf8;
   --mod-licht: #f5a623;
   --mod-overview: #5b8cf5;
+  --mod-board: #f472b6;
 }
 
 /* ── Reset-Ergänzungen ── */

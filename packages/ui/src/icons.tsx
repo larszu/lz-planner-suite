@@ -29,6 +29,7 @@ export type IconName =
   | 'ruler'
   | 'rack'
   | 'modules'
+  | 'board'
 
 const PATHS: Record<IconName, string> = {
   raum: 'M3 10.5 12 4l9 6.5M5 9.5V20h14V9.5',
@@ -59,6 +60,7 @@ const PATHS: Record<IconName, string> = {
   ruler: 'M4 14 14 4l6 6L10 20Z M8 8l1.5 1.5M11 5l1.5 1.5M5 11l1.5 1.5',
   rack: 'M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM4 8.5h16M4 14h16M7.5 5.7v.5M7.5 11.2v.5M7.5 16.7v.5',
   modules: 'M4 4h7v7H4ZM13 4h7v7h-7ZM4 13h7v7H4ZM13 13h7v7h-7Z',
+  board: 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1ZM7 8.5h4.5v4H7ZM14 9h3.5M14 11.5h3.5M7 15.5h10',
 }
 
 /** Zwei Pfad-Icons, die aus mehreren Subpaths bestehen und `fill` brauchen. */

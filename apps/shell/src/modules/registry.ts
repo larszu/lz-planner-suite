@@ -1,6 +1,6 @@
 import type { IconName } from '@avplan/ui'
 
-export type ModuleId = 'overview' | 'signal' | 'cameras' | 'licht'
+export type ModuleId = 'overview' | 'signal' | 'cameras' | 'licht' | 'board'
 
 export interface ModuleTab {
   id: string
@@ -99,6 +99,21 @@ export const MODULES: ModuleDef[] = [
     ],
     libraryTabs: ['Fixtures', 'Gels', 'Presets'],
     eyebrow: 'Fixture · Licht',
+  },
+  {
+    id: 'board',
+    label: 'Board',
+    title: 'Kreativ-Board',
+    icon: 'board',
+    hotkey: '5',
+    accent: 'var(--mod-board)',
+    dataModule: 'board',
+    tabs: [
+      { id: 'board', label: 'Board' },
+      { id: 'moodboard', label: 'Moodboard' },
+    ],
+    libraryTabs: ['Karten', 'Vorlagen'],
+    eyebrow: 'Board · Kreativ',
   },
 ]
 

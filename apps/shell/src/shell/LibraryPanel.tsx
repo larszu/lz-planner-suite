@@ -60,6 +60,21 @@ const LIBRARY: Record<ModuleId, LibItem[]> = {
       { name: 'PAR 64 CP62', sub: '1000 W · MFL' },
     ] },
   ],
+  board: [
+    { group: 'Karten', entries: [
+      { name: 'Notiz', sub: 'Freier Text' },
+      { name: 'Look', sub: 'Referenz-/Moodboard-Kachel' },
+      { name: 'Farbe', sub: 'Farb-/Gel-Swatch' },
+      { name: 'To-do', sub: 'Checkliste' },
+      { name: 'Link', sub: 'Referenz-URL' },
+      { name: 'Überschrift', sub: 'Abschnitt' },
+    ] },
+    { group: 'Vorlagen', entries: [
+      { name: 'Moodboard', sub: 'Look & Feel der Show', star: true },
+      { name: 'Kreativ-Brief', sub: 'Ziel · Stil · Referenzen' },
+      { name: 'Storyboard', sub: 'Szenen-Abfolge' },
+    ] },
+  ],
 }
 
 const layersFor = (project: SuiteProject | null) => [

@@ -169,6 +169,43 @@ export function PropertiesPanel({
     )
   }
 
+  if (module.id === 'board') {
+    const board = project.show.board
+    const byType = board.cards.reduce<Record<string, number>>((acc, c) => {
+      acc[c.type] = (acc[c.type] ?? 0) + 1
+      return acc
+    }, {})
+    const TYPE_LABEL: Record<string, string> = {
+      heading: 'Überschriften', note: 'Notizen', link: 'Links', todo: 'To-dos', color: 'Farben', look: 'Looks',
+    }
+    return (
+      <div className="flex h-full flex-col bg-av-surface-1">
+        <Header eyebrow={module.eyebrow} title="Moodboard" sub="Look & Feel der Show" accent={accent} />
+        <div className="av-scroll flex-1 overflow-auto">
+          <Group title="Inhalt" icon="board">
+            <Field label="Karten">{board.cards.length}</Field>
+            <Field label="Verbindungen">{board.connections.length}</Field>
+            {Object.entries(byType).map(([t, n]) => (
+              <Field key={t} label={TYPE_LABEL[t] ?? t}>{n}</Field>
+            ))}
+          </Group>
+          <Group title="Bedienung" icon="wand" accent={accent}>
+            <p className="text-[12px] leading-relaxed text-av-text-muted">
+              Karten über die Werkzeugleiste hinzufügen, per Kopf ziehen, doppelklicken zum Bearbeiten.
+              Bei Auswahl erscheint rechts ein Handle — zu einer anderen Karte ziehen, um sie zu verbinden.
+            </p>
+          </Group>
+          <Group title="Kreativ → Technik" icon="light" accent="var(--mod-licht)">
+            <p className="text-[12px] leading-relaxed text-av-text-muted">
+              Die Look-Stimmung fließt in die Licht-Ebene, Referenzen in die Kamerapositionen. Das Board ist
+              die Vor-Produktionsebene vor den technischen Modulen.
+            </p>
+          </Group>
+        </div>
+      </div>
+    )
+  }
+
   // licht
   const fx = project.fixtures.find((f) => f.id === selectedId) ?? project.fixtures[2]
   return (
