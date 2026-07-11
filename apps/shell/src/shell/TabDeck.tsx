@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Badge, Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { emptyBoard, type SuiteProject } from '../data/project'
@@ -6,34 +7,41 @@ import { PlanPreview, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
 import { BoardCanvas } from './BoardCanvas'
 
+type ToolId = 'select' | 'pan'
+type OverlayId = 'fov' | 'heat'
+
 interface ToolbarButton {
   icon: Parameters<typeof Icon>[0]['name']
   label: string
-  active?: boolean
+  /** tool = Werkzeugmodus, overlay = Ein/Aus-Overlay, edit = im Planer bearbeiten. */
+  kind: 'tool' | 'overlay' | 'edit'
+  tool?: ToolId
+  overlay?: OverlayId
+  sep?: boolean
 }
 
 type CanvasModuleId = 'signal' | 'cameras' | 'licht'
 
 const TOOLBARS: Record<CanvasModuleId, ToolbarButton[]> = {
   signal: [
-    { icon: 'cursor', label: 'Auswahl', active: true },
-    { icon: 'hand', label: 'Verschieben' },
-    { icon: 'plus', label: 'Gerät platzieren' },
-    { icon: 'nodes', label: 'Auto-Route' },
+    { icon: 'cursor', label: 'Auswahl', kind: 'tool', tool: 'select' },
+    { icon: 'hand', label: 'Verschieben', kind: 'tool', tool: 'pan' },
+    { icon: 'plus', label: 'Gerät platzieren (im Planer)', kind: 'edit', sep: true },
+    { icon: 'nodes', label: 'Auto-Route (im Planer)', kind: 'edit' },
   ],
   cameras: [
-    { icon: 'cursor', label: 'Auswahl', active: true },
-    { icon: 'hand', label: 'Verschieben' },
-    { icon: 'camera', label: 'Kamera platzieren' },
-    { icon: 'ruler', label: 'Messen' },
-    { icon: 'eye', label: 'FOV anzeigen', active: true },
+    { icon: 'cursor', label: 'Auswahl', kind: 'tool', tool: 'select' },
+    { icon: 'hand', label: 'Verschieben', kind: 'tool', tool: 'pan' },
+    { icon: 'camera', label: 'Kamera platzieren (im Planer)', kind: 'edit', sep: true },
+    { icon: 'ruler', label: 'Messen (im Planer)', kind: 'edit' },
+    { icon: 'eye', label: 'FOV anzeigen', kind: 'overlay', overlay: 'fov' },
   ],
   licht: [
-    { icon: 'cursor', label: 'Auswahl', active: true },
-    { icon: 'hand', label: 'Verschieben' },
-    { icon: 'light', label: 'Fixture platzieren' },
-    { icon: 'ruler', label: 'Messen' },
-    { icon: 'eye', label: 'Heatmap', active: true },
+    { icon: 'cursor', label: 'Auswahl', kind: 'tool', tool: 'select' },
+    { icon: 'hand', label: 'Verschieben', kind: 'tool', tool: 'pan' },
+    { icon: 'light', label: 'Fixture platzieren (im Planer)', kind: 'edit', sep: true },
+    { icon: 'ruler', label: 'Messen (im Planer)', kind: 'edit' },
+    { icon: 'eye', label: 'Heatmap', kind: 'overlay', overlay: 'heat' },
   ],
 }
 
@@ -49,6 +57,7 @@ export function TabDeck({
   onSelect,
   onNavigate,
   onAssign,
+  zoom,
   plannerSettings,
   onPlannerHistory,
 }: {
@@ -63,6 +72,8 @@ export function TabDeck({
   onSelect: (id: string) => void
   onNavigate: (id: ModuleId) => void
   onAssign: () => void
+  /** Zoom der Vorschau in Prozent. */
+  zoom: number
   /** Suite-Einstellungen für den eingebetteten Planer (nur App-Module). */
   plannerSettings?: Record<string, unknown>
   /** Undo/Redo-Zustand des eingebetteten Planers zurück an die Shell. */
@@ -71,12 +82,16 @@ export function TabDeck({
   const isOverview = module.id === 'overview'
   const isBoard = module.id === 'board'
 
+  // Werkzeug-/Overlay-Zustand der Canvas-Vorschau.
+  const [tool, setTool] = useState<ToolId>('select')
+  const [showFov, setShowFov] = useState(true)
+  const [showHeat, setShowHeat] = useState(true)
+
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       {/* Tab-Kopf */}
       <div className="flex items-center gap-2 border-b border-av-border-muted bg-av-surface-1 px-3 py-2">
         <Tabs items={module.tabs} active={activeTab} onSelect={onTab} />
-        <button type="button" className="av-icon-btn av-focus" aria-label="Neuer Tab"><Icon name="plus" size={16} /></button>
         <div className="ml-auto flex items-center gap-2">
           {module.planner && (
             <Button variant={mounted ? 'subtle' : 'primary'} size="sm" onClick={onToggleMount}>
@@ -110,28 +125,67 @@ export function TabDeck({
               {/* schwebende Werkzeugleiste */}
               <div className="pointer-events-auto absolute left-1/2 top-4 z-10 -translate-x-1/2">
                 <div className="av-toolbar">
-                  {TOOLBARS[module.id as CanvasModuleId].map((b, i) => (
-                    <span key={b.label} className="contents">
-                      {i === 2 && <span className="av-toolbar-sep" />}
-                      <button type="button" className="av-toolbar-btn av-focus" data-active={b.active ? 'true' : undefined} aria-label={b.label} title={b.label}>
-                        <Icon name={b.icon} size={16} />
-                      </button>
-                    </span>
-                  ))}
+                  {TOOLBARS[module.id as CanvasModuleId].map((b) => {
+                    const active =
+                      b.kind === 'tool'
+                        ? tool === b.tool
+                        : b.kind === 'overlay'
+                          ? b.overlay === 'fov'
+                            ? showFov
+                            : showHeat
+                          : false
+                    const onClick = () => {
+                      if (b.kind === 'tool' && b.tool) setTool(b.tool)
+                      else if (b.kind === 'overlay') {
+                        if (b.overlay === 'fov') setShowFov((v) => !v)
+                        else setShowHeat((v) => !v)
+                      } else if (b.kind === 'edit') onToggleMount()
+                    }
+                    return (
+                      <span key={b.label} className="contents">
+                        {b.sep && <span className="av-toolbar-sep" />}
+                        <button
+                          type="button"
+                          className="av-toolbar-btn av-focus"
+                          data-active={active ? 'true' : undefined}
+                          aria-label={b.label}
+                          aria-pressed={b.kind !== 'edit' ? active : undefined}
+                          title={b.label}
+                          onClick={onClick}
+                        >
+                          <Icon name={b.icon} size={16} />
+                        </button>
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
 
-              {/* Modul-Fläche */}
-              <div className="h-full w-full p-6 pt-16">
+              {/* Modul-Fläche (zoombar) */}
+              <div
+                className="h-full w-full p-6 pt-16"
+                style={{
+                  transform: `scale(${zoom / 100})`,
+                  transformOrigin: 'center top',
+                  cursor: tool === 'pan' ? 'grab' : 'default',
+                }}
+              >
                 {module.id === 'signal' && <SignalPreview project={project} selectedId={selectedId} onSelect={onSelect} />}
                 {(module.id === 'cameras' || module.id === 'licht') && (
-                  <PlanPreview project={project} mode={module.id === 'cameras' ? 'cameras' : 'licht'} selectedId={selectedId} onSelect={onSelect} />
+                  <PlanPreview
+                    project={project}
+                    mode={module.id === 'cameras' ? 'cameras' : 'licht'}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    showFov={showFov}
+                    showHeat={showHeat}
+                  />
                 )}
               </div>
 
               <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-av-control border border-av-border bg-av-surface-2/90 px-3 py-1.5 text-[11.5px] text-av-text-muted">
                 {project
-                  ? <>Übersicht der Shell — <span className="text-av-text-secondary">„Im Planer öffnen"</span> lädt {module.title} zum Bearbeiten</>
+                  ? <>Vorschau der Shell — <span className="text-av-text-secondary">„Im Planer öffnen"</span> lädt {module.title} zum Bearbeiten</>
                   : <>Kein Projekt — <span className="text-av-text-secondary">Modul eigenständig nutzbar</span></>}
               </div>
             </div>

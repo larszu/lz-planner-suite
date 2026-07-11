@@ -94,23 +94,28 @@ const DOT: Record<string, string> = {
 }
 
 export function LibraryPanel({ module, project }: { module: ModuleDef; project: SuiteProject | null }) {
+  const groups = LIBRARY[module.id]
+  const tabNames = ['Alle', ...groups.map((g) => g.group)]
   const [tab, setTab] = useState(0)
   const [query, setQuery] = useState('')
-  const groups = LIBRARY[module.id]
+  const [selected, setSelected] = useState<string | null>(null)
+  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(() => new Set())
   const q = query.trim().toLowerCase()
   const layers = layersFor(project)
 
+  const shownGroups = tab === 0 ? groups : [groups[tab - 1]].filter(Boolean)
+
   return (
     <div className="flex h-full flex-col bg-av-surface-1">
-      <div className="flex items-center gap-1 border-b border-av-border-muted px-2" role="tablist" aria-label="Bibliothek">
-        {module.libraryTabs.map((t, i) => (
+      <div className="flex items-center gap-1 overflow-x-auto border-b border-av-border-muted px-2" role="tablist" aria-label="Bibliothek">
+        {tabNames.map((t, i) => (
           <button
             key={t}
             type="button"
             role="tab"
             aria-selected={i === tab}
             onClick={() => setTab(i)}
-            className="av-focus border-b-2 px-2.5 py-2.5 text-[13px] font-medium transition-colors"
+            className="av-focus whitespace-nowrap border-b-2 px-2.5 py-2.5 text-[13px] font-medium transition-colors"
             style={{
               borderColor: i === tab ? 'var(--av-accent)' : 'transparent',
               color: i === tab ? 'var(--av-text)' : 'var(--av-text-muted)',
@@ -135,31 +140,41 @@ export function LibraryPanel({ module, project }: { module: ModuleDef; project: 
       </div>
 
       <div className="av-scroll flex-1 overflow-auto px-2 pb-2">
-        {groups.map((g) => {
+        {shownGroups.map((g) => {
           const entries = g.entries.filter((e) => !q || e.name.toLowerCase().includes(q) || e.sub.toLowerCase().includes(q))
           if (entries.length === 0) return null
           return (
             <div key={g.group} className="mb-3">
               <div className="px-1 py-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-av-text-faint">{g.group}</div>
               <div className="flex flex-col gap-1">
-                {entries.map((e) => (
-                  <button
-                    key={e.name}
-                    type="button"
-                    className="av-focus group flex items-start gap-2.5 rounded-av-control border border-transparent bg-av-surface-2 px-2.5 py-2 text-left transition-colors hover:border-av-border"
-                  >
-                    <span className="mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-md bg-av-surface-3 text-av-text-muted">
-                      <Icon name={module.icon} size={15} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="truncate text-[13px] font-medium text-av-text">{e.name}</span>
-                        {e.star && <Icon name="wand" size={12} style={{ color: 'var(--av-warn)' }} />}
+                {entries.map((e) => {
+                  const isSel = selected === e.name
+                  return (
+                    <button
+                      key={e.name}
+                      type="button"
+                      aria-pressed={isSel}
+                      onClick={() => setSelected(isSel ? null : e.name)}
+                      className="av-focus group flex items-start gap-2.5 rounded-av-control border bg-av-surface-2 px-2.5 py-2 text-left transition-colors hover:border-av-border"
+                      style={{
+                        borderColor: isSel ? 'var(--av-accent)' : 'transparent',
+                        background: isSel ? 'color-mix(in srgb, var(--av-accent) 12%, var(--av-surface-2))' : undefined,
+                      }}
+                    >
+                      <span className="mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-md bg-av-surface-3 text-av-text-muted">
+                        <Icon name={module.icon} size={15} />
                       </span>
-                      <span className="block truncate text-[11px] text-av-text-muted">{e.sub}</span>
-                    </span>
-                  </button>
-                ))}
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="truncate text-[13px] font-medium text-av-text">{e.name}</span>
+                          {e.star && <Icon name="wand" size={12} style={{ color: 'var(--av-warn)' }} />}
+                        </span>
+                        <span className="block truncate text-[11px] text-av-text-muted">{e.sub}</span>
+                      </span>
+                      {isSel && <Icon name="check" size={14} style={{ color: 'var(--av-accent)', marginTop: 4 }} />}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )
@@ -173,14 +188,33 @@ export function LibraryPanel({ module, project }: { module: ModuleDef; project: 
           <Badge tone="accent" className="ml-auto">Fokus an</Badge>
         </div>
         <div className="flex flex-col">
-          {layers.map((l) => (
-            <div key={l.name} className="flex items-center gap-2 rounded px-1 py-1 text-[12px] text-av-text-secondary">
-              <span className="h-2 w-2 flex-none rounded-full" style={{ background: DOT[l.tone] }} />
-              <span className="flex-1 truncate">{l.name}</span>
-              <span className="av-num text-av-text-faint">{l.count}</span>
-              <Icon name="eye" size={13} style={{ color: 'var(--av-text-faint)' }} />
-            </div>
-          ))}
+          {layers.map((l) => {
+            const hidden = hiddenLayers.has(l.name)
+            return (
+              <div key={l.name} className="flex items-center gap-2 rounded px-1 py-1 text-[12px] text-av-text-secondary" style={{ opacity: hidden ? 0.45 : 1 }}>
+                <span className="h-2 w-2 flex-none rounded-full" style={{ background: DOT[l.tone] }} />
+                <span className="flex-1 truncate" style={{ textDecoration: hidden ? 'line-through' : undefined }}>{l.name}</span>
+                <span className="av-num text-av-text-faint">{l.count}</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!hidden}
+                  aria-label={`Ebene ${l.name} ${hidden ? 'einblenden' : 'ausblenden'}`}
+                  className="av-focus grid h-5 w-5 place-items-center rounded hover:bg-av-surface-3"
+                  onClick={() =>
+                    setHiddenLayers((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(l.name)) next.delete(l.name)
+                      else next.add(l.name)
+                      return next
+                    })
+                  }
+                >
+                  <Icon name="eye" size={13} style={{ color: hidden ? 'var(--av-text-faint)' : 'var(--av-text-muted)' }} />
+                </button>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

@@ -112,11 +112,17 @@ export function PlanPreview({
   mode,
   selectedId,
   onSelect,
+  showFov = true,
+  showHeat = true,
 }: {
   project: SuiteProject | null
   mode: 'cameras' | 'licht'
   selectedId: string | null
   onSelect: (id: string) => void
+  /** Kamera-FOV-Kegel ein-/ausblenden. */
+  showFov?: boolean
+  /** Licht-Heatmap ein-/ausblenden. */
+  showHeat?: boolean
 }) {
   if (!project) return <StandaloneHint label={mode === 'cameras' ? 'Der Kamera-Plan' : 'Der Licht-Plan'} />
   const { hall, stage } = project
@@ -137,6 +143,13 @@ export function PlanPreview({
 
   return (
     <svg viewBox={`0 0 1000 ${vbH}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <radialGradient id="lp-heat" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--mod-licht)" stopOpacity="0.5" />
+          <stop offset="60%" stopColor="var(--av-warn)" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="var(--av-warn)" stopOpacity="0" />
+        </radialGradient>
+      </defs>
       {gridX.map((x) => (
         <line key={`gx${x}`} x1={mx(x)} y1={PLAN_PAD} x2={mx(x)} y2={PLAN_PAD + innerH} className="stroke-[var(--av-border-muted)]" strokeWidth={0.75} />
       ))}
@@ -150,14 +163,14 @@ export function PlanPreview({
       <text x={mx(stage.x) + 8} y={my(stage.y) + 18} className="fill-[var(--mod-licht)]" fontSize={12} fontWeight={600}>Bühne {stage.w}×{stage.h} m</text>
 
       {mode === 'cameras'
-        ? project.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} />)
-        : project.fixtures.map((fx) => <FixtureMark key={fx.id} fx={fx} mx={mx} my={my} stageCx={stageCx} stageCy={stageCy} active={fx.id === selectedId} onSelect={onSelect} />)}
+        ? project.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} showFov={showFov} />)
+        : project.fixtures.map((fx) => <FixtureMark key={fx.id} fx={fx} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={fx.id === selectedId} onSelect={onSelect} showHeat={showHeat} />)}
     </svg>
   )
 }
 
 function CameraMark({
-  cam, mx, my, scale, stageCx, stageCy, active, onSelect,
+  cam, mx, my, scale, stageCx, stageCy, active, onSelect, showFov,
 }: {
   cam: Camera
   mx: (x: number) => number
@@ -167,6 +180,7 @@ function CameraMark({
   stageCy: number
   active: boolean
   onSelect: (id: string) => void
+  showFov: boolean
 }) {
   const cx = mx(cam.x)
   const cy = my(cam.y)
@@ -178,7 +192,7 @@ function CameraMark({
   const color = 'var(--mod-cameras)'
   return (
     <g onClick={() => onSelect(cam.id)} style={{ cursor: 'pointer' }}>
-      <path d={`M ${cx} ${cy} L ${p1[0]} ${p1[1]} L ${p2[0]} ${p2[1]} Z`} fill={color} opacity={active ? 0.24 : 0.12} />
+      {showFov && <path d={`M ${cx} ${cy} L ${p1[0]} ${p1[1]} L ${p2[0]} ${p2[1]} Z`} fill={color} opacity={active ? 0.24 : 0.12} />}
       <circle cx={cx} cy={cy} r={active ? 8 : 6} fill={color} opacity={active ? 1 : 0.85} />
       <text x={cx} y={cy + 22} textAnchor="middle" className="fill-[var(--av-text-muted)]" fontSize={11} fontFamily="var(--av-font-mono)">{cam.name} · {cam.focalMm}mm</text>
     </g>
@@ -186,23 +200,28 @@ function CameraMark({
 }
 
 function FixtureMark({
-  fx, mx, my, stageCx, stageCy, active, onSelect,
+  fx, mx, my, scale, stageCx, stageCy, active, onSelect, showHeat,
 }: {
   fx: Fixture
   mx: (x: number) => number
   my: (y: number) => number
+  scale: number
   stageCx: number
   stageCy: number
   active: boolean
   onSelect: (id: string) => void
+  showHeat: boolean
 }) {
   const cx = mx(fx.x)
   const cy = my(fx.y)
   const tx = mx(stageCx)
   const ty = my(stageCy)
   const color = 'var(--mod-licht)'
+  // Heatmap: warmer Lichtpool am Ziel, Intensität steigt mit Dimmer-Wert.
+  const heatR = (1.2 + (fx.dimmerPct / 100) * 1.4) * scale
   return (
     <g onClick={() => onSelect(fx.id)} style={{ cursor: 'pointer' }}>
+      {showHeat && <circle cx={tx} cy={ty} r={heatR} fill="url(#lp-heat)" style={{ pointerEvents: 'none' }} />}
       <line x1={cx} y1={cy} x2={tx} y2={ty} stroke={color} strokeWidth={1} strokeDasharray="3 4" opacity={active ? 0.6 : 0.25} />
       <rect x={cx - 6} y={cy - 6} width={12} height={12} rx={2} transform={`rotate(45 ${cx} ${cy})`} fill={color} opacity={active ? 1 : 0.85} stroke={active ? 'var(--av-text)' : 'none'} strokeWidth={1} />
       <text x={cx} y={cy - 12} textAnchor="middle" className="fill-[var(--av-text-muted)]" fontSize={10} fontFamily="var(--av-font-mono)">{fx.name}</text>

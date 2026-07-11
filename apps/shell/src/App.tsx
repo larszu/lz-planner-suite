@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   CommandPalette,
   ModuleRail,
@@ -20,6 +20,7 @@ import {
 import { sendPlannerCommand } from './embed/plannerBridge'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
+import { ToastHost, type ToastMsg } from './shell/Toast'
 import {
   loadAppSettings,
   saveAppSettings,
@@ -65,6 +66,15 @@ export function App() {
   // Undo/Redo-Zustand des gerade geöffneten Planers (per Bridge gemeldet).
   const [plannerHistory, setPlannerHistory] = useState({ canUndo: false, canRedo: false })
 
+  // Transiente Rückmeldungen (Speichern-Bestätigung, Verwerfen mit Undo).
+  const toastId = useRef(0)
+  const [toasts, setToasts] = useState<ToastMsg[]>([])
+  const pushToast = useCallback((text: string, opts: Partial<Omit<ToastMsg, 'id' | 'text'>> = {}) => {
+    const id = ++toastId.current
+    setToasts((t) => [...t, { id, text, ...opts }])
+  }, [])
+  const dismissToast = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), [])
+
   // Projektwechsel mit Historie (assign/clear/neu/öffnen).
   const commitProject = useCallback((next: SuiteProject | null) => {
     setHistory((h) => ({ past: [...h.past, h.present], present: next, future: [] }))
@@ -90,24 +100,40 @@ export function App() {
     const saved = { ...project, meta: { ...project.meta, saved: true } }
     saveProjectLocal(saved)
     setHistory((h) => ({ ...h, present: saved }))
-  }, [project])
+    pushToast('Projekt gespeichert', { tone: 'ok' })
+  }, [project, pushToast])
   const saveProjectAs = useCallback(() => {
     if (!project) return
     downloadProject(project)
     const saved = { ...project, meta: { ...project.meta, saved: true } }
     saveProjectLocal(saved)
     setHistory((h) => ({ ...h, present: saved }))
-  }, [project])
-  const newProject = useCallback(() => commitProject(blankProject()), [commitProject])
+    pushToast('Projekt exportiert & gespeichert', { tone: 'ok' })
+  }, [project, pushToast])
+
+  // Projektwechsel mit Schutz vor Datenverlust: bei ungespeichertem Stand eine
+  // Rückmeldung mit „Rückgängig" (nutzt die Projekt-Historie).
+  const switchProject = useCallback(
+    (next: SuiteProject | null) => {
+      if (project && !project.meta.saved) {
+        pushToast('Ungespeicherte Änderungen verworfen', { tone: 'warn', actionLabel: 'Rückgängig', onAction: undo })
+      }
+      commitProject(next)
+    },
+    [project, pushToast, undo, commitProject],
+  )
+  const newProject = useCallback(() => switchProject(blankProject()), [switchProject])
   const importProject = useCallback(
     (text: string) => {
       try {
-        commitProject(parseProject(text))
+        switchProject(parseProject(text))
       } catch (e) {
-        window.alert(`Projekt konnte nicht geladen werden: ${e instanceof Error ? e.message : 'Unbekannter Fehler'}`)
+        pushToast(`Projekt konnte nicht geladen werden: ${e instanceof Error ? e.message : 'Unbekannter Fehler'}`, {
+          tone: 'warn',
+        })
       }
     },
-    [commitProject],
+    [switchProject, pushToast],
   )
 
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
@@ -129,6 +155,8 @@ export function App() {
   const [libraryOpen, setLibraryOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // Zoom der Canvas-Vorschau (Signal/Kameras/Licht) — via Statusleiste steuerbar.
+  const [zoom, setZoom] = useState(100)
   // Suite-weite App-Einstellungen (Quelle der Wahrheit) — persistiert und in den
   // jeweils geöffneten Planer per Bridge geschoben.
   const [appSettings, setAppSettings] = useState(loadAppSettings)
@@ -214,8 +242,8 @@ export function App() {
         onToggleTheme={toggle}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenPalette={() => setPaletteOpen(true)}
-        onAssign={() => commitProject(PROJECT)}
-        onClear={() => commitProject(null)}
+        onAssign={() => switchProject(PROJECT)}
+        onClear={() => switchProject(null)}
         onNew={newProject}
         onSave={saveProject}
         onSaveAs={saveProjectAs}
@@ -238,7 +266,7 @@ export function App() {
 
         {libraryOpen && (
           <aside className="flex w-64 flex-none flex-col border-r border-av-border-muted" aria-label="Bibliothek und Ebenen">
-            <LibraryPanel module={mod} project={project} />
+            <LibraryPanel key={mod.id} module={mod} project={project} />
           </aside>
         )}
 
@@ -254,7 +282,8 @@ export function App() {
             selectedId={selected[moduleId]}
             onSelect={selectItem}
             onNavigate={goToModule}
-            onAssign={() => commitProject(PROJECT)}
+            onAssign={() => switchProject(PROJECT)}
+            zoom={zoom}
             plannerSettings={
               moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht'
                 ? appSettings[moduleId]
@@ -269,7 +298,13 @@ export function App() {
         </aside>
       </div>
 
-      <StatusBar module={moduleId} project={project} zoom={mod.id === 'signal' ? 74 : 82} />
+      <StatusBar
+        module={moduleId}
+        project={project}
+        zoom={zoom}
+        onZoom={(z) => setZoom(Math.max(50, Math.min(200, z)))}
+        onNavigate={goToModule}
+      />
 
       <CommandPalette
         open={paletteOpen}
@@ -277,6 +312,8 @@ export function App() {
         commands={commands}
         context={{ moduleId }}
       />
+
+      <ToastHost toasts={toasts} onDismiss={dismissToast} />
 
       <SettingsModal
         open={settingsOpen}
