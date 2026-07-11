@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Badge, Button, Icon } from '@avplan/ui'
-import { PROJECT, computeCounts } from '../data/project'
+import { computeCounts, type SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -39,20 +39,38 @@ function Header({ eyebrow, title, sub, accent }: { eyebrow: string; title: strin
 
 export function PropertiesPanel({
   module,
+  project,
   selectedId,
   onNavigate,
 }: {
   module: ModuleDef
+  project: SuiteProject | null
   selectedId: string | null
   onNavigate: (id: ModuleId) => void
 }) {
   const accent = module.accent
 
-  if (module.id === 'overview') {
-    const c = computeCounts(PROJECT)
+  if (!project) {
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
-        <Header eyebrow="Projekt · Übersicht" title={PROJECT.meta.name} sub={`${PROJECT.meta.venue} · Version ${PROJECT.meta.version}`} accent={accent} />
+        <Header eyebrow={module.eyebrow} title={module.title} sub="Eigenständiger Modus" accent={accent} />
+        <div className="av-scroll flex-1 overflow-auto">
+          <Group title="Kein Projekt" icon="modules">
+            <p className="text-[12px] leading-relaxed text-av-text-muted">
+              Dieses Modul ist ohne zugewiesenes Projekt nutzbar. Öffne den Planer zum Bearbeiten oder
+              weise oben ein Projekt zu, um Auswahl-Details, Plan-Checks und Venue-Verknüpfungen zu sehen.
+            </p>
+          </Group>
+        </div>
+      </div>
+    )
+  }
+
+  if (module.id === 'overview') {
+    const c = computeCounts(project)
+    return (
+      <div className="flex h-full flex-col bg-av-surface-1">
+        <Header eyebrow="Projekt · Übersicht" title={project.meta.name} sub={`${project.meta.venue} · Version ${project.meta.version}`} accent={accent} />
         <div className="av-scroll flex-1 overflow-auto">
           <Group title="Umfang" icon="modules">
             <Field label="Geräte">{c.devices}</Field>
@@ -79,9 +97,9 @@ export function PropertiesPanel({
   }
 
   if (module.id === 'signal') {
-    const cable = PROJECT.cables.find((c) => c.id === selectedId) ?? PROJECT.cables[0]
-    const from = PROJECT.nodes.find((n) => n.id === cable.from)
-    const to = PROJECT.nodes.find((n) => n.id === cable.to)
+    const cable = project.cables.find((c) => c.id === selectedId) ?? project.cables[0]
+    const from = project.nodes.find((n) => n.id === cable.from)
+    const to = project.nodes.find((n) => n.id === cable.to)
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
         <Header eyebrow={module.eyebrow} title={`${from?.name.split(' — ')[0]} → ${to?.name.split(' ')[0]} In`} sub={`${cable.type} · BNC ↔ BNC · Layer Video`} accent={accent} />
@@ -118,7 +136,7 @@ export function PropertiesPanel({
   }
 
   if (module.id === 'cameras') {
-    const cam = PROJECT.cameras.find((c) => c.id === selectedId) ?? PROJECT.cameras[1]
+    const cam = project.cameras.find((c) => c.id === selectedId) ?? project.cameras[1]
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
         <Header eyebrow={module.eyebrow} title={`${cam.name} — ${cam.model}`} sub={`${cam.lens}`} accent={accent} />
@@ -152,7 +170,7 @@ export function PropertiesPanel({
   }
 
   // licht
-  const fx = PROJECT.fixtures.find((f) => f.id === selectedId) ?? PROJECT.fixtures[2]
+  const fx = project.fixtures.find((f) => f.id === selectedId) ?? project.fixtures[2]
   return (
     <div className="flex h-full flex-col bg-av-surface-1">
       <Header eyebrow={module.eyebrow} title={`${fx.name} — ${fx.model}`} sub={`Truss 1 · Purpose: ${fx.purpose}`} accent={accent} />

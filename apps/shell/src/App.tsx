@@ -9,7 +9,7 @@ import {
 } from '@avplan/ui'
 import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, type ModuleId } from './modules/registry'
-import { PROJECT } from './data/project'
+import { PROJECT, type SuiteProject } from './data/project'
 import { Topbar } from './shell/Topbar'
 import { LibraryPanel } from './shell/LibraryPanel'
 import { PropertiesPanel } from './shell/PropertiesPanel'
@@ -36,6 +36,8 @@ const DEFAULT_TAB: Record<ModuleId, string> = {
 
 export function App() {
   const { theme, toggle } = useTheme()
+  // Zugewiesenes Projekt oder null — ohne Projekt bleiben alle Module einzeln nutzbar.
+  const [project, setProject] = useState<SuiteProject | null>(PROJECT)
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
   const [tabs, setTabs] = useState<Record<ModuleId, string>>(DEFAULT_TAB)
   const [selected, setSelected] = useState<Record<ModuleId, string | null>>({
@@ -87,7 +89,12 @@ export function App() {
 
   return (
     <div data-module={mod.dataModule} className="flex h-full flex-col bg-av-bg text-av-text">
-      <Topbar meta={PROJECT.meta} onOpenPalette={() => setPaletteOpen(true)} />
+      <Topbar
+        project={project}
+        onOpenPalette={() => setPaletteOpen(true)}
+        onAssign={() => setProject(PROJECT)}
+        onClear={() => setProject(null)}
+      />
 
       <div className="flex min-h-0 flex-1">
         <ModuleRail
@@ -101,7 +108,7 @@ export function App() {
 
         {libraryOpen && (
           <aside className="flex w-64 flex-none flex-col border-r border-av-border-muted" aria-label="Bibliothek und Ebenen">
-            <LibraryPanel module={mod} />
+            <LibraryPanel module={mod} project={project} />
           </aside>
         )}
 
@@ -113,18 +120,20 @@ export function App() {
             mounted={mounted[moduleId]}
             onToggleMount={toggleMount}
             theme={theme}
+            project={project}
             selectedId={selected[moduleId]}
             onSelect={selectItem}
             onNavigate={goToModule}
+            onAssign={() => setProject(PROJECT)}
           />
         </main>
 
         <aside className="hidden w-80 flex-none border-l border-av-border-muted lg:block" aria-label="Eigenschaften">
-          <PropertiesPanel module={mod} selectedId={selected[moduleId]} onNavigate={goToModule} />
+          <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} />
         </aside>
       </div>
 
-      <StatusBar module={moduleId} zoom={mod.id === 'signal' ? 74 : 82} />
+      <StatusBar module={moduleId} project={project} zoom={mod.id === 'signal' ? 74 : 82} />
 
       <CommandPalette
         open={paletteOpen}

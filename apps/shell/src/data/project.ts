@@ -6,11 +6,75 @@
  * eigentlichen Projektdaten leben in den eingebetteten Planern.
  */
 
+import { CONTAINER_KINDS, type InventoryItem, type StorageNode } from '@avplan/inventory-core'
+
 export interface ProjectMeta {
   name: string
   venue: string
   version: number
   saved: boolean
+}
+
+/** Produktionsphase — grob wie in Rentman/Production Planner (Status der Show). */
+export type ShowPhase = 'planning' | 'setup' | 'show' | 'teardown'
+
+export type Department = 'video' | 'light' | 'audio' | 'prod'
+
+/** Ein Punkt im Tagesablauf (Run of Show / Day Sheet). */
+export interface ScheduleItem {
+  time: string
+  title: string
+  dept: Department | 'all'
+}
+
+/** Crew-Mitglied mit Gewerk, Call-Time und Status (Production Planner/Rentman). */
+export interface CrewMember {
+  name: string
+  role: string
+  dept: Department
+  call: string
+  status: 'confirmed' | 'pending'
+}
+
+/** Budgetzeile: geschätzt vs. tatsächlich pro Kategorie (Production Planner). */
+export interface BudgetLine {
+  category: string
+  estimatedEur: number
+  actualEur: number
+}
+
+export interface LogisticsInfo {
+  vehicles: { label: string; detail: string }[]
+  loadIn: string
+  distanceKm: number
+}
+
+export interface Contact {
+  name: string
+  role: string
+  org: string
+  phone: string
+}
+
+export interface ProjectTask {
+  title: string
+  done: boolean
+  due?: string
+  owner?: string
+}
+
+/** Angereicherte Show-Details fürs Übersichts-Dashboard. */
+export interface ShowDetails {
+  dateLabel: string
+  phase: ShowPhase
+  /** Planungsfortschritt 0..1. */
+  progress: number
+  schedule: ScheduleItem[]
+  crew: CrewMember[]
+  budget: BudgetLine[]
+  logistics: LogisticsInfo
+  contacts: Contact[]
+  tasks: ProjectTask[]
 }
 
 export interface Camera {
@@ -69,6 +133,9 @@ export interface SuiteProject {
   /** Bühnenmaße (Meter) für die Plan-Vorschau. */
   stage: { x: number; y: number; w: number; h: number }
   hall: { w: number; h: number }
+  show: ShowDetails
+  /** Kleiner Lager-Ausschnitt (via @avplan/inventory-core) für den Pack-Status. */
+  inventory: { items: InventoryItem[]; nodes: StorageNode[] }
 }
 
 export const PROJECT: SuiteProject = {
@@ -104,6 +171,70 @@ export const PROJECT: SuiteProject = {
     { id: 'net04', label: 'N-004 · Cam-Ctrl', type: 'Cat6A', layer: 'net', lengthM: 45, from: 'n_cam1', to: 'n_hub' },
     { id: 'dmx03', label: 'D-003 · Dimmer A', type: 'DMX512', layer: 'dmx', lengthM: 25, from: 'n_dimmer', to: 'n_foh' },
   ],
+  show: {
+    dateLabel: 'Sa 18. Juli 2026',
+    phase: 'setup',
+    progress: 0.72,
+    schedule: [
+      { time: '08:00', title: 'Get-in / Anlieferung', dept: 'all' },
+      { time: '09:00', title: 'Rigging & Truss', dept: 'light' },
+      { time: '10:30', title: 'Strom & DMX-Patch', dept: 'light' },
+      { time: '11:00', title: 'SDI-Verkabelung', dept: 'video' },
+      { time: '13:00', title: 'Kamera-Check & Whitebalance', dept: 'video' },
+      { time: '14:30', title: 'Soundcheck', dept: 'audio' },
+      { time: '16:00', title: 'Doors', dept: 'prod' },
+      { time: '17:00', title: 'Show', dept: 'prod' },
+      { time: '19:30', title: 'Load-out', dept: 'all' },
+    ],
+    crew: [
+      { name: 'Lars Zumpe', role: 'Projektleitung', dept: 'prod', call: '08:00', status: 'confirmed' },
+      { name: 'M. Berg', role: 'Video-Engineer', dept: 'video', call: '08:00', status: 'confirmed' },
+      { name: 'S. Klein', role: 'Kameramann', dept: 'video', call: '12:00', status: 'confirmed' },
+      { name: 'T. Wolf', role: 'Lichttechnik', dept: 'light', call: '09:00', status: 'confirmed' },
+      { name: 'A. Roth', role: 'FOH / Ton', dept: 'audio', call: '10:00', status: 'pending' },
+      { name: 'J. Frei', role: 'Rigging', dept: 'light', call: '08:00', status: 'confirmed' },
+    ],
+    budget: [
+      { category: 'Video', estimatedEur: 8400, actualEur: 8120 },
+      { category: 'Licht', estimatedEur: 5200, actualEur: 5460 },
+      { category: 'Ton', estimatedEur: 3100, actualEur: 2980 },
+      { category: 'Rigging', estimatedEur: 1800, actualEur: 1800 },
+      { category: 'Transport', estimatedEur: 1200, actualEur: 1340 },
+      { category: 'Crew', estimatedEur: 6400, actualEur: 6100 },
+    ],
+    logistics: {
+      vehicles: [
+        { label: '7,5 t LKW', detail: 'Video + Rigging' },
+        { label: 'Sprinter', detail: 'Licht + Kabel' },
+      ],
+      loadIn: '08:00',
+      distanceKm: 42,
+    },
+    contacts: [
+      { name: 'H. Vogt', role: 'Haustechnik', org: 'Halle A', phone: '+49 30 1234-56' },
+      { name: 'Nordlicht Events', role: 'Auftraggeber', org: 'Produktion', phone: '+49 40 9876-10' },
+    ],
+    tasks: [
+      { title: 'CAM 4 verkabeln', done: false, due: 'Do', owner: 'M. Berg' },
+      { title: 'Patch-Sheet finalisieren', done: false, due: 'Fr', owner: 'T. Wolf' },
+      { title: 'Rentman-Kabelmengen zurücksynchen', done: false, owner: 'Lars Z.' },
+      { title: 'Rigging-Plan freigegeben', done: true },
+    ],
+  },
+  inventory: {
+    nodes: [
+      { id: 'case1', name: 'Case 1 — Funkstrecken', kind: 'case', createdAt: 't', updatedAt: 't' },
+      { id: 'case2', name: 'Case 2 — SDI-Kabel', kind: 'case', createdAt: 't', updatedAt: 't' },
+      { id: 'shelfA', name: 'Regal A3', kind: 'shelf', createdAt: 't', updatedAt: 't' },
+    ],
+    items: [
+      { id: 'i1', model: 'Shure ULXD2', quantity: 4, locationId: 'case1', createdAt: 't', updatedAt: 't' },
+      { id: 'i2', model: '12G-SDI 50 m', quantity: 8, locationId: 'case2', createdAt: 't', updatedAt: 't' },
+      { id: 'i3', model: 'ETC Source Four 26°', quantity: 6, locationId: 'case2', createdAt: 't', updatedAt: 't' },
+      { id: 'i4', model: 'KL Panel XL', quantity: 2, locationId: 'shelfA', createdAt: 't', updatedAt: 't' },
+      { id: 'i5', model: 'Stativ-Set', quantity: 3, createdAt: 't', updatedAt: 't' },
+    ],
+  },
 }
 
 export interface ProjectCounts {
@@ -137,3 +268,69 @@ export const LAYER_LABEL: Record<CableLayer, string> = {
   dmx: 'DMX',
   net: 'Netz',
 }
+
+export const DEPARTMENT_COLOR: Record<Department, string> = {
+  video: 'var(--mod-cameras)',
+  light: 'var(--mod-licht)',
+  audio: 'var(--mod-signal)',
+  prod: 'var(--mod-raum)',
+}
+
+export const DEPARTMENT_LABEL: Record<Department, string> = {
+  video: 'Video',
+  light: 'Licht',
+  audio: 'Ton',
+  prod: 'Produktion',
+}
+
+export const PHASE_LABEL: Record<ShowPhase, string> = {
+  planning: 'Planung',
+  setup: 'Aufbau',
+  show: 'Show',
+  teardown: 'Abbau',
+}
+
+/** Budget-Summen über alle Kategorien. */
+export function budgetTotals(lines: BudgetLine[]): { estimated: number; actual: number } {
+  return lines.reduce(
+    (acc, l) => ({ estimated: acc.estimated + l.estimatedEur, actual: acc.actual + l.actualEur }),
+    { estimated: 0, actual: 0 },
+  )
+}
+
+export interface Readiness {
+  totalQty: number
+  packedQty: number
+  openQty: number
+  packedPct: number
+  cases: number
+}
+
+/**
+ * Pack-Bereitschaft aus dem Lager-Ausschnitt — nutzt das geteilte
+ * @avplan/inventory-core-Modell (LPN-Prinzip: ein Artikel gilt als gepackt,
+ * wenn sein Lagerort ein Container/Case ist). Zeigt, wie das Datenpaket über
+ * die Planer hinaus auch die Shell speist.
+ */
+export function computeReadiness(inv: { items: InventoryItem[]; nodes: StorageNode[] }): Readiness {
+  const containerIds = new Set(
+    inv.nodes.filter((n) => CONTAINER_KINDS.includes(n.kind)).map((n) => n.id),
+  )
+  let totalQty = 0
+  let packedQty = 0
+  for (const it of inv.items) {
+    totalQty += it.quantity
+    if (it.locationId && containerIds.has(it.locationId)) packedQty += it.quantity
+  }
+  const openQty = totalQty - packedQty
+  return {
+    totalQty,
+    packedQty,
+    openQty,
+    packedPct: totalQty === 0 ? 0 : Math.round((packedQty / totalQty) * 100),
+    cases: containerIds.size,
+  }
+}
+
+/** Verfügbare Projekte für den Projekt-Wechsler (Erweiterungspunkt). */
+export const PROJECTS: SuiteProject[] = [PROJECT]

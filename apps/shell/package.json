@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@avplan/inventory-core": "*",
     "@avplan/ui": "*",
     "@fontsource/inter": "^5.2.8",
     "react": "^19.2.7",

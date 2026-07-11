@@ -1,11 +1,22 @@
 import {
   LAYER_COLOR,
-  PROJECT,
   type Cable,
   type Camera,
   type Fixture,
   type SignalNode,
+  type SuiteProject,
 } from '../data/project'
+
+function StandaloneHint({ label }: { label: string }) {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-center">
+      <span className="text-[13px] font-medium text-av-text-secondary">Kein Projekt zugewiesen</span>
+      <span className="max-w-xs text-[12px] text-av-text-muted">
+        {label} lässt sich eigenständig nutzen — „Im Planer öffnen" startet das Modul ohne Projekt.
+      </span>
+    </div>
+  )
+}
 
 /* ── Signal-Flow-Vorschau ──────────────────────────────────────────────────
  * Node-Karten an relativen Positionen + Bezier-Kabel, eingefärbt nach Layer.
@@ -24,13 +35,16 @@ interface Rect {
 const nodeRect = (n: SignalNode): Rect => ({ x: n.nx * VB_W, y: n.ny * VB_H })
 
 export function SignalPreview({
+  project,
   selectedId,
   onSelect,
 }: {
+  project: SuiteProject | null
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
-  const rects = new Map<string, Rect>(PROJECT.nodes.map((n) => [n.id, nodeRect(n)]))
+  if (!project) return <StandaloneHint label="Der Signal-Flow" />
+  const rects = new Map<string, Rect>(project.nodes.map((n) => [n.id, nodeRect(n)]))
 
   const link = (c: Cable): { d: string; mx: number; my: number } | null => {
     const a = rects.get(c.from)
@@ -50,10 +64,10 @@ export function SignalPreview({
 
   return (
     <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
-      <text x={PROJECT.nodes[0].nx * VB_W} y={PROJECT.nodes[0].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">BÜHNE / FLOOR</text>
-      <text x={PROJECT.nodes[3].nx * VB_W} y={PROJECT.nodes[3].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">REGIE / OB</text>
+      <text x={project.nodes[0].nx * VB_W} y={project.nodes[0].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">BÜHNE / FLOOR</text>
+      <text x={project.nodes[3].nx * VB_W} y={project.nodes[3].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">REGIE / OB</text>
 
-      {PROJECT.cables.map((c) => {
+      {project.cables.map((c) => {
         const l = link(c)
         if (!l) return null
         const active = selectedId === c.id
@@ -68,7 +82,7 @@ export function SignalPreview({
         )
       })}
 
-      {PROJECT.nodes.map((n) => {
+      {project.nodes.map((n) => {
         const r = rects.get(n.id)!
         return (
           <g key={n.id} transform={`translate(${r.x}, ${r.y})`}>
@@ -94,15 +108,18 @@ export function SignalPreview({
 const PLAN_PAD = 40
 
 export function PlanPreview({
+  project,
   mode,
   selectedId,
   onSelect,
 }: {
+  project: SuiteProject | null
   mode: 'cameras' | 'licht'
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
-  const { hall, stage } = PROJECT
+  if (!project) return <StandaloneHint label={mode === 'cameras' ? 'Der Kamera-Plan' : 'Der Licht-Plan'} />
+  const { hall, stage } = project
   const innerW = 1000 - PLAN_PAD * 2
   const scale = innerW / hall.w
   const innerH = hall.h * scale
@@ -133,8 +150,8 @@ export function PlanPreview({
       <text x={mx(stage.x) + 8} y={my(stage.y) + 18} className="fill-[var(--mod-licht)]" fontSize={12} fontWeight={600}>Bühne {stage.w}×{stage.h} m</text>
 
       {mode === 'cameras'
-        ? PROJECT.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} />)
-        : PROJECT.fixtures.map((fx) => <FixtureMark key={fx.id} fx={fx} mx={mx} my={my} stageCx={stageCx} stageCy={stageCy} active={fx.id === selectedId} onSelect={onSelect} />)}
+        ? project.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} />)
+        : project.fixtures.map((fx) => <FixtureMark key={fx.id} fx={fx} mx={mx} my={my} stageCx={stageCx} stageCy={stageCy} active={fx.id === selectedId} onSelect={onSelect} />)}
     </svg>
   )
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Badge, Icon } from '@avplan/ui'
-import { PROJECT } from '../data/project'
+import type { SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 
 interface LibItem {
@@ -62,13 +62,13 @@ const LIBRARY: Record<ModuleId, LibItem[]> = {
   ],
 }
 
-const LAYERS = [
-  { name: 'Raum · Wände & Bühne', count: '14', tone: 'raum' },
-  { name: 'Personen', count: '3', tone: 'warn' },
-  { name: 'Kameras', count: String(PROJECT.cameras.length), tone: 'cameras' },
-  { name: 'Licht', count: String(PROJECT.fixtures.length), tone: 'licht' },
-  { name: 'Signal / Kabel', count: '23', tone: 'signal' },
-] as const
+const layersFor = (project: SuiteProject | null) => [
+  { name: 'Raum · Wände & Bühne', count: project ? '14' : '—', tone: 'raum' },
+  { name: 'Personen', count: project ? String(project.show.crew.length) : '—', tone: 'warn' },
+  { name: 'Kameras', count: project ? String(project.cameras.length) : '—', tone: 'cameras' },
+  { name: 'Licht', count: project ? String(project.fixtures.length) : '—', tone: 'licht' },
+  { name: 'Signal / Kabel', count: project ? '23' : '—', tone: 'signal' },
+]
 
 const DOT: Record<string, string> = {
   raum: 'var(--mod-raum)',
@@ -78,11 +78,12 @@ const DOT: Record<string, string> = {
   signal: 'var(--mod-signal)',
 }
 
-export function LibraryPanel({ module }: { module: ModuleDef }) {
+export function LibraryPanel({ module, project }: { module: ModuleDef; project: SuiteProject | null }) {
   const [tab, setTab] = useState(0)
   const [query, setQuery] = useState('')
   const groups = LIBRARY[module.id]
   const q = query.trim().toLowerCase()
+  const layers = layersFor(project)
 
   return (
     <div className="flex h-full flex-col bg-av-surface-1">
@@ -157,7 +158,7 @@ export function LibraryPanel({ module }: { module: ModuleDef }) {
           <Badge tone="accent" className="ml-auto">Fokus an</Badge>
         </div>
         <div className="flex flex-col">
-          {LAYERS.map((l) => (
+          {layers.map((l) => (
             <div key={l.name} className="flex items-center gap-2 rounded px-1 py-1 text-[12px] text-av-text-secondary">
               <span className="h-2 w-2 flex-none rounded-full" style={{ background: DOT[l.tone] }} />
               <span className="flex-1 truncate">{l.name}</span>
