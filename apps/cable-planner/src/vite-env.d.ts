@@ -26,6 +26,12 @@ declare global {
           mimeType?: string,
         ) => Promise<unknown>
       }
+      lexware: {
+        createDocument: (doc: unknown) => Promise<{ id: string; webUrl?: string }>
+        ping: () => Promise<{ ok: boolean; error?: string }>
+        setApiKey: (key: string) => Promise<boolean>
+        hasApiKey: () => Promise<boolean>
+      }
       project: {
         newProject: () => Promise<void>
         openProject: () => Promise<unknown | null>

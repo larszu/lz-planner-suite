@@ -22,6 +22,7 @@
   --color-av-text-muted: var(--av-text-muted);
   --color-av-text-faint: var(--av-text-faint);
   --color-av-accent: var(--av-accent);
+  --color-av-accent-text: var(--av-accent-text);
   --color-av-ok: var(--av-ok);
   --color-av-warn: var(--av-warn);
   --color-av-danger: var(--av-danger);

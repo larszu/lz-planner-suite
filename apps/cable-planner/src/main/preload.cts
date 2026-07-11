@@ -47,6 +47,15 @@ contextBridge.exposeInMainWorld('cablePlanner', {
         mimeType,
       ) as Promise<unknown>,
   },
+  lexware: {
+    createDocument: (doc: unknown) =>
+      ipcRenderer.invoke('lexware:create-document', doc) as Promise<{ id: string; webUrl?: string }>,
+    ping: () =>
+      ipcRenderer.invoke('lexware:ping') as Promise<{ ok: boolean; error?: string }>,
+    setApiKey: (key: string) =>
+      ipcRenderer.invoke('lexware:set-api-key', key) as Promise<boolean>,
+    hasApiKey: () => ipcRenderer.invoke('lexware:has-api-key') as Promise<boolean>,
+  },
   graphml: {
     openFile: () =>
       ipcRenderer.invoke('graphml:open-file') as Promise<{

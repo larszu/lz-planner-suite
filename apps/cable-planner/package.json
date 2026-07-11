@@ -63,6 +63,7 @@
   },
   "dependencies": {
     "@avplan/inventory-core": "*",
+    "@avplan/lexware-core": "*",
     "@avplan/onboarding-core": "*",
     "@avplan/ui": "*",
     "@dnd-kit/core": "^6.3.1",

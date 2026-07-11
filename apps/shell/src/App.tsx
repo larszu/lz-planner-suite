@@ -20,6 +20,7 @@ import {
 import { sendPlannerCommand } from './embed/plannerBridge'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
+import { BillingModal } from './shell/BillingModal'
 import { ToastHost, type ToastMsg } from './shell/Toast'
 import {
   loadAppSettings,
@@ -160,6 +161,7 @@ export function App() {
   const [libraryOpen, setLibraryOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [billingOpen, setBillingOpen] = useState(false)
   // Zoom der Canvas-Vorschau (Signal/Kameras/Licht) — via Statusleiste steuerbar.
   const [zoom, setZoom] = useState(100)
   // Suite-weite App-Einstellungen (Quelle der Wahrheit) — persistiert und in den
@@ -263,6 +265,7 @@ export function App() {
         onToggleTheme={toggle}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenPalette={() => setPaletteOpen(true)}
+        onOpenBilling={() => setBillingOpen(true)}
         onAssign={() => switchProject(PROJECT)}
         onClear={() => switchProject(null)}
         onNew={newProject}
@@ -347,6 +350,8 @@ export function App() {
         language={language}
         onSetLanguage={setLanguage}
       />
+
+      <BillingModal open={billingOpen} onClose={() => setBillingOpen(false)} project={project} />
     </div>
    </LanguageProvider>
   )

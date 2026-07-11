@@ -105,6 +105,7 @@ export function Topbar({
   onToggleTheme,
   onOpenSettings,
   onOpenPalette,
+  onOpenBilling,
   onAssign,
   onClear,
   onNew,
@@ -121,6 +122,7 @@ export function Topbar({
   onToggleTheme: () => void
   onOpenSettings: () => void
   onOpenPalette: () => void
+  onOpenBilling: () => void
   onAssign: () => void
   onClear: () => void
   onNew: () => void
@@ -188,6 +190,10 @@ export function Topbar({
               <MenuLabel>{t('chrome.topbar.file.demo', 'Demo-Projekt')}</MenuLabel>
               <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { onAssign(); close() }}>{t('chrome.topbar.file.loadDemo', 'Sommershow 2026 laden')}</MenuItem>
               <MenuItem icon={<Icon name="close" size={15} />} onClick={() => { onClear(); close() }}>{t('chrome.topbar.file.noProject', 'Kein Projekt (Module einzeln)')}</MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<Icon name="library" size={15} />} disabled={!project} onClick={() => { onOpenBilling(); close() }}>
+                {t('billing.menu.open', 'Beleg erstellen (Lexware)…')}
+              </MenuItem>
             </>
           )}
         </Menu>

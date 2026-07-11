@@ -52,6 +52,29 @@ export interface HistoryMessage {
   canRedo: boolean
 }
 
+/**
+ * Shell → iframe: einen Lexware-Office-Beleg über den Planer anlegen. Der Key
+ * liegt server-seitig beim Planer (keytar/IPC), nie im Browser — die Shell reicht
+ * nur den fertigen Beleg (`doc`, strukturell ein BillingDoc aus
+ * `@avplan/lexware-core`) plus eine `requestId` zur Korrelation.
+ */
+export interface LexwareRequestMessage {
+  type: 'avplan:lexware'
+  requestId: string
+  action: 'create' | 'ping'
+  doc?: unknown
+}
+
+/** iframe → Shell: Ergebnis eines Lexware-Requests. */
+export interface LexwareResultMessage {
+  type: 'avplan:lexwareResult'
+  requestId: string
+  ok: boolean
+  id?: string
+  webUrl?: string
+  error?: string
+}
+
 export type ShellMessage =
   | ThemeMessage
   | ReadyMessage
@@ -59,6 +82,8 @@ export type ShellMessage =
   | SettingsMessage
   | CommandMessage
   | HistoryMessage
+  | LexwareRequestMessage
+  | LexwareResultMessage
 
 const isShellMessage = (data: unknown): data is ShellMessage =>
   !!data && typeof data === 'object' && typeof (data as { type?: unknown }).type === 'string' &&
@@ -195,6 +220,89 @@ export function connectShellTheme(paletteMap?: Record<string, string>): () => vo
   } catch {
     /* egal */
   }
+  return () => window.removeEventListener('message', onMessage)
+}
+
+export interface LexwareRequestResult {
+  ok: boolean
+  id?: string
+  webUrl?: string
+  error?: string
+}
+
+let lexwareReqCounter = 0
+
+/**
+ * Shell-Seite: einen Beleg an den geöffneten Planer schicken und auf das Ergebnis
+ * warten. Promise-basiert (löst bei passender `requestId` auf), mit Timeout, damit
+ * ein nicht-antwortender/standalone Planer nicht hängt.
+ */
+export function requestLexware(
+  frame: Window | null | undefined,
+  action: 'create' | 'ping',
+  doc?: unknown,
+  timeoutMs = 20_000,
+): Promise<LexwareRequestResult> {
+  return new Promise((resolve) => {
+    if (!frame) {
+      resolve({ ok: false, error: 'Kein Planer geöffnet.' })
+      return
+    }
+    const requestId = `lx-${++lexwareReqCounter}-${action}`
+    let done = false
+    const finish = (r: LexwareRequestResult) => {
+      if (done) return
+      done = true
+      window.removeEventListener('message', onMessage)
+      clearTimeout(timer)
+      resolve(r)
+    }
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as Partial<LexwareResultMessage> | undefined
+      if (!d || d.type !== 'avplan:lexwareResult' || d.requestId !== requestId) return
+      finish({ ok: !!d.ok, id: d.id, webUrl: d.webUrl, error: d.error })
+    }
+    const timer = setTimeout(() => finish({ ok: false, error: 'Zeitüberschreitung — Planer hat nicht geantwortet.' }), timeoutMs)
+    window.addEventListener('message', onMessage)
+    try {
+      frame.postMessage({ type: 'avplan:lexware', requestId, action, doc } satisfies LexwareRequestMessage, '*')
+    } catch {
+      finish({ ok: false, error: 'Konnte den Beleg nicht an den Planer senden.' })
+    }
+  })
+}
+
+/**
+ * Planer-Seite: auf Lexware-Anfragen der Shell hören, `handler` ausführen (der
+ * ruft den echten Lexware-IPC im Main-Prozess) und das Ergebnis zurückmelden.
+ * No-op im Standalone-Betrieb. Gibt eine Cleanup-Funktion zurück.
+ */
+export function connectShellLexware(
+  handler: (action: 'create' | 'ping', doc?: unknown) => Promise<{ id?: string; webUrl?: string }>,
+): () => void {
+  try {
+    if (typeof window === 'undefined' || window.parent === window) return () => {}
+  } catch {
+    return () => {}
+  }
+  const onMessage = async (e: MessageEvent) => {
+    if (!isShellMessage(e.data) || e.data.type !== 'avplan:lexware') return
+    const { requestId, action, doc } = e.data
+    const reply = (msg: Omit<LexwareResultMessage, 'type' | 'requestId'>) => {
+      try {
+        window.parent.postMessage({ type: 'avplan:lexwareResult', requestId, ...msg } satisfies LexwareResultMessage, '*')
+      } catch {
+        /* egal */
+      }
+    }
+    try {
+      const res = await handler(action, doc)
+      reply({ ok: true, id: res.id, webUrl: res.webUrl })
+    } catch (err) {
+      reply({ ok: false, error: err instanceof Error ? err.message : 'Unbekannter Fehler' })
+    }
+  }
+  window.addEventListener('message', onMessage)
   return () => window.removeEventListener('message', onMessage)
 }
 

@@ -54,6 +54,41 @@ export interface Contact {
   role: string
   org: string
   phone: string
+  /* ── Rechnungs-/Fakturierungsfelder (optional, für Lexware Office) ── */
+  /** Als Rechnungs-/Angebots-Empfänger markiert. */
+  billTo?: boolean
+  email?: string
+  street?: string
+  zip?: string
+  city?: string
+  /** ISO-3166-alpha-2, Default 'DE'. */
+  countryCode?: string
+  /** USt-IdNr. */
+  vatId?: string
+  customerNumber?: string
+  /** UUID eines bereits in Lexware Office angelegten Kontakts. */
+  lexofficeContactId?: string
+}
+
+/**
+ * Belegkopf-Voreinstellungen fürs Fakturieren (Lexware Office). Liegt am Projekt,
+ * damit Angebot/Rechnung reproduzierbar aus dem Projekt erzeugt werden können.
+ */
+export interface BillingSettings {
+  /** Besteuerung: netto / brutto / steuerfrei (Kleinunternehmer §19). */
+  taxType: 'net' | 'gross' | 'vatfree'
+  /** Standard-Steuersatz für abgeleitete Positionen. */
+  taxRatePercent: 0 | 7 | 19
+  /** Miettage als Kalkulationsbasis für Inventar-Positionen. */
+  rentalDays: number
+  /** Zahlungsziel in Tagen (Rechnung). */
+  paymentTermDays: number
+  /** Angebots-Gültigkeit in Tagen ab Belegdatum. */
+  quoteValidDays: number
+  /** Optionaler Einleitungstext. */
+  introduction?: string
+  /** Optionaler Schlusstext/Bemerkung. */
+  remark?: string
 }
 
 export interface ProjectTask {
@@ -115,6 +150,8 @@ export interface ShowDetails {
   tasks: ProjectTask[]
   /** Kreativ-Board (Moodboard/Notizen) — die Vor-Produktionsebene der Show. */
   board: Board
+  /** Belegkopf-Voreinstellungen fürs Fakturieren (optional; Default via healBilling). */
+  billing?: BillingSettings
 }
 
 export interface Camera {
@@ -252,8 +289,30 @@ export const PROJECT: SuiteProject = {
     },
     contacts: [
       { name: 'H. Vogt', role: 'Haustechnik', org: 'Halle A', phone: '+49 30 1234-56' },
-      { name: 'Nordlicht Events', role: 'Auftraggeber', org: 'Produktion', phone: '+49 40 9876-10' },
+      {
+        name: 'Nordlicht Events GmbH',
+        role: 'Auftraggeber',
+        org: 'Produktion',
+        phone: '+49 40 9876-10',
+        billTo: true,
+        email: 'buchhaltung@nordlicht-events.de',
+        street: 'Hafenstraße 12',
+        zip: '20359',
+        city: 'Hamburg',
+        countryCode: 'DE',
+        vatId: 'DE123456789',
+        customerNumber: 'K-1042',
+      },
     ],
+    billing: {
+      taxType: 'net',
+      taxRatePercent: 19,
+      rentalDays: 2,
+      paymentTermDays: 14,
+      quoteValidDays: 14,
+      introduction: 'Vielen Dank für Ihre Anfrage — nachfolgend unser Angebot für die Produktion.',
+      remark: 'Alle Preise verstehen sich zzgl. gesetzlicher MwSt.',
+    },
     tasks: [
       { title: 'CAM 4 verkabeln', done: false, due: 'Do', owner: 'M. Berg' },
       { title: 'Patch-Sheet finalisieren', done: false, due: 'Fr', owner: 'T. Wolf' },
@@ -404,6 +463,25 @@ export function computeReadiness(inv: { items: InventoryItem[]; nodes: StorageNo
     packedPct: totalQty === 0 ? 0 : Math.round((packedQty / totalQty) * 100),
     cases: containerIds.size,
   }
+}
+
+/** Belegkopf-Defaults, wenn ein (geladenes) Projekt noch keine hat. */
+export const DEFAULT_BILLING: BillingSettings = {
+  taxType: 'net',
+  taxRatePercent: 19,
+  rentalDays: 1,
+  paymentTermDays: 14,
+  quoteValidDays: 14,
+}
+
+/** Belegkopf des Projekts mit Defaults auffüllen (Schema-Migration). */
+export function resolveBilling(show: ShowDetails): BillingSettings {
+  return { ...DEFAULT_BILLING, ...(show.billing ?? {}) }
+}
+
+/** Ersten als Rechnungsempfänger markierten Kontakt liefern (sonst undefined). */
+export function billToContact(show: ShowDetails): Contact | undefined {
+  return show.contacts.find((c) => c.billTo)
 }
 
 /** Verfügbare Projekte für den Projekt-Wechsler (Erweiterungspunkt). */

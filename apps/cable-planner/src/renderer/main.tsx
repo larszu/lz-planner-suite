@@ -12,6 +12,7 @@ import './index.css'
 import { connectShellTheme } from '@avplan/ui/embed'
 import { initShellSettings } from './lib/shellSettings'
 import { initShellHistory } from './lib/shellHistory'
+import { initShellLexware } from './lib/shellLexware'
 import App from './App'
 import { ErrorBoundary } from './ErrorBoundary'
 import { cablePlannerApi } from './lib/bridge'
@@ -42,6 +43,8 @@ connectShellTheme({
 initShellSettings()
 // Undo/Redo der Shell an die projectHistory weiterreichen.
 initShellHistory()
+// Lexware-Office-Belege der Shell an den Lexware-IPC im Main weiterreichen.
+initShellLexware()
 // Eingebettet: das Canvas-Theme dem Shell-Theme folgen lassen, damit Cable
 // vollständig hell/dunkel mitschaltet (App.tsx setzt data-theme aus canvasTheme).
 try {

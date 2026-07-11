@@ -7,6 +7,7 @@ import { overview } from './dict/overview'
 import { panels } from './dict/panels'
 import { board } from './dict/board'
 import { config } from './dict/config'
+import { billing } from './dict/billing'
 
 export const en: Record<string, string> = {
   ...chrome,
@@ -14,4 +15,5 @@ export const en: Record<string, string> = {
   ...panels,
   ...board,
   ...config,
+  ...billing,
 }
