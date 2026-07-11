@@ -1,8 +1,24 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiUpload, FiPlus, FiX, FiArrowRight, FiCheck } from 'react-icons/fi';
 import { WelcomeDialog, createOnboardingState } from '@avplan/onboarding-core';
 import { useStore } from '../../store/useStore';
 import type { EditMode } from '../../types';
+
+/** Aktuelles Theme aus `data-theme` am <html> (die Shell setzt es beim Einbetten). */
+function useDomTheme(): 'dark' | 'light' {
+  const [theme, setTheme] = useState<'dark' | 'light'>(
+    () => (typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'),
+  );
+  useEffect(() => {
+    const el = document.documentElement;
+    const update = () => setTheme(el.dataset.theme === 'light' ? 'light' : 'dark');
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
+  }, []);
+  return theme;
+}
 
 const LEGACY_SEEN_KEY = 'mcplan-assistant-seen';
 
@@ -17,6 +33,7 @@ const WIZARD_STEPS: { mode: EditMode; title: string; hint: string }[] = [
 
 export default function StartupAssistant() {
   const { loadProject, setEditMode } = useStore();
+  const theme = useDomTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Bewusst sessionStorage: der Assistent darf pro Sitzung einmal erscheinen
   // (nicht nur einmal pro Installation). Dialog-UI und Seen-State kommen aus
@@ -108,7 +125,7 @@ export default function StartupAssistant() {
       <WelcomeDialog
         open
         lang="en"
-        theme="dark"
+        theme={theme}
         accent="#3b82f6"
         title="Welcome to MultiCam Planner"
         intro="How would you like to start?"

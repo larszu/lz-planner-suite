@@ -44,14 +44,33 @@ input[type="range"] {
   border-radius: 2px;
   outline: none;
 }
+input[type="range"] { background: var(--color-bc-border); }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--color-bc-accent);
   cursor: pointer;
 }
+
+/* Light-Theme: Backgrounds laufen ueber die injizierten --color-bc-* Tokens.
+   Tailwinds feste Text-Utilities (text-white / text-gray-*) folgen dem Theme
+   nicht von selbst — hier auf helle Werte umgebogen. Text auf farbigen
+   Flaechen (Buttons/Badges) bleibt weiss. */
+:root[data-theme="light"] .text-white { color: #131924 !important; }
+:root[data-theme="light"] .text-gray-200 { color: #38424f !important; }
+:root[data-theme="light"] .text-gray-300 { color: #44505f !important; }
+:root[data-theme="light"] .text-gray-400 { color: #5a6577 !important; }
+:root[data-theme="light"] .text-gray-500 { color: #6b7688 !important; }
+:root[data-theme="light"] .text-gray-600 { color: #8a94a6 !important; }
+:root[data-theme="light"] [class*="bg-bc-accent"].text-white,
+:root[data-theme="light"] [class*="bg-bc-red"].text-white,
+:root[data-theme="light"] [class*="bg-bc-green"].text-white,
+:root[data-theme="light"] [class*="bg-bc-yellow"].text-white { color: #fff !important; }
+/* Restliche fest verdrahtete Grau-Flaechen (FlexLayout u. a.) hell einfaerben. */
+:root { --color-bc-canvas: #0a0b0f; }
+:root[data-theme="light"] { --color-bc-panel-2: #f4f6fb; --color-bc-canvas: #e9edf4; }
 
 /* Select */
 select {
