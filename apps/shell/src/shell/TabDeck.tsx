@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Badge, Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { emptyBoard, type SuiteProject } from '../data/project'
@@ -82,6 +82,14 @@ export function TabDeck({
   const isOverview = module.id === 'overview'
   const isBoard = module.id === 'board'
 
+  // Tab-Beschriftungen übersetzen: die Registry liefert deutsche Roh-Labels,
+  // die Sprachumschaltung greift nur über die config.mod.*.tab.*-Keys (die die
+  // Palette bereits nutzt). Ohne diese Zuordnung blieb die Tab-Leiste deutsch.
+  const localizedTabs = useMemo(
+    () => module.tabs.map((tab) => ({ ...tab, label: t(`config.mod.${module.id}.tab.${tab.id}`, tab.label) })),
+    [module, t],
+  )
+
   // Overlay-Zustand der Canvas-Vorschau (FOV / Heatmap).
   const [showFov, setShowFov] = useState(true)
   const [showHeat, setShowHeat] = useState(true)
@@ -90,7 +98,7 @@ export function TabDeck({
     <div className="flex min-w-0 flex-1 flex-col">
       {/* Tab-Kopf */}
       <div className="flex items-center gap-2 border-b border-av-border-muted bg-av-surface-1 px-3 py-2">
-        <Tabs items={module.tabs} active={activeTab} onSelect={onTab} />
+        <Tabs items={localizedTabs} active={activeTab} onSelect={onTab} />
         <div className="ml-auto flex items-center gap-2">
           {module.planner && (
             <Button variant={mounted ? 'subtle' : 'primary'} size="sm" onClick={onToggleMount}>

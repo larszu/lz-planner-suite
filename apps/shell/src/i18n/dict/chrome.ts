@@ -57,7 +57,7 @@ export const chrome: Record<string, string> = {
   'chrome.settings.langDe': 'German',
   'chrome.settings.langEn': 'English',
   'chrome.settings.languageNote':
-    'The language is passed on to the open planners. Cable Planner switches over fully; Light Planner partially. The shell interface itself is currently German.',
+    'The shell interface switches immediately. The language is also passed on to the open planners: Cable and MultiCam switch over fully, Light partially.',
   'chrome.settings.appSpecific': 'App-specific settings',
   'chrome.settings.active': 'Active',
   'chrome.settings.appNote':

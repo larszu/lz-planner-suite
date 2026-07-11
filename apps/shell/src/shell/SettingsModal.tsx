@@ -145,7 +145,7 @@ function SettingsBody({
           </div>
         </div>
         <p className="mt-1.5 text-[11px] text-av-text-faint">
-          {t('chrome.settings.languageNote', 'Die Sprache wird an die geöffneten Planer weitergegeben. Cable Planner schaltet vollständig um; Light Planner teilweise. Die Shell-Oberfläche selbst ist derzeit deutsch.')}
+          {t('chrome.settings.languageNote', 'Die Shell-Oberfläche schaltet sofort um. Die Sprache wird zusätzlich an die geöffneten Planer weitergegeben: Cable und MultiCam schalten vollständig um, Light teilweise.')}
         </p>
       </section>
 
