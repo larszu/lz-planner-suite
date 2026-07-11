@@ -89,7 +89,11 @@ export function TabDeck({
         </div>
       ) : isBoard ? (
         <div className="min-h-0 flex-1 p-3">
-          <BoardCanvas key={project ? project.meta.name : 'scratch'} seed={project ? project.show.board : emptyBoard()} />
+          <BoardCanvas
+            key={project ? project.meta.name : 'scratch'}
+            seed={project ? project.show.board : emptyBoard()}
+            title={project ? `${project.meta.name} — Board` : 'Kreativ-Board'}
+          />
         </div>
       ) : (
         <div className="relative min-h-0 flex-1 p-3">

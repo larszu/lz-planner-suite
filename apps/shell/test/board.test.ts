@@ -1,0 +1,72 @@
+import { describe, it, expect } from 'vitest'
+import { layoutBoard, applyTemplate, boardToMarkdown, COL_HEADER } from '../src/data/board'
+import type { BoardCard } from '../src/data/project'
+
+let seq = 0
+const gen = () => `t${(seq += 1)}`
+
+describe('layoutBoard', () => {
+  it('freie Karte liegt an ihrer eigenen Position', () => {
+    const cards: BoardCard[] = [{ id: 'a', type: 'note', x: 40, y: 60, w: 200 }]
+    const rect = layoutBoard(cards).get('a')!
+    expect(rect.x).toBe(40)
+    expect(rect.y).toBe(60)
+    expect(rect.h).toBeGreaterThan(0)
+  })
+
+  it('Spalten-Mitglieder werden vertikal gestapelt und liegen unter dem Header', () => {
+    const cards: BoardCard[] = [
+      { id: 'col', type: 'column', x: 100, y: 100, w: 280, title: 'Spalte' },
+      { id: 'm1', type: 'note', x: 0, y: 0, w: 0, columnId: 'col' },
+      { id: 'm2', type: 'note', x: 0, y: 0, w: 0, columnId: 'col' },
+    ]
+    const map = layoutBoard(cards)
+    const m1 = map.get('m1')!
+    const m2 = map.get('m2')!
+    // Erstes Mitglied unterhalb des Spaltenkopfs
+    expect(m1.y).toBeGreaterThanOrEqual(100 + COL_HEADER)
+    // Zweites Mitglied unter dem ersten
+    expect(m2.y).toBeGreaterThan(m1.y)
+    // Mitglieder liegen innerhalb der Spaltenbreite
+    expect(m1.w).toBeLessThan(280)
+    // Spaltenhöhe wächst über den leeren Default hinaus
+    expect(map.get('col')!.h).toBeGreaterThan(COL_HEADER + 40)
+  })
+})
+
+describe('applyTemplate', () => {
+  it('Kreativ-Brief erzeugt eine Spalte mit Mitglied-Notizen', () => {
+    const { cards } = applyTemplate('brief', gen)
+    const col = cards.find((c) => c.type === 'column')
+    expect(col).toBeTruthy()
+    const members = cards.filter((c) => c.columnId === col!.id)
+    expect(members.length).toBeGreaterThan(0)
+    expect(members.every((m) => m.type === 'note')).toBe(true)
+  })
+
+  it('Moodboard erzeugt Looks und eine Verbindung', () => {
+    const { cards, connections } = applyTemplate('moodboard', gen)
+    expect(cards.some((c) => c.type === 'look')).toBe(true)
+    expect(connections.length).toBeGreaterThan(0)
+  })
+})
+
+describe('boardToMarkdown', () => {
+  it('rendert Überschrift, To-do-Checkliste und Spalten-Abschnitt', () => {
+    const md = boardToMarkdown({
+      cards: [
+        { id: 'h', type: 'heading', x: 0, y: 0, w: 0, text: 'Look' },
+        { id: 't', type: 'todo', x: 0, y: 0, w: 0, title: 'Freigaben', items: [{ text: 'A', done: true }, { text: 'B', done: false }] },
+        { id: 'col', type: 'column', x: 0, y: 0, w: 0, title: 'Brief' },
+        { id: 'n', type: 'note', x: 0, y: 0, w: 0, text: 'Ziel', columnId: 'col' },
+      ],
+      connections: [],
+    }, 'Test-Board')
+    expect(md).toContain('# Test-Board')
+    expect(md).toContain('## Look')
+    expect(md).toContain('- [x] A')
+    expect(md).toContain('- [ ] B')
+    expect(md).toContain('## Brief')
+    expect(md).toContain('Ziel')
+  })
+})

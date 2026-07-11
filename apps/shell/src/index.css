@@ -46,3 +46,25 @@ body {
   font-family: var(--av-font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Board-Export „Als PDF (Druck)": im Druck nur das Board-Dokument zeigen. */
+.board-print {
+  display: none;
+}
+@media print {
+  #root {
+    display: none !important;
+  }
+  .board-print {
+    display: block !important;
+    padding: 24px;
+    color: #000;
+    background: #fff;
+    font-family: var(--av-font-sans);
+  }
+  .board-print h1 { font-size: 22px; margin: 0 0 12px; }
+  .board-print h2 { font-size: 16px; margin: 18px 0 6px; }
+  .board-print p { margin: 4px 0; }
+  .board-print ul { margin: 4px 0; padding-left: 18px; }
+  .board-print section { break-inside: avoid; }
+}

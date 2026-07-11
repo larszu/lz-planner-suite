@@ -65,9 +65,9 @@ export interface ProjectTask {
 
 /* ── Board (Milanote-artiges Kreativ-Canvas) ───────────────────────────────*/
 
-export type BoardCardType = 'heading' | 'note' | 'link' | 'todo' | 'color' | 'look'
+export type BoardCardType = 'heading' | 'note' | 'link' | 'todo' | 'color' | 'look' | 'column'
 
-/** Eine Karte auf dem Board (frei positioniert). */
+/** Eine Karte auf dem Board (frei positioniert oder in einer Spalte). */
 export interface BoardCard {
   id: string
   type: BoardCardType
@@ -80,6 +80,8 @@ export interface BoardCard {
   /** Farbe für color-/look-Karten (look rendert daraus einen Verlauf). */
   color?: string
   items?: { text: string; done: boolean }[]
+  /** Wenn gesetzt: Karte liegt in dieser Spalte (Container), nicht frei. */
+  columnId?: string
 }
 
 export interface BoardConnection {
