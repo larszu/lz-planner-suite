@@ -10,6 +10,7 @@ import type { ExportMode } from '../Export/ExportPanel';
 import type { EditMode } from '../../types';
 import { useTranslation, format } from '../../i18n';
 import { isEmbedded } from '../../hooks/useIsEmbedded';
+import { alertDialog } from '@avplan/ui';
 
 type TFn = (key: string, en: string) => string;
 
@@ -196,11 +197,11 @@ export default function Header({
       try {
         useStore.getState().importAvPlan(parseAvPlan(await file.text()));
       } catch (err) {
-        alert(`.avplan-Import fehlgeschlagen: ${err instanceof Error ? err.message : String(err)}`);
+        void alertDialog(format(t('header.import.avplanFailed', '.avplan import failed: {msg}'), { msg: err instanceof Error ? err.message : String(err) }));
       }
     }
     if (avplanInputRef.current) avplanInputRef.current.value = '';
-  }, []);
+  }, [t]);
 
   const handleImportVenue = useCallback(() => {
     venueInputRef.current?.click();
@@ -213,11 +214,11 @@ export default function Header({
         const ex = parseVenueExchange(await file.text());
         useStore.getState().importVenueExchange(ex);
       } catch (err) {
-        alert(`Venue-Import fehlgeschlagen: ${err instanceof Error ? err.message : String(err)}`);
+        void alertDialog(format(t('header.import.venueFailed', 'Venue import failed: {msg}'), { msg: err instanceof Error ? err.message : String(err) }));
       }
     }
     if (venueInputRef.current) venueInputRef.current.value = '';
-  }, []);
+  }, [t]);
 
   return (
     <header className="h-14 bg-bc-panel border-b border-bc-border flex items-center justify-between px-2 sm:px-4 shrink-0 gap-3">

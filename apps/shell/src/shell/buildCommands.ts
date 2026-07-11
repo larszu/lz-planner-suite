@@ -9,6 +9,12 @@ export interface CommandActions {
   selectItem: (id: string) => void
   toggleTheme: () => void
   toggleMount: () => void
+  openBilling: () => void
+  openSettings: () => void
+  saveProject: () => void
+  newProject: () => void
+  /** Ob gerade ein Projekt geladen ist (gated projekt-bezogene Aktionen). */
+  hasProject: boolean
 }
 
 /** Übersetzter Modul-Titel (gemeinsamer config.mod.*-Namensraum). */
@@ -98,10 +104,49 @@ export function buildCommands(active: ModuleDef, actions: CommandActions, t: TFu
     })
   }
 
+  const actionsGroup = t('config.cmd.group.actions', 'Aktionen')
+
+  // Primäre App-Aktionen — bisher nur über die Topbar-Menüs erreichbar, damit
+  // im Command-Palette (der zentralen Suchfläche) auffindbar.
+  cmds.push({
+    id: 'billing',
+    title: t('config.cmd.billing', 'Beleg erstellen (Angebot / Rechnung)'),
+    group: actionsGroup,
+    keywords: ['beleg', 'rechnung', 'angebot', 'lexware', 'invoice', 'quote', 'faktura'],
+    run: () => actions.openBilling(),
+  })
+
+  if (actions.hasProject) {
+    cmds.push({
+      id: 'save',
+      title: t('config.cmd.save', 'Projekt speichern'),
+      group: actionsGroup,
+      keywords: ['speichern', 'save', 'sichern'],
+      hint: '⌘S',
+      run: () => actions.saveProject(),
+    })
+  }
+
+  cmds.push({
+    id: 'new',
+    title: t('config.cmd.new', 'Neues Projekt'),
+    group: actionsGroup,
+    keywords: ['neu', 'new', 'anlegen'],
+    run: () => actions.newProject(),
+  })
+
+  cmds.push({
+    id: 'settings',
+    title: t('config.cmd.settings', 'Einstellungen öffnen'),
+    group: actionsGroup,
+    keywords: ['einstellungen', 'settings', 'preferences', 'konfiguration', 'optionen'],
+    run: () => actions.openSettings(),
+  })
+
   cmds.push({
     id: 'theme',
     title: t('config.cmd.toggleTheme', 'Theme umschalten (Dark / Light)'),
-    group: t('config.cmd.group.actions', 'Aktionen'),
+    group: actionsGroup,
     keywords: ['dark', 'light', 'hell', 'dunkel'],
     run: () => actions.toggleTheme(),
   })

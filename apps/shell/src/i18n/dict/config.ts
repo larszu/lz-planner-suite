@@ -111,5 +111,9 @@ export const config: Record<string, string> = {
   'config.cmd.group.jump': 'Jump to',
   'config.cmd.openInPlanner': 'Open {title} in planner',
   'config.cmd.group.actions': 'Actions',
+  'config.cmd.billing': 'Create document (quote / invoice)',
+  'config.cmd.save': 'Save project',
+  'config.cmd.new': 'New project',
+  'config.cmd.settings': 'Open settings',
   'config.cmd.toggleTheme': 'Toggle theme (dark / light)',
 }

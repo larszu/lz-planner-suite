@@ -9,6 +9,7 @@ import {
   MenuLabel,
   MenuSeparator,
   Modal,
+  alertDialog,
   type ResolvedTheme,
 } from '@avplan/ui'
 import type { SuiteProject } from '../data/project'
@@ -151,7 +152,7 @@ export function Topbar({
     file
       .text()
       .then(onImport)
-      .catch(() => window.alert(t('chrome.topbar.fileReadError', 'Datei konnte nicht gelesen werden.')))
+      .catch(() => void alertDialog(t('chrome.topbar.fileReadError', 'Datei konnte nicht gelesen werden.')))
   }
 
   const ghost = 'av-btn'

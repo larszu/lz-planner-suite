@@ -127,4 +127,6 @@ export const header: Record<string, string> = {
   'header.templates.confirm': 'Bestätigen',
   'header.templates.hideBuiltIn': 'Integrierte Vorlage ausblenden (wiederherstellbar)',
   'header.templates.delete': 'Vorlage löschen',
+  'header.import.avplanFailed': '.avplan-Import fehlgeschlagen: {msg}',
+  'header.import.venueFailed': 'Venue-Import fehlgeschlagen: {msg}',
 };

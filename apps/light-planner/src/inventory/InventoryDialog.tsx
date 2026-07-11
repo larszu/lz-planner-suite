@@ -7,6 +7,7 @@ import { useTranslation } from '../i18n';
 import { useInventoryStore, type InventoryItemInput } from './store';
 import { serializeInventory, parseInventory, resolveInventoryCode } from '@avplan/inventory-core';
 import type { InventoryItem } from '@avplan/inventory-core';
+import { confirmDialog } from '@avplan/ui';
 
 interface Props {
   onClose: () => void;
@@ -71,7 +72,10 @@ const InventoryDialog: React.FC<Props> = ({ onClose }) => {
       setMsg(t('inventory.importErr', 'Keine gültige Lager-Datei (avplan-inventory).'));
       return;
     }
-    const replace = window.confirm(t('inventory.importConfirm', 'Bestehenden Bestand ERSETZEN? Abbrechen = zusammenführen.'));
+    const replace = await confirmDialog(t('inventory.importConfirm', 'Bestehenden Bestand ERSETZEN? Abbrechen = zusammenführen.'), {
+      okLabel: t('inventory.importReplace', 'Ersetzen'),
+      cancelLabel: t('inventory.importMerge', 'Zusammenführen'),
+    });
     const n = importSnapshot(snap, replace ? 'replace' : 'merge');
     setMsg(t('inventory.importDone', '{n} Objekte importiert.').replace('{n}', String(n)));
   };

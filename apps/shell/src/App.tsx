@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   CommandPalette,
   Icon,
@@ -45,6 +45,12 @@ const DEFAULT_TAB: Record<ModuleId, string> = {
   board: 'board',
 }
 
+// Monoton wachsende Toast-ID (nur Eindeutigkeit pro Sitzung nötig). Bewusst
+// modul-lokal statt useRef: so liest pushToast keinen Ref, wodurch der
+// React-Compiler die Toast-erzeugenden Aktionen nicht fälschlich als
+// „Ref-Zugriff im Render" markiert, wenn sie ins Command-Memo einfließen.
+let toastSeq = 0
+
 export function App() {
   const { theme, preference, setPreference, toggle } = useTheme()
   // Suite-weite Sprache (gilt gemeinsam, an die Planer gebrückt). Weiter unten
@@ -69,10 +75,9 @@ export function App() {
   const [plannerHistory, setPlannerHistory] = useState({ canUndo: false, canRedo: false, hasHistory: true })
 
   // Transiente Rückmeldungen (Speichern-Bestätigung, Verwerfen mit Undo).
-  const toastId = useRef(0)
   const [toasts, setToasts] = useState<ToastMsg[]>([])
   const pushToast = useCallback((text: string, opts: Partial<Omit<ToastMsg, 'id' | 'text'>> = {}) => {
-    const id = ++toastId.current
+    const id = ++toastSeq
     setToasts((t) => [...t, { id, text, ...opts }])
   }, [])
   const dismissToast = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), [])
@@ -252,8 +257,14 @@ export function App() {
   const goToModule = useCallback((id: ModuleId) => setModuleId(id), [])
 
   const commands = useMemo(
-    () => buildCommands(mod, { goToModule, setTab, selectItem, toggleTheme: toggle, toggleMount }, tt),
-    [mod, goToModule, setTab, selectItem, toggle, toggleMount, tt],
+    () => buildCommands(mod, {
+      goToModule, setTab, selectItem, toggleTheme: toggle, toggleMount,
+      openBilling: () => setBillingOpen(true),
+      openSettings: () => setSettingsOpen(true),
+      saveProject, newProject,
+      hasProject: project !== null,
+    }, tt),
+    [mod, goToModule, setTab, selectItem, toggle, toggleMount, saveProject, newProject, project, tt],
   )
 
   // Globale Tastenkürzel: Speichern (⌘/Ctrl+S), Rückgängig/Wiederholen (⌘/Ctrl+Z / ⇧Z / Y).
