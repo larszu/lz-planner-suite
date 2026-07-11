@@ -1,8 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
-import { Badge, Icon, IconButton, Kbd, useTheme } from '@avplan/ui'
+import { useState } from 'react'
+import {
+  Badge,
+  Icon,
+  IconButton,
+  Kbd,
+  Menu,
+  MenuItem,
+  MenuLabel,
+  MenuSeparator,
+  Modal,
+  useTheme,
+} from '@avplan/ui'
 import type { SuiteProject } from '../data/project'
-
-const MENUS = ['Datei', 'Bearbeiten', 'Ansicht', 'Einfügen', 'Export', 'Hilfe']
 
 function ProjectPicker({
   project,
@@ -13,77 +22,74 @@ function ProjectPicker({
   onAssign: () => void
   onClear: () => void
 }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    window.addEventListener('mousedown', onDoc)
-    return () => window.removeEventListener('mousedown', onDoc)
-  }, [open])
-
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="av-focus flex items-center gap-2 rounded-av-control px-2 py-1 text-sm text-av-text-muted hover:bg-av-surface-2"
-        aria-haspopup="menu"
-        aria-expanded={open}
-      >
-        <span className="text-av-text-faint">—</span>
-        {project ? (
-          <>
-            <span className="truncate font-semibold text-av-text-secondary">{project.meta.name}</span>
-            <span className="text-av-text-faint">·</span>
-            <span className="truncate">{project.meta.venue}</span>
-            <span className="av-num text-av-text-faint">v{project.meta.version}</span>
-          </>
-        ) : (
-          <span className="font-medium text-av-text-secondary">Kein Projekt · Module einzeln nutzbar</span>
-        )}
-        <Icon name="chevron-down" size={14} />
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute left-0 top-full z-50 mt-1 w-72 rounded-av-card border border-av-border bg-av-surface-1 p-1.5 shadow-[var(--av-shadow-pop)]"
-        >
-          <button
-            type="button"
-            role="menuitemradio"
-            aria-checked={project !== null}
-            onClick={() => { onAssign(); setOpen(false) }}
-            className="av-focus flex w-full items-center gap-2.5 rounded-av-control px-2.5 py-2 text-left hover:bg-av-surface-2"
+    <Menu
+      align="left"
+      triggerClassName="av-focus flex items-center gap-2 rounded-av-control px-2 py-1 text-sm text-av-text-muted hover:bg-av-surface-2"
+      ariaLabel="Projekt wählen"
+      button={
+        <>
+          <span className="text-av-text-faint">—</span>
+          {project ? (
+            <>
+              <span className="truncate font-semibold text-av-text-secondary">{project.meta.name}</span>
+              <span className="text-av-text-faint">·</span>
+              <span className="truncate">{project.meta.venue}</span>
+              <span className="av-num text-av-text-faint">v{project.meta.version}</span>
+            </>
+          ) : (
+            <span className="font-medium text-av-text-secondary">Kein Projekt · Module einzeln nutzbar</span>
+          )}
+          <Icon name="chevron-down" size={14} />
+        </>
+      }
+    >
+      {(close) => (
+        <>
+          <MenuLabel>Projekt</MenuLabel>
+          <MenuItem
+            icon={<Icon name="modules" size={16} style={{ color: 'var(--av-accent)' }} />}
+            active={project !== null}
+            hint={project !== null ? <Icon name="check" size={14} /> : undefined}
+            onClick={() => { onAssign(); close() }}
           >
-            <Icon name="modules" size={16} style={{ color: 'var(--av-accent)' }} />
-            <span className="flex-1">
-              <span className="block text-[13px] font-medium text-av-text">Sommershow 2026</span>
-              <span className="block text-[11px] text-av-text-muted">Halle A · Sa 18. Juli 2026</span>
-            </span>
-            {project !== null && <Icon name="check" size={15} style={{ color: 'var(--av-accent)' }} />}
-          </button>
-          <button
-            type="button"
-            role="menuitemradio"
-            aria-checked={project === null}
-            onClick={() => { onClear(); setOpen(false) }}
-            className="av-focus flex w-full items-center gap-2.5 rounded-av-control px-2.5 py-2 text-left hover:bg-av-surface-2"
+            Sommershow 2026
+          </MenuItem>
+          <MenuItem
+            icon={<Icon name="close" size={16} />}
+            active={project === null}
+            hint={project === null ? <Icon name="check" size={14} /> : undefined}
+            onClick={() => { onClear(); close() }}
           >
-            <Icon name="close" size={16} style={{ color: 'var(--av-text-muted)' }} />
-            <span className="flex-1">
-              <span className="block text-[13px] font-medium text-av-text">Kein Projekt</span>
-              <span className="block text-[11px] text-av-text-muted">Module einzeln und eigenständig nutzen</span>
-            </span>
-            {project === null && <Icon name="check" size={15} style={{ color: 'var(--av-accent)' }} />}
-          </button>
-        </div>
+            Kein Projekt
+          </MenuItem>
+        </>
       )}
-    </div>
+    </Menu>
+  )
+}
+
+function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const rows: { keys: string[]; label: string }[] = [
+    { keys: ['⌘', 'K'], label: 'Suchen & Befehle (Command-Palette)' },
+    { keys: ['1'], label: 'Übersicht' },
+    { keys: ['2'], label: 'Signal-Flow' },
+    { keys: ['3'], label: 'Kamera-Plan' },
+    { keys: ['4'], label: 'Licht-Plan' },
+    { keys: ['5'], label: 'Kreativ-Board' },
+    { keys: ['Esc'], label: 'Dialog / Auswahl schließen' },
+  ]
+  return (
+    <Modal open={open} onClose={onClose} title="Tastenkürzel" size="sm">
+      <ul className="flex flex-col gap-1.5">
+        {rows.map((r) => (
+          <li key={r.label} className="flex items-center justify-between gap-4 py-0.5">
+            <span className="text-[13px] text-av-text-secondary">{r.label}</span>
+            <span className="flex items-center gap-1">{r.keys.map((k) => <Kbd key={k}>{k}</Kbd>)}</span>
+          </li>
+        ))}
+      </ul>
+    </Modal>
   )
 }
 
@@ -99,6 +105,9 @@ export function Topbar({
   onClear: () => void
 }) {
   const { theme, toggle } = useTheme()
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+
+  const ghost = 'av-btn'
 
   return (
     <header className="flex items-center gap-3 border-b border-av-border-muted bg-av-surface-1 px-3" style={{ height: 52 }}>
@@ -110,12 +119,35 @@ export function Topbar({
         <span className="text-[15px] font-bold tracking-tight text-av-text">AV Planner Suite</span>
       </div>
 
+      {/* Funktionale Menüleiste (geteiltes Menu) */}
       <nav className="hidden items-center gap-0.5 md:flex" aria-label="Menü">
-        {MENUS.map((m) => (
-          <button key={m} type="button" className="av-btn av-focus" data-variant="ghost" data-size="sm">
-            {m}
-          </button>
-        ))}
+        <Menu button="Datei" triggerClassName={ghost} align="left">
+          {(close) => (
+            <>
+              <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { onAssign(); close() }}>Projekt zuweisen</MenuItem>
+              <MenuItem icon={<Icon name="close" size={15} />} onClick={() => { onClear(); close() }}>Kein Projekt (Module einzeln)</MenuItem>
+            </>
+          )}
+        </Menu>
+        <Menu button="Ansicht" triggerClassName={ghost} align="left">
+          {(close) => (
+            <MenuItem
+              icon={<Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />}
+              onClick={() => { toggle(); close() }}
+            >
+              {theme === 'dark' ? 'Helles Theme' : 'Dunkles Theme'}
+            </MenuItem>
+          )}
+        </Menu>
+        <Menu button="Hilfe" triggerClassName={ghost} align="left">
+          {(close) => (
+            <>
+              <MenuItem icon={<Icon name="search" size={15} />} hint={<span><Kbd>⌘</Kbd><Kbd>K</Kbd></span>} onClick={() => { close(); onOpenPalette() }}>Suchen & Befehle</MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<Icon name="command" size={15} />} onClick={() => { close(); setShortcutsOpen(true) }}>Tastenkürzel…</MenuItem>
+            </>
+          )}
+        </Menu>
       </nav>
 
       <div className="mx-1 min-w-0">
@@ -149,6 +181,8 @@ export function Topbar({
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
         </IconButton>
       </div>
+
+      <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </header>
   )
 }

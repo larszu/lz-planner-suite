@@ -16,6 +16,16 @@ export {
   type TabsProps,
 } from './primitives'
 export { ModuleRail, type RailModule, type ModuleRailProps } from './ModuleRail'
+export { Modal, type ModalProps } from './Modal'
+export {
+  Menu,
+  MenuItem,
+  MenuLabel,
+  MenuSeparator,
+  type MenuProps,
+  type MenuItemProps,
+} from './Menu'
+export { ErrorBoundary, type ErrorBoundaryProps } from './ErrorBoundary'
 export {
   CommandPalette,
   useCommandPaletteHotkey,

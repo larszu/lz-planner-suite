@@ -8,7 +8,7 @@ import CameraPreview from './components/Preview/CameraPreview';
 import Calculator from './components/Sidebar/Calculator';
 import TemplateSelector from './components/Templates/TemplateSelector';
 import ExportPanel from './components/Export/ExportPanel';
-import ErrorBoundary from './components/ErrorBoundary';
+import { ErrorBoundary } from '@avplan/ui';
 import { getExportRegistry } from './store/exportRegistry';
 import { loadJSON, saveJSON } from './utils/storage';
 import { Suspense, useState, useRef, useCallback, useEffect } from 'react';
@@ -408,7 +408,7 @@ export default function App() {
   }, [applyLayoutJson, focusTabId, layoutMode, model]);
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary appName="MultiCam Planner" onError={(e, info) => console.error('Uncaught error in React tree:', e, info.componentStack)}>
     <div className="h-screen flex flex-col bg-bc-dark text-gray-200">
       <Header
         onSelectTab={handleSelectTab}

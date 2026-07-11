@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon } from '@avplan/ui'
+import { Icon, Menu, MenuItem } from '@avplan/ui'
 import type { Board, BoardCard, BoardCardType } from '../data/project'
 import {
   applyTemplate,
@@ -50,29 +50,11 @@ const rectContains = (r: Rect | undefined, p: Point) =>
 
 const cloneBoard = (b: Board): Board => JSON.parse(JSON.stringify(b)) as Board
 
-/* ── Kleines Dropdown-Menü ─────────────────────────────────────────────────*/
-function Menu({ label, icon, children }: { label: string; icon: Parameters<typeof Icon>[0]['name']; children: (close: () => void) => React.ReactNode }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
-    window.addEventListener('mousedown', onDoc)
-    return () => window.removeEventListener('mousedown', onDoc)
-  }, [open])
-  return (
-    <div ref={ref} className="relative">
-      <button type="button" className="av-toolbar-btn av-focus" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
-        <Icon name={icon} size={15} /> <span className="text-[12px]">{label}</span> <Icon name="chevron-down" size={12} />
-      </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-full z-30 mt-1 w-48 rounded-av-card border border-av-border bg-av-surface-1 p-1 shadow-[var(--av-shadow-pop)]">
-          {children(() => setOpen(false))}
-        </div>
-      )}
-    </div>
-  )
-}
+const menuButton = (label: string, icon: Parameters<typeof Icon>[0]['name']) => (
+  <>
+    <Icon name={icon} size={15} /> <span className="text-[12px]">{label}</span> <Icon name="chevron-down" size={12} />
+  </>
+)
 
 export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; title?: string }) {
   const [root, setRoot] = useState<Board>(() => cloneBoard(seed))
@@ -320,22 +302,18 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <Menu label="Vorlage" icon="wand">
+          <Menu button={menuButton('Vorlage', 'wand')} align="right">
             {(close) => TEMPLATES.map((tpl) => (
-              <button key={tpl.id} type="button" role="menuitem" className="av-focus flex w-full items-center gap-2 rounded-av-control px-2.5 py-1.5 text-left text-[13px] text-av-text hover:bg-av-surface-2" onClick={() => { applyTpl(tpl.id); close() }}>
-                <Icon name="board" size={14} style={{ color: 'var(--av-accent)' }} /> {tpl.label}
-              </button>
+              <MenuItem key={tpl.id} icon={<Icon name="board" size={14} style={{ color: 'var(--av-accent)' }} />} onClick={() => { applyTpl(tpl.id); close() }}>
+                {tpl.label}
+              </MenuItem>
             ))}
           </Menu>
-          <Menu label="Export" icon="external">
+          <Menu button={menuButton('Export', 'external')} align="right">
             {(close) => (
               <>
-                <button type="button" role="menuitem" className="av-focus flex w-full items-center gap-2 rounded-av-control px-2.5 py-1.5 text-left text-[13px] text-av-text hover:bg-av-surface-2" onClick={() => { exportMarkdown(); close() }}>
-                  <Icon name="library" size={14} /> Als Markdown
-                </button>
-                <button type="button" role="menuitem" className="av-focus flex w-full items-center gap-2 rounded-av-control px-2.5 py-1.5 text-left text-[13px] text-av-text hover:bg-av-surface-2" onClick={() => { close(); exportPrint() }}>
-                  <Icon name="external" size={14} /> Als PDF (Druck)
-                </button>
+                <MenuItem icon={<Icon name="library" size={14} />} onClick={() => { exportMarkdown(); close() }}>Als Markdown</MenuItem>
+                <MenuItem icon={<Icon name="external" size={14} />} onClick={() => { close(); exportPrint() }}>Als PDF (Druck)</MenuItem>
               </>
             )}
           </Menu>
