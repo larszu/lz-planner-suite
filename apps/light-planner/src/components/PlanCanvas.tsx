@@ -60,11 +60,27 @@ interface Props {
   onViewChange?: (pixelsPerMeter: number) => void;
 }
 
-const GRID_COLOR = '#2a2a3c';
-const GRID_MAJOR_COLOR = '#3a3a50';
-const RULER_BG = '#1e1e30';
-const RULER_TEXT = '#888';
 const RULER_SIZE = 28;
+
+/**
+ * Canvas-Flächenfarben je Theme. Die Semantik-Farben (Leuchten, Beams, Wände …)
+ * bleiben fest; nur Hintergrund, Raster, Lineale und neutrale Texte folgen dem
+ * Shell-Theme (data-theme am <html>). Der Draw-Loop liest das pro Frame.
+ */
+function canvasPalette() {
+  const light = typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light';
+  return light
+    ? {
+        bg: '#f4f6fb', gridMinor: '#dce2ec', gridMajor: '#c7cfdd',
+        rulerBg: '#e9edf4', rulerCorner: '#dfe4ec', rulerText: '#6b7688',
+        stroke: '#c2cbd9', faint: '#9aa4b4', text: '#2b3444', text2: '#5a6577',
+      }
+    : {
+        bg: '#1a1a2e', gridMinor: '#2a2a3c', gridMajor: '#3a3a50',
+        rulerBg: '#1e1e30', rulerCorner: '#15152a', rulerText: '#888',
+        stroke: '#444', faint: '#666', text: '#ccc', text2: '#999',
+      };
+}
 
 // Shortest distance from point (px,py) to segment (ax,ay)-(bx,by).
 function distToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
@@ -176,15 +192,16 @@ const PlanCanvas: React.FC<Props> = ({
 
   const drawRulers = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     const v = viewRef.current;
-    ctx.fillStyle = RULER_BG;
+    const pal = canvasPalette();
+    ctx.fillStyle = pal.rulerBg;
     ctx.fillRect(0, 0, w, RULER_SIZE);
     ctx.fillRect(0, 0, RULER_SIZE, h);
-    ctx.fillStyle = '#15152a';
+    ctx.fillStyle = pal.rulerCorner;
     ctx.fillRect(0, 0, RULER_SIZE, RULER_SIZE);
 
     ctx.save();
     ctx.font = '9px monospace';
-    ctx.fillStyle = RULER_TEXT;
+    ctx.fillStyle = pal.rulerText;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -204,7 +221,7 @@ const PlanCanvas: React.FC<Props> = ({
     for (let xm = startX; xm <= right; xm += tickM) {
       const sx = v.offsetX + xm * v.scale;
       if (sx < RULER_SIZE) continue;
-      ctx.strokeStyle = '#444';
+      ctx.strokeStyle = pal.stroke;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(sx, RULER_SIZE - 6);
@@ -217,7 +234,7 @@ const PlanCanvas: React.FC<Props> = ({
     for (let ym = startY; ym <= bottom; ym += tickM) {
       const sy = v.offsetY + ym * v.scale;
       if (sy < RULER_SIZE) continue;
-      ctx.strokeStyle = '#444';
+      ctx.strokeStyle = pal.stroke;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(RULER_SIZE - 6, sy);
@@ -230,7 +247,7 @@ const PlanCanvas: React.FC<Props> = ({
       ctx.restore();
     }
 
-    ctx.strokeStyle = '#3a3a50';
+    ctx.strokeStyle = pal.gridMajor;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(RULER_SIZE, 0);
@@ -247,6 +264,7 @@ const PlanCanvas: React.FC<Props> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const v = viewRef.current;
+    const pal = canvasPalette();
     const w = canvas.width;
     const h = canvas.height;
     // Report the draw scale (backing px per metre) so the plot export can size
@@ -257,7 +275,7 @@ const PlanCanvas: React.FC<Props> = ({
     }
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, w, h);
 
     ctx.save();
@@ -279,17 +297,17 @@ const PlanCanvas: React.FC<Props> = ({
     const startY = Math.floor(top / gridStep) * gridStep;
     ctx.lineWidth = 1 / v.scale;
     for (let x = startX; x <= right; x += gridStep) {
-      ctx.strokeStyle = x % 5 === 0 ? GRID_MAJOR_COLOR : GRID_COLOR;
+      ctx.strokeStyle = x % 5 === 0 ? pal.gridMajor : pal.gridMinor;
       ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
     }
     for (let y = startY; y <= bottom; y += gridStep) {
-      ctx.strokeStyle = y % 5 === 0 ? GRID_MAJOR_COLOR : GRID_COLOR;
+      ctx.strokeStyle = y % 5 === 0 ? pal.gridMajor : pal.gridMinor;
       ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
     }
 
     // Axes
     ctx.lineWidth = 2 / v.scale;
-    ctx.strokeStyle = '#555';
+    ctx.strokeStyle = pal.stroke;
     ctx.beginPath();
     ctx.moveTo(0, top); ctx.lineTo(0, bottom);
     ctx.moveTo(left, 0); ctx.lineTo(right, 0);
@@ -337,7 +355,7 @@ const PlanCanvas: React.FC<Props> = ({
         if (isSelP) { ctx.fillStyle = '#ffcc33'; for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, 0.1, 0, Math.PI * 2); ctx.fill(); } }
         const cxp = pts.reduce((s, p) => s + p.x, 0) / pts.length;
         const cyp = pts.reduce((s, p) => s + p.y, 0) / pts.length;
-        ctx.fillStyle = '#ccc';
+        ctx.fillStyle = pal.text;
         ctx.font = `${10 / v.scale}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillText(`${se.label ? se.label + ' · ' : ''}Bühne h=${se.height}m`, cxp, cyp);
@@ -353,7 +371,7 @@ const PlanCanvas: React.FC<Props> = ({
       ctx.lineWidth = 2 / v.scale;
       ctx.fillRect(-se.width / 2, -se.depth / 2, se.width, se.depth);
       ctx.strokeRect(-se.width / 2, -se.depth / 2, se.width, se.depth);
-      ctx.fillStyle = '#ccc';
+      ctx.fillStyle = pal.text;
       ctx.font = `${10 / v.scale}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText(`${se.width}×${se.depth}m h=${se.height}m`, 0, 4 / v.scale);
@@ -420,7 +438,7 @@ const PlanCanvas: React.FC<Props> = ({
       if (isSel) {
         const hs = 7 / v.scale;
         ctx.fillStyle = '#ffcc33';
-        ctx.strokeStyle = '#1a1a2e';
+        ctx.strokeStyle = pal.bg;
         ctx.lineWidth = 1 / v.scale;
         for (const [lx, ly] of [[-se.width / 2, -se.depth / 2], [se.width / 2, -se.depth / 2], [se.width / 2, se.depth / 2], [-se.width / 2, se.depth / 2]]) {
           ctx.fillRect(lx - hs / 2, ly - hs / 2, hs, hs);
@@ -564,7 +582,7 @@ const PlanCanvas: React.FC<Props> = ({
         ctx.strokeRect(rx, ry, rw, rh);
         ctx.setLineDash([]);
         if (shape.label) {
-          ctx.fillStyle = '#ccc';
+          ctx.fillStyle = pal.text;
           ctx.font = `${12 / v.scale}px sans-serif`;
           ctx.fillText(shape.label, rx + 4 / v.scale, ry + 14 / v.scale);
         }
@@ -581,7 +599,7 @@ const PlanCanvas: React.FC<Props> = ({
         if (shape.label) {
           const mx = (shape.points[0].x + shape.points[1].x) / 2;
           const my = (shape.points[0].y + shape.points[1].y) / 2;
-          ctx.fillStyle = shape.type === 'measure' ? '#ff9800' : '#ccc';
+          ctx.fillStyle = shape.type === 'measure' ? '#ff9800' : pal.text;
           ctx.font = `bold ${13 / v.scale}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.fillText(shape.label, mx, my - 8 / v.scale);
@@ -669,7 +687,7 @@ const PlanCanvas: React.FC<Props> = ({
       ctx.beginPath(); ctx.arc(p.x, p.y, r * 0.4, 0, Math.PI * 2);
       ctx.fillStyle = isSel ? '#ffcc33' : '#ff9633';
       ctx.fill();
-      ctx.fillStyle = '#eee';
+      ctx.fillStyle = pal.text;
       ctx.font = `${11 / v.scale}px sans-serif`;
       ctx.textAlign = 'center';
       const poseTag = p.pose === 'sitting' ? ' (sitzt)' : '';
@@ -815,7 +833,7 @@ const PlanCanvas: React.FC<Props> = ({
           ctx.stroke();
         } else {
           const cs = 0.12;
-          ctx.strokeStyle = '#666';
+          ctx.strokeStyle = pal.faint;
           ctx.lineWidth = 1.5 / v.scale;
           ctx.beginPath();
           ctx.moveTo(f.aimX - cs, f.aimY); ctx.lineTo(f.aimX + cs, f.aimY);
@@ -845,11 +863,11 @@ const PlanCanvas: React.FC<Props> = ({
       }
 
       // Labels
-      ctx.fillStyle = '#ddd';
+      ctx.fillStyle = pal.text;
       ctx.font = `${10 / v.scale}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText(f.fixture.name, f.x, f.y - rad - 6 / v.scale);
-      ctx.fillStyle = '#999';
+      ctx.fillStyle = pal.text2;
       ctx.font = `${9 / v.scale}px sans-serif`;
       ctx.fillText(`h=${f.mountingHeight}m`, f.x, f.y + rad + 12 / v.scale);
       // Channel / DMX patch badge
