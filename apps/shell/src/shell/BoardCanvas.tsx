@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon, Menu, MenuItem } from '@avplan/ui'
+import { Icon, Menu, MenuItem, confirmDialog } from '@avplan/ui'
 import { useT, format, type TFunc } from '../i18n'
 import type { Board, BoardCard, BoardCardType } from '../data/project'
 import {
@@ -363,6 +363,7 @@ export function BoardCanvas({ seed, title: titleProp }: { seed: Board; title?: s
           {columns.map((col) => {
             const r = layout.get(col.id)!
             const selected = selectedId === col.id
+            const hasChildren = cards.some((c) => c.columnId === col.id)
             return (
               <div key={col.id} data-column-id={col.id} className="absolute rounded-av-card border border-dashed border-av-border bg-av-surface-1/40" style={{ left: r.x, top: r.y, width: r.w, height: r.h, boxShadow: selected ? '0 0 0 2px var(--av-accent)' : undefined }}>
                 <div
@@ -379,7 +380,24 @@ export function BoardCanvas({ seed, title: titleProp }: { seed: Board; title?: s
                   ) : (
                     <span className="flex-1 truncate text-[12px] font-semibold text-av-text">{col.title}</span>
                   )}
-                  {selected && <button type="button" className="av-icon-btn" style={{ width: 22, height: 22 }} onClick={() => removeCard(col.id)} aria-label={t('board.column.delete', 'Spalte löschen')}><Icon name="close" size={13} /></button>}
+                  {selected && (
+                    <button
+                      type="button"
+                      className="av-icon-btn"
+                      style={{ width: 22, height: 22 }}
+                      onClick={async () => {
+                        // Spalte mit Inhalt: gestylte Rückfrage (kein window.confirm).
+                        if (hasChildren && !(await confirmDialog(
+                          t('board.column.deleteConfirm', 'Spalte mit Inhalt endgültig löschen?'),
+                          { destructive: true, okLabel: t('board.column.delete', 'Spalte löschen'), cancelLabel: t('board.cancel', 'Abbrechen') },
+                        ))) return
+                        removeCard(col.id)
+                      }}
+                      aria-label={t('board.column.delete', 'Spalte löschen')}
+                    >
+                      <Icon name="close" size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -591,7 +609,7 @@ function CardBody({ card, editing, onEndEdit, onPatch }: { card: BoardCard; edit
         <ul className="flex flex-col gap-1">
           {card.items?.map((it, i) => (
             <li key={i} className="flex items-center gap-2 text-[12px]">
-              <button type="button" className="grid h-3.5 w-3.5 flex-none place-items-center rounded" style={{ border: it.done ? 'none' : '1.5px solid var(--av-border)', background: it.done ? 'var(--av-ok)' : 'transparent', color: '#fff' }} onClick={() => onPatch({ items: card.items?.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })} aria-label={it.done ? t('board.todo.done', 'Erledigt') : t('board.todo.open', 'Offen')}>
+              <button type="button" className="grid h-3.5 w-3.5 flex-none place-items-center rounded" style={{ border: it.done ? 'none' : '1.5px solid var(--av-border)', background: it.done ? 'var(--av-ok)' : 'transparent', color: 'var(--av-accent-text)' }} onClick={() => onPatch({ items: card.items?.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })} aria-label={it.done ? t('board.todo.done', 'Erledigt') : t('board.todo.open', 'Offen')}>
                 {it.done && <Icon name="check" size={10} />}
               </button>
               <span className={it.done ? 'text-av-text-faint line-through' : 'text-av-text-secondary'}>{it.text}</span>

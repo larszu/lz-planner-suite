@@ -163,6 +163,39 @@ export function Topbar({
         <span className="text-[15px] font-bold tracking-tight text-av-text">AV Planner Suite</span>
       </div>
 
+      {/* Mobile-Überlaufmenü (unter md, wo die Menüleiste ausgeblendet ist) */}
+      <div className="md:hidden">
+        <Menu
+          align="left"
+          triggerClassName="av-icon-btn"
+          ariaLabel={t('chrome.topbar.menu.aria', 'Menü')}
+          button={
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+            </svg>
+          }
+        >
+          {(close) => (
+            <>
+              <MenuItem icon={<Icon name="plus" size={15} />} onClick={() => { onNew(); close() }}>{t('chrome.topbar.file.new', 'Neues Projekt')}</MenuItem>
+              <MenuItem icon={<Icon name="external" size={15} />} onClick={() => { close(); openFileDialog() }}>{t('chrome.topbar.file.open', 'Projekt öffnen…')}</MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<Icon name="check" size={15} />} disabled={!project} onClick={() => { onSave(); close() }}>{t('chrome.topbar.file.save', 'Speichern')}</MenuItem>
+              <MenuItem icon={<Icon name="library" size={15} />} disabled={!project} onClick={() => { onSaveAs(); close() }}>{t('chrome.topbar.file.saveAs', 'Speichern unter…')}</MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<Icon name="library" size={15} />} disabled={!project} onClick={() => { onOpenBilling(); close() }}>{t('billing.menu.open', 'Beleg erstellen (Lexware)…')}</MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />} onClick={() => { onToggleTheme(); close() }}>
+                {theme === 'dark' ? t('chrome.topbar.view.lightTheme', 'Helles Theme') : t('chrome.topbar.view.darkTheme', 'Dunkles Theme')}
+              </MenuItem>
+              <MenuItem icon={<Icon name="settings" size={15} />} onClick={() => { close(); onOpenSettings() }}>{t('chrome.topbar.view.settings', 'Einstellungen…')}</MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<Icon name="command" size={15} />} onClick={() => { close(); setShortcutsOpen(true) }}>{t('chrome.topbar.help.shortcuts', 'Tastenkürzel…')}</MenuItem>
+            </>
+          )}
+        </Menu>
+      </div>
+
       {/* Funktionale Menüleiste (geteiltes Menu) */}
       <nav className="hidden items-center gap-0.5 md:flex" aria-label={t('chrome.topbar.menu.aria', 'Menü')}>
         <Menu button={t('chrome.topbar.menu.file', 'Datei')} triggerClassName={ghost} align="left">

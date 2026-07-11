@@ -56,6 +56,8 @@ export const config: Record<string, string> = {
   'config.toast.loadFailed': 'Could not load project',
   'config.error.unknown': 'Unknown error',
   'config.action.undo': 'Undo',
+  'config.action.showProperties': 'Show properties',
+  'config.action.closeProperties': 'Close properties',
   // App-spezifische Einstellungen (SettingsModal, aus appSettings.ts-Schema)
   // signal
   'config.set.signal.cableColorMode.label': 'Cable color',

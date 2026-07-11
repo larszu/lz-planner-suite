@@ -48,6 +48,8 @@ export const board: Record<string, string> = {
   // Card controls
   'board.swatch': 'Color {color}',
   'board.column.delete': 'Delete column',
+  'board.column.deleteConfirm': 'Permanently delete column with its contents?',
+  'board.cancel': 'Cancel',
   'board.card.delete': 'Delete card',
   'board.connect': 'Draw connection',
   'board.resize': 'Drag to resize',

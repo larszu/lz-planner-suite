@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   CommandPalette,
+  Icon,
   ModuleRail,
   onShellMessage,
   useCommandPaletteHotkey,
@@ -159,6 +160,8 @@ export function App() {
     board: false,
   })
   const [libraryOpen, setLibraryOpen] = useState(true)
+  // Eigenschaften-Panel als Overlay unter lg (inline erst ab lg sichtbar).
+  const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [billingOpen, setBillingOpen] = useState(false)
@@ -331,6 +334,32 @@ export function App() {
         <aside className="hidden w-80 flex-none border-l border-av-border-muted lg:block" aria-label={tt('config.aria.properties', 'Eigenschaften')}>
           <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} />
         </aside>
+
+        {/* Eigenschaften als Schublade unter lg (Tablet/Mobil). */}
+        <button
+          type="button"
+          className="av-focus fixed bottom-16 right-4 z-30 grid h-11 w-11 place-items-center rounded-full border border-av-border bg-av-surface-2 text-av-text shadow-[var(--av-shadow-float)] lg:hidden"
+          onClick={() => setPropertiesOpen(true)}
+          aria-label={tt('config.action.showProperties', 'Eigenschaften anzeigen')}
+        >
+          <Icon name="modules" size={19} />
+        </button>
+        {propertiesOpen && (
+          <div className="fixed inset-0 z-40 flex justify-end lg:hidden" role="dialog" aria-label={tt('config.aria.properties', 'Eigenschaften')}>
+            <div className="absolute inset-0 bg-black/40" onClick={() => setPropertiesOpen(false)} />
+            <aside className="relative z-10 flex h-full w-80 max-w-[85vw] flex-col border-l border-av-border-muted bg-av-surface-1 shadow-[var(--av-shadow-float)]">
+              <button
+                type="button"
+                className="av-focus absolute right-2 top-2 z-20 grid h-7 w-7 place-items-center rounded-md text-av-text-muted hover:bg-av-surface-2 hover:text-av-text"
+                onClick={() => setPropertiesOpen(false)}
+                aria-label={tt('config.action.closeProperties', 'Eigenschaften schließen')}
+              >
+                <Icon name="close" size={15} />
+              </button>
+              <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} />
+            </aside>
+          </div>
+        )}
       </div>
 
       <StatusBar

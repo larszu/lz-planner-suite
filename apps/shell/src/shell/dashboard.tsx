@@ -233,7 +233,7 @@ export function TasksCard({ tasks }: { tasks: ProjectTask[] }) {
               style={{
                 border: task.done ? 'none' : '1.5px solid var(--av-border)',
                 background: task.done ? 'var(--av-ok)' : 'transparent',
-                color: '#fff',
+                color: 'var(--av-accent-text)',
               }}
             >
               {task.done && <Icon name="check" size={11} />}

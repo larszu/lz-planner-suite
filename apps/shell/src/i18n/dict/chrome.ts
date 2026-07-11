@@ -107,8 +107,8 @@ export const chrome: Record<string, string> = {
   'chrome.dash.dragTitle': 'Drag to arrange',
   'chrome.dash.hideAria': 'Hide card',
   'chrome.dash.hideTitle': 'Hide',
-  'chrome.dash.resizeAria': 'Scale width',
-  'chrome.dash.resizeTitle': 'Drag to scale',
+  'chrome.dash.resizeAria': 'Scale width — left/right arrows change the columns, Home/End set minimum/maximum',
+  'chrome.dash.resizeTitle': 'Drag or use arrow keys to scale',
   // Toast
   'chrome.toast.close': 'Close',
   // PlannerFrame

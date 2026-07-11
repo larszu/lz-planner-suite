@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { Icon } from '@avplan/ui'
-import { clampSpan, type WidgetId } from './dashboardPrefs'
+import { clampSpan, MAX_SPAN, type WidgetId } from './dashboardPrefs'
 import { useT } from '../i18n'
 
 const GAP = 12 // entspricht gap-3 (0.75rem)
@@ -176,12 +176,27 @@ function DashboardCard({
 
       {children}
 
-      {/* Resize-Griff unten rechts. */}
+      {/* Resize-Griff unten rechts (Zeiger-Drag + Pfeiltasten/Pos1/Ende). */}
       <button
         type="button"
-        aria-label={t('chrome.dash.resizeAria', 'Breite skalieren')}
-        title={t('chrome.dash.resizeTitle', 'Ziehen zum Skalieren')}
+        aria-label={t('chrome.dash.resizeAria', 'Breite skalieren — Pfeil links/rechts ändert die Spalten, Pos1/Ende auf Minimum/Maximum')}
+        title={t('chrome.dash.resizeTitle', 'Ziehen oder Pfeiltasten zum Skalieren')}
+        role="slider"
+        aria-valuemin={1}
+        aria-valuemax={MAX_SPAN}
+        aria-valuenow={span}
         onPointerDown={onResizeStart}
+        onKeyDown={(e) => {
+          let next: number | null = null
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = span - 1
+          else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = span + 1
+          else if (e.key === 'Home') next = 1
+          else if (e.key === 'End') next = MAX_SPAN
+          if (next === null) return
+          e.preventDefault()
+          const clamped = clampSpan(next)
+          if (clamped !== span) onResize(clamped)
+        }}
         className="av-focus absolute bottom-1 right-1 z-10 grid h-5 w-5 cursor-nwse-resize place-items-center rounded text-av-text-faint opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
         style={{ opacity: resizing ? 1 : undefined }}
       >

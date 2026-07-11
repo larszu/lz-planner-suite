@@ -30,21 +30,21 @@ const library = (t: TFunc): Record<ModuleId, LibItem[]> => ({
       { name: 'CAM 1 — Sony FX9', sub: t('panels.lib.signal.sdiOutLinked', '3× SDI Out · verknüpft') },
       { name: 'CAM 2 — Sony FX9', sub: t('panels.lib.signal.sdiOutLinked', '3× SDI Out · verknüpft') },
     ] },
-    { group: 'Dimmer / Power', entries: [
+    { group: t('panels.lib.signal.dimmerPower', 'Dimmer / Power'), entries: [
       { name: 'Dimmer Rack 2', sub: t('panels.lib.signal.channelsLinked', '12 Kanäle · 16 A · verknüpft') },
     ] },
   ],
   cameras: [
-    { group: 'Cinema', entries: [
+    { group: t('panels.lib.cameras.cinema', 'Cinema'), entries: [
       { name: 'Sony FX9', sub: 'FF 6K · E-Mount', star: true },
       { name: 'Sony VENICE 2', sub: 'FF 8.6K · PL/E', star: true },
       { name: 'Canon C500 II', sub: 'FF 5.9K · EF/PL' },
     ] },
-    { group: 'Broadcast', entries: [
+    { group: t('panels.lib.cameras.broadcast', 'Broadcast'), entries: [
       { name: 'URSA Broadcast G2', sub: 'B4 · 2/3"-Relay' },
       { name: 'Sony HDC-3500', sub: '2/3" · B4' },
     ] },
-    { group: 'PTZ', entries: [{ name: 'Sony FR7', sub: 'FF PTZ · E-Mount' }] },
+    { group: t('panels.lib.cameras.ptz', 'PTZ'), entries: [{ name: 'Sony FR7', sub: 'FF PTZ · E-Mount' }] },
   ],
   licht: [
     { group: t('panels.lib.licht.profiler', 'Profiler'), entries: [
@@ -52,11 +52,11 @@ const library = (t: TFunc): Record<ModuleId, LibItem[]> => ({
       { name: 'ETC Source Four 26°', sub: '750 W · 26° · 3200 K', star: true },
       { name: 'KL Profile FC', sub: '260 W LED · 5–50°' },
     ] },
-    { group: 'Wash / Fresnel', entries: [
+    { group: t('panels.lib.licht.washFresnel', 'Wash / Fresnel'), entries: [
       { name: 'KL Fresnel 8 FC', sub: '300 W LED · 15–60°', star: true },
       { name: 'Arri 650 Plus', sub: '650 W · Fresnel' },
     ] },
-    { group: 'PAR / Panel', entries: [
+    { group: t('panels.lib.licht.parPanel', 'PAR / Panel'), entries: [
       { name: 'KL Panel XL', sub: '400 W LED · Softlight' },
       { name: 'PAR 64 CP62', sub: '1000 W · MFL' },
     ] },

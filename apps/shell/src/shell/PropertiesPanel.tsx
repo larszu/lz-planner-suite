@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Badge, Button, Icon } from '@avplan/ui'
 import { computeCounts, type SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
-import { useT, type TFunc } from '../i18n'
+import { useT, format, type TFunc } from '../i18n'
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -134,7 +134,7 @@ export function PropertiesPanel({
           </Group>
           <Group title={t('panels.group.venueDevice', 'Venue-Gerät')} icon="camera" accent="var(--mod-cameras)">
             <Field label={t('panels.field.source', 'Quelle')}>CAM 2 @ 12,0 / 11,6 m</Field>
-            <Field label={t('panels.field.cableRun', 'Kabelweg')}>{t('panels.value.cableRunReserve', '≈ 41 m + Reserve')}</Field>
+            <Field label={t('panels.field.cableRun', 'Kabelweg')}>{format(t('panels.value.cableRunReserve', '≈ {m} m + Reserve'), { m: cable.lengthM })}</Field>
             <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('cameras')}>
               <Icon name="camera" size={14} /> {t('panels.action.showInCameraPlan', 'Im Kamera-Plan zeigen')}
             </Button>

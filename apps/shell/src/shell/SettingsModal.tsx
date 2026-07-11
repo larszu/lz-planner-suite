@@ -316,8 +316,8 @@ function Switch({
       style={{ background: checked ? accent : 'var(--av-surface-3)' }}
     >
       <span
-        className="inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform"
-        style={{ transform: checked ? 'translateX(17px)' : 'translateX(3px)' }}
+        className="inline-block h-3.5 w-3.5 rounded-full transition-transform"
+        style={{ background: 'var(--av-accent-text)', transform: checked ? 'translateX(17px)' : 'translateX(3px)' }}
       />
     </button>
   )
@@ -345,7 +345,7 @@ function Segmented({
             className="av-focus rounded-av-control px-2 py-0.5 text-[12px]"
             style={{
               background: active ? accent : 'transparent',
-              color: active ? '#fff' : 'var(--av-text-secondary)',
+              color: active ? 'var(--av-accent-text)' : 'var(--av-text-secondary)',
               fontWeight: active ? 600 : 400,
             }}
             aria-pressed={active}

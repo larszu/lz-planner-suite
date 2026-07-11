@@ -53,6 +53,17 @@ export interface HistoryMessage {
 }
 
 /**
+ * iframe → Shell: der Nutzer hat im Planer selbst einen gebrückten Wert geändert
+ * (z. B. Lichts Heatmap-Schalter im Planer-Menü). Die Shell übernimmt ihn in
+ * ihre Quelle der Wahrheit, damit ein Remount die Änderung nicht zurücksetzt.
+ */
+export interface SettingChangedMessage {
+  type: 'avplan:settingChanged'
+  key: string
+  value: unknown
+}
+
+/**
  * Shell → iframe: einen Lexware-Office-Beleg über den Planer anlegen. Der Key
  * liegt server-seitig beim Planer (keytar/IPC), nie im Browser — die Shell reicht
  * nur den fertigen Beleg (`doc`, strukturell ein BillingDoc aus
@@ -82,6 +93,7 @@ export type ShellMessage =
   | SettingsMessage
   | CommandMessage
   | HistoryMessage
+  | SettingChangedMessage
   | LexwareRequestMessage
   | LexwareResultMessage
 
@@ -161,6 +173,20 @@ export function connectShellHistory(h: HistoryHandlers): { publish: () => void; 
   window.addEventListener('message', onMessage)
   publish()
   return { publish, dispose: () => window.removeEventListener('message', onMessage) }
+}
+
+/**
+ * Planer-Seite: eine lokal (im Planer-eigenen UI) geänderte, gebrückte
+ * Einstellung an die Shell zurückmelden, damit deren Quelle der Wahrheit
+ * synchron bleibt. No-op im Standalone-Betrieb.
+ */
+export function publishShellSetting(key: string, value: unknown): void {
+  try {
+    if (typeof window === 'undefined' || window.parent === window) return
+    window.parent.postMessage({ type: 'avplan:settingChanged', key, value } satisfies SettingChangedMessage, '*')
+  } catch {
+    /* egal */
+  }
 }
 
 /**
