@@ -47,6 +47,9 @@ export function initShellSettings(): () => void {
       case 'showFocusNotes':
         if (s.showFocusNotes !== !!value) s.toggleFocusNotes();
         break;
+      case 'language':
+        s.setLanguage(value === 'en' ? 'en' : 'de');
+        break;
     }
   });
 }

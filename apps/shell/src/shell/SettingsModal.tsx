@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Badge, Icon, Modal, type ThemePreference } from '@avplan/ui'
 import { MODULES, type ModuleId } from '../modules/registry'
+import type { Language } from './language'
 import {
   APP_MODULE_IDS,
   APP_SETTINGS_SCHEMA,
@@ -27,6 +28,8 @@ export function SettingsModal({
   activeModule,
   appSettings,
   onChangeAppSetting,
+  language,
+  onSetLanguage,
 }: {
   open: boolean
   onClose: () => void
@@ -36,6 +39,8 @@ export function SettingsModal({
   activeModule: ModuleId
   appSettings: SuiteAppSettings
   onChangeAppSetting: (app: AppModuleId, key: string, value: SettingValue) => void
+  language: Language
+  onSetLanguage: (lang: Language) => void
 }) {
   return (
     <Modal open={open} onClose={onClose} title="Einstellungen" size="lg">
@@ -48,6 +53,8 @@ export function SettingsModal({
         activeModule={activeModule}
         appSettings={appSettings}
         onChangeAppSetting={onChangeAppSetting}
+        language={language}
+        onSetLanguage={onSetLanguage}
       />
     </Modal>
   )
@@ -59,12 +66,16 @@ function SettingsBody({
   activeModule,
   appSettings,
   onChangeAppSetting,
+  language,
+  onSetLanguage,
 }: {
   preference: ThemePreference
   onSetPreference: (p: ThemePreference) => void
   activeModule: ModuleId
   appSettings: SuiteAppSettings
   onChangeAppSetting: (app: AppModuleId, key: string, value: SettingValue) => void
+  language: Language
+  onSetLanguage: (lang: Language) => void
 }) {
   // Standardmäßig das Accordion des aktuellen Planers öffnen.
   const [openId, setOpenId] = useState<AppModuleId | null>(() =>
@@ -107,6 +118,34 @@ function SettingsBody({
             })}
           </div>
         </div>
+        <div className="mt-2 flex items-center justify-between rounded-av-card border border-av-border bg-av-surface-2 px-3.5 py-3">
+          <span className="text-[13px] font-medium text-av-text">Sprache</span>
+          <div className="flex items-center gap-1 rounded-av-control border border-av-border bg-av-surface-3 p-0.5">
+            {(['de', 'en'] as Language[]).map((lang) => {
+              const active = language === lang
+              return (
+                <button
+                  key={lang}
+                  type="button"
+                  className="av-focus rounded-av-control px-2.5 py-1 text-[12.5px]"
+                  style={{
+                    background: active ? 'var(--av-accent)' : 'transparent',
+                    color: active ? 'var(--av-accent-text)' : 'var(--av-text-secondary)',
+                    fontWeight: active ? 600 : 400,
+                  }}
+                  aria-pressed={active}
+                  onClick={() => onSetLanguage(lang)}
+                >
+                  {lang === 'de' ? 'Deutsch' : 'English'}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <p className="mt-1.5 text-[11px] text-av-text-faint">
+          Die Sprache wird an die geöffneten Planer weitergegeben. Cable Planner schaltet vollständig um; Light Planner
+          teilweise. Die Shell-Oberfläche selbst ist derzeit deutsch.
+        </p>
       </section>
 
       {/* App-spezifische Einstellungen — als Accordion, aktives Modul offen */}

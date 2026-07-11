@@ -34,6 +34,9 @@ export function initShellSettings(): () => void {
       case 'cableBumps':
         s.setCableBumps(!!value)
         break
+      case 'language':
+        s.setLanguage(value === 'en' ? 'en' : 'de')
+        break
     }
   })
 }

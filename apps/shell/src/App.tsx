@@ -27,6 +27,7 @@ import {
   type AppModuleId,
   type SettingValue,
 } from './shell/appSettings'
+import { loadLanguage, saveLanguage, type Language } from './shell/language'
 import { LibraryPanel } from './shell/LibraryPanel'
 import { PropertiesPanel } from './shell/PropertiesPanel'
 import { TabDeck } from './shell/TabDeck'
@@ -169,6 +170,13 @@ export function App() {
     })
   }, [])
 
+  // Suite-weite Sprache (gilt gemeinsam, an die Planer gebrückt).
+  const [language, setLanguageState] = useState<Language>(loadLanguage)
+  const setLanguage = useCallback((lang: Language) => {
+    saveLanguage(lang)
+    setLanguageState(lang)
+  }, [])
+
   const mod = MODULE_BY_ID[moduleId]
   // Ist gerade ein Planer-iframe offen? Dann zielt Undo/Redo auf ihn, sonst auf
   // die Projekt-Historie der Shell.
@@ -286,7 +294,7 @@ export function App() {
             zoom={zoom}
             plannerSettings={
               moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht'
-                ? appSettings[moduleId]
+                ? { ...appSettings[moduleId], language }
                 : undefined
             }
             onPlannerHistory={setPlannerHistory}
@@ -323,6 +331,8 @@ export function App() {
         activeModule={moduleId}
         appSettings={appSettings}
         onChangeAppSetting={changeAppSetting}
+        language={language}
+        onSetLanguage={setLanguage}
       />
     </div>
   )
