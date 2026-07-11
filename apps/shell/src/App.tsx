@@ -155,10 +155,7 @@ export function App() {
         onClose={() => setSettingsOpen(false)}
         preference={preference}
         onSetPreference={setPreference}
-        onOpenModule={(id) => {
-          setModuleId(id)
-          setMounted((m) => ({ ...m, [id]: true }))
-        }}
+        activeModule={moduleId}
       />
     </div>
   )
