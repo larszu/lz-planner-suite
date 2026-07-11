@@ -10,6 +10,13 @@ import {
 import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, type ModuleId } from './modules/registry'
 import { PROJECT, type SuiteProject } from './data/project'
+import {
+  blankProject,
+  downloadProject,
+  loadProjectLocal,
+  parseProject,
+  saveProjectLocal,
+} from './data/projectFile'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
 import {
@@ -44,8 +51,62 @@ const DEFAULT_TAB: Record<ModuleId, string> = {
 
 export function App() {
   const { theme, preference, setPreference, toggle } = useTheme()
-  // Zugewiesenes Projekt oder null — ohne Projekt bleiben alle Module einzeln nutzbar.
-  const [project, setProject] = useState<SuiteProject | null>(PROJECT)
+  // Projekt-Historie: zugewiesenes Projekt (oder null) mit Undo/Redo-Stapeln.
+  // Startwert: zuletzt gespeichertes Projekt, sonst das Demo-Projekt.
+  const [history, setHistory] = useState<{
+    past: (SuiteProject | null)[]
+    present: SuiteProject | null
+    future: (SuiteProject | null)[]
+  }>(() => ({ past: [], present: loadProjectLocal() ?? PROJECT, future: [] }))
+  const project = history.present
+  const canUndo = history.past.length > 0
+  const canRedo = history.future.length > 0
+
+  // Projektwechsel mit Historie (assign/clear/neu/öffnen).
+  const commitProject = useCallback((next: SuiteProject | null) => {
+    setHistory((h) => ({ past: [...h.past, h.present], present: next, future: [] }))
+  }, [])
+  const undo = useCallback(() => {
+    setHistory((h) =>
+      h.past.length
+        ? { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future] }
+        : h,
+    )
+  }, [])
+  const redo = useCallback(() => {
+    setHistory((h) =>
+      h.future.length
+        ? { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) }
+        : h,
+    )
+  }, [])
+
+  // Datei-Operationen (Topbar „Datei"-Menü).
+  const saveProject = useCallback(() => {
+    if (!project) return
+    const saved = { ...project, meta: { ...project.meta, saved: true } }
+    saveProjectLocal(saved)
+    setHistory((h) => ({ ...h, present: saved }))
+  }, [project])
+  const saveProjectAs = useCallback(() => {
+    if (!project) return
+    downloadProject(project)
+    const saved = { ...project, meta: { ...project.meta, saved: true } }
+    saveProjectLocal(saved)
+    setHistory((h) => ({ ...h, present: saved }))
+  }, [project])
+  const newProject = useCallback(() => commitProject(blankProject()), [commitProject])
+  const importProject = useCallback(
+    (text: string) => {
+      try {
+        commitProject(parseProject(text))
+      } catch (e) {
+        window.alert(`Projekt konnte nicht geladen werden: ${e instanceof Error ? e.message : 'Unbekannter Fehler'}`)
+      }
+    },
+    [commitProject],
+  )
+
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
   const [tabs, setTabs] = useState<Record<ModuleId, string>>(DEFAULT_TAB)
   const [selected, setSelected] = useState<Record<ModuleId, string | null>>({
@@ -109,6 +170,27 @@ export function App() {
     [mod, goToModule, setTab, selectItem, toggle, toggleMount],
   )
 
+  // Globale Tastenkürzel: Speichern (⌘/Ctrl+S), Rückgängig/Wiederholen (⌘/Ctrl+Z / ⇧Z / Y).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey
+      if (!meta) return
+      const key = e.key.toLowerCase()
+      if (key === 's') {
+        e.preventDefault()
+        saveProject()
+      } else if (key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+        e.preventDefault()
+        redo()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [saveProject, undo, redo])
+
   return (
     <div data-module={mod.dataModule} className="flex h-full flex-col bg-av-bg text-av-text">
       <Topbar
@@ -117,8 +199,16 @@ export function App() {
         onToggleTheme={toggle}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenPalette={() => setPaletteOpen(true)}
-        onAssign={() => setProject(PROJECT)}
-        onClear={() => setProject(null)}
+        onAssign={() => commitProject(PROJECT)}
+        onClear={() => commitProject(null)}
+        onNew={newProject}
+        onSave={saveProject}
+        onSaveAs={saveProjectAs}
+        onImport={importProject}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -149,7 +239,7 @@ export function App() {
             selectedId={selected[moduleId]}
             onSelect={selectItem}
             onNavigate={goToModule}
-            onAssign={() => setProject(PROJECT)}
+            onAssign={() => commitProject(PROJECT)}
             plannerSettings={
               moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht'
                 ? appSettings[moduleId]

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   Badge,
   Icon,
@@ -72,6 +72,9 @@ function ProjectPicker({
 function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const rows: { keys: string[]; label: string }[] = [
     { keys: ['⌘', 'K'], label: 'Suchen & Befehle (Command-Palette)' },
+    { keys: ['⌘', 'S'], label: 'Projekt speichern' },
+    { keys: ['⌘', 'Z'], label: 'Rückgängig' },
+    { keys: ['⌘', '⇧', 'Z'], label: 'Wiederholen' },
     { keys: ['1'], label: 'Übersicht' },
     { keys: ['2'], label: 'Signal-Flow' },
     { keys: ['3'], label: 'Kamera-Plan' },
@@ -101,6 +104,14 @@ export function Topbar({
   onOpenPalette,
   onAssign,
   onClear,
+  onNew,
+  onSave,
+  onSaveAs,
+  onImport,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: {
   project: SuiteProject | null
   theme: ResolvedTheme
@@ -109,8 +120,30 @@ export function Topbar({
   onOpenPalette: () => void
   onAssign: () => void
   onClear: () => void
+  onNew: () => void
+  onSave: () => void
+  onSaveAs: () => void
+  onImport: (text: string) => void
+  onUndo: () => void
+  onRedo: () => void
+  canUndo: boolean
+  canRedo: boolean
 }) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const openFileDialog = () => fileInputRef.current?.click()
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    // Input zurücksetzen, damit dieselbe Datei erneut wählbar bleibt.
+    e.target.value = ''
+    if (!file) return
+    file
+      .text()
+      .then(onImport)
+      .catch(() => window.alert('Datei konnte nicht gelesen werden.'))
+  }
 
   const ghost = 'av-btn'
 
@@ -129,7 +162,27 @@ export function Topbar({
         <Menu button="Datei" triggerClassName={ghost} align="left">
           {(close) => (
             <>
-              <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { onAssign(); close() }}>Projekt zuweisen</MenuItem>
+              <MenuItem icon={<Icon name="plus" size={15} />} onClick={() => { onNew(); close() }}>Neues Projekt</MenuItem>
+              <MenuItem icon={<Icon name="external" size={15} />} onClick={() => { close(); openFileDialog() }}>Projekt öffnen…</MenuItem>
+              <MenuSeparator />
+              <MenuItem
+                icon={<Icon name="check" size={15} />}
+                hint={<span><Kbd>⌘</Kbd><Kbd>S</Kbd></span>}
+                disabled={!project}
+                onClick={() => { onSave(); close() }}
+              >
+                Speichern
+              </MenuItem>
+              <MenuItem
+                icon={<Icon name="library" size={15} />}
+                disabled={!project}
+                onClick={() => { onSaveAs(); close() }}
+              >
+                Speichern unter…
+              </MenuItem>
+              <MenuSeparator />
+              <MenuLabel>Demo-Projekt</MenuLabel>
+              <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { onAssign(); close() }}>Sommershow 2026 laden</MenuItem>
               <MenuItem icon={<Icon name="close" size={15} />} onClick={() => { onClear(); close() }}>Kein Projekt (Module einzeln)</MenuItem>
             </>
           )}
@@ -185,8 +238,12 @@ export function Topbar({
         </button>
 
         <div className="mx-1 flex items-center gap-0.5">
-          <IconButton label="Rückgängig"><Icon name="undo" size={17} /></IconButton>
-          <IconButton label="Wiederholen"><Icon name="redo" size={17} /></IconButton>
+          <IconButton label="Rückgängig" onClick={onUndo} disabled={!canUndo} style={{ opacity: canUndo ? 1 : 0.4 }}>
+            <Icon name="undo" size={17} />
+          </IconButton>
+          <IconButton label="Wiederholen" onClick={onRedo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.4 }}>
+            <Icon name="redo" size={17} />
+          </IconButton>
         </div>
 
         {project && <Badge tone="ok" dot>{project.meta.saved ? 'Gespeichert' : 'Ungespeichert'}</Badge>}
@@ -201,6 +258,13 @@ export function Topbar({
       </div>
 
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,.avsuite.json,application/json"
+        className="hidden"
+        onChange={handleFile}
+      />
     </header>
   )
 }
