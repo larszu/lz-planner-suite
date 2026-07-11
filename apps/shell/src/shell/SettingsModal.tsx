@@ -1,33 +1,20 @@
 import { useState } from 'react'
 import { Badge, Icon, Modal, type ThemePreference } from '@avplan/ui'
 import { MODULES, type ModuleId } from '../modules/registry'
+import {
+  APP_MODULE_IDS,
+  APP_SETTINGS_SCHEMA,
+  type AppModuleId,
+  type SettingControl,
+  type SettingValue,
+  type SuiteAppSettings,
+} from './appSettings'
 
 const THEME_OPTIONS: { id: ThemePreference; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
   { id: 'system', label: 'System', icon: 'monitor' },
   { id: 'light', label: 'Hell', icon: 'sun' },
   { id: 'dark', label: 'Dunkel', icon: 'moon' },
 ]
-
-/** App-Module mit eigenen Einstellungen (Übersicht/Board haben keine). */
-type AppModuleId = Exclude<ModuleId, 'overview' | 'board'>
-
-/** Kuratierte, app-spezifische Einstellungen je Planer (aus deren eigenen Menüs). */
-const APP_SETTINGS: Record<AppModuleId, { note: string; items: string[] }> = {
-  signal: {
-    note: 'Cable Planner',
-    items: ['Kabel-Labels ein/aus', 'Kabelfarbe nach Länge', 'Am Raster einrasten', 'Rentman-API & Kategorien', 'Analysen & Plan-Check'],
-  },
-  cameras: {
-    note: 'MultiCam Planner',
-    items: ['FOV-Anzeige aller Kameras', 'Layout Fokus / Grid', 'Venue & Bühnen', 'Kamera-Templates & Presets'],
-  },
-  licht: {
-    note: 'Light Planner',
-    items: ['Belichtung / Ambiente / Haze', 'Lichtkegel anzeigen', 'Sonne & Tageslicht', 'Einrasten', 'Render-Presets'],
-  },
-}
-
-const APP_MODULE_IDS: AppModuleId[] = ['signal', 'cameras', 'licht']
 
 const isAppModule = (id: ModuleId): id is AppModuleId =>
   (APP_MODULE_IDS as ModuleId[]).includes(id)
@@ -38,6 +25,8 @@ export function SettingsModal({
   preference,
   onSetPreference,
   activeModule,
+  appSettings,
+  onChangeAppSetting,
 }: {
   open: boolean
   onClose: () => void
@@ -45,13 +34,21 @@ export function SettingsModal({
   onSetPreference: (p: ThemePreference) => void
   /** Aktives Modul — dessen Einstellungen-Accordion ist standardmäßig offen. */
   activeModule: ModuleId
+  appSettings: SuiteAppSettings
+  onChangeAppSetting: (app: AppModuleId, key: string, value: SettingValue) => void
 }) {
   return (
     <Modal open={open} onClose={onClose} title="Einstellungen" size="lg">
       {/* Inhalt als eigene Komponente: Modal gibt bei !open null zurück und
           unmountet die Kinder, daher mountet SettingsBody bei jedem Öffnen neu —
           der useState-Initializer greift so aufs jeweils aktive Modul zu. */}
-      <SettingsBody preference={preference} onSetPreference={onSetPreference} activeModule={activeModule} />
+      <SettingsBody
+        preference={preference}
+        onSetPreference={onSetPreference}
+        activeModule={activeModule}
+        appSettings={appSettings}
+        onChangeAppSetting={onChangeAppSetting}
+      />
     </Modal>
   )
 }
@@ -60,10 +57,14 @@ function SettingsBody({
   preference,
   onSetPreference,
   activeModule,
+  appSettings,
+  onChangeAppSetting,
 }: {
   preference: ThemePreference
   onSetPreference: (p: ThemePreference) => void
   activeModule: ModuleId
+  appSettings: SuiteAppSettings
+  onChangeAppSetting: (app: AppModuleId, key: string, value: SettingValue) => void
 }) {
   // Standardmäßig das Accordion des aktuellen Planers öffnen.
   const [openId, setOpenId] = useState<AppModuleId | null>(() =>
@@ -116,7 +117,7 @@ function SettingsBody({
         <div className="flex flex-col gap-2">
           {APP_MODULE_IDS.map((id) => {
             const mod = MODULES.find((m) => m.id === id)!
-            const info = APP_SETTINGS[id]
+            const info = APP_SETTINGS_SCHEMA[id]
             const isOpen = openId === id
             const panelId = `av-settings-panel-${id}`
             return (
@@ -149,23 +150,158 @@ function SettingsBody({
                   />
                 </button>
                 {isOpen && (
-                  <ul id={panelId} className="flex flex-col gap-1 px-3.5 pb-3 pl-12 pt-0 text-[12.5px] text-av-text-secondary">
-                    {info.items.map((it) => (
-                      <li key={it} className="flex items-center gap-2">
-                        <span className="h-1 w-1 rounded-full" style={{ background: mod.accent }} /> {it}
-                      </li>
+                  <div id={panelId} className="flex flex-col gap-2.5 px-3.5 pb-3.5 pt-0.5">
+                    {info.controls.map((ctrl) => (
+                      <SettingRow
+                        key={ctrl.key}
+                        control={ctrl}
+                        value={appSettings[id][ctrl.key]}
+                        accent={mod.accent}
+                        onChange={(v) => onChangeAppSetting(id, ctrl.key, v)}
+                      />
                     ))}
-                  </ul>
+                  </div>
                 )}
               </div>
             )
           })}
         </div>
         <p className="mt-2.5 text-[11px] text-av-text-faint">
-          Aufgeklappt ist die App, in der du gerade bist. Diese Einstellungen leben im jeweiligen Planer; das gemeinsame
-          Theme oben gilt überall.
+          Aufgeklappt ist die App, in der du gerade bist. Änderungen gelten sofort im geöffneten Planer; ist er gerade
+          nicht geöffnet, greifen sie beim nächsten Öffnen. Das gemeinsame Theme oben gilt überall.
         </p>
       </section>
     </>
+  )
+}
+
+function SettingRow({
+  control,
+  value,
+  accent,
+  onChange,
+}: {
+  control: SettingControl
+  value: SettingValue | undefined
+  accent: string
+  onChange: (v: SettingValue) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-[12.5px] text-av-text-secondary">
+        {control.label}
+        {control.hint && <span className="ml-1.5 text-[11px] text-av-text-faint">({control.hint})</span>}
+      </span>
+      <div className="flex-none">
+        {control.kind === 'toggle' && (
+          <Switch checked={!!value} accent={accent} onChange={(c) => onChange(c)} label={control.label} />
+        )}
+        {control.kind === 'segmented' && (
+          <Segmented
+            options={control.options ?? []}
+            value={String(value ?? '')}
+            accent={accent}
+            onChange={(v) => onChange(v)}
+          />
+        )}
+        {control.kind === 'select' && (
+          <select
+            className="av-focus rounded-av-control border border-av-border bg-av-surface-3 px-2 py-1 text-[12.5px] text-av-text"
+            value={String(value ?? '')}
+            aria-label={control.label}
+            onChange={(e) => onChange(e.target.value)}
+          >
+            {(control.options ?? []).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
+        {control.kind === 'slider' && (
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              className="av-focus w-36"
+              min={control.min}
+              max={control.max}
+              step={control.step}
+              value={Number(value ?? control.min ?? 0)}
+              aria-label={control.label}
+              style={{ accentColor: accent }}
+              onChange={(e) => onChange(Number(e.target.value))}
+            />
+            <span className="av-num w-16 text-right text-[12px] tabular-nums text-av-text-muted">
+              {control.format ? control.format(Number(value ?? control.min ?? 0)) : String(value)}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Switch({
+  checked,
+  accent,
+  onChange,
+  label,
+}: {
+  checked: boolean
+  accent: string
+  onChange: (v: boolean) => void
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className="av-focus relative inline-flex h-5 w-9 flex-none items-center rounded-full border border-av-border transition-colors"
+      style={{ background: checked ? accent : 'var(--av-surface-3)' }}
+    >
+      <span
+        className="inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform"
+        style={{ transform: checked ? 'translateX(17px)' : 'translateX(3px)' }}
+      />
+    </button>
+  )
+}
+
+function Segmented({
+  options,
+  value,
+  accent,
+  onChange,
+}: {
+  options: { value: string; label: string }[]
+  value: string
+  accent: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-av-control border border-av-border bg-av-surface-3 p-0.5">
+      {options.map((o) => {
+        const active = value === o.value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            className="av-focus rounded-av-control px-2 py-0.5 text-[12px]"
+            style={{
+              background: active ? accent : 'transparent',
+              color: active ? '#fff' : 'var(--av-text-secondary)',
+              fontWeight: active ? 600 : 400,
+            }}
+            aria-pressed={active}
+            onClick={() => onChange(o.value)}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
   )
 }

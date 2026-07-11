@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Icon, postThemeToFrame, type ResolvedTheme } from '@avplan/ui'
+import { Button, Icon, postSettingsToFrame, postThemeToFrame, type ResolvedTheme } from '@avplan/ui'
 
 export interface PlannerFrameProps {
   url: string
   title: string
   theme: ResolvedTheme
+  /** Suite-Einstellungen, die in den Planer geschoben werden (App-Module). */
+  settings?: Record<string, unknown>
 }
 
 /**
@@ -18,7 +20,7 @@ export interface PlannerFrameProps {
  * Läuft der Planer gerade nicht (Preview-Server aus), zeigt der Host statt
  * eines toten Rahmens einen erklärenden Fallback mit „in neuem Tab öffnen".
  */
-export function PlannerFrame({ url, title, theme }: PlannerFrameProps) {
+export function PlannerFrame({ url, title, theme, settings }: PlannerFrameProps) {
   const ref = useRef<HTMLIFrameElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
 
@@ -27,6 +29,13 @@ export function PlannerFrame({ url, title, theme }: PlannerFrameProps) {
     if (state !== 'ready') return
     postThemeToFrame(ref.current?.contentWindow, theme)
   }, [theme, state])
+
+  // Suite-Einstellungen in den Rahmen schieben — beim Laden und bei jeder
+  // Änderung. Die Shell ist die Quelle der Wahrheit; der Planer wendet sie an.
+  useEffect(() => {
+    if (state !== 'ready' || !settings) return
+    postSettingsToFrame(ref.current?.contentWindow, settings)
+  }, [settings, state])
 
   // Erreichbarkeit prüfen: bleibt der Rahmen 6 s im Ladezustand (auch nach
   // „Erneut versuchen"), Fallback zeigen. Der Timeout wird am loading-Zustand
@@ -49,6 +58,7 @@ export function PlannerFrame({ url, title, theme }: PlannerFrameProps) {
         onLoad={() => {
           setState('ready')
           postThemeToFrame(ref.current?.contentWindow, theme)
+          if (settings) postSettingsToFrame(ref.current?.contentWindow, settings)
         }}
       />
       {state === 'loading' && (

@@ -42,10 +42,13 @@ export {
 } from './commands'
 export {
   connectShellTheme,
+  connectShellSettings,
   postThemeToFrame,
+  postSettingsToFrame,
   onShellMessage,
   type ShellMessage,
   type ThemeMessage,
   type NavigateMessage,
   type ReadyMessage,
+  type SettingsMessage,
 } from './embed'

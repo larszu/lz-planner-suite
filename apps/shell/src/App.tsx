@@ -12,6 +12,12 @@ import { MODULES, MODULE_BY_ID, type ModuleId } from './modules/registry'
 import { PROJECT, type SuiteProject } from './data/project'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
+import {
+  loadAppSettings,
+  saveAppSettings,
+  type AppModuleId,
+  type SettingValue,
+} from './shell/appSettings'
 import { LibraryPanel } from './shell/LibraryPanel'
 import { PropertiesPanel } from './shell/PropertiesPanel'
 import { TabDeck } from './shell/TabDeck'
@@ -59,6 +65,17 @@ export function App() {
   const [libraryOpen, setLibraryOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // Suite-weite App-Einstellungen (Quelle der Wahrheit) — persistiert und in den
+  // jeweils geöffneten Planer per Bridge geschoben.
+  const [appSettings, setAppSettings] = useState(loadAppSettings)
+
+  const changeAppSetting = useCallback((app: AppModuleId, key: string, value: SettingValue) => {
+    setAppSettings((prev) => {
+      const next = { ...prev, [app]: { ...prev[app], [key]: value } }
+      saveAppSettings(next)
+      return next
+    })
+  }, [])
 
   const mod = MODULE_BY_ID[moduleId]
 
@@ -133,6 +150,11 @@ export function App() {
             onSelect={selectItem}
             onNavigate={goToModule}
             onAssign={() => setProject(PROJECT)}
+            plannerSettings={
+              moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht'
+                ? appSettings[moduleId]
+                : undefined
+            }
           />
         </main>
 
@@ -156,6 +178,8 @@ export function App() {
         preference={preference}
         onSetPreference={setPreference}
         activeModule={moduleId}
+        appSettings={appSettings}
+        onChangeAppSetting={changeAppSetting}
       />
     </div>
   )
