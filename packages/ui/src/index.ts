@@ -43,12 +43,17 @@ export {
 export {
   connectShellTheme,
   connectShellSettings,
+  connectShellHistory,
   postThemeToFrame,
   postSettingsToFrame,
+  postCommandToFrame,
   onShellMessage,
   type ShellMessage,
   type ThemeMessage,
   type NavigateMessage,
   type ReadyMessage,
   type SettingsMessage,
+  type CommandMessage,
+  type HistoryMessage,
+  type HistoryHandlers,
 } from './embed'

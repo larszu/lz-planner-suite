@@ -17,6 +17,7 @@ import {
   parseProject,
   saveProjectLocal,
 } from './data/projectFile'
+import { sendPlannerCommand } from './embed/plannerBridge'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
 import {
@@ -59,8 +60,10 @@ export function App() {
     future: (SuiteProject | null)[]
   }>(() => ({ past: [], present: loadProjectLocal() ?? PROJECT, future: [] }))
   const project = history.present
-  const canUndo = history.past.length > 0
-  const canRedo = history.future.length > 0
+  const shellCanUndo = history.past.length > 0
+  const shellCanRedo = history.future.length > 0
+  // Undo/Redo-Zustand des gerade geöffneten Planers (per Bridge gemeldet).
+  const [plannerHistory, setPlannerHistory] = useState({ canUndo: false, canRedo: false })
 
   // Projektwechsel mit Historie (assign/clear/neu/öffnen).
   const commitProject = useCallback((next: SuiteProject | null) => {
@@ -139,6 +142,18 @@ export function App() {
   }, [])
 
   const mod = MODULE_BY_ID[moduleId]
+  // Ist gerade ein Planer-iframe offen? Dann zielt Undo/Redo auf ihn, sonst auf
+  // die Projekt-Historie der Shell.
+  const plannerActive = !!mod.planner && mounted[moduleId]
+  const undoRedo = useMemo(
+    () => ({
+      onUndo: () => (plannerActive ? sendPlannerCommand('undo') : undo()),
+      onRedo: () => (plannerActive ? sendPlannerCommand('redo') : redo()),
+      canUndo: plannerActive ? plannerHistory.canUndo : shellCanUndo,
+      canRedo: plannerActive ? plannerHistory.canRedo : shellCanRedo,
+    }),
+    [plannerActive, plannerHistory, shellCanUndo, shellCanRedo, undo, redo],
+  )
 
   useCommandPaletteHotkey(setPaletteOpen)
 
@@ -181,15 +196,15 @@ export function App() {
         saveProject()
       } else if (key === 'z' && !e.shiftKey) {
         e.preventDefault()
-        undo()
+        undoRedo.onUndo()
       } else if ((key === 'z' && e.shiftKey) || key === 'y') {
         e.preventDefault()
-        redo()
+        undoRedo.onRedo()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [saveProject, undo, redo])
+  }, [saveProject, undoRedo])
 
   return (
     <div data-module={mod.dataModule} className="flex h-full flex-col bg-av-bg text-av-text">
@@ -205,10 +220,10 @@ export function App() {
         onSave={saveProject}
         onSaveAs={saveProjectAs}
         onImport={importProject}
-        onUndo={undo}
-        onRedo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
+        onUndo={undoRedo.onUndo}
+        onRedo={undoRedo.onRedo}
+        canUndo={undoRedo.canUndo}
+        canRedo={undoRedo.canRedo}
       />
 
       <div className="flex min-h-0 flex-1">
@@ -245,6 +260,7 @@ export function App() {
                 ? appSettings[moduleId]
                 : undefined
             }
+            onPlannerHistory={setPlannerHistory}
           />
         </main>
 

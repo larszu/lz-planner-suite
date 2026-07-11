@@ -50,6 +50,7 @@ export function TabDeck({
   onNavigate,
   onAssign,
   plannerSettings,
+  onPlannerHistory,
 }: {
   module: ModuleDef
   activeTab: string
@@ -64,6 +65,8 @@ export function TabDeck({
   onAssign: () => void
   /** Suite-Einstellungen für den eingebetteten Planer (nur App-Module). */
   plannerSettings?: Record<string, unknown>
+  /** Undo/Redo-Zustand des eingebetteten Planers zurück an die Shell. */
+  onPlannerHistory?: (state: { canUndo: boolean; canRedo: boolean }) => void
 }) {
   const isOverview = module.id === 'overview'
   const isBoard = module.id === 'board'
@@ -101,7 +104,7 @@ export function TabDeck({
       ) : (
         <div className="relative min-h-0 flex-1 p-3">
           {mounted && module.planner && module.plannerUrl ? (
-            <PlannerFrame url={module.plannerUrl} title={module.planner} theme={theme} settings={plannerSettings} />
+            <PlannerFrame url={module.plannerUrl} title={module.planner} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} />
           ) : (
             <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-bg">
               {/* schwebende Werkzeugleiste */}

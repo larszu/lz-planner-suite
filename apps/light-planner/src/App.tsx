@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { connectShellHistory } from '@avplan/ui/embed';
 import type { PlacedFixture, Shape, Tool, Fixture, FloorPlan, ViewMode, Person, StageElement, ProjectMeta, ProjectData, FixtureGroup, Truss, Wall, Ceiling, Scene, SceneFixtureState, Layers, LayerKey, CameraView, FloorMaterial, SunSettings } from './types';
 import { DEFAULT_FLOOR } from './core/surfaceTextures';
 import { convexHull } from './core/geometry';
@@ -247,6 +248,23 @@ const App: React.FC = () => {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [handleUndo, handleRedo]);
+
+  // Suite-Shell-Bridge: Undo/Redo der Shell an die lokale History weiterreichen
+  // und den Zustand hochmelden. No-op im Standalone-Betrieb.
+  const shellHistoryRef = useRef<ReturnType<typeof connectShellHistory> | null>(null);
+  useEffect(() => {
+    const conn = connectShellHistory({
+      undo: () => handleUndo(),
+      redo: () => handleRedo(),
+      getState: () => ({ canUndo: historyRef.current.length > 0, canRedo: futureRef.current.length > 0 }),
+    });
+    shellHistoryRef.current = conn;
+    return () => { conn.dispose(); shellHistoryRef.current = null; };
+  }, [handleUndo, handleRedo]);
+  // Bei jeder Dokument-Änderung den neuen Undo/Redo-Zustand an die Shell melden.
+  useEffect(() => {
+    shellHistoryRef.current?.publish();
+  }, [fixtures, persons, stageElements, shapes, fixtureGroups, trusses, walls, ceilings]);
 
   // Escape cancels a pending placement and leaves plan-edit modes.
   useEffect(() => {

@@ -11,6 +11,7 @@ import '@fontsource/inter/700.css'
 import './index.css'
 import { connectShellTheme } from '@avplan/ui/embed'
 import { initShellSettings } from './lib/shellSettings'
+import { initShellHistory } from './lib/shellHistory'
 import App from './App'
 import { ErrorBoundary } from './ErrorBoundary'
 import { cablePlannerApi } from './lib/bridge'
@@ -23,6 +24,8 @@ import { initSettingsSync } from './lib/settingsSync'
 connectShellTheme()
 // Suite-Einstellungen (Kabelfarbe, Labels, Routing …) von der Shell übernehmen.
 initShellSettings()
+// Undo/Redo der Shell an die projectHistory weiterreichen.
+initShellHistory()
 
 // v7.8.2 — Emergency escape hatch: launch with ?reset (or hash #reset)
 // to wipe all cable-planner localStorage entries before any module

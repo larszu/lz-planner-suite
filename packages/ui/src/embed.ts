@@ -35,7 +35,27 @@ export interface SettingsMessage {
   values: Record<string, unknown>
 }
 
-export type ShellMessage = ThemeMessage | ReadyMessage | NavigateMessage | SettingsMessage
+/** Shell → iframe: eine Aktion im geöffneten Planer auslösen (Undo/Redo). */
+export interface CommandMessage {
+  type: 'avplan:command'
+  command: 'undo' | 'redo'
+}
+
+/** iframe → Shell: aktueller Undo/Redo-Zustand des Planers. */
+export interface HistoryMessage {
+  type: 'avplan:history'
+  app: string
+  canUndo: boolean
+  canRedo: boolean
+}
+
+export type ShellMessage =
+  | ThemeMessage
+  | ReadyMessage
+  | NavigateMessage
+  | SettingsMessage
+  | CommandMessage
+  | HistoryMessage
 
 const isShellMessage = (data: unknown): data is ShellMessage =>
   !!data && typeof data === 'object' && typeof (data as { type?: unknown }).type === 'string' &&
@@ -57,6 +77,58 @@ export function postSettingsToFrame(frame: Window | null | undefined, values: Re
   } catch {
     /* iframe noch nicht bereit */
   }
+}
+
+/** Shell → iframe: eine Aktion (Undo/Redo) an den Planer schicken. */
+export function postCommandToFrame(frame: Window | null | undefined, command: 'undo' | 'redo'): void {
+  try {
+    frame?.postMessage({ type: 'avplan:command', command } satisfies CommandMessage, '*')
+  } catch {
+    /* iframe noch nicht bereit */
+  }
+}
+
+export interface HistoryHandlers {
+  undo: () => void
+  redo: () => void
+  getState: () => { canUndo: boolean; canRedo: boolean }
+}
+
+/**
+ * Planer-Seite: Undo/Redo der Shell überlassen. Hört auf `avplan:command`,
+ * ruft die eigene Undo/Redo-Funktion und meldet den neuen Zustand hoch. `publish`
+ * sollte der Planer zusätzlich bei jeder History-Änderung aufrufen, damit die
+ * Shell-Buttons live richtig aktiviert/deaktiviert sind. No-op im Standalone.
+ */
+export function connectShellHistory(h: HistoryHandlers): { publish: () => void; dispose: () => void } {
+  let embedded = false
+  try {
+    embedded = typeof window !== 'undefined' && window.parent !== window
+  } catch {
+    embedded = false
+  }
+  const publish = () => {
+    if (!embedded) return
+    try {
+      const { canUndo, canRedo } = h.getState()
+      window.parent.postMessage(
+        { type: 'avplan:history', app: document.title || 'planner', canUndo, canRedo } satisfies HistoryMessage,
+        '*',
+      )
+    } catch {
+      /* egal */
+    }
+  }
+  if (!embedded) return { publish, dispose: () => {} }
+  const onMessage = (e: MessageEvent) => {
+    if (!isShellMessage(e.data) || e.data.type !== 'avplan:command') return
+    if (e.data.command === 'undo') h.undo()
+    else if (e.data.command === 'redo') h.redo()
+    publish()
+  }
+  window.addEventListener('message', onMessage)
+  publish()
+  return { publish, dispose: () => window.removeEventListener('message', onMessage) }
 }
 
 /**

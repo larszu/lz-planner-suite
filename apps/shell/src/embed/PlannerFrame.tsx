@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Icon, postSettingsToFrame, postThemeToFrame, type ResolvedTheme } from '@avplan/ui'
+import {
+  Button,
+  Icon,
+  onShellMessage,
+  postCommandToFrame,
+  postSettingsToFrame,
+  postThemeToFrame,
+  type ResolvedTheme,
+} from '@avplan/ui'
+import { onPlannerCommand } from './plannerBridge'
 
 export interface PlannerFrameProps {
   url: string
@@ -7,6 +16,8 @@ export interface PlannerFrameProps {
   theme: ResolvedTheme
   /** Suite-Einstellungen, die in den Planer geschoben werden (App-Module). */
   settings?: Record<string, unknown>
+  /** Meldet den Undo/Redo-Zustand des eingebetteten Planers an die Shell. */
+  onHistory?: (state: { canUndo: boolean; canRedo: boolean }) => void
 }
 
 /**
@@ -20,9 +31,27 @@ export interface PlannerFrameProps {
  * Läuft der Planer gerade nicht (Preview-Server aus), zeigt der Host statt
  * eines toten Rahmens einen erklärenden Fallback mit „in neuem Tab öffnen".
  */
-export function PlannerFrame({ url, title, theme, settings }: PlannerFrameProps) {
+export function PlannerFrame({ url, title, theme, settings, onHistory }: PlannerFrameProps) {
   const ref = useRef<HTMLIFrameElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
+
+  // Undo/Redo aus der Shell an dieses iframe weiterreichen.
+  useEffect(() => onPlannerCommand((cmd) => postCommandToFrame(ref.current?.contentWindow, cmd)), [])
+
+  // Undo/Redo-Zustand des Planers empfangen und an die Shell melden.
+  useEffect(() => {
+    if (!onHistory) return
+    return onShellMessage((msg, source) => {
+      if (msg.type === 'avplan:history' && source === ref.current?.contentWindow) {
+        onHistory({ canUndo: msg.canUndo, canRedo: msg.canRedo })
+      }
+    })
+  }, [onHistory])
+
+  // Beim Entladen (Modulwechsel / „Zur Übersicht") den Zustand zurücksetzen.
+  useEffect(() => {
+    return () => onHistory?.({ canUndo: false, canRedo: false })
+  }, [onHistory])
 
   // Theme in den Rahmen schieben, sobald geladen und bei jedem Theme-Wechsel.
   useEffect(() => {
