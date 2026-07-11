@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '@avplan/ui'
-import type { Board, BoardCard, BoardCardType, BoardConnection } from '../data/project'
+import type { Board, BoardCard, BoardCardType } from '../data/project'
 import {
   applyTemplate,
   boardToMarkdown,
+  crumbTitles,
+  getBoardAtPath,
   layoutBoard,
+  updateBoardAtPath,
   type Rect,
   type TemplateId,
 } from '../data/board'
 
-/* Milanote-artiges Kreativ-Board: frei platzierbare Karten + Spalten-Container,
- * Verschieben/Editieren/Verbinden, Vorlagen und Export (Markdown/Druck).
- * Zustand lokal (aus dem Projekt geseedet oder leer); Reset per `key` im Parent. */
+/* Milanote-artiges Kreativ-Board: frei platzierbare Karten, Spalten-Container
+ * und verschachtelte Unterboards (Board in Board, per Doppelklick geöffnet).
+ * Der gesamte Baum liegt in `root`; `path` zeigt auf das gerade sichtbare
+ * (Unter-)Board. Reset per `key` im Parent. */
 
 const BOARD_W = 2600
 const BOARD_H = 1600
@@ -21,7 +25,7 @@ const SWATCHES = ['#f5a623', '#38bdf8', '#a78bfa', '#34d399', '#f87171', '#f2c26
 let idSeq = 0
 const nextId = () => `c${(idSeq += 1)}_${Math.round(performance.now())}`
 
-const ADD_TYPES: BoardCardType[] = ['heading', 'note', 'look', 'color', 'todo', 'link', 'column']
+const ADD_TYPES: BoardCardType[] = ['heading', 'note', 'look', 'color', 'todo', 'link', 'column', 'board']
 const CARD_META: Record<BoardCardType, { label: string; icon: Parameters<typeof Icon>[0]['name'] }> = {
   heading: { label: 'Überschrift', icon: 'command' },
   note: { label: 'Notiz', icon: 'library' },
@@ -30,6 +34,7 @@ const CARD_META: Record<BoardCardType, { label: string; icon: Parameters<typeof 
   color: { label: 'Farbe', icon: 'wand' },
   look: { label: 'Look', icon: 'eye' },
   column: { label: 'Spalte', icon: 'layers' },
+  board: { label: 'Unterboard', icon: 'board' },
 }
 
 const TEMPLATES: { id: TemplateId; label: string }[] = [
@@ -41,6 +46,8 @@ const TEMPLATES: { id: TemplateId; label: string }[] = [
 interface Point { x: number; y: number }
 const rectContains = (r: Rect | undefined, p: Point) =>
   !!r && p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h
+
+const cloneBoard = (b: Board): Board => JSON.parse(JSON.stringify(b)) as Board
 
 /* ── Kleines Dropdown-Menü ─────────────────────────────────────────────────*/
 function Menu({ label, icon, children }: { label: string; icon: Parameters<typeof Icon>[0]['name']; children: (close: () => void) => React.ReactNode }) {
@@ -67,8 +74,8 @@ function Menu({ label, icon, children }: { label: string; icon: Parameters<typeo
 }
 
 export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; title?: string }) {
-  const [cards, setCards] = useState<BoardCard[]>(() => seed.cards.map((c) => ({ ...c })))
-  const [connections, setConnections] = useState<BoardConnection[]>(() => seed.connections.map((c) => ({ ...c })))
+  const [root, setRoot] = useState<Board>(() => cloneBoard(seed))
+  const [path, setPath] = useState<string[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [connectFrom, setConnectFrom] = useState<string | null>(null)
@@ -77,8 +84,14 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
   const boardRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ id: string; dx: number; dy: number; moved: boolean } | null>(null)
 
+  const current = useMemo(() => getBoardAtPath(root, path), [root, path])
+  const cards = current.cards
+  const connections = current.connections
   const cardById = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards])
   const layout = useMemo(() => layoutBoard(cards), [cards])
+  const crumbs = useMemo(() => crumbTitles(root, path, title), [root, path, title])
+
+  const mutate = useCallback((fn: (b: Board) => Board) => setRoot((r) => updateBoardAtPath(r, path, fn)), [path])
 
   const toBoard = useCallback((clientX: number, clientY: number): Point => {
     const rect = boardRef.current?.getBoundingClientRect()
@@ -86,14 +99,19 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
   }, [])
 
   const patchCard = useCallback((id: string, patch: Partial<BoardCard>) => {
-    setCards((cs) => cs.map((c) => (c.id === id ? { ...c, ...patch } : c)))
-  }, [])
+    mutate((b) => ({ ...b, cards: b.cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) }))
+  }, [mutate])
 
   const removeCard = useCallback((id: string) => {
-    setCards((cs) => cs.filter((c) => c.id !== id && c.columnId !== id))
-    setConnections((xs) => xs.filter((x) => x.from !== id && x.to !== id))
+    mutate((b) => ({
+      cards: b.cards.filter((c) => c.id !== id && c.columnId !== id),
+      connections: b.connections.filter((x) => x.from !== id && x.to !== id),
+    }))
     setSelectedId((s) => (s === id ? null : s))
-  }, [])
+  }, [mutate])
+
+  const openBoard = useCallback((id: string) => { setPath((p) => [...p, id]); setSelectedId(null); setEditingId(null) }, [])
+  const goToCrumb = useCallback((index: number) => { setPath((p) => p.slice(0, index)); setSelectedId(null); setEditingId(null) }, [])
 
   const addCard = useCallback((type: BoardCardType) => {
     const n = cards.length
@@ -101,7 +119,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
       id: nextId(), type,
       x: 120 + (n % 6) * 28 + (boardRef.current?.parentElement?.scrollLeft ?? 0),
       y: 120 + (n % 6) * 28 + (boardRef.current?.parentElement?.scrollTop ?? 0),
-      w: type === 'color' ? 110 : type === 'look' ? 190 : type === 'column' ? 280 : 230,
+      w: type === 'color' ? 110 : type === 'look' ? 190 : type === 'column' ? 280 : type === 'board' ? 210 : 230,
     }
     if (type === 'heading') base.text = 'Überschrift'
     if (type === 'note') base.text = 'Neue Notiz…'
@@ -110,22 +128,22 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
     if (type === 'color') { base.title = 'Farbe'; base.color = SWATCHES[n % SWATCHES.length] }
     if (type === 'look') { base.title = 'Look'; base.color = SWATCHES[n % SWATCHES.length] }
     if (type === 'column') base.title = 'Spalte'
-    setCards((cs) => [...cs, base])
+    if (type === 'board') { base.title = 'Unterboard'; base.board = { cards: [], connections: [] } }
+    mutate((b) => ({ ...b, cards: [...b.cards, base] }))
     setSelectedId(base.id)
     if (type === 'note' || type === 'heading' || type === 'link' || type === 'column') setEditingId(base.id)
-  }, [cards.length])
+  }, [cards.length, mutate])
 
   const applyTpl = useCallback((id: TemplateId) => {
     const { cards: tc, connections: tcx } = applyTemplate(id, nextId)
     const maxY = layout.size ? Math.max(...[...layout.values()].map((r) => r.y + r.h)) : 0
     const dy = maxY ? maxY + 40 : 0
     const shifted = tc.map((c) => (c.type === 'column' || !c.columnId ? { ...c, y: c.y + dy } : c))
-    setCards((cs) => [...cs, ...shifted])
-    setConnections((xs) => [...xs, ...tcx])
-  }, [layout])
+    mutate((b) => ({ cards: [...b.cards, ...shifted], connections: [...b.connections, ...tcx] }))
+  }, [layout, mutate])
 
   const exportMarkdown = useCallback(() => {
-    const md = boardToMarkdown({ cards, connections }, title)
+    const md = boardToMarkdown(root, title)
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -133,7 +151,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
     a.download = `${title.toLowerCase().replace(/\s+/g, '-')}.md`
     a.click()
     URL.revokeObjectURL(url)
-  }, [cards, connections, title])
+  }, [root, title])
 
   const exportPrint = useCallback(() => window.print(), [])
 
@@ -150,7 +168,6 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
     if (!d) return
     const p = toBoard(e.clientX, e.clientY)
     d.moved = true
-    // Spalten-Mitglied beim Ziehen aus der Spalte lösen.
     patchCard(d.id, { columnId: undefined, x: Math.max(0, p.x - d.dx), y: Math.max(0, p.y - d.dy) })
   }
   const onHeaderPointerUp = (e: React.PointerEvent, card: BoardCard) => {
@@ -174,7 +191,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
       const el = document.elementFromPoint(e.clientX, e.clientY)
       const targetId = el?.closest<HTMLElement>('[data-card-id]')?.dataset.cardId
       if (targetId && targetId !== connectFrom) {
-        setConnections((xs) => (xs.some((x) => x.from === connectFrom && x.to === targetId) ? xs : [...xs, { id: nextId(), from: connectFrom, to: targetId }]))
+        mutate((b) => (b.connections.some((x) => x.from === connectFrom && x.to === targetId) ? b : { ...b, connections: [...b.connections, { id: nextId(), from: connectFrom, to: targetId }] }))
       }
       setConnectFrom(null)
       setTempPoint(null)
@@ -185,7 +202,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
     }
-  }, [connectFrom, toBoard])
+  }, [connectFrom, toBoard, mutate])
 
   // ── Löschen per Tastatur ──
   useEffect(() => {
@@ -202,7 +219,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
 
   const anchorOut = (id: string): Point | null => { const r = layout.get(id); return r ? { x: r.x + r.w, y: r.y + r.h / 2 } : null }
   const anchorIn = (id: string): Point | null => { const r = layout.get(id); return r ? { x: r.x, y: r.y + r.h / 2 } : null }
-  const path = (a: Point, b: Point) => { const dx = Math.max(50, Math.abs(b.x - a.x) * 0.5); return `M ${a.x} ${a.y} C ${a.x + dx} ${a.y}, ${b.x - dx} ${b.y}, ${b.x} ${b.y}` }
+  const linkPath = (a: Point, b: Point) => { const dx = Math.max(50, Math.abs(b.x - a.x) * 0.5); return `M ${a.x} ${a.y} C ${a.x + dx} ${a.y}, ${b.x - dx} ${b.y}, ${b.x} ${b.y}` }
 
   const columns = cards.filter((c) => c.type === 'column')
   const drawCards = cards.filter((c) => c.type !== 'column')
@@ -240,6 +257,27 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
         </div>
       </div>
 
+      {/* Breadcrumb (Board-in-Board-Navigation) */}
+      <div className="flex items-center gap-1 border-b border-av-border-muted bg-av-surface-3 px-3 py-1.5 text-[12px]">
+        {path.length > 0 && (
+          <button type="button" className="av-icon-btn av-focus" style={{ width: 24, height: 24 }} onClick={() => goToCrumb(path.length - 1)} aria-label="Eine Ebene zurück"><Icon name="undo" size={14} /></button>
+        )}
+        {crumbs.map((c, i) => (
+          <span key={c.id || 'root'} className="flex items-center gap-1">
+            {i > 0 && <Icon name="chevron-down" size={12} style={{ transform: 'rotate(-90deg)', color: 'var(--av-text-faint)' }} />}
+            <button
+              type="button"
+              className="av-focus rounded px-1.5 py-0.5 hover:bg-av-surface-2"
+              style={{ color: i === crumbs.length - 1 ? 'var(--av-text)' : 'var(--av-text-muted)', fontWeight: i === crumbs.length - 1 ? 600 : 400 }}
+              onClick={() => goToCrumb(i)}
+              aria-current={i === crumbs.length - 1 ? 'page' : undefined}
+            >
+              {i === 0 ? <span className="flex items-center gap-1"><Icon name="board" size={12} /> {c.title}</span> : c.title}
+            </button>
+          </span>
+        ))}
+      </div>
+
       {/* Scroll-Fläche */}
       <div className="av-scroll relative min-h-0 flex-1 overflow-auto" onPointerDown={(e) => { if (e.target === e.currentTarget) setSelectedId(null) }}>
         <div
@@ -248,7 +286,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
           style={{ width: BOARD_W, height: BOARD_H, backgroundImage: 'radial-gradient(circle, var(--av-border-muted) 1px, transparent 1px)', backgroundSize: '26px 26px' }}
           onPointerDown={(e) => { if (e.target === e.currentTarget) setSelectedId(null) }}
         >
-          {/* Spalten-Panels (hinter den Karten) */}
+          {/* Spalten-Panels */}
           {columns.map((col) => {
             const r = layout.get(col.id)!
             const selected = selectedId === col.id
@@ -278,10 +316,10 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
           <svg className="pointer-events-none absolute inset-0" width={BOARD_W} height={BOARD_H}>
             {connections.map((x) => {
               const a = anchorOut(x.from); const b = anchorIn(x.to)
-              return a && b ? <path key={x.id} d={path(a, b)} fill="none" stroke="var(--av-accent)" strokeWidth={1.6} opacity={0.7} /> : null
+              return a && b ? <path key={x.id} d={linkPath(a, b)} fill="none" stroke="var(--av-accent)" strokeWidth={1.6} opacity={0.7} /> : null
             })}
             {connectFrom && tempPoint && anchorOut(connectFrom) && (
-              <path d={path(anchorOut(connectFrom)!, tempPoint)} fill="none" stroke="var(--av-accent)" strokeWidth={1.6} strokeDasharray="5 4" />
+              <path d={linkPath(anchorOut(connectFrom)!, tempPoint)} fill="none" stroke="var(--av-accent)" strokeWidth={1.6} strokeDasharray="5 4" />
             )}
           </svg>
 
@@ -297,6 +335,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
                 onHeaderPointerMove={onHeaderPointerMove}
                 onHeaderPointerUp={(e) => onHeaderPointerUp(e, card)}
                 onStartEdit={() => setEditingId(card.id)} onEndEdit={() => setEditingId(null)}
+                onOpen={() => openBoard(card.id)}
                 onPatch={(patch) => patchCard(card.id, patch)} onDelete={() => removeCard(card.id)}
                 onStartConnect={(e) => { e.stopPropagation(); setConnectFrom(card.id); setTempPoint(toBoard(e.clientX, e.clientY)) }}
               />
@@ -305,64 +344,69 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
 
           {cards.length === 0 && (
             <div className="pointer-events-none absolute left-1/2 top-40 -translate-x-1/2 text-center">
-              <div className="text-[15px] font-semibold text-av-text-secondary">Leeres Board</div>
+              <div className="text-[15px] font-semibold text-av-text-secondary">{path.length ? 'Leeres Unterboard' : 'Leeres Board'}</div>
               <div className="mt-1 text-[13px] text-av-text-muted">Füge oben Karten hinzu oder wende eine Vorlage an.</div>
             </div>
           )}
         </div>
       </div>
 
-      <PrintDoc title={title} cards={cards} />
+      <PrintDoc title={title} board={root} />
     </div>
   )
 }
 
-/* ── Druck-Dokument (per @media print sichtbar) ────────────────────────────*/
-function PrintDoc({ title, cards }: { title: string; cards: BoardCard[] }) {
-  if (typeof document === 'undefined') return null
-  const columns = cards.filter((c) => c.type === 'column')
+/* ── Druck-Dokument (per @media print sichtbar, rekursiv über Unterboards) ──*/
+function PrintBoard({ board, title, level }: { board: Board; title: string; level: number }) {
+  const H = `h${Math.min(6, level)}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
   const rendered = new Set<string>()
   const renderCard = (c: BoardCard) => {
     switch (c.type) {
-      case 'heading': return <h2 key={c.id}>{c.text}</h2>
+      case 'heading': return <p key={c.id}><strong>{c.text}</strong></p>
       case 'note': return <p key={c.id}>{c.text}</p>
       case 'link': return <p key={c.id}><a href={`https://${c.url}`}>{c.title ?? c.url}</a></p>
       case 'todo': return <div key={c.id}><strong>{c.title}</strong><ul>{c.items?.map((it, i) => <li key={i}>{it.done ? '☑' : '☐'} {it.text}</li>)}</ul></div>
       case 'color': return <p key={c.id}>■ {c.title} ({c.color})</p>
       case 'look': return <p key={c.id}>Look: {c.title}</p>
       case 'column': return null
+      case 'board': return <PrintBoard key={c.id} board={c.board ?? { cards: [], connections: [] }} title={`${c.title ?? 'Unterboard'} (Unterboard)`} level={level + 1} />
     }
   }
-  return createPortal(
-    <div className="board-print">
-      <h1>{title}</h1>
-      {columns.map((col) => (
+  return (
+    <section>
+      <H>{title}</H>
+      {board.cards.filter((c) => c.type === 'column').map((col) => (
         <section key={col.id}>
-          <h2>{col.title}</h2>
-          {cards.filter((c) => c.columnId === col.id).map((m) => { rendered.add(m.id); return renderCard(m) })}
+          <strong>{col.title}</strong>
+          {board.cards.filter((c) => c.columnId === col.id).map((m) => { rendered.add(m.id); return renderCard(m) })}
           {(() => { rendered.add(col.id); return null })()}
         </section>
       ))}
-      {cards.filter((c) => !rendered.has(c.id) && c.type !== 'column' && !c.columnId).map(renderCard)}
-    </div>,
-    document.body,
+      {board.cards.filter((c) => !rendered.has(c.id) && c.type !== 'column' && !c.columnId).map(renderCard)}
+    </section>
   )
+}
+
+function PrintDoc({ title, board }: { title: string; board: Board }) {
+  if (typeof document === 'undefined') return null
+  return createPortal(<div className="board-print"><PrintBoard board={board} title={title} level={1} /></div>, document.body)
 }
 
 /* ── Einzelne Karte ────────────────────────────────────────────────────────*/
 function BoardCardView({
   card, rect, selected, editing,
   onHeaderPointerDown, onHeaderPointerMove, onHeaderPointerUp,
-  onStartEdit, onEndEdit, onPatch, onDelete, onStartConnect,
+  onStartEdit, onEndEdit, onOpen, onPatch, onDelete, onStartConnect,
 }: {
   card: BoardCard; rect: Rect; selected: boolean; editing: boolean
   onHeaderPointerDown: (e: React.PointerEvent) => void
   onHeaderPointerMove: (e: React.PointerEvent) => void
   onHeaderPointerUp: (e: React.PointerEvent) => void
-  onStartEdit: () => void; onEndEdit: () => void
+  onStartEdit: () => void; onEndEdit: () => void; onOpen: () => void
   onPatch: (patch: Partial<BoardCard>) => void; onDelete: () => void
   onStartConnect: (e: React.PointerEvent) => void
 }) {
+  const isBoard = card.type === 'board'
   return (
     <div data-card-id={card.id} className="absolute select-none" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}>
       {selected && (
@@ -382,10 +426,32 @@ function BoardCardView({
         className="h-full w-full overflow-hidden rounded-av-card"
         style={{ boxShadow: selected ? '0 0 0 2px var(--av-accent)' : undefined, cursor: 'grab' }}
         onPointerDown={onHeaderPointerDown} onPointerMove={onHeaderPointerMove} onPointerUp={onHeaderPointerUp}
-        onDoubleClick={() => { if (card.type !== 'color' && card.type !== 'todo') onStartEdit() }}
+        onDoubleClick={() => { if (isBoard) onOpen(); else if (card.type !== 'color' && card.type !== 'todo') onStartEdit() }}
       >
-        <CardBody card={card} editing={editing} onEndEdit={onEndEdit} onPatch={onPatch} />
+        {isBoard
+          ? <BoardTile card={card} selected={selected} onPatch={onPatch} onOpen={onOpen} />
+          : <CardBody card={card} editing={editing} onEndEdit={onEndEdit} onPatch={onPatch} />}
       </div>
+    </div>
+  )
+}
+
+function BoardTile({ card, selected, onPatch, onOpen }: { card: BoardCard; selected: boolean; onPatch: (p: Partial<BoardCard>) => void; onOpen: () => void }) {
+  const count = card.board?.cards.length ?? 0
+  return (
+    <div className="flex h-full w-full flex-col gap-1.5 border border-av-border bg-av-surface-1 p-2.5" style={{ borderColor: 'var(--av-accent)' }}>
+      <div className="flex items-center gap-2">
+        <span className="grid h-7 w-7 flex-none place-items-center rounded-md" style={{ background: 'var(--av-accent-dim)', color: 'var(--av-accent)' }}><Icon name="board" size={15} /></span>
+        {selected ? (
+          <input className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-av-text outline-none" value={card.title ?? ''} onChange={(e) => onPatch({ title: e.target.value })} onPointerDown={(e) => e.stopPropagation()} aria-label="Unterboard-Titel" />
+        ) : (
+          <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-av-text">{card.title}</span>
+        )}
+      </div>
+      <div className="text-[11px] text-av-text-muted">{count} {count === 1 ? 'Karte' : 'Karten'} · Unterboard</div>
+      <button type="button" className="av-btn av-focus mt-auto" data-size="sm" data-variant="subtle" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onOpen() }}>
+        Öffnen <Icon name="external" size={13} />
+      </button>
     </div>
   )
 }

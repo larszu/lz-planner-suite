@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { layoutBoard, applyTemplate, boardToMarkdown, COL_HEADER } from '../src/data/board'
-import type { BoardCard } from '../src/data/project'
+import { layoutBoard, applyTemplate, boardToMarkdown, getBoardAtPath, updateBoardAtPath, crumbTitles, COL_HEADER } from '../src/data/board'
+import type { Board, BoardCard } from '../src/data/project'
 
 let seq = 0
 const gen = () => `t${(seq += 1)}`
@@ -68,5 +68,54 @@ describe('boardToMarkdown', () => {
     expect(md).toContain('- [ ] B')
     expect(md).toContain('## Brief')
     expect(md).toContain('Ziel')
+  })
+
+  it('rendert verschachtelte Unterboards als tiefere Abschnitte', () => {
+    const md = boardToMarkdown({
+      cards: [
+        { id: 'sub', type: 'board', x: 0, y: 0, w: 0, title: 'Kamera-Refs', board: {
+          cards: [{ id: 'n', type: 'note', x: 0, y: 0, w: 0, text: 'Tele auf Host' }],
+          connections: [],
+        } },
+      ],
+      connections: [],
+    }, 'Root')
+    expect(md).toContain('# Root')
+    expect(md).toContain('## Kamera-Refs (Unterboard)')
+    expect(md).toContain('Tele auf Host')
+  })
+})
+
+describe('Board-in-Board Navigation', () => {
+  const nested: Board = {
+    cards: [
+      { id: 'a', type: 'note', x: 0, y: 0, w: 0, text: 'root-note' },
+      { id: 'sub', type: 'board', x: 0, y: 0, w: 0, title: 'Sub', board: {
+        cards: [{ id: 'b', type: 'note', x: 0, y: 0, w: 0, text: 'sub-note' }],
+        connections: [],
+      } },
+    ],
+    connections: [],
+  }
+
+  it('getBoardAtPath steigt in Unterboards ab', () => {
+    expect(getBoardAtPath(nested, []).cards).toHaveLength(2)
+    const sub = getBoardAtPath(nested, ['sub'])
+    expect(sub.cards).toHaveLength(1)
+    expect(sub.cards[0].text).toBe('sub-note')
+  })
+
+  it('updateBoardAtPath ändert nur das Board am Pfad (immutabel)', () => {
+    const updated = updateBoardAtPath(nested, ['sub'], (b) => ({ ...b, cards: [...b.cards, { id: 'c', type: 'note', x: 0, y: 0, w: 0, text: 'added' }] }))
+    expect(getBoardAtPath(updated, ['sub']).cards).toHaveLength(2)
+    // Wurzel unverändert (kein Mutations-Leck)
+    expect(getBoardAtPath(nested, ['sub']).cards).toHaveLength(1)
+    // Root-Ebene unangetastet
+    expect(updated.cards.find((c) => c.id === 'a')?.text).toBe('root-note')
+  })
+
+  it('crumbTitles liefert Wurzel + Ebenen', () => {
+    expect(crumbTitles(nested, [], 'Board').map((c) => c.title)).toEqual(['Board'])
+    expect(crumbTitles(nested, ['sub'], 'Board').map((c) => c.title)).toEqual(['Board', 'Sub'])
   })
 })

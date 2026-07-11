@@ -19,7 +19,47 @@ export function cardHeight(card: BoardCard): number {
     case 'color': return 96
     case 'look': return 148
     case 'column': return COL_HEADER + 40
+    case 'board': return 116
   }
+}
+
+const EMPTY: Board = { cards: [], connections: [] }
+
+/** Das Board am angegebenen Pfad (Kette von Unterboard-Karten-IDs). */
+export function getBoardAtPath(board: Board, path: string[]): Board {
+  let cur = board
+  for (const id of path) {
+    const card = cur.cards.find((c) => c.id === id && c.type === 'board')
+    if (!card?.board) return cur
+    cur = card.board
+  }
+  return cur
+}
+
+/** Wendet `fn` auf das Board am Pfad an und gibt eine neue Wurzel zurück (immutabel). */
+export function updateBoardAtPath(board: Board, path: string[], fn: (b: Board) => Board): Board {
+  if (path.length === 0) return fn(board)
+  const [head, ...rest] = path
+  return {
+    ...board,
+    cards: board.cards.map((c) =>
+      c.id === head && c.type === 'board'
+        ? { ...c, board: updateBoardAtPath(c.board ?? EMPTY, rest, fn) }
+        : c,
+    ),
+  }
+}
+
+/** Titel-Kette für die Breadcrumb-Navigation (Wurzel + jede Unterboard-Ebene). */
+export function crumbTitles(board: Board, path: string[], rootTitle: string): { id: string; title: string }[] {
+  const crumbs = [{ id: '', title: rootTitle }]
+  let cur = board
+  for (const id of path) {
+    const card = cur.cards.find((c) => c.id === id)
+    crumbs.push({ id, title: card?.title ?? 'Unterboard' })
+    cur = card?.board ?? EMPTY
+  }
+  return crumbs
 }
 
 /**
@@ -100,15 +140,18 @@ function cardMarkdown(c: BoardCard): string {
     case 'color': return `- ${c.title ?? 'Farbe'} \`${c.color ?? ''}\``
     case 'look': return `- Look: ${c.title ?? ''}`
     case 'column': return ''
+    case 'board': return ''
   }
 }
 
-/** Wandelt ein Board in ein durchgehendes Markdown-Dokument. */
-export function boardToMarkdown(board: Board, title = 'Kreativ-Board'): string {
-  const lines: string[] = [`# ${title}`, '']
+const hashes = (n: number) => '#'.repeat(Math.min(6, n))
+
+/** Ein Board-Abschnitt inkl. Spalten und rekursiver Unterboards. */
+function boardSection(board: Board, title: string, level: number): string[] {
+  const lines: string[] = [`${hashes(level)} ${title}`, '']
   const rendered = new Set<string>()
   for (const col of board.cards.filter((c) => c.type === 'column')) {
-    lines.push(`## ${col.title ?? 'Spalte'}`, '')
+    lines.push(`${hashes(level + 1)} ${col.title ?? 'Spalte'}`, '')
     for (const m of board.cards.filter((c) => c.columnId === col.id)) {
       lines.push(cardMarkdown(m), '')
       rendered.add(m.id)
@@ -116,7 +159,17 @@ export function boardToMarkdown(board: Board, title = 'Kreativ-Board'): string {
     rendered.add(col.id)
   }
   const free = board.cards.filter((c) => !rendered.has(c.id) && c.type !== 'column' && !c.columnId)
-  if (free.length && rendered.size > 0) lines.push('## Weitere', '')
-  for (const c of free) lines.push(cardMarkdown(c), '')
-  return `${lines.join('\n').trim()}\n`
+  for (const c of free) {
+    if (c.type === 'board') {
+      lines.push(...boardSection(c.board ?? EMPTY, `${c.title ?? 'Unterboard'} (Unterboard)`, level + 1))
+    } else {
+      lines.push(cardMarkdown(c), '')
+    }
+  }
+  return lines
+}
+
+/** Wandelt ein Board (inkl. verschachtelter Unterboards) in ein Markdown-Dokument. */
+export function boardToMarkdown(board: Board, title = 'Kreativ-Board'): string {
+  return `${boardSection(board, title, 1).join('\n').trim()}\n`
 }

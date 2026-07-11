@@ -65,7 +65,7 @@ export interface ProjectTask {
 
 /* ── Board (Milanote-artiges Kreativ-Canvas) ───────────────────────────────*/
 
-export type BoardCardType = 'heading' | 'note' | 'link' | 'todo' | 'color' | 'look' | 'column'
+export type BoardCardType = 'heading' | 'note' | 'link' | 'todo' | 'color' | 'look' | 'column' | 'board'
 
 /** Eine Karte auf dem Board (frei positioniert oder in einer Spalte). */
 export interface BoardCard {
@@ -82,6 +82,8 @@ export interface BoardCard {
   items?: { text: string; done: boolean }[]
   /** Wenn gesetzt: Karte liegt in dieser Spalte (Container), nicht frei. */
   columnId?: string
+  /** Für type 'board': das verschachtelte Unterboard (Board in Board). */
+  board?: Board
 }
 
 export interface BoardConnection {
@@ -269,6 +271,18 @@ export const PROJECT: SuiteProject = {
           { text: 'Licht-Stimmung Doors', done: false },
         ] },
         { id: 'b_lk1', type: 'link', x: 480, y: 300, w: 220, title: 'Referenz-Show 2025', url: 'vimeo.com/nordlicht/sommer25' },
+        {
+          id: 'b_sub', type: 'board', x: 480, y: 430, w: 210, title: 'Kamera-Refs',
+          board: {
+            cards: [
+              { id: 's_h', type: 'heading', x: 60, y: 40, w: 320, text: 'Kamera-Referenzen' },
+              { id: 's_l1', type: 'look', x: 60, y: 120, w: 190, title: 'Weitwinkel-Opener', color: '#38bdf8' },
+              { id: 's_l2', type: 'look', x: 270, y: 120, w: 190, title: 'Tele auf Host', color: '#a78bfa' },
+              { id: 's_n1', type: 'note', x: 60, y: 300, w: 240, text: 'CAM 3 als Beauty-Shot mit 135 mm, weiche Schärfe.' },
+            ],
+            connections: [],
+          },
+        },
       ],
       connections: [
         { id: 'bc1', from: 'b_h', to: 'b_l1' },
