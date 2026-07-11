@@ -1,4 +1,5 @@
-import { Badge, Button, Icon } from '@avplan/ui'
+import { useState, type ReactNode } from 'react'
+import { Badge, Button, Icon, Menu, MenuLabel, MenuSeparator } from '@avplan/ui'
 import {
   PHASE_LABEL,
   computeCounts,
@@ -14,6 +15,15 @@ import {
   RunOfShowCard,
   TasksCard,
 } from './dashboard'
+import {
+  FULL_WIDTH_WIDGETS,
+  WIDGET_LABEL,
+  defaultDashboardPrefs,
+  loadDashboardPrefs,
+  saveDashboardPrefs,
+  type DashboardPrefs,
+  type WidgetId,
+} from './dashboardPrefs'
 
 function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigate: (id: ModuleId) => void }) {
   const c = computeCounts(project)
@@ -47,6 +57,115 @@ function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigat
         )
       })}
     </div>
+  )
+}
+
+function PlanCheckCard() {
+  return (
+    <div className="rounded-av-card border border-av-border bg-av-surface-1 p-3.5">
+      <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-av-text-muted">
+        <Icon name="check" size={13} /> Suite-Plan-Check
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Badge tone="ok">Signal ↔ Kameras konsistent</Badge>
+        <Badge tone="ok">DMX-Patch kollisionsfrei</Badge>
+        <Badge tone="ok">Strom-Last im Limit</Badge>
+        <Badge tone="warn">CAM 4 nicht verkabelt</Badge>
+      </div>
+    </div>
+  )
+}
+
+/** Anpass-Menü: Elemente an-/abwählen und Karten umsortieren. */
+function CustomizeMenu({
+  prefs,
+  onToggle,
+  onMove,
+  onReset,
+}: {
+  prefs: DashboardPrefs
+  onToggle: (id: WidgetId) => void
+  onMove: (id: WidgetId, dir: -1 | 1) => void
+  onReset: () => void
+}) {
+  const Row = ({ id, canMove, index, total }: { id: WidgetId; canMove?: boolean; index?: number; total?: number }) => {
+    const on = prefs.enabled[id]
+    return (
+      <div className="flex items-center gap-1 rounded-av-control px-1.5 py-0.5 hover:bg-av-surface-2">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          onClick={() => onToggle(id)}
+          className="av-focus flex flex-1 items-center gap-2 rounded-av-control py-1 text-left text-[12.5px] text-av-text"
+        >
+          <span
+            className="grid h-4 w-4 flex-none place-items-center rounded border"
+            style={{
+              background: on ? 'var(--av-accent)' : 'transparent',
+              borderColor: on ? 'var(--av-accent)' : 'var(--av-border)',
+              color: 'var(--av-accent-text)',
+            }}
+          >
+            {on && <Icon name="check" size={12} />}
+          </span>
+          {WIDGET_LABEL[id]}
+        </button>
+        {canMove && (
+          <span className="flex flex-none items-center gap-0.5">
+            <button
+              type="button"
+              className="av-icon-btn av-focus"
+              aria-label={`${WIDGET_LABEL[id]} nach oben`}
+              disabled={index === 0}
+              style={{ opacity: index === 0 ? 0.3 : 1, width: 22, height: 22 }}
+              onClick={() => onMove(id, -1)}
+            >
+              <Icon name="chevron-down" size={13} style={{ transform: 'rotate(180deg)' }} />
+            </button>
+            <button
+              type="button"
+              className="av-icon-btn av-focus"
+              aria-label={`${WIDGET_LABEL[id]} nach unten`}
+              disabled={index === (total ?? 0) - 1}
+              style={{ opacity: index === (total ?? 0) - 1 ? 0.3 : 1, width: 22, height: 22 }}
+              onClick={() => onMove(id, 1)}
+            >
+              <Icon name="chevron-down" size={13} />
+            </button>
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <Menu
+      align="right"
+      triggerClassName="av-btn"
+      ariaLabel="Dashboard anpassen"
+      button={<><Icon name="grid" size={15} /> Dashboard anpassen</>}
+    >
+      {() => (
+        <div className="w-72 p-1" role="group" aria-label="Dashboard-Elemente">
+          <MenuLabel>Bereiche</MenuLabel>
+          {FULL_WIDTH_WIDGETS.map((id) => <Row key={id} id={id} />)}
+          <MenuSeparator />
+          <MenuLabel>Karten (Reihenfolge anpassbar)</MenuLabel>
+          {prefs.order.map((id, i) => (
+            <Row key={id} id={id} canMove index={i} total={prefs.order.length} />
+          ))}
+          <MenuSeparator />
+          <button
+            type="button"
+            className="av-menu-item av-focus w-full"
+            onClick={onReset}
+          >
+            <Icon name="undo" size={14} /> <span>Standard wiederherstellen</span>
+          </button>
+        </div>
+      )}
+    </Menu>
   )
 }
 
@@ -101,55 +220,94 @@ export function OverviewSurface({
   onNavigate: (id: ModuleId) => void
   onAssign: () => void
 }) {
+  const [prefs, setPrefs] = useState<DashboardPrefs>(loadDashboardPrefs)
+
+  const persist = (next: DashboardPrefs) => {
+    saveDashboardPrefs(next)
+    setPrefs(next)
+  }
+  const toggleWidget = (id: WidgetId) =>
+    persist({ ...prefs, enabled: { ...prefs.enabled, [id]: !prefs.enabled[id] } })
+  const moveWidget = (id: WidgetId, dir: -1 | 1) => {
+    const order = [...prefs.order]
+    const i = order.indexOf(id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= order.length) return
+    ;[order[i], order[j]] = [order[j], order[i]]
+    persist({ ...prefs, order })
+  }
+  const resetPrefs = () => persist(defaultDashboardPrefs())
+
   if (!project) return <EmptyState onAssign={onAssign} onNavigate={onNavigate} />
 
   const { show } = project
+
+  // Renderer je Karten-Widget (nur die Masonry-Karten).
+  const cardRender: Record<Exclude<WidgetId, 'gewerke' | 'plancheck'>, ReactNode> = {
+    runofshow: <RunOfShowCard schedule={show.schedule} />,
+    crew: <CrewCard crew={show.crew} />,
+    budget: <BudgetCard budget={show.budget} />,
+    readiness: <ReadinessCard project={project} />,
+    tasks: <TasksCard tasks={show.tasks} />,
+    logistics: <LogisticsCard logistics={show.logistics} />,
+    contacts: <ContactsCard contacts={show.contacts} />,
+  }
+  const visibleCards = prefs.order.filter(
+    (id): id is Exclude<WidgetId, 'gewerke' | 'plancheck'> =>
+      id !== 'gewerke' && id !== 'plancheck' && prefs.enabled[id],
+  )
+  const nothingVisible =
+    !prefs.enabled.gewerke && !prefs.enabled.plancheck && visibleCards.length === 0
+
   return (
     <div className="mx-auto w-full max-w-6xl">
       {/* Kopf */}
-      <div className="mb-4">
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-av-text-faint">Projekt-Übersicht</div>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-av-text">{project.meta.name}</h1>
-          <Badge tone="accent" dot>{PHASE_LABEL[show.phase]}</Badge>
-        </div>
-        <p className="mt-1 text-sm text-av-text-muted">
-          {project.meta.venue} · {show.dateLabel} · Version {project.meta.version}
-        </p>
-        <div className="mt-3 flex items-center gap-3">
-          <div className="h-1.5 w-48 overflow-hidden rounded-full bg-av-surface-3">
-            <span className="block h-full rounded-full" style={{ width: `${Math.round(show.progress * 100)}%`, background: 'var(--av-accent)' }} />
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-av-text-faint">Projekt-Übersicht</div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-av-text">{project.meta.name}</h1>
+            <Badge tone="accent" dot>{PHASE_LABEL[show.phase]}</Badge>
           </div>
-          <span className="av-num text-[12px] text-av-text-muted">{Math.round(show.progress * 100)}% Planung</span>
+          <p className="mt-1 text-sm text-av-text-muted">
+            {project.meta.venue} · {show.dateLabel} · Version {project.meta.version}
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <div className="h-1.5 w-48 overflow-hidden rounded-full bg-av-surface-3">
+              <span className="block h-full rounded-full" style={{ width: `${Math.round(show.progress * 100)}%`, background: 'var(--av-accent)' }} />
+            </div>
+            <span className="av-num text-[12px] text-av-text-muted">{Math.round(show.progress * 100)}% Planung</span>
+          </div>
         </div>
+        <CustomizeMenu prefs={prefs} onToggle={toggleWidget} onMove={moveWidget} onReset={resetPrefs} />
       </div>
 
       {/* Gewerke */}
-      <ModuleCards project={project} onNavigate={onNavigate} />
+      {prefs.enabled.gewerke && <ModuleCards project={project} onNavigate={onNavigate} />}
 
       {/* Suite-Plan-Check */}
-      <div className="mt-3 rounded-av-card border border-av-border bg-av-surface-1 p-3.5">
-        <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-av-text-muted">
-          <Icon name="check" size={13} /> Suite-Plan-Check
+      {prefs.enabled.plancheck && (
+        <div className="mt-3">
+          <PlanCheckCard />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge tone="ok">Signal ↔ Kameras konsistent</Badge>
-          <Badge tone="ok">DMX-Patch kollisionsfrei</Badge>
-          <Badge tone="ok">Strom-Last im Limit</Badge>
-          <Badge tone="warn">CAM 4 nicht verkabelt</Badge>
-        </div>
-      </div>
+      )}
 
-      {/* Dashboard-Karten (Masonry) */}
-      <div className="mt-3 gap-3 [column-fill:_balance] sm:columns-2 xl:columns-3">
-        <div className="mb-3 break-inside-avoid"><RunOfShowCard schedule={show.schedule} /></div>
-        <div className="mb-3 break-inside-avoid"><CrewCard crew={show.crew} /></div>
-        <div className="mb-3 break-inside-avoid"><BudgetCard budget={show.budget} /></div>
-        <div className="mb-3 break-inside-avoid"><ReadinessCard project={project} /></div>
-        <div className="mb-3 break-inside-avoid"><TasksCard tasks={show.tasks} /></div>
-        <div className="mb-3 break-inside-avoid"><LogisticsCard logistics={show.logistics} /></div>
-        <div className="mb-3 break-inside-avoid"><ContactsCard contacts={show.contacts} /></div>
-      </div>
+      {/* Dashboard-Karten (responsive Masonry, konfigurierbar) */}
+      {visibleCards.length > 0 && (
+        <div className="mt-3 gap-3 [column-fill:_balance] sm:columns-2 xl:columns-3">
+          {visibleCards.map((id) => (
+            <div key={id} className="mb-3 break-inside-avoid">{cardRender[id]}</div>
+          ))}
+        </div>
+      )}
+
+      {nothingVisible && (
+        <div className="mt-6 rounded-av-card border border-dashed border-av-border bg-av-surface-1 p-8 text-center">
+          <p className="text-sm text-av-text-muted">
+            Alle Elemente ausgeblendet. Über <span className="font-medium text-av-text-secondary">„Dashboard anpassen"</span> wieder einblenden.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
