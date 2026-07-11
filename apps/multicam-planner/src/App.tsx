@@ -18,6 +18,7 @@ import { Layout, Model, TabNode, Actions } from 'flexlayout-react';
 import type { IJsonModel, ITabSetRenderValues, TabSetNode, BorderNode, ILayoutApi } from 'flexlayout-react';
 import 'flexlayout-react/style/dark.css';
 import { useTranslation, format } from './i18n';
+import { isEmbedded } from './hooks/useIsEmbedded';
 
 type TFn = (key: string, en: string) => string;
 
@@ -480,7 +481,9 @@ export default function App() {
         type="button"
         onClick={() => setInventoryOpen(true)}
         title={t('header.inventory.title', 'Lager / Bestand')}
-        className="fixed bottom-4 left-4 z-[150] flex items-center gap-1.5 rounded-full border border-bc-border bg-bc-panel px-3 py-2 text-sm text-gray-200 shadow-lg hover:bg-bc-border"
+        // Embedded, the shell renders its own status bar along the bottom edge —
+        // lift the pill up so it does not overlap that bar.
+        className={`fixed ${isEmbedded ? 'bottom-16' : 'bottom-4'} left-4 z-[150] flex items-center gap-1.5 rounded-full border border-bc-border bg-bc-panel px-3 py-2 text-sm text-gray-200 shadow-lg hover:bg-bc-border`}
       >
         <FiBox size={16} /> {t('header.inventory', 'Lager')}
       </button>

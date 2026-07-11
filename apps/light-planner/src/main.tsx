@@ -11,6 +11,7 @@ import App from './App';
 connectShellTheme({
   '--av-bg': '--bg',
   '--av-surface-3': '--bg-2',
+  '--av-surface-4': '--bg-2',
   '--av-surface-1': '--panel',
   '--av-surface-2': '--panel-alt',
   '--av-border': '--border',

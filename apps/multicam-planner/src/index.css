@@ -314,3 +314,59 @@ select {
   width: 14px;
   height: 14px;
 }
+
+/* ── FlexLayout light theme ──
+   The dark stylesheet (flexlayout-react/style/dark.css) is imported
+   unconditionally in App.tsx and the rules above hardcode dark colors with
+   !important. When the shell switches to light (data-theme=light on <html>),
+   the docking chrome must follow — mirror every hardcoded surface below so the
+   tab strips, splitters, popups and toolbar buttons read as light. Dark stays
+   the default and is untouched. */
+:root[data-theme="light"] .flexlayout__layout {
+  --color-text: #131924;
+  --color-background: #e9edf4;
+  --color-base: #e9edf4;
+  --color-1: #ffffff;
+  --color-2: #f4f6fb;
+  --color-3: #d8deea;
+  --color-5: #8a94a6;
+  background-color: #e9edf4 !important;
+}
+:root[data-theme="light"] .flexlayout__tab { background-color: #e9edf4; }
+:root[data-theme="light"] .flexlayout__tabset { background-color: #e9edf4; }
+:root[data-theme="light"] .flexlayout__tabset_header,
+:root[data-theme="light"] .flexlayout__tabset-selected .flexlayout__tabset_header,
+:root[data-theme="light"] .flexlayout__tabset_tabbar_outer,
+:root[data-theme="light"] .layout-mode-grid .flexlayout__tabset_header,
+:root[data-theme="light"] .layout-mode-grid .flexlayout__tabset-selected .flexlayout__tabset_header,
+:root[data-theme="light"] .layout-mode-grid .flexlayout__tabset_tabbar_outer {
+  background: #f4f6fb !important;
+  border-bottom: 1px solid #d8deea !important;
+}
+:root[data-theme="light"] .flexlayout__tab_button { color: #6b7688 !important; }
+:root[data-theme="light"] .flexlayout__tab_button:hover { color: #44505f !important; }
+:root[data-theme="light"] .flexlayout__tab_button--selected { color: #131924 !important; }
+:root[data-theme="light"] .flexlayout__tab_toolbar_button { color: #8a94a6 !important; }
+:root[data-theme="light"] .flexlayout__tab_toolbar_button:hover {
+  color: #131924 !important;
+  background-color: #e3e8f1 !important;
+}
+:root[data-theme="light"] .panel-toolbar-button { color: #6b7688; }
+:root[data-theme="light"] .panel-toolbar-button:hover {
+  color: #131924;
+  background-color: #e3e8f1;
+  border-color: #d8deea;
+}
+:root[data-theme="light"] .panel-title-label { color: #44505f; }
+:root[data-theme="light"] .flexlayout__splitter { background-color: #e9edf4 !important; }
+:root[data-theme="light"] .flexlayout__border_bar {
+  background-color: #f4f6fb !important;
+  border-color: #d8deea !important;
+}
+:root[data-theme="light"] .flexlayout__popup_menu {
+  background: #ffffff !important;
+  border: 1px solid #d8deea !important;
+}
+:root[data-theme="light"] .flexlayout__popup_menu_item { color: #131924 !important; }
+:root[data-theme="light"] .flexlayout__popup_menu_item:hover { background: #f4f6fb !important; }
+:root[data-theme="light"] .flexlayout__floating_window_content { background: #e9edf4 !important; }

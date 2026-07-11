@@ -6,6 +6,7 @@ import { computeFov, computeDof, personHeightInFrame } from '../../utils/fov';
 import { getExportRegistry } from '../../store/exportRegistry';
 import type { VenueCamera } from '../../types';
 import { useTranslation, format } from '../../i18n';
+import { alertDialog } from '@avplan/ui';
 
 export type ExportMode = 'current' | 'all' | 'widetele' | 'all-widetele';
 
@@ -344,7 +345,7 @@ export default function ExportPanel() {
       : currentCam ? [currentCam] : [];
 
     if (targetCams.length === 0) {
-      alert(t('preview.export.noCameras', 'No cameras to export. Add a camera first.'));
+      await alertDialog(t('preview.export.noCameras', 'No cameras to export. Add a camera first.'), { okLabel: t('common.ok', 'OK') });
       return;
     }
 

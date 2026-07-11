@@ -9,6 +9,7 @@ import type { StageObjectType } from '../../types';
 import { FiChevronLeft, FiChevronRight, FiUnlock, FiLock, FiPlus, FiX } from 'react-icons/fi';
 import { loadJSON, saveJSON } from '../../utils/storage';
 import { useTranslation, format } from '../../i18n';
+import { promptDialog } from '@avplan/ui';
 
 // Preview optical presets (issue #47) — snapshots of focal length / aperture /
 // focus distance the operator can recall. Persisted globally in localStorage.
@@ -1103,8 +1104,12 @@ export default function CameraPreview({ undocked, onUndock }: PreviewProps) {
   // Upper bound for the focus-distance slider — roughly the venue diagonal.
   const focusMax = Math.max(20, Math.ceil(Math.hypot(venue.widthM, venue.heightM)));
 
-  const addPreset = () => {
-    const name = window.prompt(t('preview.presetNamePrompt', 'Preset name:'), `${cam.focalLength.toFixed(0)}mm f/${cam.aperture.toFixed(1)}`);
+  const addPreset = async () => {
+    const name = await promptDialog(t('preview.presetNamePrompt', 'Preset name:'), {
+      defaultValue: `${cam.focalLength.toFixed(0)}mm f/${cam.aperture.toFixed(1)}`,
+      okLabel: t('common.ok', 'OK'),
+      cancelLabel: t('common.cancel', 'Cancel'),
+    });
     if (!name) return;
     persistPresets([...presets, { id: Date.now().toString(36), name: name.trim(), focalLength: cam.focalLength, aperture: cam.aperture, focusDistance: cam.focusDistance }]);
   };

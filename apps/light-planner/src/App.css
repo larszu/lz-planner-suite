@@ -1408,9 +1408,35 @@ kbd {
 }
 
 /* ── 3D View ───────────────────────────────────────────── */
+.scene3d-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .scene3d-container {
   width: 100%;
   height: 100%;
+}
+
+/* Dezenter Eck-Chip: der Render-Viewport ist absichtlich dunkel — der Chip macht
+   das neben einer hellen Shell als Absicht (nicht als Fehler) lesbar. Theme-neutral,
+   weil der Viewport-Hintergrund immer dunkel bleibt. */
+.scene3d-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(231, 238, 246, 0.72);
+  background: rgba(14, 17, 22, 0.42);
+  border: 1px solid rgba(231, 238, 246, 0.14);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
 }
 
 .loading-3d {

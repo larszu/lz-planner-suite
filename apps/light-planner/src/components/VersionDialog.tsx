@@ -4,6 +4,8 @@ import { versionsFor, saveVersion, deleteVersion, type ProjectVersion } from '..
 import { diffProjects } from '../core/diff';
 import DiffView from './DiffView';
 import Icon from './Icon';
+import { alertDialog, confirmDialog } from '@avplan/ui';
+import { useTranslation } from '../i18n';
 
 interface Props {
   projectId: string;
@@ -16,6 +18,7 @@ interface Props {
 // Save named snapshots of the rig and see exactly what changed since any of
 // them — added / removed / moved / re-patched / re-gelled, field by field.
 const VersionDialog: React.FC<Props> = ({ projectId, projectName, currentDoc, onRestore, onClose }) => {
+  const { t } = useTranslation();
   const [versions, setVersions] = useState<ProjectVersion[]>(() => versionsFor(projectId));
   const [selectedId, setSelectedId] = useState<string | null>(versionsFor(projectId)[0]?.id ?? null);
   const [label, setLabel] = useState('');
@@ -28,7 +31,7 @@ const VersionDialog: React.FC<Props> = ({ projectId, projectName, currentDoc, on
       refresh();
       setSelectedId(v.id);
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : String(e));
+      void alertDialog(e instanceof Error ? e.message : String(e));
     }
   };
   const onDelete = (id: string) => {
@@ -37,8 +40,12 @@ const VersionDialog: React.FC<Props> = ({ projectId, projectName, currentDoc, on
     setVersions(rest);
     if (selectedId === id) setSelectedId(rest[0]?.id ?? null);
   };
-  const restore = (v: ProjectVersion) => {
-    if (window.confirm(`Stand „${v.label}" laden? Nicht gesicherte Änderungen gehen verloren.`)) onRestore(v.doc);
+  const restore = async (v: ProjectVersion) => {
+    const ok = await confirmDialog(
+      t('version.restoreConfirm', 'Stand laden? Nicht gesicherte Änderungen gehen verloren.'),
+      { body: `„${v.label}"`, destructive: true },
+    );
+    if (ok) onRestore(v.doc);
   };
 
   const selected = versions.find((v) => v.id === selectedId) ?? null;
@@ -67,7 +74,7 @@ const VersionDialog: React.FC<Props> = ({ projectId, projectName, currentDoc, on
                   <b>{v.label}</b>
                   <span>{fmt(v.savedAt)} · {v.doc.fixtures?.length ?? 0} Leuchten</span>
                 </div>
-                <button className="ver-act" title="Diesen Stand laden" onClick={(e) => { e.stopPropagation(); restore(v); }}><Icon name="open" size={15} /></button>
+                <button className="ver-act" title="Diesen Stand laden" onClick={(e) => { e.stopPropagation(); void restore(v); }}><Icon name="open" size={15} /></button>
                 <button className="ver-act danger" title="Version löschen" onClick={(e) => { e.stopPropagation(); onDelete(v.id); }}><Icon name="trash" size={15} /></button>
               </div>
             ))}

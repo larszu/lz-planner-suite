@@ -5,6 +5,7 @@ import { useStore } from '../../store/useStore';
 import type { EditMode } from '../../types';
 import { useTranslation } from '../../i18n';
 import { useDomTheme } from '../../hooks/useDomTheme';
+import { isEmbedded } from '../../hooks/useIsEmbedded';
 
 type TFn = (key: string, en: string) => string;
 
@@ -23,6 +24,7 @@ export default function StartupAssistant() {
   const { t } = useTranslation();
   const WIZARD_STEPS = getWizardSteps(t);
   const { loadProject, setEditMode } = useStore();
+  const language = useStore((s) => s.language);
   const theme = useDomTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Bewusst sessionStorage: der Assistent darf pro Sitzung einmal erscheinen
@@ -37,8 +39,10 @@ export default function StartupAssistant() {
       }),
     [],
   );
+  // Embedded in the suite shell, the sessionStorage-backed assistant would
+  // re-open on every shell reload — suppress auto-open there and start 'done'.
   const [phase, setPhase] = useState<'choose' | 'wizard' | 'done'>(
-    onboarding.hasSeen('welcome') ? 'done' : 'choose',
+    isEmbedded || onboarding.hasSeen('welcome') ? 'done' : 'choose',
   );
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -114,7 +118,7 @@ export default function StartupAssistant() {
     <>
       <WelcomeDialog
         open
-        lang="en"
+        lang={language}
         theme={theme}
         accent="#3b82f6"
         title={t('header.welcome.title', 'Welcome to MultiCam Planner')}

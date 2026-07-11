@@ -882,6 +882,18 @@ export default function Venue3D() {
 
   return (
     <div style={{ width: '100%', height: '100%', minHeight: 500, position: 'relative' }}>
+      {/* Unobtrusive corner chip so the viewport reads as an intentional 3D view */}
+      <div style={{
+        position: 'absolute', top: 8, left: 8, zIndex: 10,
+        background: isLight ? '#ffffffcc' : '#0f1117cc',
+        border: `1px solid ${isLight ? '#c2cbd9' : '#334155'}`,
+        color: '#60a5fa', padding: '2px 8px', borderRadius: 6,
+        fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+        backdropFilter: 'blur(4px)', pointerEvents: 'none',
+      }}>
+        3D
+      </div>
+
       {/* Controls hint */}
       <div style={{
         position: 'absolute', bottom: 8, left: 8, zIndex: 10,

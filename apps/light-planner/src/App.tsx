@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { connectShellHistory } from '@avplan/ui/embed';
+import { connectShellHistory, publishShellSetting } from '@avplan/ui/embed';
+import { alertDialog, confirmDialog } from '@avplan/ui';
 import type { PlacedFixture, Shape, Tool, Fixture, FloorPlan, ViewMode, Person, StageElement, ProjectMeta, ProjectData, FixtureGroup, Truss, Wall, Ceiling, Scene, SceneFixtureState, Layers, LayerKey, CameraView, FloorMaterial, SunSettings } from './types';
 import { DEFAULT_FLOOR } from './core/surfaceTextures';
 import { convexHull } from './core/geometry';
@@ -711,7 +712,7 @@ const App: React.FC = () => {
   const handleDistributeV = useCallback(() => distributeFixtures('y'), [distributeFixtures]);
 
   // ── Project save/load ──
-  const handleSaveProject = useCallback((meta: ProjectMeta) => {
+  const handleSaveProject = useCallback(async (meta: ProjectMeta) => {
     const data: ProjectData = {
       meta,
       fixtures,
@@ -735,7 +736,7 @@ const App: React.FC = () => {
       setProjectMeta(meta);
       setProjectDialogMode(null);
     } catch (err) {
-      window.alert(`${t('app.alert.saveFailed', 'Projekt konnte nicht gespeichert werden:')}\n${err instanceof Error ? err.message : err}`);
+      await alertDialog(t('app.alert.saveFailed', 'Projekt konnte nicht gespeichert werden:'), { body: err instanceof Error ? err.message : String(err) });
     }
   }, [fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, cameras, layers, floor, sun, floorPlan, projectId]);
 
@@ -826,7 +827,7 @@ const App: React.FC = () => {
     try {
       avplan = parseAvPlan(res.text);
     } catch (e) {
-      window.alert(`${t('app.alert.avplanImportFailed', '.avplan-Import fehlgeschlagen:')} ${e instanceof Error ? e.message : String(e)}`);
+      await alertDialog(t('app.alert.avplanImportFailed', '.avplan-Import fehlgeschlagen:'), { body: e instanceof Error ? e.message : String(e) });
       return;
     }
     const r = fromVenueExchange({
@@ -860,7 +861,7 @@ const App: React.FC = () => {
     try {
       ex = parseVenueExchange(res.text);
     } catch (e) {
-      window.alert(`${t('app.alert.venueImportFailed', 'Venue-Import fehlgeschlagen:')} ${e instanceof Error ? e.message : String(e)}`);
+      await alertDialog(t('app.alert.venueImportFailed', 'Venue-Import fehlgeschlagen:'), { body: e instanceof Error ? e.message : String(e) });
       return;
     }
     const r = fromVenueExchange(ex);
@@ -881,10 +882,10 @@ const App: React.FC = () => {
   // ── New / empty project ──
   // Clears the scene (keeping the user's custom-fixture library) so you can
   // start fresh. Confirms first when there's unsaved content on the canvas.
-  const handleNew = useCallback(() => {
+  const handleNew = useCallback(async () => {
     const hasContent = fixtures.length || persons.length || stageElements.length
       || trusses.length || walls.length || ceilings.length || shapes.length || !!floorPlan;
-    if (hasContent && !window.confirm(t('app.confirm.new', 'Neues Projekt anlegen? Nicht gespeicherte Änderungen am aktuellen Projekt gehen verloren.'))) return;
+    if (hasContent && !(await confirmDialog(t('app.confirm.new', 'Neues Projekt anlegen? Nicht gespeicherte Änderungen am aktuellen Projekt gehen verloren.')))) return;
     const now = new Date().toISOString();
     handleLoadProject({
       meta: { name: t('app.defaultProject.new', 'Neues Projekt'), author: '', version: '1.0', createdAt: now, updatedAt: now },
@@ -935,7 +936,7 @@ const App: React.FC = () => {
         setPlanMode('none');
       })
       .catch((err) => {
-        window.alert(`${t('app.alert.floorPlanLoadFailed', 'Grundriss konnte nicht geladen werden:')}\n${err?.message ?? err}`);
+        void alertDialog(t('app.alert.floorPlanLoadFailed', 'Grundriss konnte nicht geladen werden:'), { body: err?.message ?? String(err) });
       });
   }, []);
 
@@ -1135,7 +1136,7 @@ const App: React.FC = () => {
   const planPxPerMeterRef = useRef(40);
   const handleExportPlot = useCallback(async () => {
     const srcCanvas = document.querySelector('.plan-canvas') as HTMLCanvasElement | null;
-    if (viewMode !== '2d' || !srcCanvas) { window.alert(t('app.alert.plotNeed2d', 'Lichtplan-Druck: bitte in der 2D-Plan-Ansicht ausführen.')); return; }
+    if (viewMode !== '2d' || !srcCanvas) { await alertDialog(t('app.alert.plotNeed2d', 'Lichtplan-Druck: bitte in der 2D-Plan-Ansicht ausführen.')); return; }
     const out = composePlot(srcCanvas, planPxPerMeterRef.current, fixtures, {
       projectName: projectMeta?.name || t('app.defaultProject.name', 'Lichtplan'), author: projectMeta?.author,
     });
@@ -1181,7 +1182,7 @@ const App: React.FC = () => {
       const data = raw as ProjectData;
       handleLoadProject(data);
     } catch (err) {
-      window.alert(`${t('app.alert.projectFileLoadFailed', 'Projektdatei konnte nicht geladen werden:')}\n${err instanceof Error ? err.message : err}`);
+      await alertDialog(t('app.alert.projectFileLoadFailed', 'Projektdatei konnte nicht geladen werden:'), { body: err instanceof Error ? err.message : String(err) });
     }
   }, [handleLoadProject, host]);
 
@@ -1266,12 +1267,49 @@ const App: React.FC = () => {
   };
 
   // Top-bar mode switch: 2D plan / 3D / Foto (= 3D + photo relight).
+  // Von der Shell gebrückte Einstellungen (siehe shellSettings.ts): eine hier im
+  // Light-eigenen TopBar/Menü ausgelöste Änderung an die Shell zurückmelden, damit
+  // deren Quelle der Wahrheit synchron bleibt. publishShellSetting ist im
+  // Standalone-Betrieb ein No-op.
   const handleSetMode = useCallback((m: '2d' | '3d' | 'photo') => {
-    if (m === '2d') { setViewMode('2d'); return; }
-    setViewMode('3d');
-    if (m === 'photo' && !photoMode) togglePhotoMode();
-    else if (m === '3d' && photoMode) togglePhotoMode();
+    if (m === '2d') { setViewMode('2d'); }
+    else {
+      setViewMode('3d');
+      if (m === 'photo' && !photoMode) togglePhotoMode();
+      else if (m === '3d' && photoMode) togglePhotoMode();
+    }
+    publishShellSetting('mode', m);
   }, [setViewMode, photoMode, togglePhotoMode]);
+
+  const handleToggleHeatMap = useCallback(() => {
+    toggleHeatMap();
+    publishShellSetting('showHeatMap', !showHeatMap);
+  }, [toggleHeatMap, showHeatMap]);
+  const handleToggleBeams = useCallback(() => {
+    toggleBeams();
+    publishShellSetting('showBeams', !showBeams);
+  }, [toggleBeams, showBeams]);
+  const handleToggleSnap = useCallback(() => {
+    const wasOn = snapStep > 0;
+    toggleSnap();
+    publishShellSetting('snap', !wasOn);
+  }, [toggleSnap, snapStep]);
+  const handleToggleFocusNotes = useCallback(() => {
+    toggleFocusNotes();
+    publishShellSetting('showFocusNotes', !showFocusNotes);
+  }, [toggleFocusNotes, showFocusNotes]);
+  const handleExposureChange = useCallback((v: number) => {
+    setExposure(v);
+    publishShellSetting('exposure', v);
+  }, [setExposure]);
+  const handleHazeChange = useCallback((v: number) => {
+    setHaze(v);
+    publishShellSetting('haze', v);
+  }, [setHaze]);
+  const handleAmbienceChange = useCallback((v: number) => {
+    setAmbience(v);
+    publishShellSetting('ambience', v);
+  }, [setAmbience]);
 
   const activeSceneName = scenes.find((s) => s.id === activeSceneId)?.name ?? null;
 
@@ -1305,17 +1343,17 @@ const App: React.FC = () => {
         snapStep={snapStep}
         showFocusNotes={showFocusNotes}
         onSetMode={handleSetMode}
-        onToggleHeatMap={toggleHeatMap}
-        onExposureChange={setExposure}
-        onHazeChange={setHaze}
-        onToggleBeams={toggleBeams}
-        onAmbienceChange={setAmbience}
+        onToggleHeatMap={handleToggleHeatMap}
+        onExposureChange={handleExposureChange}
+        onHazeChange={handleHazeChange}
+        onToggleBeams={handleToggleBeams}
+        onAmbienceChange={handleAmbienceChange}
         onFloorChange={setFloor}
         onSunChange={setSun}
         onHeatMapScaleChange={setHeatMapScale}
         onHeatMapTargetChange={setHeatMapTarget}
-        onToggleSnap={toggleSnap}
-        onToggleFocusNotes={toggleFocusNotes}
+        onToggleSnap={handleToggleSnap}
+        onToggleFocusNotes={handleToggleFocusNotes}
         onUploadFloorPlan={handleUploadFloorPlan}
         onOpenSchedule={() => setScheduleOpen(true)}
         onExport={handleExport}
@@ -1583,7 +1621,7 @@ const App: React.FC = () => {
             projectId={projectId}
             projectName={projectMeta?.name ?? ''}
             onJump={(dir, count) => restoreMany(dir, count)}
-            onSaveVersion={(lbl) => { try { saveVersion(projectId, lbl, buildCurrentDoc()); } catch (e) { window.alert(e instanceof Error ? e.message : String(e)); } }}
+            onSaveVersion={(lbl) => { try { saveVersion(projectId, lbl, buildCurrentDoc()); } catch (e) { void alertDialog(e instanceof Error ? e.message : String(e)); } }}
             onClose={() => setChangesOpen(false)}
           />
         );

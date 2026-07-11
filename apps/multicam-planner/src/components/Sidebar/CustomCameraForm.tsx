@@ -3,6 +3,7 @@ import { FiPlus, FiTrash2, FiKey, FiZap, FiX } from 'react-icons/fi';
 import { SENSORS } from '../../data/cameras';
 import type { Camera, SensorSize } from '../../types';
 import { useTranslation } from '../../i18n';
+import { alertDialog } from '@avplan/ui';
 
 /**
  * Shared form for both creating and editing a custom camera. Used inline in the
@@ -105,7 +106,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
     if (sensorKey === '__custom__') {
       const w = parseFloat(sensorW);
       const h = parseFloat(sensorH);
-      if (!w || !h) { alert(t('sidebar.form.alertSensorDims', 'Enter sensor width and height in mm.')); return; }
+      if (!w || !h) { void alertDialog(t('sidebar.form.alertSensorDims', 'Enter sensor width and height in mm.'), { okLabel: t('common.ok', 'OK') }); return; }
       sensor = {
         name: sensorName.trim() || `${w}×${h}mm`,
         widthMm: w,

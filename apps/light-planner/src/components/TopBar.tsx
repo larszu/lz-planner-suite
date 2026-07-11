@@ -3,6 +3,7 @@ import Icon from './Icon';
 import type { FloorMaterial, FloorPresetId, SunSettings } from '../types';
 import { FLOOR_PRESETS, floorPreset } from '../core/surfaceTextures';
 import { useTranslation } from '../i18n';
+import { isEmbedded } from '../hooks/useIsEmbedded';
 
 type Mode = '2d' | '3d' | 'photo';
 
@@ -75,8 +76,13 @@ const TopBar: React.FC<Props> = (p) => {
     <header className="topbar" ref={ref}>
       {/* ── left: brand + menu ── */}
       <div className="topbar-left">
-        <div className="brand-logo"><img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" draggable={false} /></div>
-        <b className="brand-name">LightPlanner</b>
+        {/* Eingebettet stellt die Shell App-Name/Logo bereit — hier ausblenden. */}
+        {!isEmbedded && (
+          <>
+            <div className="brand-logo"><img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" draggable={false} /></div>
+            <b className="brand-name">LightPlanner</b>
+          </>
+        )}
         <span className="brand-proj">{p.projectName || t('topbar.untitled', 'Unbenannt')}</span>
 
         <div className="tb-menuwrap">
@@ -86,7 +92,10 @@ const TopBar: React.FC<Props> = (p) => {
             <div className="tb-dropdown">
               <div className="tb-dd-sec">{t('menu.file', 'Datei')}</div>
               <button className="tb-dd-item" onClick={run(p.onNew)}><Icon name="plus" size={15} />{t('menu.new', 'Neu')}<kbd>Strg N</kbd></button>
-              <button className="tb-dd-item" onClick={run(p.onSave)}><Icon name="save" size={15} />{t('menu.save', 'Speichern (Browser)')}<kbd>Strg S</kbd></button>
+              {/* Eingebettet stellt die Shell Speichern (Browser) bereit. */}
+              {!isEmbedded && (
+                <button className="tb-dd-item" onClick={run(p.onSave)}><Icon name="save" size={15} />{t('menu.save', 'Speichern (Browser)')}<kbd>Strg S</kbd></button>
+              )}
               <button className="tb-dd-item" onClick={run(p.onLoad)}><Icon name="open" size={15} />{t('menu.load', 'Laden (Browser)…')}</button>
               <div className="tb-dd-div" />
               <button className="tb-dd-item" onClick={run(p.onSaveToFile)}><Icon name="export" size={15} />{t('menu.saveFile', 'Projekt als Datei…')}</button>
@@ -103,8 +112,13 @@ const TopBar: React.FC<Props> = (p) => {
               <button className="tb-dd-item" onClick={run(() => p.onExport('jpg'))}>{t('menu.exportJpg', 'Export als JPG…')}</button>
               <button className="tb-dd-item" onClick={run(() => p.onExport('pdf'))}>{t('menu.exportPdf', 'Export als PDF (Bild)…')}</button>
               <div className="tb-dd-sec">{t('menu.edit', 'Bearbeiten')}</div>
-              <button className="tb-dd-item" onClick={run(p.onUndo)}><Icon name="undo" size={15} />{t('menu.undo', 'Rückgängig')}<kbd>Strg Z</kbd></button>
-              <button className="tb-dd-item" onClick={run(p.onRedo)}><Icon name="redo" size={15} />{t('menu.redo', 'Wiederholen')}<kbd>Strg Y</kbd></button>
+              {/* Eingebettet stellt die Shell Undo/Redo bereit. */}
+              {!isEmbedded && (
+                <>
+                  <button className="tb-dd-item" onClick={run(p.onUndo)}><Icon name="undo" size={15} />{t('menu.undo', 'Rückgängig')}<kbd>Strg Z</kbd></button>
+                  <button className="tb-dd-item" onClick={run(p.onRedo)}><Icon name="redo" size={15} />{t('menu.redo', 'Wiederholen')}<kbd>Strg Y</kbd></button>
+                </>
+              )}
               <button className="tb-dd-item" onClick={run(p.onChanges)}><Icon name="tag" size={15} />{t('topbar.history', 'Verlauf & Änderungen…')}</button>
               <button className="tb-dd-item" onClick={run(p.onVersions)}><Icon name="layers" size={15} />{t('topbar.versions', 'Versionen & Vergleich…')}</button>
               <div className="tb-dd-div" />
@@ -203,7 +217,10 @@ const TopBar: React.FC<Props> = (p) => {
         <span className="tb-div" />
         <button className="tb-btn" onClick={p.onOpenSchedule}><Icon name="schedule" size={15} />{t('topbar.deviceList', 'Geräteliste')}</button>
         <button className="tb-btn" onClick={() => p.onExport('png')}><Icon name="export" size={15} />{t('tool.export', 'Export')}</button>
-        <button className="tb-btn primary" onClick={p.onSave}><Icon name="save" size={15} />{t('topbar.save', 'Speichern')}</button>
+        {/* Eingebettet stellt die Shell Speichern bereit. */}
+        {!isEmbedded && (
+          <button className="tb-btn primary" onClick={p.onSave}><Icon name="save" size={15} />{t('topbar.save', 'Speichern')}</button>
+        )}
       </div>
     </header>
   );

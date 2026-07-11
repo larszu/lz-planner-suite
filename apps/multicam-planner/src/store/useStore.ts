@@ -6,6 +6,8 @@ import { TEMPLATES } from '../data/templates';
 import { loadJSON, saveJSON } from '../utils/storage';
 import { fromVenueExchange, type VenueExchange } from '../utils/venueExchange';
 import type { AvPlan } from '../utils/avplan';
+import { alertDialog } from '@avplan/ui';
+import { translate } from '../i18n';
 
 // Injected by Vite from package.json. In a release build that came through
 // the GitHub Actions workflow this matches the git release tag exactly,
@@ -715,7 +717,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   applyProjectFile: (project: ProjectFile) => {
     if (project.formatVersion !== 1) {
-      alert('Unsupported project file format.');
+      void alertDialog(translate(get().language, 'store.unsupportedFormat', 'Unsupported project file format.'), {
+        okLabel: translate(get().language, 'common.ok', 'OK'),
+      });
       return;
     }
     nextId = 1;

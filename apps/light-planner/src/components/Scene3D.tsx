@@ -14,6 +14,7 @@ import { getBeamColorHex } from '../core/colorTemp';
 import { sampleWall, isCurved, pointInPolygon, wallSegments, normalizedWindows, type NormWindow } from '../core/geometry';
 import { floorPreset, wallPreset, surfaceCanvas, DEFAULT_FLOOR, type SurfacePreset } from '../core/surfaceTextures';
 import type { ResolvedSun } from '../core/sun';
+import { useTranslation } from '../i18n';
 
 // Candela → three.js spotlight intensity. Keeps relative brightness physical
 // (ratios + 1/r² falloff); the exposure control handles absolute calibration.
@@ -281,6 +282,7 @@ interface Props {
 }
 
 const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElements, trusses, walls, ceilings, floorPlan, layers, cameras, selectedIds, showHeatMap, heatMapScale, heatMapTarget, photoMode, exposure, haze, showBeams, ambience, floor, sun, onSelect, onHoverLux }, ref) => {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{
     scene: THREE.Scene;
@@ -1534,7 +1536,14 @@ const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElem
     },
   }));
 
-  return <div ref={containerRef} className="scene3d-container" />;
+  // Der 3D-/Render-Viewport bleibt bewusst dunkel. Ein dezenter Eck-Chip macht
+  // das neben einer hellen Shell als Absicht erkennbar (nicht als Fehler).
+  return (
+    <div className="scene3d-wrap">
+      <div ref={containerRef} className="scene3d-container" />
+      <span className="scene3d-badge">{photoMode ? t('topbar.render', 'Render') : t('topbar.mode3d', '3D')}</span>
+    </div>
+  );
 });
 
 export default Scene3D;

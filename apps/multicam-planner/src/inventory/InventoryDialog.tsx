@@ -7,6 +7,8 @@ import { FiX, FiPlus, FiTrash2, FiDownload, FiUpload, FiSearch } from 'react-ico
 import { useInventoryStore, type InventoryItemInput } from './store';
 import { serializeInventory, parseInventory, resolveInventoryCode } from '@avplan/inventory-core';
 import type { InventoryItem } from '@avplan/inventory-core';
+import { confirmDialog } from '@avplan/ui';
+import { useTranslation, format } from '../i18n';
 
 interface Props {
   open: boolean;
@@ -18,6 +20,7 @@ type FormState = InventoryItemInput & { id?: string };
 const inputCls = 'w-full rounded border border-bc-border bg-bc-dark p-1.5 text-sm text-white';
 
 export function InventoryDialog({ open, onClose }: Props) {
+  const { t } = useTranslation();
   const items = useInventoryStore((s) => s.items);
   const nodes = useInventoryStore((s) => s.nodes);
   const units = useInventoryStore((s) => s.units);
@@ -69,24 +72,29 @@ export function InventoryDialog({ open, onClose }: Props) {
   const doImport = async (file: File) => {
     const snap = parseInventory(await file.text());
     if (!snap) {
-      setScanResult('Keine gültige Lager-Datei (avplan-inventory).');
+      setScanResult(t('inventory.import.invalid', 'Not a valid inventory file (avplan-inventory).'));
       return;
     }
-    const replace = window.confirm('Bestehenden Bestand ERSETZEN? Abbrechen = zusammenführen (merge).');
+    const replace = await confirmDialog(t('inventory.import.replaceTitle', 'Replace the existing inventory?'), {
+      body: t('inventory.import.replaceBody', 'Cancel keeps both and merges them.'),
+      okLabel: t('inventory.import.replace', 'Replace'),
+      cancelLabel: t('inventory.import.merge', 'Merge'),
+      destructive: true,
+    });
     const n = importSnapshot(snap, replace ? 'replace' : 'merge');
-    setScanResult(`${n} Objekte importiert.`);
+    setScanResult(format(t('inventory.import.done', '{count} objects imported.'), { count: n }));
   };
 
   const doScan = () => {
     const code = scan.trim();
     if (!code) return;
     const m = resolveInventoryCode(code, { items, nodes, units });
-    if (!m) setScanResult(`Kein Treffer für „${code}".`);
+    if (!m) setScanResult(format(t('inventory.scan.noMatch', 'No match for "{code}".'), { code }));
     else if (m.kind === 'item') {
-      setScanResult(`Artikel: ${m.item.model}`);
+      setScanResult(format(t('inventory.scan.item', 'Item: {model}'), { model: m.item.model }));
       setForm({ ...m.item });
-    } else if (m.kind === 'node') setScanResult(`Lagerort: ${m.node.name}`);
-    else setScanResult(`Einheit: ${m.unit.serial || m.unit.code || m.unit.id.slice(0, 6)}`);
+    } else if (m.kind === 'node') setScanResult(format(t('inventory.scan.node', 'Location: {name}'), { name: m.node.name }));
+    else setScanResult(format(t('inventory.scan.unit', 'Unit: {label}'), { label: m.unit.serial || m.unit.code || m.unit.id.slice(0, 6) }));
     setScan('');
   };
 
@@ -94,14 +102,14 @@ export function InventoryDialog({ open, onClose }: Props) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4">
       <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-bc-border bg-bc-panel text-white shadow-2xl">
         <header className="flex shrink-0 items-center justify-between border-b border-bc-border px-4 py-2.5">
-          <h2 className="text-base font-semibold">Lager / Bestand</h2>
-          <button type="button" onClick={onClose} className="rounded p-1 text-gray-400 hover:bg-bc-dark hover:text-white" aria-label="Schließen">
+          <h2 className="text-base font-semibold">{t('inventory.title', 'Warehouse / Inventory')}</h2>
+          <button type="button" onClick={onClose} className="rounded p-1 text-gray-400 hover:bg-bc-dark hover:text-white" aria-label={t('inventory.close', 'Close')}>
             <FiX size={18} />
           </button>
         </header>
 
         <div className="space-y-3 overflow-auto p-4 text-sm">
-          {/* Scan + Aktionen */}
+          {/* Scan + actions */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[10rem]">
               <FiSearch className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" size={13} />
@@ -109,19 +117,19 @@ export function InventoryDialog({ open, onClose }: Props) {
                 value={scan}
                 onChange={(e) => setScan(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && doScan()}
-                placeholder="Code scannen / eingeben (Artikel, Lagerort, Einheit)…"
+                placeholder={t('inventory.scanPlaceholder', 'Scan / enter a code (item, location, unit)…')}
                 className={`${inputCls} pl-7`}
               />
             </div>
-            <button type="button" onClick={doScan} className="rounded bg-bc-dark px-2.5 py-1.5 hover:bg-black">Auflösen</button>
-            <button type="button" onClick={doExport} className="flex items-center gap-1 rounded bg-bc-dark px-2.5 py-1.5 hover:bg-black" title="Export (App-übergreifend)">
-              <FiDownload size={13} /> Export
+            <button type="button" onClick={doScan} className="rounded bg-bc-dark px-2.5 py-1.5 hover:bg-black">{t('inventory.resolve', 'Resolve')}</button>
+            <button type="button" onClick={doExport} className="flex items-center gap-1 rounded bg-bc-dark px-2.5 py-1.5 hover:bg-black" title={t('inventory.export.title', 'Export (cross-app)')}>
+              <FiDownload size={13} /> {t('inventory.export', 'Export')}
             </button>
-            <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-1 rounded bg-bc-dark px-2.5 py-1.5 hover:bg-black" title="Import">
-              <FiUpload size={13} /> Import
+            <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-1 rounded bg-bc-dark px-2.5 py-1.5 hover:bg-black" title={t('inventory.import.title', 'Import')}>
+              <FiUpload size={13} /> {t('inventory.import', 'Import')}
             </button>
             <button type="button" onClick={() => setForm({ model: '', quantity: 1 })} className="flex items-center gap-1 rounded bg-bc-accent px-2.5 py-1.5 text-black hover:opacity-90">
-              <FiPlus size={13} /> Artikel
+              <FiPlus size={13} /> {t('inventory.addItem', 'Item')}
             </button>
           </div>
           {scanResult && <div className="rounded border border-bc-border bg-bc-dark px-2 py-1 text-gray-300">{scanResult}</div>}
@@ -129,43 +137,43 @@ export function InventoryDialog({ open, onClose }: Props) {
           {/* Add/Edit */}
           {form && (
             <div className="rounded border border-bc-accent/40 bg-bc-dark p-3">
-              <div className="mb-2 font-medium">{form.id ? 'Artikel bearbeiten' : 'Neuer Artikel'}</div>
+              <div className="mb-2 font-medium">{form.id ? t('inventory.editItem', 'Edit item') : t('inventory.newItem', 'New item')}</div>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                <label className="block">Modell *<input autoFocus value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className={inputCls} /></label>
-                <label className="block">Hersteller<input value={form.manufacturer ?? ''} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} className={inputCls} /></label>
-                <label className="block">Kategorie<input value={form.category ?? ''} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputCls} /></label>
-                <label className="block">Menge<input type="number" min={0} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} className={inputCls} /></label>
-                <label className="block">Code<input value={form.code ?? ''} onChange={(e) => setForm({ ...form, code: e.target.value })} className={inputCls} /></label>
-                <label className="block">Eigentum
+                <label className="block">{t('inventory.field.model', 'Model *')}<input autoFocus value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className={inputCls} /></label>
+                <label className="block">{t('inventory.field.manufacturer', 'Manufacturer')}<input value={form.manufacturer ?? ''} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} className={inputCls} /></label>
+                <label className="block">{t('inventory.field.category', 'Category')}<input value={form.category ?? ''} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputCls} /></label>
+                <label className="block">{t('inventory.field.quantity', 'Quantity')}<input type="number" min={0} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} className={inputCls} /></label>
+                <label className="block">{t('inventory.field.code', 'Code')}<input value={form.code ?? ''} onChange={(e) => setForm({ ...form, code: e.target.value })} className={inputCls} /></label>
+                <label className="block">{t('inventory.field.ownership', 'Ownership')}
                   <select value={form.ownership ?? ''} onChange={(e) => setForm({ ...form, ownership: (e.target.value || undefined) as InventoryItem['ownership'] })} className={inputCls}>
-                    <option value="">—</option>
-                    <option value="owned">Eigentum</option>
-                    <option value="rented">gemietet</option>
-                    <option value="subhire">Sub-Miete</option>
+                    <option value="">{t('inventory.ownership.none', '—')}</option>
+                    <option value="owned">{t('inventory.ownership.owned', 'Owned')}</option>
+                    <option value="rented">{t('inventory.ownership.rented', 'Rented')}</option>
+                    <option value="subhire">{t('inventory.ownership.subhire', 'Sub-hire')}</option>
                   </select>
                 </label>
               </div>
               <div className="mt-3 flex justify-end gap-2">
-                <button type="button" onClick={() => setForm(null)} className="rounded bg-bc-dark px-3 py-1 hover:bg-black">Abbrechen</button>
-                <button type="button" disabled={form.model.trim() === ''} onClick={save} className="rounded bg-bc-accent px-3 py-1 text-black enabled:hover:opacity-90 disabled:opacity-50">Speichern</button>
+                <button type="button" onClick={() => setForm(null)} className="rounded bg-bc-dark px-3 py-1 hover:bg-black">{t('inventory.cancel', 'Cancel')}</button>
+                <button type="button" disabled={form.model.trim() === ''} onClick={save} className="rounded bg-bc-accent px-3 py-1 text-black enabled:hover:opacity-90 disabled:opacity-50">{t('inventory.save', 'Save')}</button>
               </div>
             </div>
           )}
 
-          {/* Tabelle */}
+          {/* Table */}
           {sorted.length === 0 ? (
             <div className="rounded border border-dashed border-bc-border py-10 text-center text-gray-500">
-              Noch keine Lager-Artikel. Lege welche an oder importiere ein Lager aus Cable/Light Planner.
+              {t('inventory.empty', 'No inventory items yet. Create some or import an inventory from Cable/Light Planner.')}
             </div>
           ) : (
             <div className="overflow-x-auto rounded border border-bc-border">
               <table className="w-full border-collapse text-left">
                 <thead className="bg-bc-dark text-gray-400">
                   <tr>
-                    <th className="px-2 py-1.5 font-medium">Modell</th>
-                    <th className="px-2 py-1.5 text-right font-medium">Menge</th>
-                    <th className="px-2 py-1.5 font-medium">Code</th>
-                    <th className="px-2 py-1.5 font-medium">Eigentum</th>
+                    <th className="px-2 py-1.5 font-medium">{t('inventory.col.model', 'Model')}</th>
+                    <th className="px-2 py-1.5 text-right font-medium">{t('inventory.col.quantity', 'Quantity')}</th>
+                    <th className="px-2 py-1.5 font-medium">{t('inventory.col.code', 'Code')}</th>
+                    <th className="px-2 py-1.5 font-medium">{t('inventory.col.ownership', 'Ownership')}</th>
                     <th className="px-2 py-1.5"></th>
                   </tr>
                 </thead>
@@ -178,8 +186,8 @@ export function InventoryDialog({ open, onClose }: Props) {
                       <td className="px-2 py-1.5 text-gray-300">{it.ownership ?? '—'}</td>
                       <td className="px-2 py-1.5">
                         <div className="flex justify-end gap-1">
-                          <button type="button" onClick={() => setForm({ ...it })} className="rounded px-2 py-0.5 text-xs text-gray-400 hover:bg-bc-border hover:text-white">Edit</button>
-                          <button type="button" onClick={() => removeItem(it.id)} className="rounded p-1 text-gray-400 hover:bg-red-900/50 hover:text-red-300" aria-label="Löschen"><FiTrash2 size={13} /></button>
+                          <button type="button" onClick={() => setForm({ ...it })} className="rounded px-2 py-0.5 text-xs text-gray-400 hover:bg-bc-border hover:text-white">{t('inventory.edit', 'Edit')}</button>
+                          <button type="button" onClick={() => removeItem(it.id)} className="rounded p-1 text-gray-400 hover:bg-red-900/50 hover:text-red-300" aria-label={t('inventory.delete', 'Delete')}><FiTrash2 size={13} /></button>
                         </div>
                       </td>
                     </tr>
@@ -191,7 +199,7 @@ export function InventoryDialog({ open, onClose }: Props) {
 
           {(nodes.length > 0 || units.length > 0) && (
             <div className="text-xs text-gray-500">
-              + {nodes.length} Lagerorte/Cases · {units.length} serialisierte Einheiten (aus Import, verlustfrei erhalten)
+              {format(t('inventory.extras', '+ {nodes} locations/cases · {units} serialized units (from import, preserved losslessly)'), { nodes: nodes.length, units: units.length })}
             </div>
           )}
         </div>

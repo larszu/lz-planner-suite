@@ -6,6 +6,8 @@ import {
   type TourStep,
 } from '@avplan/onboarding-core';
 import { Icon } from './Icon';
+import { useUiStore } from '../store/uiStore';
+import { isEmbedded } from '../hooks/useIsEmbedded';
 
 const ACCENT = '#3b9dff'; // App.css --accent
 
@@ -57,8 +59,10 @@ interface OnboardingProps {
 export default function Onboarding({ onUploadFloorPlan }: OnboardingProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const theme = useDomTheme();
+  const lang = useUiStore((s) => s.language);
   const onboarding = useMemo(() => createOnboardingState({ appId: 'light-planner' }), []);
-  const [welcomeOpen, setWelcomeOpen] = useState(() => !onboarding.hasSeen('welcome'));
+  // Eingebettet stellt die Shell das Onboarding; nicht automatisch aufpoppen.
+  const [welcomeOpen, setWelcomeOpen] = useState(() => !isEmbedded && !onboarding.hasSeen('welcome'));
   const [tourOpen, setTourOpen] = useState(false);
 
   const closeWelcome = () => {
@@ -83,7 +87,7 @@ export default function Onboarding({ onUploadFloorPlan }: OnboardingProps) {
     <>
       <WelcomeDialog
         open={welcomeOpen}
-        lang="de"
+        lang={lang}
         theme={theme}
         accent={ACCENT}
         title="Willkommen im Light Planner"
@@ -109,7 +113,7 @@ export default function Onboarding({ onUploadFloorPlan }: OnboardingProps) {
       />
       <TourDialog
         open={tourOpen}
-        lang="de"
+        lang={lang}
         theme={theme}
         accent={ACCENT}
         steps={TOUR_STEPS}

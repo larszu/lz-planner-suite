@@ -4,6 +4,7 @@ import { TEMPLATES } from '../../data/templates';
 import { FiTrash2, FiSave, FiCopy, FiChevronDown, FiRotateCcw } from 'react-icons/fi';
 import type { VenueTemplate } from '../../types';
 import { useTranslation, format } from '../../i18n';
+import { confirmDialog } from '@avplan/ui';
 
 type TFn = (key: string, en: string) => string;
 
@@ -73,8 +74,11 @@ export default function TemplateSelector() {
     setEditingId(null);
   };
 
-  const handleLoad = (id: string) => {
-    if (confirm(t('header.templates.loadConfirm', 'Load this template? Current project will be replaced.'))) {
+  const handleLoad = async (id: string) => {
+    if (await confirmDialog(t('header.templates.loadConfirm', 'Load this template? Current project will be replaced.'), {
+      okLabel: t('common.load', 'Load'),
+      cancelLabel: t('common.cancel', 'Cancel'),
+    })) {
       loadTemplate(id);
     }
   };
@@ -133,8 +137,11 @@ export default function TemplateSelector() {
         <h3 className="text-sm font-semibold text-white">{t('header.templates.heading', 'Venue Templates')}</h3>
         {hiddenCount > 0 && (
           <button
-            onClick={() => {
-              if (confirm(format(t('header.templates.restoreConfirm', 'Restore {count} hidden built-in template(s)?'), { count: hiddenCount }))) restoreBuiltInTemplates();
+            onClick={async () => {
+              if (await confirmDialog(format(t('header.templates.restoreConfirm', 'Restore {count} hidden built-in template(s)?'), { count: hiddenCount }), {
+                okLabel: t('common.restore', 'Restore'),
+                cancelLabel: t('common.cancel', 'Cancel'),
+              })) restoreBuiltInTemplates();
             }}
             className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-gray-400 hover:text-bc-accent hover:bg-bc-accent/10"
             title={t('header.templates.restore.title', 'Bring back built-in templates you previously deleted')}

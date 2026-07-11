@@ -11,6 +11,7 @@ import { CalculationBreakdown } from './CalculationBreakdown';
 import AiPlanAnalysis from './AiPlanAnalysis';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useTranslation, format } from '../../i18n';
+import { confirmDialog, alertDialog } from '@avplan/ui';
 
 /** Group lenses by mount for the dropdown */
 function groupByMount(lenses: typeof LENSES) {
@@ -214,8 +215,12 @@ function CameraCard({ camId }: { camId: string }) {
                   {isBuiltInShadow(camDef.id) && (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!confirm(format(t('sidebar.cam.resetConfirm', 'Reset "{name}" to its built-in defaults? Your changes will be lost.'), { name: `${camDef.manufacturer} ${camDef.model}` }))) return;
+                      onClick={async () => {
+                        if (!(await confirmDialog(format(t('sidebar.cam.resetConfirm', 'Reset "{name}" to its built-in defaults? Your changes will be lost.'), { name: `${camDef.manufacturer} ${camDef.model}` }), {
+                          okLabel: t('common.reset', 'Reset'),
+                          cancelLabel: t('common.cancel', 'Cancel'),
+                          destructive: true,
+                        }))) return;
                         useStore.getState().removeCustomCamera(camDef.id);
                       }}
                       className="p-1 rounded text-gray-500 hover:text-bc-yellow"
@@ -227,13 +232,19 @@ function CameraCard({ camId }: { camId: string }) {
                   {isPureCustom(camDef.id) && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         const used = useStore.getState().cameras.filter((c) => c.cameraId === camDef.id).length;
                         if (used > 1) {
-                          alert(format(t('sidebar.cam.deleteInUse', 'Cannot delete "{name}" — it is still used by {count} placed camera(s).'), { name: `${camDef.manufacturer} ${camDef.model}`, count: used }));
+                          await alertDialog(format(t('sidebar.cam.deleteInUse', 'Cannot delete "{name}" — it is still used by {count} placed camera(s).'), { name: `${camDef.manufacturer} ${camDef.model}`, count: used }), {
+                            okLabel: t('common.ok', 'OK'),
+                          });
                           return;
                         }
-                        if (!confirm(format(t('sidebar.cam.deleteConfirm', 'Delete custom camera "{name}"?'), { name: `${camDef.manufacturer} ${camDef.model}` }))) return;
+                        if (!(await confirmDialog(format(t('sidebar.cam.deleteConfirm', 'Delete custom camera "{name}"?'), { name: `${camDef.manufacturer} ${camDef.model}` }), {
+                          okLabel: t('common.delete', 'Delete'),
+                          cancelLabel: t('common.cancel', 'Cancel'),
+                          destructive: true,
+                        }))) return;
                         // Swap this placement to the first built-in so the card stays valid
                         const fallback = CAMERAS[0];
                         updateCamera(cam.id, {
@@ -912,7 +923,7 @@ export default function Sidebar() {
         setBackgroundPlan(plan);
       } catch (err) {
         const msg = err instanceof Error ? err.message : t('sidebar.unknownError', 'Unknown error');
-        alert(format(t('sidebar.pdfRenderFailed', 'Failed to render PDF: {msg}'), { msg }));
+        await alertDialog(format(t('sidebar.pdfRenderFailed', 'Failed to render PDF: {msg}'), { msg }), { okLabel: t('common.ok', 'OK') });
       }
     } else {
       const reader = new FileReader();
@@ -1435,8 +1446,12 @@ export default function Sidebar() {
       {/* Bottom actions */}
       <div className="p-3 border-t border-bc-border">
         <button
-          onClick={() => {
-            if (window.confirm(t('sidebar.clearConfirm', 'Are you sure you want to clear everything? This cannot be undone.'))) clearAll();
+          onClick={async () => {
+            if (await confirmDialog(t('sidebar.clearConfirm', 'Are you sure you want to clear everything? This cannot be undone.'), {
+              okLabel: t('common.clearAll', 'Clear All'),
+              cancelLabel: t('common.cancel', 'Cancel'),
+              destructive: true,
+            })) clearAll();
           }}
           className="w-full py-1.5 rounded bg-bc-red/20 text-bc-red text-xs font-semibold hover:bg-bc-red/30"
         >

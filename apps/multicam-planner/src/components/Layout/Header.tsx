@@ -9,6 +9,7 @@ import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import type { ExportMode } from '../Export/ExportPanel';
 import type { EditMode } from '../../types';
 import { useTranslation, format } from '../../i18n';
+import { isEmbedded } from '../../hooks/useIsEmbedded';
 
 type TFn = (key: string, en: string) => string;
 
@@ -221,9 +222,15 @@ export default function Header({
   return (
     <header className="h-14 bg-bc-panel border-b border-bc-border flex items-center justify-between px-2 sm:px-4 shrink-0 gap-3">
       <div className="flex items-center gap-2 text-white min-w-0 shrink-0">
-        <FiCamera size={20} className="text-bc-accent shrink-0" />
-        <span className="font-bold text-sm hidden sm:inline">MultiCam Planner</span>
-        <span className="text-xs text-gray-500 ml-2 hidden lg:inline">— {venue.name}</span>
+        {/* Brand — the suite shell renders its own app title + Save/Open, so we
+            hide our duplicate chrome when embedded (issue: embedded UX). */}
+        {!isEmbedded && (
+          <>
+            <FiCamera size={20} className="text-bc-accent shrink-0" />
+            <span className="font-bold text-sm hidden sm:inline">MultiCam Planner</span>
+            <span className="text-xs text-gray-500 ml-2 hidden lg:inline">— {venue.name}</span>
+          </>
+        )}
         {/* Minimal unsaved-changes indicator (no project-version counter). */}
         {unsaved && (
           <span
@@ -371,14 +378,20 @@ export default function Header({
       </nav>
 
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-        <button onClick={saveProject} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-bc-border transition-colors" title={t('header.save.title', 'Save project (.mcplan)')}>
-          <FiSave size={14} />
-          <span className="hidden sm:inline">{t('header.save', 'Save')}</span>
-        </button>
-        <button onClick={handleLoad} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-bc-border transition-colors" title={t('header.open.title', 'Open project file')}>
-          <FiUpload size={14} />
-          <span className="hidden sm:inline">{t('header.open', 'Open')}</span>
-        </button>
+        {/* Save/Open are provided by the suite shell when embedded — hide the
+            duplicate buttons but keep all multicam-unique exports/imports. */}
+        {!isEmbedded && (
+          <>
+            <button onClick={saveProject} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-bc-border transition-colors" title={t('header.save.title', 'Save project (.mcplan)')}>
+              <FiSave size={14} />
+              <span className="hidden sm:inline">{t('header.save', 'Save')}</span>
+            </button>
+            <button onClick={handleLoad} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-bc-border transition-colors" title={t('header.open.title', 'Open project file')}>
+              <FiUpload size={14} />
+              <span className="hidden sm:inline">{t('header.open', 'Open')}</span>
+            </button>
+          </>
+        )}
         <button onClick={handleExportAvplan} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-bc-border transition-colors" title={t('header.avplanExport.title', 'Export full combined project (.avplan) — venue + cameras + lighting + cabling, lossless across all three apps')}>
           <FiBox size={14} />
           <span className="hidden md:inline">.avplan ↑</span>
