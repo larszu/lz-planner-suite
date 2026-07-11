@@ -53,6 +53,7 @@ export {
   connectShellSettings,
   connectShellHistory,
   connectShellLexware,
+  declareNoHistory,
   postThemeToFrame,
   postSettingsToFrame,
   postCommandToFrame,

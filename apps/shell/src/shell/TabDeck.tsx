@@ -74,7 +74,7 @@ export function TabDeck({
   /** Suite-Einstellungen für den eingebetteten Planer (nur App-Module). */
   plannerSettings?: Record<string, unknown>
   /** Undo/Redo-Zustand des eingebetteten Planers zurück an die Shell. */
-  onPlannerHistory?: (state: { canUndo: boolean; canRedo: boolean }) => void
+  onPlannerHistory?: (state: { canUndo: boolean; canRedo: boolean; hasHistory: boolean }) => void
   /** Ausgeblendete Vorschau-Ebenen (aus der Bibliothek). */
   hiddenLayers?: Set<string>
 }) {

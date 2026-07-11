@@ -66,7 +66,7 @@ export function App() {
   const shellCanUndo = history.past.length > 0
   const shellCanRedo = history.future.length > 0
   // Undo/Redo-Zustand des gerade geöffneten Planers (per Bridge gemeldet).
-  const [plannerHistory, setPlannerHistory] = useState({ canUndo: false, canRedo: false })
+  const [plannerHistory, setPlannerHistory] = useState({ canUndo: false, canRedo: false, hasHistory: true })
 
   // Transiente Rückmeldungen (Speichern-Bestätigung, Verwerfen mit Undo).
   const toastId = useRef(0)
@@ -214,20 +214,28 @@ export function App() {
       onRedo: () => (plannerActive ? sendPlannerCommand('redo') : redo()),
       canUndo: plannerActive ? plannerHistory.canUndo : shellCanUndo,
       canRedo: plannerActive ? plannerHistory.canRedo : shellCanRedo,
+      // Bei einem Planer ohne eigene Historie Undo/Redo ganz ausblenden.
+      visible: !plannerActive || plannerHistory.hasHistory,
     }),
     [plannerActive, plannerHistory, shellCanUndo, shellCanRedo, undo, redo],
   )
 
   useCommandPaletteHotkey(setPaletteOpen)
 
-  // Cross-Links aus eingebetteten Planern ("Im Signal-Flow zeigen") annehmen.
+  // Cross-Links aus eingebetteten Planern ("Im Signal-Flow zeigen") annehmen +
+  // im Planer lokal geänderte Einstellungen in die Shell-Quelle zurückspiegeln
+  // (verhindert das Zurücksetzen beim Remount).
   useEffect(() => {
     return onShellMessage((msg) => {
       if (msg.type === 'avplan:navigate' && msg.module in MODULE_BY_ID) {
         setModuleId(msg.module as ModuleId)
+      } else if (msg.type === 'avplan:settingChanged') {
+        if (moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht') {
+          changeAppSetting(moduleId, msg.key, msg.value as SettingValue)
+        }
       }
     })
-  }, [])
+  }, [changeAppSetting, moduleId])
 
   const setTab = useCallback(
     (id: string) => setTabs((t) => ({ ...t, [moduleId]: id })),
@@ -289,6 +297,7 @@ export function App() {
         onRedo={undoRedo.onRedo}
         canUndo={undoRedo.canUndo}
         canRedo={undoRedo.canRedo}
+        showUndoRedo={undoRedo.visible}
       />
 
       <div className="flex min-h-0 flex-1">

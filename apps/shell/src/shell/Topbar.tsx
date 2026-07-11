@@ -116,6 +116,7 @@ export function Topbar({
   onRedo,
   canUndo,
   canRedo,
+  showUndoRedo = true,
 }: {
   project: SuiteProject | null
   theme: ResolvedTheme
@@ -133,6 +134,8 @@ export function Topbar({
   onRedo: () => void
   canUndo: boolean
   canRedo: boolean
+  /** Undo/Redo ganz ausblenden (Planer ohne eigene Historie). */
+  showUndoRedo?: boolean
 }) {
   const t = useT()
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
@@ -280,14 +283,16 @@ export function Topbar({
           </span>
         </button>
 
-        <div className="mx-1 flex items-center gap-0.5">
-          <IconButton label={t('chrome.topbar.undo', 'Rückgängig')} onClick={onUndo} disabled={!canUndo} style={{ opacity: canUndo ? 1 : 0.4 }}>
-            <Icon name="undo" size={17} />
-          </IconButton>
-          <IconButton label={t('chrome.topbar.redo', 'Wiederholen')} onClick={onRedo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.4 }}>
-            <Icon name="redo" size={17} />
-          </IconButton>
-        </div>
+        {showUndoRedo && (
+          <div className="mx-1 flex items-center gap-0.5">
+            <IconButton label={t('chrome.topbar.undo', 'Rückgängig')} onClick={onUndo} disabled={!canUndo} style={{ opacity: canUndo ? 1 : 0.4 }}>
+              <Icon name="undo" size={17} />
+            </IconButton>
+            <IconButton label={t('chrome.topbar.redo', 'Wiederholen')} onClick={onRedo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.4 }}>
+              <Icon name="redo" size={17} />
+            </IconButton>
+          </div>
+        )}
 
         {project && <Badge tone="ok" dot>{project.meta.saved ? t('chrome.topbar.saved', 'Gespeichert') : t('chrome.topbar.unsaved', 'Ungespeichert')}</Badge>}
 

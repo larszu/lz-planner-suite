@@ -50,6 +50,10 @@ export interface HistoryMessage {
   app: string
   canUndo: boolean
   canRedo: boolean
+  /** false = der Planer hat gar keine eigene Undo/Redo-Historie. Die Shell
+   *  blendet ihre Undo/Redo-Schalter dann aus, statt sie dauerhaft grau zu
+   *  zeigen. Fehlt das Feld, wird `true` angenommen (Rückwärtskompatibilität). */
+  hasHistory?: boolean
 }
 
 /**
@@ -129,6 +133,23 @@ export function postCommandToFrame(frame: Window | null | undefined, command: 'u
     frame?.postMessage({ type: 'avplan:command', command } satisfies CommandMessage, '*')
   } catch {
     /* iframe noch nicht bereit */
+  }
+}
+
+/**
+ * Planer-Seite: der Shell melden, dass dieser Planer keine eigene Undo/Redo-
+ * Historie hat, damit sie ihre Undo/Redo-Schalter ausblendet. Einmal beim Start
+ * aufrufen. No-op im Standalone-Betrieb.
+ */
+export function declareNoHistory(): void {
+  try {
+    if (typeof window === 'undefined' || window.parent === window) return
+    window.parent.postMessage(
+      { type: 'avplan:history', app: document.title || 'planner', canUndo: false, canRedo: false, hasHistory: false } satisfies HistoryMessage,
+      '*',
+    )
+  } catch {
+    /* egal */
   }
 }
 

@@ -37,7 +37,7 @@ export interface PlannerFrameProps {
   /** Suite-Einstellungen, die in den Planer geschoben werden (App-Module). */
   settings?: Record<string, unknown>
   /** Meldet den Undo/Redo-Zustand des eingebetteten Planers an die Shell. */
-  onHistory?: (state: { canUndo: boolean; canRedo: boolean }) => void
+  onHistory?: (state: { canUndo: boolean; canRedo: boolean; hasHistory: boolean }) => void
 }
 
 /**
@@ -80,14 +80,14 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
     if (!onHistory) return
     return onShellMessage((msg, source) => {
       if (msg.type === 'avplan:history' && source === ref.current?.contentWindow) {
-        onHistory({ canUndo: msg.canUndo, canRedo: msg.canRedo })
+        onHistory({ canUndo: msg.canUndo, canRedo: msg.canRedo, hasHistory: msg.hasHistory !== false })
       }
     })
   }, [onHistory])
 
   // Beim Entladen (Modulwechsel / „Zur Übersicht") den Zustand zurücksetzen.
   useEffect(() => {
-    return () => onHistory?.({ canUndo: false, canRedo: false })
+    return () => onHistory?.({ canUndo: false, canRedo: false, hasHistory: true })
   }, [onHistory])
 
   // Theme + Palette in den Rahmen schieben, sobald geladen und bei jedem Wechsel.
