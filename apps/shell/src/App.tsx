@@ -162,6 +162,16 @@ export function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [billingOpen, setBillingOpen] = useState(false)
+  // Ausgeblendete Vorschau-Ebenen (Bibliothek steuert sie, Canvas-Vorschau folgt).
+  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(() => new Set())
+  const toggleLayer = useCallback((id: string) => {
+    setHiddenLayers((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
   // Zoom der Canvas-Vorschau (Signal/Kameras/Licht) — via Statusleiste steuerbar.
   const [zoom, setZoom] = useState(100)
   // Suite-weite App-Einstellungen (Quelle der Wahrheit) — persistiert und in den
@@ -290,7 +300,7 @@ export function App() {
 
         {libraryOpen && (
           <aside className="flex w-64 flex-none flex-col border-r border-av-border-muted" aria-label={tt('config.aria.libraryLayers', 'Bibliothek und Ebenen')}>
-            <LibraryPanel key={mod.id} module={mod} project={project} />
+            <LibraryPanel key={mod.id} module={mod} project={project} hiddenLayers={hiddenLayers} onToggleLayer={toggleLayer} />
           </aside>
         )}
 
@@ -314,6 +324,7 @@ export function App() {
                 : undefined
             }
             onPlannerHistory={setPlannerHistory}
+            hiddenLayers={hiddenLayers}
           />
         </main>
 

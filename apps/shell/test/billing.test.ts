@@ -42,6 +42,16 @@ describe('buildBillingDoc', () => {
     expect(doc.expirationDate).toBeUndefined()
   })
 
+  it('akzeptiert ein lokalisiertes Zahlungsziel-Label', () => {
+    const doc = buildBillingDoc(PROJECT, {
+      kind: 'invoice',
+      voucherDate: '2026-07-11',
+      source: 'budget',
+      paymentTermLabel: 'Payable within 14 days',
+    })
+    expect(doc.paymentTermLabel).toBe('Payable within 14 days')
+  })
+
   it('wirft ohne Rechnungsempfänger', () => {
     const noBillTo = { ...PROJECT, show: { ...PROJECT.show, contacts: PROJECT.show.contacts.map((c) => ({ ...c, billTo: false })) } }
     expect(() => buildBillingDoc(noBillTo, { kind: 'invoice', voucherDate: '2026-07-11', source: 'budget' })).toThrow()

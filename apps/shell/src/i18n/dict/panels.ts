@@ -128,6 +128,7 @@ export const panels: Record<string, string> = {
   'panels.tab.all': 'All',
   'panels.aria.library': 'Library',
   'panels.search.placeholder': 'Search …',
+  'panels.search.noResults': 'No results for “{q}”',
   'panels.aria.searchLibrary': 'Search library',
   'panels.layers.title': 'Layers',
   'panels.layers.focusOn': 'Focus on',

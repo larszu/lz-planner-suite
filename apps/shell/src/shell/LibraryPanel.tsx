@@ -79,11 +79,11 @@ const library = (t: TFunc): Record<ModuleId, LibItem[]> => ({
 })
 
 const layersFor = (project: SuiteProject | null, t: TFunc) => [
-  { name: t('panels.layer.roomWallsStage', 'Raum · Wände & Bühne'), count: project ? '14' : '—', tone: 'raum' },
-  { name: t('panels.layer.people', 'Personen'), count: project ? String(project.show.crew.length) : '—', tone: 'warn' },
-  { name: t('panels.layer.cameras', 'Kameras'), count: project ? String(project.cameras.length) : '—', tone: 'cameras' },
-  { name: t('panels.layer.light', 'Licht'), count: project ? String(project.fixtures.length) : '—', tone: 'licht' },
-  { name: t('panels.layer.signalCables', 'Signal / Kabel'), count: project ? '23' : '—', tone: 'signal' },
+  { id: 'room', name: t('panels.layer.roomWallsStage', 'Raum · Wände & Bühne'), count: project ? '14' : '—', tone: 'raum' },
+  { id: 'people', name: t('panels.layer.people', 'Personen'), count: project ? String(project.show.crew.length) : '—', tone: 'warn' },
+  { id: 'cameras', name: t('panels.layer.cameras', 'Kameras'), count: project ? String(project.cameras.length) : '—', tone: 'cameras' },
+  { id: 'light', name: t('panels.layer.light', 'Licht'), count: project ? String(project.fixtures.length) : '—', tone: 'licht' },
+  { id: 'signal', name: t('panels.layer.signalCables', 'Signal / Kabel'), count: project ? '23' : '—', tone: 'signal' },
 ]
 
 const DOT: Record<string, string> = {
@@ -94,14 +94,24 @@ const DOT: Record<string, string> = {
   signal: 'var(--mod-signal)',
 }
 
-export function LibraryPanel({ module, project }: { module: ModuleDef; project: SuiteProject | null }) {
+export function LibraryPanel({
+  module,
+  project,
+  hiddenLayers,
+  onToggleLayer,
+}: {
+  module: ModuleDef
+  project: SuiteProject | null
+  /** Ausgeblendete Ebenen-IDs (suite-weit, treibt die Canvas-Vorschau). */
+  hiddenLayers: Set<string>
+  onToggleLayer: (id: string) => void
+}) {
   const t = useT()
   const groups = library(t)[module.id]
   const tabNames = [t('panels.tab.all', 'Alle'), ...groups.map((g) => g.group)]
   const [tab, setTab] = useState(0)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
-  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(() => new Set())
   const q = query.trim().toLowerCase()
   const layers = layersFor(project, t)
 
@@ -142,6 +152,11 @@ export function LibraryPanel({ module, project }: { module: ModuleDef; project: 
       </div>
 
       <div className="av-scroll flex-1 overflow-auto px-2 pb-2">
+        {q && !shownGroups.some((g) => g.entries.some((e) => e.name.toLowerCase().includes(q) || e.sub.toLowerCase().includes(q))) && (
+          <div className="px-2 py-6 text-center text-[12px] text-av-text-faint">
+            {format(t('panels.search.noResults', 'Keine Treffer für „{q}"'), { q: query.trim() })}
+          </div>
+        )}
         {shownGroups.map((g) => {
           const entries = g.entries.filter((e) => !q || e.name.toLowerCase().includes(q) || e.sub.toLowerCase().includes(q))
           if (entries.length === 0) return null
@@ -191,7 +206,7 @@ export function LibraryPanel({ module, project }: { module: ModuleDef; project: 
         </div>
         <div className="flex flex-col">
           {layers.map((l) => {
-            const hidden = hiddenLayers.has(l.name)
+            const hidden = hiddenLayers.has(l.id)
             return (
               <div key={l.name} className="flex items-center gap-2 rounded px-1 py-1 text-[12px] text-av-text-secondary" style={{ opacity: hidden ? 0.45 : 1 }}>
                 <span className="h-2 w-2 flex-none rounded-full" style={{ background: DOT[l.tone] }} />
@@ -203,14 +218,7 @@ export function LibraryPanel({ module, project }: { module: ModuleDef; project: 
                   aria-checked={!hidden}
                   aria-label={format(t('panels.aria.layerToggle', 'Ebene {name} {action}'), { name: l.name, action: hidden ? t('panels.action.show', 'einblenden') : t('panels.action.hide', 'ausblenden') })}
                   className="av-focus grid h-5 w-5 place-items-center rounded hover:bg-av-surface-3"
-                  onClick={() =>
-                    setHiddenLayers((prev) => {
-                      const next = new Set(prev)
-                      if (next.has(l.name)) next.delete(l.name)
-                      else next.add(l.name)
-                      return next
-                    })
-                  }
+                  onClick={() => onToggleLayer(l.id)}
                 >
                   <Icon name="eye" size={13} style={{ color: hidden ? 'var(--av-text-faint)' : 'var(--av-text-muted)' }} />
                 </button>

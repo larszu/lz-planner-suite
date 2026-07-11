@@ -8,15 +8,16 @@ import { OverviewSurface } from './OverviewSurface'
 import { BoardCanvas } from './BoardCanvas'
 import { useT, format, type TFunc } from '../i18n'
 
-type ToolId = 'select' | 'pan'
 type OverlayId = 'fov' | 'heat'
 
 interface ToolbarButton {
   icon: Parameters<typeof Icon>[0]['name']
   label: string
-  /** tool = Werkzeugmodus, overlay = Ein/Aus-Overlay, edit = im Planer bearbeiten. */
-  kind: 'tool' | 'overlay' | 'edit'
-  tool?: ToolId
+  /** overlay = Ein/Aus-Overlay, edit = im Planer bearbeiten. Reine „Werkzeug"-
+   *  Buttons (Auswahl/Verschieben) gab es früher, sie hatten auf der statischen
+   *  Vorschau aber keine Wirkung (Elemente sind ohnehin per Klick wählbar) und
+   *  wurden als tote Affordanz entfernt. */
+  kind: 'overlay' | 'edit'
   overlay?: OverlayId
   sep?: boolean
 }
@@ -25,24 +26,18 @@ type CanvasModuleId = 'signal' | 'cameras' | 'licht'
 
 const toolbars = (t: TFunc): Record<CanvasModuleId, ToolbarButton[]> => ({
   signal: [
-    { icon: 'cursor', label: t('chrome.tabdeck.tool.select', 'Auswahl'), kind: 'tool', tool: 'select' },
-    { icon: 'hand', label: t('chrome.tabdeck.tool.pan', 'Verschieben'), kind: 'tool', tool: 'pan' },
-    { icon: 'plus', label: t('chrome.tabdeck.tool.placeDevice', 'Gerät platzieren (im Planer)'), kind: 'edit', sep: true },
+    { icon: 'plus', label: t('chrome.tabdeck.tool.placeDevice', 'Gerät platzieren (im Planer)'), kind: 'edit' },
     { icon: 'nodes', label: t('chrome.tabdeck.tool.autoRoute', 'Auto-Route (im Planer)'), kind: 'edit' },
   ],
   cameras: [
-    { icon: 'cursor', label: t('chrome.tabdeck.tool.select', 'Auswahl'), kind: 'tool', tool: 'select' },
-    { icon: 'hand', label: t('chrome.tabdeck.tool.pan', 'Verschieben'), kind: 'tool', tool: 'pan' },
-    { icon: 'camera', label: t('chrome.tabdeck.tool.placeCamera', 'Kamera platzieren (im Planer)'), kind: 'edit', sep: true },
+    { icon: 'camera', label: t('chrome.tabdeck.tool.placeCamera', 'Kamera platzieren (im Planer)'), kind: 'edit' },
     { icon: 'ruler', label: t('chrome.tabdeck.tool.measure', 'Messen (im Planer)'), kind: 'edit' },
-    { icon: 'eye', label: t('chrome.tabdeck.tool.showFov', 'FOV anzeigen'), kind: 'overlay', overlay: 'fov' },
+    { icon: 'eye', label: t('chrome.tabdeck.tool.showFov', 'FOV anzeigen'), kind: 'overlay', overlay: 'fov', sep: true },
   ],
   licht: [
-    { icon: 'cursor', label: t('chrome.tabdeck.tool.select', 'Auswahl'), kind: 'tool', tool: 'select' },
-    { icon: 'hand', label: t('chrome.tabdeck.tool.pan', 'Verschieben'), kind: 'tool', tool: 'pan' },
-    { icon: 'light', label: t('chrome.tabdeck.tool.placeFixture', 'Fixture platzieren (im Planer)'), kind: 'edit', sep: true },
+    { icon: 'light', label: t('chrome.tabdeck.tool.placeFixture', 'Fixture platzieren (im Planer)'), kind: 'edit' },
     { icon: 'ruler', label: t('chrome.tabdeck.tool.measure', 'Messen (im Planer)'), kind: 'edit' },
-    { icon: 'eye', label: t('chrome.tabdeck.tool.heatmap', 'Heatmap'), kind: 'overlay', overlay: 'heat' },
+    { icon: 'eye', label: t('chrome.tabdeck.tool.heatmap', 'Heatmap'), kind: 'overlay', overlay: 'heat', sep: true },
   ],
 })
 
@@ -61,6 +56,7 @@ export function TabDeck({
   zoom,
   plannerSettings,
   onPlannerHistory,
+  hiddenLayers,
 }: {
   module: ModuleDef
   activeTab: string
@@ -79,13 +75,14 @@ export function TabDeck({
   plannerSettings?: Record<string, unknown>
   /** Undo/Redo-Zustand des eingebetteten Planers zurück an die Shell. */
   onPlannerHistory?: (state: { canUndo: boolean; canRedo: boolean }) => void
+  /** Ausgeblendete Vorschau-Ebenen (aus der Bibliothek). */
+  hiddenLayers?: Set<string>
 }) {
   const t = useT()
   const isOverview = module.id === 'overview'
   const isBoard = module.id === 'board'
 
-  // Werkzeug-/Overlay-Zustand der Canvas-Vorschau.
-  const [tool, setTool] = useState<ToolId>('select')
+  // Overlay-Zustand der Canvas-Vorschau (FOV / Heatmap).
   const [showFov, setShowFov] = useState(true)
   const [showHeat, setShowHeat] = useState(true)
 
@@ -129,16 +126,9 @@ export function TabDeck({
                 <div className="av-toolbar">
                   {toolbars(t)[module.id as CanvasModuleId].map((b) => {
                     const active =
-                      b.kind === 'tool'
-                        ? tool === b.tool
-                        : b.kind === 'overlay'
-                          ? b.overlay === 'fov'
-                            ? showFov
-                            : showHeat
-                          : false
+                      b.kind === 'overlay' ? (b.overlay === 'fov' ? showFov : showHeat) : false
                     const onClick = () => {
-                      if (b.kind === 'tool' && b.tool) setTool(b.tool)
-                      else if (b.kind === 'overlay') {
+                      if (b.kind === 'overlay') {
                         if (b.overlay === 'fov') setShowFov((v) => !v)
                         else setShowHeat((v) => !v)
                       } else if (b.kind === 'edit') onToggleMount()
@@ -169,10 +159,9 @@ export function TabDeck({
                 style={{
                   transform: `scale(${zoom / 100})`,
                   transformOrigin: 'center top',
-                  cursor: tool === 'pan' ? 'grab' : 'default',
                 }}
               >
-                {module.id === 'signal' && <SignalPreview project={project} selectedId={selectedId} onSelect={onSelect} />}
+                {module.id === 'signal' && <SignalPreview project={project} selectedId={selectedId} onSelect={onSelect} hidden={hiddenLayers} />}
                 {(module.id === 'cameras' || module.id === 'licht') && (
                   <PlanPreview
                     project={project}
@@ -181,6 +170,7 @@ export function TabDeck({
                     onSelect={onSelect}
                     showFov={showFov}
                     showHeat={showHeat}
+                    hidden={hiddenLayers}
                   />
                 )}
               </div>

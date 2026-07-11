@@ -55,9 +55,25 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
   const t = useT()
   const ref = useRef<HTMLIFrameElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
+  // Erhöht sich bei „Erneut versuchen" — remountet das iframe (key), erzwingt
+  // also ein echtes Neuladen statt nur den Zustand zurückzusetzen.
+  const [reloadKey, setReloadKey] = useState(0)
 
   // Undo/Redo aus der Shell an dieses iframe weiterreichen.
   useEffect(() => onPlannerCommand((cmd) => postCommandToFrame(ref.current?.contentWindow, cmd)), [])
+
+  // „Bereit" kommt aus dem avplan:ready-Handshake des Planers — nicht aus
+  // onLoad, das auch für Fehler-/Fremdseiten feuert. Bei ready Theme+Settings
+  // schieben (Zeitpunkt, zu dem der Message-Listener des Planers sicher steht).
+  useEffect(() => {
+    return onShellMessage((msg, source) => {
+      if (msg.type === 'avplan:ready' && source === ref.current?.contentWindow) {
+        setState('ready')
+        postThemeToFrame(ref.current?.contentWindow, theme, readShellPalette(ref.current))
+        if (settings) postSettingsToFrame(ref.current?.contentWindow, settings)
+      }
+    })
+  }, [theme, settings])
 
   // Undo/Redo-Zustand des Planers empfangen und an die Shell melden.
   useEffect(() => {
@@ -101,12 +117,14 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
   return (
     <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-surface-3">
       <iframe
+        key={reloadKey}
         ref={ref}
         src={url}
         title={title}
         className="h-full w-full border-0 bg-av-surface-3"
         onLoad={() => {
-          setState('ready')
+          // Best-effort: Theme/Settings gleich schieben; als „bereit" gilt der
+          // Rahmen erst mit dem avplan:ready-Handshake (siehe Effekt oben).
           postThemeToFrame(ref.current?.contentWindow, theme, readShellPalette(ref.current))
           if (settings) postSettingsToFrame(ref.current?.contentWindow, settings)
         }}
@@ -121,11 +139,10 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
           <Icon name="external" size={28} />
           <div className="text-base font-semibold text-av-text">{format(t('chrome.frame.unreachable', '{title} ist gerade nicht erreichbar'), { title })}</div>
           <p className="max-w-md text-sm text-av-text-muted">
-            {t('chrome.frame.hintPre', 'Der Planer läuft als eigenständige App. Starte ihn per')}{' '}
-            <code className="font-mono text-av-text-secondary">npm run dev:{title.toLowerCase()}</code> {t('chrome.frame.hintPost', 'oder öffne ihn direkt.')}
+            {t('chrome.frame.hint', 'Der Planer läuft als eigenständige App. Starte seinen Dev-Server oder öffne ihn direkt in einem neuen Tab.')}
           </p>
           <div className="flex gap-2">
-            <Button variant="subtle" onClick={() => setState('loading')}>
+            <Button variant="subtle" onClick={() => { setReloadKey((k) => k + 1); setState('loading') }}>
               {t('chrome.frame.retry', 'Erneut versuchen')}
             </Button>
             <Button variant="primary" onClick={() => window.open(url, '_blank', 'noopener')}>

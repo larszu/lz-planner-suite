@@ -57,6 +57,8 @@ export interface BuildDocOptions {
   lineItems?: BillingLineItem[]
   /** Optional: expliziter Empfänger statt billTo-Kontakt. */
   contact?: BillingContact
+  /** Optional: lokalisiertes Zahlungsziel-Label (Rechnung). Default: deutsch. */
+  paymentTermLabel?: string
 }
 
 /**
@@ -88,7 +90,7 @@ export function buildBillingDoc(project: SuiteProject, opts: BuildDocOptions): B
     doc.expirationDate = addDaysIso(opts.voucherDate, b.quoteValidDays)
   } else {
     doc.paymentTermDays = b.paymentTermDays
-    doc.paymentTermLabel = `Zahlbar innerhalb von ${b.paymentTermDays} Tagen ohne Abzug`
+    doc.paymentTermLabel = opts.paymentTermLabel ?? `Zahlbar innerhalb von ${b.paymentTermDays} Tagen ohne Abzug`
   }
   return doc
 }

@@ -116,6 +116,7 @@ export const chrome: Record<string, string> = {
   'chrome.frame.unreachable': '{title} is currently unreachable',
   'chrome.frame.hintPre': 'The planner runs as a standalone app. Start it with',
   'chrome.frame.hintPost': 'or open it directly.',
+  'chrome.frame.hint': 'The planner runs as a standalone app. Start its dev server or open it directly in a new tab.',
   'chrome.frame.retry': 'Try again',
   'chrome.frame.openNewTab': 'Open in new tab',
   // previews
