@@ -287,6 +287,140 @@ const GreenGoPresetsCard = () => {
   )
 }
 
+/**
+ * Lexware Office — API-Key-Card. Spiegelt die Rentman-API-Card:
+ * Passwort-Eingabe für den Key, "Speichern" (setApiKey → Status neu laden,
+ * Eingabefeld sofort leeren) und "Verbindung testen" (ping). Der Key liegt
+ * im OS-Schlüsselbund (keytar, via main) — nie im Projektfile, nie geloggt.
+ */
+const LexwareCard = () => {
+  const t = useTranslation()
+  const [apiKey, setApiKeyValue] = useState('')
+  const [hasKey, setHasKey] = useState(false)
+  const [status, setStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+  const lexware = window.cablePlanner?.lexware
+
+  useEffect(() => {
+    lexware?.hasApiKey().then((stored) => {
+      setHasKey(stored)
+      setStatus(
+        stored
+          ? t('settings.integrations.lexware.statusLoaded', 'Key hinterlegt')
+          : t('settings.integrations.lexware.statusNone', 'Kein Key hinterlegt'),
+      )
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const saveKey = async () => {
+    if (!lexware) return
+    setBusy(true)
+    try {
+      await lexware.setApiKey(apiKey.trim())
+      // Rohen Key nie länger als nötig im State halten.
+      setApiKeyValue('')
+      const stored = await lexware.hasApiKey()
+      setHasKey(stored)
+      setStatus(
+        stored
+          ? t('settings.integrations.lexware.statusSaved', 'Key sicher gespeichert.')
+          : t('settings.integrations.lexware.statusNone', 'Kein Key hinterlegt'),
+      )
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : t('settings.integrations.lexware.saveFailed', 'Konnte Key nicht speichern'),
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const testConnection = async () => {
+    if (!lexware) return
+    setBusy(true)
+    try {
+      const result = await lexware.ping()
+      setStatus(
+        result.ok
+          ? t('settings.integrations.lexware.testOk', 'Verbindung ok')
+          : result.error ?? t('settings.integrations.lexware.testFailed', 'Verbindung fehlgeschlagen'),
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <SettingsCard
+      title={t('settings.integrations.lexware', 'Lexware Office API')}
+      description={t(
+        'settings.integrations.lexwareDesc',
+        'API-Key aus deinem Lexware-Office-Account. Wird mit dem Betriebssystem-Schlüsselbund verschlüsselt gespeichert (nie im Projektfile).',
+      )}
+    >
+      <label className="block text-cp-base">
+        {t('settings.integrations.lexware.key', 'API-Key')}
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKeyValue(e.target.value)}
+          className="mt-1 w-full rounded border border-cp-border bg-cp-surface-3 p-2 font-mono text-cp-xs"
+          placeholder={t(
+            'settings.integrations.lexware.keyPlaceholder',
+            'API-Key einfügen',
+          )}
+          autoComplete="off"
+        />
+      </label>
+      <div
+        className={`mt-2 rounded border p-2 text-cp-xs ${
+          hasKey
+            ? 'border-emerald-700/50 bg-emerald-900/20 text-emerald-300'
+            : 'border-cp-border bg-cp-surface-3/40 text-cp-text-muted'
+        }`}
+      >
+        <div>
+          <span className="font-semibold">
+            {t('settings.integrations.lexware.status', 'Status:')}
+          </span>{' '}
+          {status}
+        </div>
+        <div className="text-cp-text-faint">
+          {t('settings.integrations.lexware.keyStored', 'Key gespeichert:')}{' '}
+          {hasKey ? t('common.yes', 'Ja') : t('common.no', 'Nein')}
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={busy || !apiKey}
+          onClick={saveKey}
+          className="rounded bg-sky-600 px-3 py-1 text-cp-base hover:bg-sky-500 disabled:opacity-50"
+        >
+          {t('settings.integrations.lexware.save', 'Speichern')}
+        </button>
+        <button
+          type="button"
+          disabled={busy || !hasKey}
+          onClick={testConnection}
+          className="rounded bg-emerald-600 px-3 py-1 text-cp-base hover:bg-emerald-500 disabled:opacity-50"
+        >
+          {t('settings.integrations.lexware.test', 'Verbindung testen')}
+        </button>
+      </div>
+      <div className="mt-2 text-[11px] text-cp-text-muted">
+        {t(
+          'settings.integrations.lexware.help',
+          'Der API-Key wird in Lexware Office unter „Einstellungen → Öffentliche Schnittstelle" erstellt und im Schlüsselbund des Betriebssystems (keytar) gespeichert — nie im Projektfile.',
+        )}
+      </div>
+    </SettingsCard>
+  )
+}
+
 export const IntegrationsTab = ({ onClose }: { onClose: () => void }) => {
   const [token, setToken] = useState('')
   const hasToken = useSettingsStore((s) => s.hasToken)
@@ -512,6 +646,9 @@ export const IntegrationsTab = ({ onClose }: { onClose: () => void }) => {
       </SettingsCard>
       </>
       )}
+
+      {/* Lexware Office — API-Key-Card, unabhängig vom Rentman-Toggle. */}
+      <LexwareCard />
 
       {/* v7.9.86 / #197 — Multi-AI-Provider Card (Gemini / Claude / OpenAI). */}
       <AiProvidersCard />
