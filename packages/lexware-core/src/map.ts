@@ -34,9 +34,13 @@ function toAddress(c: BillingContact): LxAddress {
 }
 
 function toLxLineItem(item: BillingLineItem, taxType: TaxType): LxLineItem {
+  // Das neutrale Modell trägt ausschließlich Netto-Einzelpreise. Für einen
+  // Brutto-Beleg erwartet Lexware in grossAmount aber den steuer-INKLUSIVEN
+  // Preis — daher hochrechnen, sonst rechnet Lexware aus dem Netto-Preis
+  // rückwärts und der Beleg unterfakturiert die USt.
   const price =
     taxType === 'gross'
-      ? { currency: 'EUR' as const, grossAmount: round2(item.unitNetPrice), taxRatePercentage: item.taxRatePercent }
+      ? { currency: 'EUR' as const, grossAmount: round2(item.unitNetPrice * (1 + item.taxRatePercent / 100)), taxRatePercentage: item.taxRatePercent }
       : { currency: 'EUR' as const, netAmount: round2(item.unitNetPrice), taxRatePercentage: taxType === 'vatfree' ? 0 : item.taxRatePercent }
   const lx: LxLineItem = {
     type: 'custom',

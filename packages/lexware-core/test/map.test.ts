@@ -57,7 +57,7 @@ describe('buildQuotation', () => {
 })
 
 describe('buildInvoice', () => {
-  it('setzt grossAmount bei taxType gross und Zahlungsziel', () => {
+  it('setzt grossAmount (netto hochgerechnet) bei taxType gross und Zahlungsziel', () => {
     const inv = buildInvoice({
       ...base,
       kind: 'invoice',
@@ -65,7 +65,8 @@ describe('buildInvoice', () => {
       paymentTermDays: 14,
       paymentTermLabel: 'Zahlbar in 14 Tagen',
     })
-    expect(inv.lineItems[0].unitPrice?.grossAmount).toBe(12)
+    // Netto 12 € + 19 % → brutto 14,28 € (Lexware erwartet den Brutto-Preis).
+    expect(inv.lineItems[0].unitPrice?.grossAmount).toBe(14.28)
     expect(inv.lineItems[0].unitPrice?.netAmount).toBeUndefined()
     expect(inv.paymentConditions?.paymentTermDuration).toBe(14)
     expect(inv.paymentConditions?.paymentTermLabel).toBe('Zahlbar in 14 Tagen')
