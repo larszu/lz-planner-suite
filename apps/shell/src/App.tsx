@@ -321,8 +321,11 @@ export function App() {
           onSelectFooter={() => setLibraryOpen((o) => !o)}
         />
 
+        {/* Bibliothek/Ebenen: eigenständige Spalte ab md. Unter md würde die
+            feste 16rem-Breite den Hauptinhalt aus dem Viewport drängen, daher
+            dort ausgeblendet (Navigation läuft über die Rail). */}
         {libraryOpen && (
-          <aside className="flex w-64 flex-none flex-col border-r border-av-border-muted" aria-label={tt('config.aria.libraryLayers', 'Bibliothek und Ebenen')}>
+          <aside className="hidden w-64 flex-none flex-col border-r border-av-border-muted md:flex" aria-label={tt('config.aria.libraryLayers', 'Bibliothek und Ebenen')}>
             <LibraryPanel key={mod.id} module={mod} project={project} hiddenLayers={hiddenLayers} onToggleLayer={toggleLayer} />
           </aside>
         )}

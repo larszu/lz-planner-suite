@@ -28,7 +28,7 @@ function ProjectPicker({
   return (
     <Menu
       align="left"
-      triggerClassName="av-focus flex items-center gap-2 rounded-av-control px-2 py-1 text-sm text-av-text-muted hover:bg-av-surface-2"
+      triggerClassName="av-focus flex min-w-0 items-center gap-2 rounded-av-control px-2 py-1 text-sm text-av-text-muted hover:bg-av-surface-2"
       ariaLabel={t('chrome.topbar.pickProject.aria', 'Projekt wählen')}
       button={
         <>
@@ -36,9 +36,9 @@ function ProjectPicker({
           {project ? (
             <>
               <span className="truncate font-semibold text-av-text-secondary">{project.meta.name}</span>
-              <span className="text-av-text-faint">·</span>
-              <span className="truncate">{project.meta.venue}</span>
-              <span className="av-num text-av-text-faint">v{project.meta.version}</span>
+              <span className="hidden text-av-text-faint sm:inline">·</span>
+              <span className="hidden truncate sm:inline">{project.meta.venue}</span>
+              <span className="av-num hidden text-av-text-faint sm:inline">v{project.meta.version}</span>
             </>
           ) : (
             <span className="font-medium text-av-text-secondary">{t('chrome.topbar.noProject', 'Kein Projekt · Module einzeln nutzbar')}</span>
@@ -164,7 +164,7 @@ export function Topbar({
           className="grid h-6 w-6 place-items-center rounded-md"
           style={{ background: 'linear-gradient(135deg, var(--mod-cameras), var(--mod-signal) 55%, var(--mod-licht))' }}
         />
-        <span className="text-[15px] font-bold tracking-tight text-av-text">AV Planner Suite</span>
+        <span className="whitespace-nowrap text-[15px] font-bold tracking-tight text-av-text">AV Planner Suite</span>
       </div>
 
       {/* Mobile-Überlaufmenü (unter md, wo die Menüleiste ausgeblendet ist) */}
@@ -269,41 +269,46 @@ export function Topbar({
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
+        {/* Unter sm nur das Such-Icon (kein fester 220px-Block, sonst läuft die
+            Leiste über den Viewport). Label + Kürzel erst ab sm. */}
         <button
           type="button"
           onClick={onOpenPalette}
-          className="av-search-trigger av-focus flex h-8 items-center gap-2 rounded-av-control border border-av-border bg-av-surface-3 px-3 text-sm text-av-text-muted transition-colors hover:border-av-accent"
-          style={{ minWidth: 220 }}
+          className="av-search-trigger av-focus flex h-8 items-center gap-2 rounded-av-control border border-av-border bg-av-surface-3 px-2 text-sm text-av-text-muted transition-colors hover:border-av-accent sm:min-w-[220px] sm:px-3"
           aria-label={t('chrome.topbar.searchAria', 'Suchen und Befehle öffnen')}
         >
           <Icon name="search" size={15} />
-          <span className="flex-1 text-left">{t('chrome.topbar.search', 'Suchen & Befehle')}</span>
-          <span className="flex items-center gap-0.5">
+          <span className="hidden flex-1 text-left sm:block">{t('chrome.topbar.search', 'Suchen & Befehle')}</span>
+          <span className="hidden items-center gap-0.5 sm:flex">
             <Kbd>⌘</Kbd>
             <Kbd>K</Kbd>
           </span>
         </button>
 
-        {showUndoRedo && (
-          <div className="mx-1 flex items-center gap-0.5">
-            <IconButton label={t('chrome.topbar.undo', 'Rückgängig')} onClick={onUndo} disabled={!canUndo} style={{ opacity: canUndo ? 1 : 0.4 }}>
-              <Icon name="undo" size={17} />
-            </IconButton>
-            <IconButton label={t('chrome.topbar.redo', 'Wiederholen')} onClick={onRedo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.4 }}>
-              <Icon name="redo" size={17} />
-            </IconButton>
-          </div>
-        )}
+        {/* Sekundär-Cluster: unter sm ausgeblendet (Theme/Einstellungen liegen
+            dort im Hamburger-Menü, Undo/Redo sind Desktop-Editierhilfen). */}
+        <div className="hidden items-center gap-1.5 sm:flex">
+          {showUndoRedo && (
+            <div className="mx-1 flex items-center gap-0.5">
+              <IconButton label={t('chrome.topbar.undo', 'Rückgängig')} onClick={onUndo} disabled={!canUndo} style={{ opacity: canUndo ? 1 : 0.4 }}>
+                <Icon name="undo" size={17} />
+              </IconButton>
+              <IconButton label={t('chrome.topbar.redo', 'Wiederholen')} onClick={onRedo} disabled={!canRedo} style={{ opacity: canRedo ? 1 : 0.4 }}>
+                <Icon name="redo" size={17} />
+              </IconButton>
+            </div>
+          )}
 
-        {project && <Badge tone="ok" dot>{project.meta.saved ? t('chrome.topbar.saved', 'Gespeichert') : t('chrome.topbar.unsaved', 'Ungespeichert')}</Badge>}
+          {project && <Badge tone="ok" dot>{project.meta.saved ? t('chrome.topbar.saved', 'Gespeichert') : t('chrome.topbar.unsaved', 'Ungespeichert')}</Badge>}
 
-        <IconButton label={theme === 'dark' ? t('chrome.topbar.toLight', 'Zu hellem Theme wechseln') : t('chrome.topbar.toDark', 'Zu dunklem Theme wechseln')} onClick={onToggleTheme}>
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
-        </IconButton>
+          <IconButton label={theme === 'dark' ? t('chrome.topbar.toLight', 'Zu hellem Theme wechseln') : t('chrome.topbar.toDark', 'Zu dunklem Theme wechseln')} onClick={onToggleTheme}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
+          </IconButton>
 
-        <IconButton label={t('chrome.topbar.settings', 'Einstellungen')} onClick={onOpenSettings}>
-          <Icon name="settings" size={17} />
-        </IconButton>
+          <IconButton label={t('chrome.topbar.settings', 'Einstellungen')} onClick={onOpenSettings}>
+            <Icon name="settings" size={17} />
+          </IconButton>
+        </div>
       </div>
 
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
