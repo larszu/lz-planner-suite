@@ -100,11 +100,6 @@ export function PropertiesPanel({
               <Badge tone="ok">{t('panels.badge.dmxNoConflict', 'DMX kein Konflikt')}</Badge>
             </div>
           </Group>
-          <Group title={t('panels.group.venue', 'Venue')} icon="raum">
-            <p className="text-[12px] leading-relaxed text-av-text-muted">
-              {t('panels.overview.venue.pre', 'Kameras und Dimmer sind ')}<span className="text-av-text-secondary">{t('panels.overview.venue.link', 'automatisch verknüpft')}</span>{t('panels.overview.venue.post', ' — Position und Details kommen aus Raum/Kameras/Licht und erscheinen in allen Modulen.')}
-            </p>
-          </Group>
         </div>
       </div>
     )

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Badge, Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
+import { Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { emptyBoard, type SuiteProject } from '../data/project'
 import { PlannerFrame } from '../embed/PlannerFrame'
@@ -106,7 +106,6 @@ export function TabDeck({
               {mounted ? t('chrome.tabdeck.toOverview', 'Zur Übersicht') : t('chrome.tabdeck.openInPlanner', 'Im Planer öffnen')}
             </Button>
           )}
-          <Badge tone="accent"><Icon name="grid" size={12} /> {t('chrome.tabdeck.layoutFocus', 'Layout: Fokus')}</Badge>
         </div>
       </div>
 
@@ -183,11 +182,6 @@ export function TabDeck({
                 )}
               </div>
 
-              <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-av-control border border-av-border bg-av-surface-2/90 px-3 py-1.5 text-[11.5px] text-av-text-muted">
-                {project
-                  ? <>{t('chrome.tabdeck.previewPre', 'Vorschau der Shell — ')}<span className="text-av-text-secondary">{t('chrome.tabdeck.openQuoted', '„Im Planer öffnen"')}</span> {format(t('chrome.tabdeck.loadsForEditing', 'lädt {title} zum Bearbeiten'), { title: t(`config.mod.${module.id}.title`, module.title) })}</>
-                  : <>{t('chrome.tabdeck.noProjectPre', 'Kein Projekt — ')}<span className="text-av-text-secondary">{t('chrome.tabdeck.standalone', 'Modul eigenständig nutzbar')}</span></>}
-              </div>
             </div>
           )}
         </div>

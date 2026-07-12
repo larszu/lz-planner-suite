@@ -93,10 +93,7 @@ function SettingsBody({
           <span className="text-[12px] font-semibold uppercase tracking-wider text-av-text-muted">{t('chrome.settings.common', 'Gemeinsam')}</span>
           <Badge tone="accent">{t('chrome.settings.commonBadge', 'Shell + alle Planer')}</Badge>
         </div>
-        <p className="mb-3 text-[12px] text-av-text-muted">
-          {t('chrome.settings.commonNote', 'Diese Einstellungen gelten für die gesamte Suite gleichzeitig — nicht pro App. Das Theme steuert die Shell und wird an den jeweils geöffneten Planer weitergegeben.')}
-        </p>
-        <div className="flex items-center justify-between rounded-av-card border border-av-border bg-av-surface-2 px-3.5 py-3">
+        <div className="mt-3 flex items-center justify-between rounded-av-card border border-av-border bg-av-surface-2 px-3.5 py-3">
           <span className="text-[13px] font-medium text-av-text">{t('chrome.settings.appearance', 'Erscheinungsbild (Theme)')}</span>
           <div className="flex items-center gap-1 rounded-av-control border border-av-border bg-av-surface-3 p-0.5">
             {themeOptions(t).map((opt) => {
@@ -144,9 +141,6 @@ function SettingsBody({
             })}
           </div>
         </div>
-        <p className="mt-1.5 text-[11px] text-av-text-faint">
-          {t('chrome.settings.languageNote', 'Die Shell-Oberfläche schaltet sofort um. Die Sprache wird zusätzlich an die geöffneten Planer weitergegeben: Cable und MultiCam schalten vollständig um, Light teilweise.')}
-        </p>
       </section>
 
       {/* App-spezifische Einstellungen — als Accordion, aktives Modul offen */}
@@ -208,9 +202,6 @@ function SettingsBody({
             )
           })}
         </div>
-        <p className="mt-2.5 text-[11px] text-av-text-faint">
-          {t('chrome.settings.appNote', 'Aufgeklappt ist die App, in der du gerade bist. Änderungen gelten sofort im geöffneten Planer; ist er gerade nicht geöffnet, greifen sie beim nächsten Öffnen. Das gemeinsame Theme oben gilt überall.')}
-        </p>
       </section>
     </>
   )

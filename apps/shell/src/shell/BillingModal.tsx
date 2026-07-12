@@ -390,10 +390,8 @@ function BillingBody({ project }: { project: SuiteProject }) {
 
       {/* Primäraktion: Senden */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[11px] text-av-text-faint">
-          {plannerAvailable
-            ? t('billing.sendHintReady', 'Der Versand läuft über den geöffneten Signal-Planer (Cable), der den API-Key hält.')
-            : t('billing.needSignal', 'Signal-Planer öffnen, um zu senden (er hält den Lexware-Key).')}
+        <span className="text-[11px] text-av-warn">
+          {!plannerAvailable && t('billing.needSignal', 'Signal-Planer öffnen, um zu senden (er hält den Lexware-Key).')}
         </span>
         <div className="flex items-center gap-2">
           {flash && <span className="text-[11px] text-av-text-muted">{flash}</span>}
