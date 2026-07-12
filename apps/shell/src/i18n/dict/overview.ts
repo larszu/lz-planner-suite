@@ -7,7 +7,7 @@ export const overview: Record<string, string> = {
 
   // Gewerke-Karten (ModuleCards)
   'overview.stat.cables': '{n} cables',
-  'overview.stat.cablesSub': '{m} m · 1 open end',
+  'overview.stat.cablesSub': '1 open end',
   'overview.stat.cameras': '{n} cameras',
   'overview.stat.camerasSub': '4 lenses · coverage ok',
   'overview.stat.fixtures': '{n} fixtures',

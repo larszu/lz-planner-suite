@@ -63,7 +63,7 @@ export function StatusBar({
       ) : module === 'signal' && counts ? (
         <>
           <span className="av-status-item"><span className="av-num av-status-strong">{counts.devices}</span> {t('chrome.status.devices', 'Geräte')}</span>
-          <span className="av-status-item"><span className="av-num av-status-strong">{counts.cables}</span> {t('chrome.status.cables', 'Kabel')} · <span className="av-num">{counts.cableTotalM} m</span></span>
+          <span className="av-status-item"><span className="av-num av-status-strong">{counts.cables}</span> {t('chrome.status.cables', 'Kabel')}</span>
           <button type="button" className="av-status-item av-focus rounded hover:bg-av-surface-3" style={{ color: 'var(--av-warn)' }} onClick={() => onNavigate('overview')} title={t('chrome.status.toPlanCheck', 'Zum Plan-Check')}>
             <Icon name="warning" size={13} /> {counts.openEnds} {t('chrome.status.openEnd', 'offenes Ende')}
           </button>

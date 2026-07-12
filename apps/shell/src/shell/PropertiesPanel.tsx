@@ -90,7 +90,6 @@ export function PropertiesPanel({
           <Group title={t('panels.group.scope', 'Umfang')} icon="modules">
             <Field label={t('panels.field.devices', 'Geräte')}>{c.devices}</Field>
             <Field label={t('panels.field.cables', 'Kabel')}>{c.cables}</Field>
-            <Field label={t('panels.field.cableLength', 'Kabellänge')}>{c.cableTotalM} m</Field>
             <Field label={t('panels.field.cameras', 'Kameras')}>{c.cameras}</Field>
             <Field label={t('panels.field.fixtures', 'Fixtures')}>{c.fixtures}</Field>
           </Group>

@@ -37,7 +37,7 @@ function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigat
   const t = useT()
   const c = computeCounts(project)
   const cards = [
-    { id: 'signal' as ModuleId, stat: format(t('overview.stat.cables', '{n} Kabel'), { n: c.cables }), sub: format(t('overview.stat.cablesSub', '{m} m · 1 offenes Ende'), { m: c.cableTotalM }), tone: 'warn' as const },
+    { id: 'signal' as ModuleId, stat: format(t('overview.stat.cables', '{n} Kabel'), { n: c.cables }), sub: t('overview.stat.cablesSub', '1 offenes Ende'), tone: 'warn' as const },
     { id: 'cameras' as ModuleId, stat: format(t('overview.stat.cameras', '{n} Kameras'), { n: c.cameras }), sub: t('overview.stat.camerasSub', '4 Objektive · Coverage ok'), tone: 'ok' as const },
     { id: 'licht' as ModuleId, stat: format(t('overview.stat.fixtures', '{n} Fixtures'), { n: c.fixtures }), sub: t('overview.stat.fixturesSub', '3,4 kW · DMX ok'), tone: 'ok' as const },
   ]
