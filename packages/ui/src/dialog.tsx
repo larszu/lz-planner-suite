@@ -51,6 +51,28 @@ function mountDialog<T>(render: (done: (value: T) => void) => ReactNode): Promis
   })
 }
 
+/**
+ * Nur der oberste Dialog darf auf Tastatur (Escape/Enter) reagieren. Ohne diese
+ * Stapel-Prüfung würde ein Tastendruck auf einem daraufgestapelten Dialog (z. B.
+ * ein `void alertDialog(...)` über einem awaited `confirmDialog(...)`) auch den
+ * darunterliegenden Dialog auflösen. Gibt eine Funktion zurück, die prüft, ob
+ * dieser Dialog gerade oben liegt — im Keydown-Handler vor dem Handeln aufrufen.
+ */
+const dialogStack: object[] = []
+function useTopOfStack(): () => boolean {
+  const tokenRef = useRef<object | null>(null)
+  if (!tokenRef.current) tokenRef.current = {}
+  useEffect(() => {
+    const token = tokenRef.current!
+    dialogStack.push(token)
+    return () => {
+      const i = dialogStack.indexOf(token)
+      if (i >= 0) dialogStack.splice(i, 1)
+    }
+  }, [])
+  return () => dialogStack[dialogStack.length - 1] === tokenRef.current
+}
+
 function Shell({ label, onBackdrop, children }: { label: string; onBackdrop: () => void; children: ReactNode }) {
   const p = palette()
   return (
@@ -91,15 +113,17 @@ export function confirmDialog(title: string, options: ConfirmDialogOptions = {})
 
 function ConfirmView({ title, options, onDone }: { title: string; options: ConfirmDialogOptions; onDone: (v: boolean) => void }) {
   const okRef = useRef<HTMLButtonElement>(null)
+  const isTop = useTopOfStack()
   useEffect(() => {
     okRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
+      if (!isTop()) return
       if (e.key === 'Escape') onDone(false)
       else if (e.key === 'Enter') onDone(true)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onDone])
+  }, [onDone, isTop])
   const p = palette()
   return (
     <Shell label={title} onBackdrop={() => onDone(false)}>
@@ -124,12 +148,13 @@ export function alertDialog(title: string, options: AlertDialogOptions = {}): Pr
 
 function AlertView({ title, options, onDone }: { title: string; options: AlertDialogOptions; onDone: () => void }) {
   const okRef = useRef<HTMLButtonElement>(null)
+  const isTop = useTopOfStack()
   useEffect(() => {
     okRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' || e.key === 'Enter') onDone() }
+    const onKey = (e: KeyboardEvent) => { if (isTop() && (e.key === 'Escape' || e.key === 'Enter')) onDone() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onDone])
+  }, [onDone, isTop])
   const p = palette()
   return (
     <Shell label={title} onBackdrop={onDone}>
@@ -157,13 +182,14 @@ export function promptDialog(title: string, options: PromptDialogOptions = {}): 
 function PromptView({ title, options, onDone }: { title: string; options: PromptDialogOptions; onDone: (v: string | null) => void }) {
   const [value, setValue] = useState(options.defaultValue ?? '')
   const inputRef = useRef<HTMLInputElement>(null)
+  const isTop = useTopOfStack()
   useEffect(() => {
     inputRef.current?.focus()
     inputRef.current?.select()
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onDone(null) }
+    const onKey = (e: KeyboardEvent) => { if (isTop() && e.key === 'Escape') onDone(null) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onDone])
+  }, [onDone, isTop])
   const p = palette()
   const submit = () => {
     const trimmed = value.trim()
