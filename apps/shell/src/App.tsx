@@ -9,7 +9,7 @@ import {
   type RailModule,
 } from '@avplan/ui'
 import { useEffect } from 'react'
-import { MODULES, MODULE_BY_ID, type ModuleId } from './modules/registry'
+import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './modules/registry'
 import { PROJECT, type SuiteProject } from './data/project'
 import {
   blankProject,
@@ -157,11 +157,15 @@ export function App() {
     licht: 'lx3',
     board: null,
   })
+  // In der gepackten Desktop-Suite sind die echten Planer-Renderer mitverpackt
+  // und werden lokal ausgeliefert — dann direkt den echten Planer einblenden
+  // statt der statischen Vorschau. Im Browser/Dev bleibt die Vorschau Standard
+  // (Dev-Server laufen evtl. nicht → kein toter „unerreichbar"-Rahmen).
   const [mounted, setMounted] = useState<Record<ModuleId, boolean>>({
     overview: false,
-    signal: false,
-    cameras: false,
-    licht: false,
+    signal: BUNDLED_PLANNERS,
+    cameras: BUNDLED_PLANNERS,
+    licht: BUNDLED_PLANNERS,
     board: false,
   })
   const [libraryOpen, setLibraryOpen] = useState(true)

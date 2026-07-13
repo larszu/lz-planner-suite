@@ -66,6 +66,13 @@ jobs:
           npm run build:packages
           npm run build --workspace @avplan/shell
 
+      - name: Build + bundle planner renderers
+        # Baut die echten Renderer der drei Planer und kopiert sie nach
+        # apps/shell/planners/. electron-builder verpackt sie mit; der Suite-
+        # Hauptprozess liefert sie zur Laufzeit ueber die planner-*://-Protokolle
+        # aus — so laufen im Desktop-Build die echten Planer, keine Vorschau.
+        run: npm run build:planners
+
       - name: Package with electron-builder
         # bash auf jedem OS erzwingen (Windows-Default pwsh verschluckt sonst
         # Exit-Code/Output von electron-builder). cli.js direkt via node statt

@@ -30,6 +30,21 @@ export interface ModuleDef {
 
 const env = import.meta.env as Record<string, string | undefined>
 
+// Im gepackten Suite-Desktop injiziert das Electron-Preload echte
+// planner-*://-URLs auf window.__suitePlanners — dann laufen die *echten*
+// Planer-Renderer lokal aus dem Paket (kein Dev-Server, keine Mock-Vorschau).
+// Im Browser/Dev fehlt das Objekt und es greifen die env-URLs (Dev-Server).
+const bundled = (typeof window !== 'undefined'
+  ? (window as unknown as { __suitePlanners?: Record<string, string> }).__suitePlanners
+  : undefined)
+
+/** True, wenn die Planer als Paket-Renderer mitgeliefert werden (Desktop-Suite). */
+export const BUNDLED_PLANNERS = !!bundled
+
+function plannerUrl(key: string, envUrl: string | undefined, devFallback: string): string {
+  return bundled?.[key] ?? envUrl ?? devFallback
+}
+
 export const MODULES: ModuleDef[] = [
   {
     id: 'overview',
@@ -55,7 +70,7 @@ export const MODULES: ModuleDef[] = [
     accent: 'var(--mod-signal)',
     dataModule: 'signal',
     planner: 'cable',
-    plannerUrl: env.VITE_PLANNER_SIGNAL ?? 'http://localhost:4181/',
+    plannerUrl: plannerUrl('signal', env.VITE_PLANNER_SIGNAL, 'http://localhost:4181/'),
     tabs: [
       { id: 'flow', label: 'Signal-Flow' },
       { id: 'plan2d', label: '2D-Plan' },
@@ -73,7 +88,7 @@ export const MODULES: ModuleDef[] = [
     accent: 'var(--mod-cameras)',
     dataModule: 'cameras',
     planner: 'multicam',
-    plannerUrl: env.VITE_PLANNER_CAMERAS ?? 'http://localhost:4182/',
+    plannerUrl: plannerUrl('cameras', env.VITE_PLANNER_CAMERAS, 'http://localhost:4182/'),
     tabs: [
       { id: 'plan2d', label: '2D-Plan' },
       { id: 'view3d', label: '3D-Vorschau' },
@@ -91,7 +106,7 @@ export const MODULES: ModuleDef[] = [
     accent: 'var(--mod-licht)',
     dataModule: 'licht',
     planner: 'light',
-    plannerUrl: env.VITE_PLANNER_LICHT ?? 'http://localhost:4183/',
+    plannerUrl: plannerUrl('licht', env.VITE_PLANNER_LICHT, 'http://localhost:4183/'),
     tabs: [
       { id: 'plan2d', label: '2D-Plan' },
       { id: 'view3d', label: '3D-Vorschau' },
