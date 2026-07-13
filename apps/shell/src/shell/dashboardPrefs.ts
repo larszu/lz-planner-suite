@@ -6,7 +6,6 @@
 
 export type WidgetId =
   | 'gewerke'
-  | 'plancheck'
   | 'runofshow'
   | 'crew'
   | 'budget'
@@ -16,7 +15,7 @@ export type WidgetId =
   | 'contacts'
 
 /** Ganze-Breite-Bereiche (oben), nur an-/abwählbar (keine Reihenfolge). */
-export const FULL_WIDTH_WIDGETS: WidgetId[] = ['gewerke', 'plancheck']
+export const FULL_WIDTH_WIDGETS: WidgetId[] = ['gewerke']
 
 /** Karten in der responsiven Masonry — an-/abwählbar und umsortierbar. */
 export const DEFAULT_CARD_ORDER: WidgetId[] = [
@@ -31,7 +30,6 @@ export const DEFAULT_CARD_ORDER: WidgetId[] = [
 
 export const WIDGET_LABEL: Record<WidgetId, string> = {
   gewerke: 'Gewerke-Karten',
-  plancheck: 'Suite-Plan-Check',
   runofshow: 'Tagesablauf',
   crew: 'Crew',
   budget: 'Budget',

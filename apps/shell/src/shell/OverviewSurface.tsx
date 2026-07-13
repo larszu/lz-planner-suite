@@ -37,9 +37,9 @@ function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigat
   const t = useT()
   const c = computeCounts(project)
   const cards = [
-    { id: 'signal' as ModuleId, stat: format(t('overview.stat.cables', '{n} Kabel'), { n: c.cables }), sub: t('overview.stat.cablesSub', '1 offenes Ende'), tone: 'warn' as const },
-    { id: 'cameras' as ModuleId, stat: format(t('overview.stat.cameras', '{n} Kameras'), { n: c.cameras }), sub: t('overview.stat.camerasSub', '4 Objektive · Coverage ok'), tone: 'ok' as const },
-    { id: 'licht' as ModuleId, stat: format(t('overview.stat.fixtures', '{n} Fixtures'), { n: c.fixtures }), sub: t('overview.stat.fixturesSub', '3,4 kW · DMX ok'), tone: 'ok' as const },
+    { id: 'signal' as ModuleId, stat: format(t('overview.stat.cables', '{n} Kabel'), { n: c.cables }) },
+    { id: 'cameras' as ModuleId, stat: format(t('overview.stat.cameras', '{n} Kameras'), { n: c.cameras }) },
+    { id: 'licht' as ModuleId, stat: format(t('overview.stat.fixtures', '{n} Fixtures'), { n: c.fixtures }) },
   ]
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -61,27 +61,9 @@ function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigat
               <Icon name="external" size={13} style={{ marginLeft: 'auto', color: 'var(--av-text-faint)' }} />
             </div>
             <div className="av-num text-lg font-bold text-av-text">{card.stat}</div>
-            <div className="text-[11.5px] text-av-text-muted">{card.sub}</div>
           </button>
         )
       })}
-    </div>
-  )
-}
-
-function PlanCheckCard() {
-  const t = useT()
-  return (
-    <div className="rounded-av-card border border-av-border bg-av-surface-1 p-3.5">
-      <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-av-text-muted">
-        <Icon name="check" size={13} /> {t('overview.plancheck.title', 'Suite-Plan-Check')}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Badge tone="ok">{t('overview.plancheck.signal', 'Signal ↔ Kameras konsistent')}</Badge>
-        <Badge tone="ok">{t('overview.plancheck.dmx', 'DMX-Patch kollisionsfrei')}</Badge>
-        <Badge tone="ok">{t('overview.plancheck.power', 'Strom-Last im Limit')}</Badge>
-        <Badge tone="warn">{t('overview.plancheck.cam4', 'CAM 4 nicht verkabelt')}</Badge>
-      </div>
     </div>
   )
 }
@@ -263,7 +245,7 @@ export function OverviewSurface({
   const { show } = project
 
   // Renderer je Karten-Widget (nur die Masonry-Karten).
-  const cardRender: Record<Exclude<WidgetId, 'gewerke' | 'plancheck'>, ReactNode> = {
+  const cardRender: Record<Exclude<WidgetId, 'gewerke'>, ReactNode> = {
     runofshow: <RunOfShowCard schedule={show.schedule} />,
     crew: <CrewCard crew={show.crew} />,
     budget: <BudgetCard budget={show.budget} />,
@@ -273,12 +255,11 @@ export function OverviewSurface({
     contacts: <ContactsCard contacts={show.contacts} />,
   }
   const visibleCards = prefs.order.filter(
-    (id): id is Exclude<WidgetId, 'gewerke' | 'plancheck'> =>
-      id !== 'gewerke' && id !== 'plancheck' && prefs.enabled[id],
+    (id): id is Exclude<WidgetId, 'gewerke'> =>
+      id !== 'gewerke' && prefs.enabled[id],
   )
   const gridItems: DashboardItem[] = visibleCards.map((id) => ({ id, node: cardRender[id] }))
-  const nothingVisible =
-    !prefs.enabled.gewerke && !prefs.enabled.plancheck && visibleCards.length === 0
+  const nothingVisible = !prefs.enabled.gewerke && visibleCards.length === 0
 
   return (
     <div className="mx-auto w-full max-w-6xl">
@@ -309,13 +290,6 @@ export function OverviewSurface({
 
       {/* Gewerke */}
       {prefs.enabled.gewerke && <ModuleCards project={project} onNavigate={onNavigate} />}
-
-      {/* Suite-Plan-Check */}
-      {prefs.enabled.plancheck && (
-        <div className="mt-3">
-          <PlanCheckCard />
-        </div>
-      )}
 
       {/* Dashboard-Karten: Drag&Drop anordnen, skalieren, per X ausblenden */}
       {gridItems.length > 0 && (

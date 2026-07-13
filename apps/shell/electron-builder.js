@@ -1,0 +1,49 @@
+// electron-builder-Konfiguration der AV Planner Suite.
+//
+// Verpackt ausschließlich das gebündelte Vite-Ergebnis (dist/) plus den
+// Electron-Hauptprozess (electron/) und die package.json. Es gibt bewusst
+// KEINE Produktions-Dependencies (alle Libs landen via Vite gebündelt in
+// dist/), daher zieht electron-builder keine node_modules ins Paket — das
+// vermeidet die Symlink-Fallstricke der npm-Workspaces.
+//
+// Kein eigenes App-Icon: ohne `icon` nutzt electron-builder das Standard-
+// Electron-Icon, statt an einem fehlenden .icns/.ico abzubrechen.
+const year = new Date().getFullYear()
+
+export default {
+  appId: 'net.avplanner.suite',
+  productName: 'AV Planner Suite',
+  copyright: `Copyright © ${year} Lars Zumpe`,
+  files: ['dist/**/*', 'electron/**/*', 'package.json'],
+  directories: {
+    output: 'release',
+  },
+  mac: {
+    category: 'public.app-category.productivity',
+    target: [
+      { target: 'dmg', arch: 'x64' },
+      { target: 'dmg', arch: 'arm64' },
+    ],
+    artifactName: '${productName}-${version}-${arch}.${ext}',
+    // Ad-hoc-Signatur ("-"), damit Gatekeeper auf Apple Silicon die Binary
+    // strukturell akzeptiert (sonst „is damaged"). Kein bezahltes Apple-
+    // Zertifikat nötig; beim ersten Start weiterhin Rechtsklick → Öffnen.
+    identity: '-',
+    hardenedRuntime: false,
+    gatekeeperAssess: false,
+  },
+  win: {
+    target: [
+      { target: 'nsis', arch: 'x64' },
+      { target: 'portable', arch: 'x64' },
+    ],
+    artifactName: '${productName}-${version}-${arch}.${ext}',
+    // Kein Code-Signing: ohne CSC_LINK überspringt electron-builder signtool.
+    // SmartScreen zeigt bis zu einem CA-Zertifikat „Unbekannter Herausgeber".
+  },
+  nsis: {
+    oneClick: false,
+    allowToChangeInstallationDirectory: true,
+    perMachine: false,
+  },
+}

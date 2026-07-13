@@ -79,11 +79,11 @@ const library = (t: TFunc): Record<ModuleId, LibItem[]> => ({
 })
 
 const layersFor = (project: SuiteProject | null, t: TFunc) => [
-  { id: 'room', name: t('panels.layer.roomWallsStage', 'Raum · Wände & Bühne'), count: project ? '14' : '—', tone: 'raum' },
+  { id: 'room', name: t('panels.layer.roomWallsStage', 'Raum · Wände & Bühne'), count: project ? String(project.nodes.length) : '—', tone: 'raum' },
   { id: 'people', name: t('panels.layer.people', 'Personen'), count: project ? String(project.show.crew.length) : '—', tone: 'warn' },
   { id: 'cameras', name: t('panels.layer.cameras', 'Kameras'), count: project ? String(project.cameras.length) : '—', tone: 'cameras' },
   { id: 'light', name: t('panels.layer.light', 'Licht'), count: project ? String(project.fixtures.length) : '—', tone: 'licht' },
-  { id: 'signal', name: t('panels.layer.signalCables', 'Signal / Kabel'), count: project ? '23' : '—', tone: 'signal' },
+  { id: 'signal', name: t('panels.layer.signalCables', 'Signal / Kabel'), count: project ? String(project.cables.length) : '—', tone: 'signal' },
 ]
 
 const DOT: Record<string, string> = {

@@ -1,0 +1,120 @@
+name: Release Suite
+
+# Baut die AV-Planner-Suite (apps/shell als Electron-App) und hängt die
+# Installer an das GitHub-Release des Tags. Wie beim Cable Planner: Windows
+# .exe (NSIS + portable) und macOS .dmg fuer Intel (x64) und Apple Silicon
+# (arm64). Cross-Building macOS von Windows kann electron-builder nicht — daher
+# eine Matrix: windows-latest baut die exe, macos-latest beide dmgs.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# actions/checkout@v5 + setup-node@v5 laufen nativ auf Node 24; upload-artifact,
+# download-artifact und action-gh-release haben (Stand 2026) noch keine Node-24-
+# Release — der Flag zwingt sie auf Node 24. Entfernen, sobald alle drei v5 sind.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+            build_args: --win
+          - os: macos-latest
+            name: macos
+            build_args: --mac --x64 --arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync shell version to tag
+        # electron-builder liest apps/shell/package.json.version fuer den
+        # Installer-Dateinamen — die MUSS dem Tag entsprechen. Rewrite nur im
+        # Runner (kein Commit); workflow_dispatch (kein Tag) wird uebersprungen.
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          set -eu
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "Tag-Version: $TAG_VERSION"
+          npm version "$TAG_VERSION" --no-git-tag-version --allow-same-version --workspace @avplan/shell
+          node -e "console.log('shell version:', require('./apps/shell/package.json').version)"
+
+      - name: Build shared packages + shell renderer
+        run: |
+          npm run build:packages
+          npm run build --workspace @avplan/shell
+
+      - name: Package with electron-builder
+        # bash auf jedem OS erzwingen (Windows-Default pwsh verschluckt sonst
+        # Exit-Code/Output von electron-builder). cli.js direkt via node statt
+        # npx aufrufen (npx trifft auf Windows den .cmd-Shim). Pfad robust via
+        # require.resolve, egal ob electron-builder gehoisted ist.
+        shell: bash
+        working-directory: apps/shell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eo pipefail
+          set -x
+          node --version
+          CLI="$(node -p "require.resolve('electron-builder/cli.js')")"
+          node "$CLI" --config electron-builder.js ${{ matrix.build_args }} --publish never
+
+      - name: List release/ contents
+        shell: bash
+        working-directory: apps/shell
+        run: ls -lh release/ || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: av-planner-suite-${{ matrix.name }}
+          path: |
+            apps/shell/release/*.exe
+            apps/shell/release/*.dmg
+            apps/shell/release/*.blockmap
+          # Laut fehlschlagen, wenn electron-builder keine Artefakte erzeugt
+          # (stiller Windows-Fehlermodus).
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.dmg
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

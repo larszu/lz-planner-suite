@@ -105,7 +105,7 @@ export function BudgetCard({ budget }: { budget: BudgetLine[] }) {
   const totals = budgetTotals(budget)
   const over = totals.actual > totals.estimated
   return (
-    <Card title={t('overview.card.budget.title', 'Budget')} icon="modules" action={<Badge tone="warn">Rentman ✓</Badge>}>
+    <Card title={t('overview.card.budget.title', 'Budget')} icon="modules">
       <div className="mb-3 flex items-baseline justify-between">
         <span className="av-num text-xl font-bold text-av-text">{fmtEur(totals.actual)}</span>
         <span className="text-[12px] text-av-text-muted">
