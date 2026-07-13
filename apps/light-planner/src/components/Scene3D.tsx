@@ -1536,12 +1536,9 @@ const Scene3D = forwardRef<Scene3DHandle, Props>(({ fixtures, persons, stageElem
     },
   }));
 
-  // Der 3D-/Render-Viewport bleibt bewusst dunkel. Ein dezenter Eck-Chip macht
-  // das neben einer hellen Shell als Absicht erkennbar (nicht als Fehler).
   return (
     <div className="scene3d-wrap">
       <div ref={containerRef} className="scene3d-container" />
-      <span className="scene3d-badge">{photoMode ? t('topbar.render', 'Render') : t('topbar.mode3d', '3D')}</span>
     </div>
   );
 });

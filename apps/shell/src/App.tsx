@@ -390,7 +390,6 @@ export function App() {
         project={project}
         zoom={zoom}
         onZoom={(z) => setZoom(Math.max(50, Math.min(200, z)))}
-        onNavigate={goToModule}
       />
 
       <CommandPalette

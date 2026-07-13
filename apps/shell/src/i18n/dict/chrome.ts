@@ -72,6 +72,8 @@ export const chrome: Record<string, string> = {
   'chrome.status.noProject': 'No project · module standalone',
   'chrome.status.devices': 'Devices',
   'chrome.status.cables': 'Cables',
+  'chrome.status.cameras': 'Cameras',
+  'chrome.status.fixtures': 'Fixtures',
   'chrome.status.toPlanCheck': 'To plan check',
   'chrome.status.openEnd': 'open end',
   'chrome.status.camerasLenses': 'Cameras · 4 lenses',

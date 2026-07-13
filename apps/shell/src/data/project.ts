@@ -374,19 +374,15 @@ export interface ProjectCounts {
   cameras: number
   fixtures: number
   cables: number
-  cableTotalM: number
   devices: number
-  openEnds: number
 }
 
 export function computeCounts(p: SuiteProject): ProjectCounts {
   return {
     cameras: p.cameras.length,
     fixtures: p.fixtures.length,
-    cables: p.cables.length + 18, // + gebündelte Stich-/Patch-Kabel
-    cableTotalM: 612,
+    cables: p.cables.length,
     devices: p.nodes.length,
-    openEnds: 1,
   }
 }
 

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { Badge, Button, Icon } from '@avplan/ui'
+import { Button, Icon } from '@avplan/ui'
 import { computeCounts, type SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
-import { useT, format, type TFunc } from '../i18n'
+import { useT, type TFunc } from '../i18n'
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -93,13 +93,6 @@ export function PropertiesPanel({
             <Field label={t('panels.field.cameras', 'Kameras')}>{c.cameras}</Field>
             <Field label={t('panels.field.fixtures', 'Fixtures')}>{c.fixtures}</Field>
           </Group>
-          <Group title={t('panels.group.planCheck', 'Plan-Check')} icon="check" accent="var(--av-ok)">
-            <div className="flex flex-wrap gap-1.5">
-              <Badge tone="ok">{t('panels.badge.signalOk', 'Signal ok')}</Badge>
-              <Badge tone="warn">{t('panels.badge.openEnd', '1 offenes Ende')}</Badge>
-              <Badge tone="ok">{t('panels.badge.dmxNoConflict', 'DMX kein Konflikt')}</Badge>
-            </div>
-          </Group>
         </div>
       </div>
     )
@@ -121,23 +114,9 @@ export function PropertiesPanel({
           <Group title={t('panels.group.route', 'Route')} accent={accent}>
             <Field label={t('panels.field.from', 'Von')}>{from?.name}</Field>
             <Field label={t('panels.field.to', 'Nach')}>{to?.name}</Field>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <Badge tone="ok">{t('panels.badge.planCheckOk', 'Plan-Check ok')}</Badge>
-              <Badge tone="accent">{t('panels.badge.patchSheet', 'Patch-Sheet S. 2')}</Badge>
-            </div>
-          </Group>
-          <Group title={t('panels.group.venueDevice', 'Venue-Gerät')} icon="camera" accent="var(--mod-cameras)">
-            <Field label={t('panels.field.source', 'Quelle')}>CAM 2 @ 12,0 / 11,6 m</Field>
-            <Field label={t('panels.field.cableRun', 'Kabelweg')}>{format(t('panels.value.cableRunReserve', '≈ {m} m + Reserve'), { m: cable.lengthM })}</Field>
             <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('cameras')}>
               <Icon name="camera" size={14} /> {t('panels.action.showInCameraPlan', 'Im Kamera-Plan zeigen')}
             </Button>
-          </Group>
-          <Group title={t('panels.group.procurement', 'Beschaffung')} icon="modules">
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] text-av-text-secondary">{t('panels.value.bomClass', 'BOM: 12G-SDI 50 m-Klasse')}</span>
-              <Badge tone="warn">Rentman ✓</Badge>
-            </div>
           </Group>
         </div>
       </div>
@@ -155,21 +134,13 @@ export function PropertiesPanel({
             <Field label={t('panels.field.focalLength', 'Brennweite')}>{cam.focalMm} mm</Field>
             <Field label="H-FOV">{cam.hfovDeg.toFixed(1)}°</Field>
           </Group>
-          <Group title={t('panels.group.calculation', 'Berechnung')} accent={accent}>
-            <Field label={t('panels.field.imageWidth', 'Bildbreite')}>1,89 m @ 8,7 m</Field>
-            <Field label="DoF">7,9 – 9,7 m</Field>
-            <Field label={t('panels.field.hostInFrame', 'Host im Bild')}>{t('panels.value.heightPct', '72 % Höhe')}</Field>
-          </Group>
           <Group title={t('panels.group.cabling', 'Verkabelung')} icon="signal" accent="var(--mod-signal)">
-            <Field label="SDI Out 1">ATEM In 2 · 45 m</Field>
-            <Field label="Ethernet">Switch FOH · Cat6A</Field>
-            <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('signal')}>
+            <Button variant="subtle" size="sm" onClick={() => onNavigate('signal')}>
               <Icon name="signal" size={14} /> {t('panels.action.showInSignalFlow', 'Im Signal-Flow zeigen')}
             </Button>
           </Group>
           <Group title={t('panels.group.lightAtSubject', 'Licht am Motiv')} icon="light" accent="var(--mod-licht)">
-            <Field label="Host">812 lx · Key/Fill 2,8 : 1</Field>
-            <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('licht')}>
+            <Button variant="subtle" size="sm" onClick={() => onNavigate('licht')}>
               <Icon name="light" size={14} /> {t('panels.action.toLightLayer', 'Zur Licht-Ebene')}
             </Button>
           </Group>
@@ -219,26 +190,17 @@ export function PropertiesPanel({
       <div className="av-scroll flex-1 overflow-auto">
         <Group title={t('panels.group.positionAim', 'Position & Aim')}>
           <Field label={t('panels.field.xy', 'X / Y')}>{fx.x.toFixed(1)} / {fx.y.toFixed(1)} m</Field>
-          <Field label={t('panels.field.height', 'Höhe')}>6,0 m</Field>
         </Group>
         <Group title={t('panels.group.dimmerBeam', 'Dimmer & Beam')} accent={accent}>
           <Field label="Dimmer">{fx.dimmerPct} %</Field>
-          <Field label="Zoom">26°</Field>
-          <Field label="CCT">3200 K</Field>
         </Group>
-        <Group title={t('panels.group.dmxPatch', 'DMX-Patch')} icon="check" accent="var(--av-ok)">
+        <Group title={t('panels.group.dmxPatch', 'DMX-Patch')} icon="modules">
           <Field label={t('panels.field.channelUniverse', 'Kanal / Universe')}>{fx.dmxChannel} / 1</Field>
-          <div className="mt-2"><Badge tone="ok">{t('panels.badge.noConflictAutoPatch', 'kein Konflikt · Auto-Patch aktiv')}</Badge></div>
         </Group>
         <Group title={t('panels.group.cablingPower', 'Verkabelung & Strom')} icon="signal" accent="var(--mod-signal)">
-          <Field label={t('panels.field.feed', 'Speisung')}>Dimmer Rack 2 · Circ 4</Field>
-          <Field label={t('panels.field.load', 'Last')}>750 W · L2: 9,2 / 16 A</Field>
-          <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('signal')}>
+          <Button variant="subtle" size="sm" onClick={() => onNavigate('signal')}>
             <Icon name="signal" size={14} /> {t('panels.action.showInSignalFlow', 'Im Signal-Flow zeigen')}
           </Button>
-        </Group>
-        <Group title={t('panels.group.inFrameFrom', 'Im Bild von')} icon="camera" accent="var(--mod-cameras)">
-          <p className="text-[12px] text-av-text-muted">{t('panels.fixture.inFrameBody', 'CAM 2 (85 mm) · CAM 3 (Tele) — Fixture liegt im FOV, Blendung prüfen.')}</p>
         </Group>
       </div>
     </div>
