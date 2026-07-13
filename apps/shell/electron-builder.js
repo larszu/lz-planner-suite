@@ -14,6 +14,13 @@ export default {
   appId: 'net.avplanner.suite',
   productName: 'AV Planner Suite',
   copyright: `Copyright © ${year} Lars Zumpe`,
+  // Publish-Provider MUSS gesetzt sein: electron-builder erzeugt fuer NSIS/DMG
+  // die Update-Manifeste (latest*.yml) und liest dabei publish.provider. Ohne
+  // diese Angabe versucht es, den Provider aus der Git-Config abzuleiten, findet
+  // nichts und stirbt mit „Cannot read properties of null (reading 'provider')".
+  // `--publish never` im Workflow verhindert weiterhin das eigentliche Hochladen
+  // (die Installer haengt die release-Job via action-gh-release ans Release).
+  publish: [{ provider: 'github', owner: 'larszu', repo: 'av-planner-suite', releaseType: 'release' }],
   files: ['dist/**/*', 'electron/**/*', 'package.json'],
   directories: {
     output: 'release',
