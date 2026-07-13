@@ -33,6 +33,7 @@ import { buildExportFilename } from '../../lib/exportFilename'
 import { hasDesktopBridge, cablePlannerApi } from '../../lib/bridge'
 import { infoDialog } from '../../lib/infoDialog'
 import { confirmDialog } from '../../lib/confirmDialog'
+import { isEmbedded } from '../../lib/isEmbedded'
 
 interface MenuBarProps {
   onNewProject: () => void
@@ -283,28 +284,43 @@ export const MenuBar = ({
       <input ref={cameraImportRef} type="file" accept=".cameras.json,.json" className="hidden" onChange={handleImportCameras} />
       <input ref={avplanImportRef} type="file" accept=".avplan,.json" className="hidden" onChange={handleImportAvplan} />
       <div className="flex shrink-0 items-center gap-2">
-        <span className="hidden select-none font-semibold tracking-wide text-cp-text-secondary lg:inline">
-          {t('app.title', 'Cable Planner')}
-        </span>
-        <span className="hidden text-cp-text-dimmer lg:inline">│</span>
+        {/* Eingebettet: die Suite-Shell zeigt den App-Namen bereits in ihrer
+            Top-Bar — hier ausblenden, um Doppelung zu vermeiden. */}
+        {!isEmbedded && (
+          <>
+            <span className="hidden select-none font-semibold tracking-wide text-cp-text-secondary lg:inline">
+              {t('app.title', 'Cable Planner')}
+            </span>
+            <span className="hidden text-cp-text-dimmer lg:inline">│</span>
+          </>
+        )}
 
         <Menu label={t('app.menu.file', 'Datei')}>
-          <MenuItem onClick={onNewProject} icon={<Icon icon={FileText} size="sm" />} shortcut={t('shortcut.ctrlN', 'Strg+N')}>
-            {t('app.menu.file.new', 'Neues Projekt')}
-          </MenuItem>
+          {/* Eingebettet: Neu/Öffnen/Speichern/Speichern-unter dupliziert die
+              Datei-Operationen der Suite-Shell — hier ausblenden. Planner-
+              eigene Einträge (Vorlagen, Importe, Exporte …) bleiben. */}
+          {!isEmbedded && (
+            <MenuItem onClick={onNewProject} icon={<Icon icon={FileText} size="sm" />} shortcut={t('shortcut.ctrlN', 'Strg+N')}>
+              {t('app.menu.file.new', 'Neues Projekt')}
+            </MenuItem>
+          )}
           <MenuItem onClick={() => useUiStore.getState().openTemplates()} icon={<Icon icon={Clapperboard} size="sm" />}>
             {t('app.menu.file.newFromTemplate', 'Neu aus Vorlage…')}
           </MenuItem>
-          <MenuItem onClick={onOpenProject} icon={<Icon icon={FolderOpen} size="sm" />} shortcut={t('shortcut.ctrlO', 'Strg+O')}>
-            {t('app.menu.file.open', 'Öffnen…')}
-          </MenuItem>
-          <MenuSep />
-          <MenuItem onClick={onSaveProject} icon={<Icon icon={Save} size="sm" />} shortcut={t('shortcut.ctrlS', 'Strg+S')}>
-            {t('app.menu.file.save', 'Speichern')}
-          </MenuItem>
-          <MenuItem onClick={onSaveProjectAs} icon={<Icon icon={SaveAll} size="sm" />} shortcut={t('shortcut.ctrlShiftS', 'Strg+Umsch+S')}>
-            {t('app.menu.file.saveAs', 'Speichern unter…')}
-          </MenuItem>
+          {!isEmbedded && (
+            <>
+              <MenuItem onClick={onOpenProject} icon={<Icon icon={FolderOpen} size="sm" />} shortcut={t('shortcut.ctrlO', 'Strg+O')}>
+                {t('app.menu.file.open', 'Öffnen…')}
+              </MenuItem>
+              <MenuSep />
+              <MenuItem onClick={onSaveProject} icon={<Icon icon={Save} size="sm" />} shortcut={t('shortcut.ctrlS', 'Strg+S')}>
+                {t('app.menu.file.save', 'Speichern')}
+              </MenuItem>
+              <MenuItem onClick={onSaveProjectAs} icon={<Icon icon={SaveAll} size="sm" />} shortcut={t('shortcut.ctrlShiftS', 'Strg+Umsch+S')}>
+                {t('app.menu.file.saveAs', 'Speichern unter…')}
+              </MenuItem>
+            </>
+          )}
           {onOpenGraphmlImport && (
             <>
               <MenuSep />
@@ -415,23 +431,29 @@ export const MenuBar = ({
           {/* #340 — Standard-Edit-Aktionen auch im Menü (vorher nur Icon-
               Buttons/Shortcuts). Undo/Redo über projectHistory, Löschen/
               Auswahl-aufheben über die (globale) Projekt-Store-Selection. */}
-          <MenuItem
-            onClick={() => projectHistory.undo()}
-            disabled={!canUndo}
-            icon={<Icon icon={Undo2} size="sm" />}
-            shortcut={t('shortcut.ctrlZ', 'Strg+Z')}
-          >
-            {t('app.menu.edit.undo', 'Rückgängig')}
-          </MenuItem>
-          <MenuItem
-            onClick={() => projectHistory.redo()}
-            disabled={!canRedo}
-            icon={<Icon icon={Redo2} size="sm" />}
-            shortcut={t('shortcut.ctrlY', 'Strg+Y')}
-          >
-            {t('app.menu.edit.redo', 'Wiederherstellen')}
-          </MenuItem>
-          <MenuSep />
+          {/* Eingebettet: Undo/Redo steuert die Suite-Shell über die
+              Command-Bridge — hier ausblenden, um Doppelung zu vermeiden. */}
+          {!isEmbedded && (
+            <>
+              <MenuItem
+                onClick={() => projectHistory.undo()}
+                disabled={!canUndo}
+                icon={<Icon icon={Undo2} size="sm" />}
+                shortcut={t('shortcut.ctrlZ', 'Strg+Z')}
+              >
+                {t('app.menu.edit.undo', 'Rückgängig')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => projectHistory.redo()}
+                disabled={!canRedo}
+                icon={<Icon icon={Redo2} size="sm" />}
+                shortcut={t('shortcut.ctrlY', 'Strg+Y')}
+              >
+                {t('app.menu.edit.redo', 'Wiederherstellen')}
+              </MenuItem>
+              <MenuSep />
+            </>
+          )}
           <MenuItem
             onClick={() => triggerCanvasDuplicate()}
             icon={<Icon icon={Copy} size="sm" />}
@@ -719,29 +741,33 @@ export const MenuBar = ({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <div className="flex items-center rounded border border-cp-border bg-cp-surface-1">
-          <button
-            type="button"
-            onClick={() => projectHistory.undo()}
-            disabled={!canUndo}
-            title={t('app.undo', 'Rückgängig (Strg+Z)')}
-            aria-label={t('app.undo', 'Rückgängig (Strg+Z)')}
-            className="px-2 py-1 text-cp-text-bright hover:bg-cp-surface-2 disabled:cursor-not-allowed disabled:text-cp-text-dim disabled:hover:bg-transparent"
-          >
-            <Icon icon={Undo2} size="sm" />
-          </button>
-          <span className="h-4 w-px bg-cp-surface-4" aria-hidden="true" />
-          <button
-            type="button"
-            onClick={() => projectHistory.redo()}
-            disabled={!canRedo}
-            title={t('app.redo', 'Wiederherstellen (Strg+Y)')}
-            aria-label={t('app.redo', 'Wiederherstellen (Strg+Y)')}
-            className="px-2 py-1 text-cp-text-bright hover:bg-cp-surface-2 disabled:cursor-not-allowed disabled:text-cp-text-dim disabled:hover:bg-transparent"
-          >
-            <Icon icon={Redo2} size="sm" />
-          </button>
-        </div>
+        {/* Eingebettet: Undo/Redo steuert die Suite-Shell über die Command-
+            Bridge — die eigenen Buttons hier ausblenden. */}
+        {!isEmbedded && (
+          <div className="flex items-center rounded border border-cp-border bg-cp-surface-1">
+            <button
+              type="button"
+              onClick={() => projectHistory.undo()}
+              disabled={!canUndo}
+              title={t('app.undo', 'Rückgängig (Strg+Z)')}
+              aria-label={t('app.undo', 'Rückgängig (Strg+Z)')}
+              className="px-2 py-1 text-cp-text-bright hover:bg-cp-surface-2 disabled:cursor-not-allowed disabled:text-cp-text-dim disabled:hover:bg-transparent"
+            >
+              <Icon icon={Undo2} size="sm" />
+            </button>
+            <span className="h-4 w-px bg-cp-surface-4" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={() => projectHistory.redo()}
+              disabled={!canRedo}
+              title={t('app.redo', 'Wiederherstellen (Strg+Y)')}
+              aria-label={t('app.redo', 'Wiederherstellen (Strg+Y)')}
+              className="px-2 py-1 text-cp-text-bright hover:bg-cp-surface-2 disabled:cursor-not-allowed disabled:text-cp-text-dim disabled:hover:bg-transparent"
+            >
+              <Icon icon={Redo2} size="sm" />
+            </button>
+          </div>
+        )}
         <SharedSyncPanel />
         {hasDesktopBridge && mobileModule && (
           <button

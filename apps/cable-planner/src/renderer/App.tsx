@@ -58,6 +58,7 @@ import { TemplatesDialog } from './components/Project/TemplatesDialog'
 import { ProjectMetaDialog } from './components/Project/ProjectMetaDialog'
 import { CableBomDialog } from './components/Project/CableBomDialog'
 import { WelcomeDialog } from './components/Project/WelcomeDialog'
+import { isEmbedded } from './lib/isEmbedded'
 import { Splitter } from './components/Layout/Splitter'
 import { useProject } from './hooks/useProject'
 import { useRentman } from './hooks/useRentman'
@@ -427,6 +428,9 @@ export default function App() {
     //   - the working project is genuinely empty (no autosaved canvas to
     //     restore — otherwise the welcome dialog would obstruct an
     //     existing-project session every time the user clears the canvas).
+    // Eingebettet in der Suite-Shell: die Shell besitzt den First-Run/Welcome-
+    // Flow — hier nichts automatisch aufpoppen.
+    if (isEmbedded) return
     const FLAG = 'cable-planner:welcomed'
     try {
       if (localStorage.getItem(FLAG)) return
@@ -458,6 +462,9 @@ export default function App() {
   useEffect(() => {
     // Auto-open onboarding tour on first launch only. Subsequent runs leave
     // the tour closed; the user can re-open it from the Help menu.
+    // Eingebettet: die Shell besitzt den First-Run — Tour nicht automatisch
+    // öffnen (manuell über Hilfe → Erste-Schritte-Tour bleibt möglich).
+    if (isEmbedded) return
     if (!hasSeenTour()) {
       const timer = window.setTimeout(() => setTourOpen(true), 400)
       return () => window.clearTimeout(timer)

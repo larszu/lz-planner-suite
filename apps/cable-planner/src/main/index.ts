@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
 import { registerCredentialsIpc } from './ipc/credentialsIpc.js'
 import { registerRentmanIpc } from './ipc/rentmanIpc.js'
+import { registerLexwareIpc } from './ipc/lexwareIpc.js'
 import { openExternalProject, registerProjectIpc } from './ipc/projectIpc.js'
 import { findProjectPathInArgv, setPendingLaunchPath } from './services/fileOpenService.js'
 import { registerAtemIpc } from './ipc/atemIpc.js'
@@ -352,6 +353,7 @@ app.whenReady().then(async () => {
 
   registerCredentialsIpc()
   registerRentmanIpc()
+  registerLexwareIpc()
   registerProjectIpc()
   registerAtemIpc()
   registerVideohubIpc()

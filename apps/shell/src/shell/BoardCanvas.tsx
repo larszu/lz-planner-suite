@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon, Menu, MenuItem } from '@avplan/ui'
+import { Icon, Menu, MenuItem, confirmDialog } from '@avplan/ui'
+import { useT, format, type TFunc } from '../i18n'
 import type { Board, BoardCard, BoardCardType } from '../data/project'
 import {
   applyTemplate,
@@ -26,22 +27,22 @@ let idSeq = 0
 const nextId = () => `c${(idSeq += 1)}_${Math.round(performance.now())}`
 
 const ADD_TYPES: BoardCardType[] = ['heading', 'note', 'look', 'color', 'todo', 'link', 'column', 'board']
-const CARD_META: Record<BoardCardType, { label: string; icon: Parameters<typeof Icon>[0]['name'] }> = {
-  heading: { label: 'Überschrift', icon: 'command' },
-  note: { label: 'Notiz', icon: 'library' },
-  link: { label: 'Link', icon: 'external' },
-  todo: { label: 'To-do', icon: 'check' },
-  color: { label: 'Farbe', icon: 'wand' },
-  look: { label: 'Look', icon: 'eye' },
-  column: { label: 'Spalte', icon: 'layers' },
-  board: { label: 'Unterboard', icon: 'board' },
-  image: { label: 'Bild', icon: 'eye' },
-}
+const cardMeta = (t: TFunc): Record<BoardCardType, { label: string; icon: Parameters<typeof Icon>[0]['name'] }> => ({
+  heading: { label: t('board.type.heading', 'Überschrift'), icon: 'command' },
+  note: { label: t('board.type.note', 'Notiz'), icon: 'library' },
+  link: { label: t('board.type.link', 'Link'), icon: 'external' },
+  todo: { label: t('board.type.todo', 'To-do'), icon: 'check' },
+  color: { label: t('board.type.color', 'Farbe'), icon: 'wand' },
+  look: { label: t('board.type.look', 'Look'), icon: 'eye' },
+  column: { label: t('board.type.column', 'Spalte'), icon: 'layers' },
+  board: { label: t('board.type.board', 'Unterboard'), icon: 'board' },
+  image: { label: t('board.type.image', 'Bild'), icon: 'eye' },
+})
 
-const TEMPLATES: { id: TemplateId; label: string }[] = [
-  { id: 'moodboard', label: 'Moodboard' },
-  { id: 'brief', label: 'Kreativ-Brief' },
-  { id: 'storyboard', label: 'Storyboard' },
+const templates = (t: TFunc): { id: TemplateId; label: string }[] => [
+  { id: 'moodboard', label: t('board.tpl.moodboard', 'Moodboard') },
+  { id: 'brief', label: t('board.tpl.brief', 'Kreativ-Brief') },
+  { id: 'storyboard', label: t('board.tpl.storyboard', 'Storyboard') },
 ]
 
 interface Point { x: number; y: number }
@@ -56,7 +57,11 @@ const menuButton = (label: string, icon: Parameters<typeof Icon>[0]['name']) => 
   </>
 )
 
-export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; title?: string }) {
+export function BoardCanvas({ seed, title: titleProp }: { seed: Board; title?: string }) {
+  const t = useT()
+  const title = titleProp ?? t('board.title', 'Kreativ-Board')
+  const CARD_META = cardMeta(t)
+  const TEMPLATES = templates(t)
   const [root, setRoot] = useState<Board>(() => cloneBoard(seed))
   const [path, setPath] = useState<string[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -107,18 +112,18 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
       y: 120 + (n % 6) * 28 + (boardRef.current?.parentElement?.scrollTop ?? 0),
       w: type === 'color' ? 110 : type === 'look' ? 190 : type === 'column' ? 280 : type === 'board' ? 210 : 230,
     }
-    if (type === 'heading') base.text = 'Überschrift'
-    if (type === 'note') base.text = 'Neue Notiz…'
-    if (type === 'link') { base.title = 'Neuer Link'; base.url = 'example.com' }
-    if (type === 'todo') { base.title = 'To-do'; base.items = [{ text: 'Punkt 1', done: false }] }
-    if (type === 'color') { base.title = 'Farbe'; base.color = SWATCHES[n % SWATCHES.length] }
-    if (type === 'look') { base.title = 'Look'; base.color = SWATCHES[n % SWATCHES.length] }
-    if (type === 'column') base.title = 'Spalte'
-    if (type === 'board') { base.title = 'Unterboard'; base.board = { cards: [], connections: [] } }
+    if (type === 'heading') base.text = t('board.type.heading', 'Überschrift')
+    if (type === 'note') base.text = t('board.default.note', 'Neue Notiz…')
+    if (type === 'link') { base.title = t('board.default.link', 'Neuer Link'); base.url = 'example.com' }
+    if (type === 'todo') { base.title = t('board.type.todo', 'To-do'); base.items = [{ text: t('board.default.todoItem', 'Punkt 1'), done: false }] }
+    if (type === 'color') { base.title = t('board.type.color', 'Farbe'); base.color = SWATCHES[n % SWATCHES.length] }
+    if (type === 'look') { base.title = t('board.type.look', 'Look'); base.color = SWATCHES[n % SWATCHES.length] }
+    if (type === 'column') base.title = t('board.type.column', 'Spalte')
+    if (type === 'board') { base.title = t('board.type.board', 'Unterboard'); base.board = { cards: [], connections: [] } }
     mutate((b) => ({ ...b, cards: [...b.cards, base] }))
     setSelectedId(base.id)
     if (type === 'note' || type === 'heading' || type === 'link' || type === 'column') setEditingId(base.id)
-  }, [cards.length, mutate])
+  }, [cards.length, mutate, t])
 
   const applyTpl = useCallback((id: TemplateId) => {
     const { cards: tc, connections: tcx } = applyTemplate(id, nextId)
@@ -265,8 +270,8 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (editingId) return
-      const t = e.target as HTMLElement | null
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      const el = e.target as HTMLElement | null
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) { e.preventDefault(); removeCard(selectedId) }
       else if (e.key === 'Escape') setSelectedId(null)
     }
@@ -285,35 +290,35 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
     <div className="flex h-full flex-col overflow-hidden rounded-av-card border border-av-border bg-av-bg">
       {/* Werkzeugleiste */}
       <div className="flex flex-wrap items-center gap-1 border-b border-av-border-muted bg-av-surface-1 px-2 py-1.5">
-        <span className="px-1.5 text-[11px] font-semibold uppercase tracking-wider text-av-text-faint">Hinzufügen</span>
-        {ADD_TYPES.map((t) => (
-          <button key={t} type="button" className="av-toolbar-btn av-focus" onClick={() => addCard(t)} aria-label={`${CARD_META[t].label} hinzufügen`} title={CARD_META[t].label}>
-            <Icon name={CARD_META[t].icon} size={15} /> <span className="text-[12px]">{CARD_META[t].label}</span>
+        <span className="px-1.5 text-[11px] font-semibold uppercase tracking-wider text-av-text-faint">{t('board.toolbar.add', 'Hinzufügen')}</span>
+        {ADD_TYPES.map((ty) => (
+          <button key={ty} type="button" className="av-toolbar-btn av-focus" onClick={() => addCard(ty)} aria-label={format(t('board.add.item', '{label} hinzufügen'), { label: CARD_META[ty].label })} title={CARD_META[ty].label}>
+            <Icon name={CARD_META[ty].icon} size={15} /> <span className="text-[12px]">{CARD_META[ty].label}</span>
           </button>
         ))}
-        <button type="button" className="av-toolbar-btn av-focus" onClick={() => fileInputRef.current?.click()} aria-label="Foto importieren" title="Foto importieren">
-          <Icon name="eye" size={15} /> <span className="text-[12px]">Foto</span>
+        <button type="button" className="av-toolbar-btn av-focus" onClick={() => fileInputRef.current?.click()} aria-label={t('board.toolbar.photoImport', 'Foto importieren')} title={t('board.toolbar.photoImport', 'Foto importieren')}>
+          <Icon name="eye" size={15} /> <span className="text-[12px]">{t('board.toolbar.photo', 'Foto')}</span>
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleFiles(e.target.files); if (fileInputRef.current) fileInputRef.current.value = '' }} />
 
         <div className="ml-2 flex min-w-0 items-center gap-1.5 rounded-av-control border border-av-border bg-av-surface-3 px-2">
           <Icon name="search" size={13} style={{ color: 'var(--av-text-faint)' }} />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Board durchsuchen…" aria-label="Board durchsuchen" className="av-focus w-32 bg-transparent py-1 text-[12px] text-av-text outline-none placeholder:text-av-text-faint" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('board.search.placeholder', 'Board durchsuchen…')} aria-label={t('board.search.aria', 'Board durchsuchen')} className="av-focus w-32 bg-transparent py-1 text-[12px] text-av-text outline-none placeholder:text-av-text-faint" />
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <Menu button={menuButton('Vorlage', 'wand')} align="right">
+          <Menu button={menuButton(t('board.menu.template', 'Vorlage'), 'wand')} align="right">
             {(close) => TEMPLATES.map((tpl) => (
               <MenuItem key={tpl.id} icon={<Icon name="board" size={14} style={{ color: 'var(--av-accent)' }} />} onClick={() => { applyTpl(tpl.id); close() }}>
                 {tpl.label}
               </MenuItem>
             ))}
           </Menu>
-          <Menu button={menuButton('Export', 'external')} align="right">
+          <Menu button={menuButton(t('board.menu.export', 'Export'), 'external')} align="right">
             {(close) => (
               <>
-                <MenuItem icon={<Icon name="library" size={14} />} onClick={() => { exportMarkdown(); close() }}>Als Markdown</MenuItem>
-                <MenuItem icon={<Icon name="external" size={14} />} onClick={() => { close(); exportPrint() }}>Als PDF (Druck)</MenuItem>
+                <MenuItem icon={<Icon name="library" size={14} />} onClick={() => { exportMarkdown(); close() }}>{t('board.export.markdown', 'Als Markdown')}</MenuItem>
+                <MenuItem icon={<Icon name="external" size={14} />} onClick={() => { close(); exportPrint() }}>{t('board.export.pdf', 'Als PDF (Druck)')}</MenuItem>
               </>
             )}
           </Menu>
@@ -323,7 +328,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
       {/* Breadcrumb (Board-in-Board-Navigation) */}
       <div className="flex items-center gap-1 border-b border-av-border-muted bg-av-surface-3 px-3 py-1.5 text-[12px]">
         {path.length > 0 && (
-          <button type="button" className="av-icon-btn av-focus" style={{ width: 24, height: 24 }} onClick={() => goToCrumb(path.length - 1)} aria-label="Eine Ebene zurück"><Icon name="undo" size={14} /></button>
+          <button type="button" className="av-icon-btn av-focus" style={{ width: 24, height: 24 }} onClick={() => goToCrumb(path.length - 1)} aria-label={t('board.crumb.back', 'Eine Ebene zurück')}><Icon name="undo" size={14} /></button>
         )}
         {crumbs.map((c, i) => (
           <span key={c.id || 'root'} className="flex items-center gap-1">
@@ -358,6 +363,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
           {columns.map((col) => {
             const r = layout.get(col.id)!
             const selected = selectedId === col.id
+            const hasChildren = cards.some((c) => c.columnId === col.id)
             return (
               <div key={col.id} data-column-id={col.id} className="absolute rounded-av-card border border-dashed border-av-border bg-av-surface-1/40" style={{ left: r.x, top: r.y, width: r.w, height: r.h, boxShadow: selected ? '0 0 0 2px var(--av-accent)' : undefined }}>
                 <div
@@ -374,7 +380,24 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
                   ) : (
                     <span className="flex-1 truncate text-[12px] font-semibold text-av-text">{col.title}</span>
                   )}
-                  {selected && <button type="button" className="av-icon-btn" style={{ width: 22, height: 22 }} onClick={() => removeCard(col.id)} aria-label="Spalte löschen"><Icon name="close" size={13} /></button>}
+                  {selected && (
+                    <button
+                      type="button"
+                      className="av-icon-btn"
+                      style={{ width: 22, height: 22 }}
+                      onClick={async () => {
+                        // Spalte mit Inhalt: gestylte Rückfrage (kein window.confirm).
+                        if (hasChildren && !(await confirmDialog(
+                          t('board.column.deleteConfirm', 'Spalte mit Inhalt endgültig löschen?'),
+                          { destructive: true, okLabel: t('board.column.delete', 'Spalte löschen'), cancelLabel: t('board.cancel', 'Abbrechen') },
+                        ))) return
+                        removeCard(col.id)
+                      }}
+                      aria-label={t('board.column.delete', 'Spalte löschen')}
+                    >
+                      <Icon name="close" size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -415,8 +438,8 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
 
           {cards.length === 0 && (
             <div className="pointer-events-none absolute left-1/2 top-40 -translate-x-1/2 text-center">
-              <div className="text-[15px] font-semibold text-av-text-secondary">{path.length ? 'Leeres Unterboard' : 'Leeres Board'}</div>
-              <div className="mt-1 text-[13px] text-av-text-muted">Füge oben Karten hinzu oder wende eine Vorlage an.</div>
+              <div className="text-[15px] font-semibold text-av-text-secondary">{path.length ? t('board.empty.subboard', 'Leeres Unterboard') : t('board.empty.board', 'Leeres Board')}</div>
+              <div className="mt-1 text-[13px] text-av-text-muted">{t('board.empty.hint', 'Füge oben Karten hinzu oder wende eine Vorlage an.')}</div>
             </div>
           )}
         </div>
@@ -429,6 +452,7 @@ export function BoardCanvas({ seed, title = 'Kreativ-Board' }: { seed: Board; ti
 
 /* ── Druck-Dokument (per @media print sichtbar, rekursiv über Unterboards) ──*/
 function PrintBoard({ board, title, level }: { board: Board; title: string; level: number }) {
+  const t = useT()
   const H = `h${Math.min(6, level)}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
   const rendered = new Set<string>()
   const renderCard = (c: BoardCard) => {
@@ -438,10 +462,10 @@ function PrintBoard({ board, title, level }: { board: Board; title: string; leve
       case 'link': return <p key={c.id}><a href={`https://${c.url}`}>{c.title ?? c.url}</a></p>
       case 'todo': return <div key={c.id}><strong>{c.title}</strong><ul>{c.items?.map((it, i) => <li key={i}>{it.done ? '☑' : '☐'} {it.text}</li>)}</ul></div>
       case 'color': return <p key={c.id}>■ {c.title} ({c.color})</p>
-      case 'look': return <p key={c.id}>Look: {c.title}</p>
-      case 'image': return <div key={c.id}>{c.src ? <img src={c.src} alt={c.title ?? 'Foto'} style={{ maxWidth: 320, display: 'block', margin: '6px 0' }} /> : null}<em>{c.title}</em></div>
+      case 'look': return <p key={c.id}>{format(t('board.print.look', 'Look: {title}'), { title: c.title ?? '' })}</p>
+      case 'image': return <div key={c.id}>{c.src ? <img src={c.src} alt={c.title ?? t('board.photoAlt', 'Foto')} style={{ maxWidth: 320, display: 'block', margin: '6px 0' }} /> : null}<em>{c.title}</em></div>
       case 'column': return null
-      case 'board': return <PrintBoard key={c.id} board={c.board ?? { cards: [], connections: [] }} title={`${c.title ?? 'Unterboard'} (Unterboard)`} level={level + 1} />
+      case 'board': return <PrintBoard key={c.id} board={c.board ?? { cards: [], connections: [] }} title={format(t('board.print.subboardTitle', '{title} (Unterboard)'), { title: c.title ?? t('board.type.board', 'Unterboard') })} level={level + 1} />
     }
   }
   return (
@@ -482,19 +506,20 @@ function BoardCardView({
   onResizePointerMove: (e: React.PointerEvent) => void
   onResizePointerUp: (e: React.PointerEvent) => void
 }) {
+  const t = useT()
   const isBoard = card.type === 'board'
   return (
     <div data-card-id={card.id} className="absolute select-none" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h, opacity: dim ? 0.28 : 1 }}>
       {selected && (
         <div className="absolute -top-8 left-0 z-20 flex items-center gap-1 rounded-av-control border border-av-border bg-av-surface-2 p-0.5 shadow-[var(--av-shadow-float)]">
           {(card.type === 'color' || card.type === 'look') && SWATCHES.slice(0, 6).map((s) => (
-            <button key={s} type="button" className="h-4 w-4 rounded-full border border-av-border" style={{ background: s }} onClick={() => onPatch({ color: s })} aria-label={`Farbe ${s}`} />
+            <button key={s} type="button" className="h-4 w-4 rounded-full border border-av-border" style={{ background: s }} onClick={() => onPatch({ color: s })} aria-label={format(t('board.swatch', 'Farbe {color}'), { color: s })} />
           ))}
-          <button type="button" className="av-icon-btn" style={{ width: 24, height: 24 }} onClick={onDelete} aria-label="Karte löschen"><Icon name="close" size={14} /></button>
+          <button type="button" className="av-icon-btn" style={{ width: 24, height: 24 }} onClick={onDelete} aria-label={t('board.card.delete', 'Karte löschen')}><Icon name="close" size={14} /></button>
         </div>
       )}
       {selected && (
-        <button type="button" className="absolute top-1/2 z-20 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-av-border bg-av-surface-2 text-av-accent" style={{ right: -10 }} onPointerDown={onStartConnect} aria-label="Verbindung ziehen">
+        <button type="button" className="absolute top-1/2 z-20 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-av-border bg-av-surface-2 text-av-accent" style={{ right: -10 }} onPointerDown={onStartConnect} aria-label={t('board.connect', 'Verbindung ziehen')}>
           <Icon name="nodes" size={11} />
         </button>
       )}
@@ -515,7 +540,7 @@ function BoardCardView({
           onPointerDown={onResizePointerDown}
           onPointerMove={onResizePointerMove}
           onPointerUp={onResizePointerUp}
-          aria-label="Größe ziehen"
+          aria-label={t('board.resize', 'Größe ziehen')}
         />
       )}
     </div>
@@ -523,26 +548,28 @@ function BoardCardView({
 }
 
 function BoardTile({ card, selected, onPatch, onOpen }: { card: BoardCard; selected: boolean; onPatch: (p: Partial<BoardCard>) => void; onOpen: () => void }) {
+  const t = useT()
   const count = card.board?.cards.length ?? 0
   return (
     <div className="flex h-full w-full flex-col gap-1.5 border border-av-border bg-av-surface-1 p-2.5" style={{ borderColor: 'var(--av-accent)' }}>
       <div className="flex items-center gap-2">
         <span className="grid h-7 w-7 flex-none place-items-center rounded-md" style={{ background: 'var(--av-accent-dim)', color: 'var(--av-accent)' }}><Icon name="board" size={15} /></span>
         {selected ? (
-          <input className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-av-text outline-none" value={card.title ?? ''} onChange={(e) => onPatch({ title: e.target.value })} onPointerDown={(e) => e.stopPropagation()} aria-label="Unterboard-Titel" />
+          <input className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-av-text outline-none" value={card.title ?? ''} onChange={(e) => onPatch({ title: e.target.value })} onPointerDown={(e) => e.stopPropagation()} aria-label={t('board.subboard.title', 'Unterboard-Titel')} />
         ) : (
           <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-av-text">{card.title}</span>
         )}
       </div>
-      <div className="text-[11px] text-av-text-muted">{count} {count === 1 ? 'Karte' : 'Karten'} · Unterboard</div>
+      <div className="text-[11px] text-av-text-muted">{count} {count === 1 ? t('board.card.one', 'Karte') : t('board.card.many', 'Karten')} · {t('board.type.board', 'Unterboard')}</div>
       <button type="button" className="av-btn av-focus mt-auto" data-size="sm" data-variant="subtle" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); onOpen() }}>
-        Öffnen <Icon name="external" size={13} />
+        {t('board.open', 'Öffnen')} <Icon name="external" size={13} />
       </button>
     </div>
   )
 }
 
 function CardBody({ card, editing, onEndEdit, onPatch }: { card: BoardCard; editing: boolean; onEndEdit: () => void; onPatch: (p: Partial<BoardCard>) => void }) {
+  const t = useT()
   if (card.type === 'heading') {
     return editing
       ? <input autoFocus className="w-full bg-transparent text-[18px] font-bold text-av-text outline-none" value={card.text ?? ''} onChange={(e) => onPatch({ text: e.target.value })} onBlur={onEndEdit} onKeyDown={(e) => e.key === 'Enter' && onEndEdit()} />
@@ -582,7 +609,7 @@ function CardBody({ card, editing, onEndEdit, onPatch }: { card: BoardCard; edit
         <ul className="flex flex-col gap-1">
           {card.items?.map((it, i) => (
             <li key={i} className="flex items-center gap-2 text-[12px]">
-              <button type="button" className="grid h-3.5 w-3.5 flex-none place-items-center rounded" style={{ border: it.done ? 'none' : '1.5px solid var(--av-border)', background: it.done ? 'var(--av-ok)' : 'transparent', color: '#fff' }} onClick={() => onPatch({ items: card.items?.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })} aria-label={it.done ? 'Erledigt' : 'Offen'}>
+              <button type="button" className="grid h-3.5 w-3.5 flex-none place-items-center rounded" style={{ border: it.done ? 'none' : '1.5px solid var(--av-border)', background: it.done ? 'var(--av-ok)' : 'transparent', color: 'var(--av-accent-text)' }} onClick={() => onPatch({ items: card.items?.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })} aria-label={it.done ? t('board.todo.done', 'Erledigt') : t('board.todo.open', 'Offen')}>
                 {it.done && <Icon name="check" size={10} />}
               </button>
               <span className={it.done ? 'text-av-text-faint line-through' : 'text-av-text-secondary'}>{it.text}</span>
@@ -607,7 +634,7 @@ function CardBody({ card, editing, onEndEdit, onPatch }: { card: BoardCard; edit
     return (
       <div className="flex h-full w-full flex-col overflow-hidden border border-av-border bg-av-surface-1">
         {card.src
-          ? <img src={card.src} alt={card.title ?? 'Foto'} className="min-h-0 flex-1 object-cover" draggable={false} />
+          ? <img src={card.src} alt={card.title ?? t('board.photoAlt', 'Foto')} className="min-h-0 flex-1 object-cover" draggable={false} />
           : <div className="flex-1" style={{ background: 'var(--av-surface-3)' }} />}
         {editing
           ? <input autoFocus className="bg-av-surface-1 px-2 py-1 text-[11px] text-av-text outline-none" value={card.title ?? ''} onChange={(e) => onPatch({ title: e.target.value })} onBlur={onEndEdit} onKeyDown={(e) => e.key === 'Enter' && onEndEdit()} />

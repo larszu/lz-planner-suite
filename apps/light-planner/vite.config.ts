@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { readFileSync } from 'fs';
 
@@ -9,4 +9,10 @@ export default defineConfig({
   base: './',
   // Single source of truth for the app version (shown in "Über Light Planner").
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  test: {
+    // happy-dom liefert localStorage/window — der uiStore (Sprache) greift beim
+    // Import darauf zu.
+    environment: 'happy-dom',
+    include: ['tests/**/*.test.ts'],
+  },
 });

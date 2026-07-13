@@ -13,7 +13,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build:packages": "npm run build --workspace @avplan/inventory-core --workspace @avplan/onboarding-core --workspace @avplan/ui",
+    "build:packages": "npm run build --workspace @avplan/inventory-core --workspace @avplan/onboarding-core --workspace @avplan/lexware-core --workspace @avplan/ui",
     "build": "npm run build:packages && npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "dev:cable": "npm run dev --workspace cable-planner",

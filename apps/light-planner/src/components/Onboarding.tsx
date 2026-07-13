@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   WelcomeDialog,
   TourDialog,
@@ -6,8 +6,26 @@ import {
   type TourStep,
 } from '@avplan/onboarding-core';
 import { Icon } from './Icon';
+import { useUiStore } from '../store/uiStore';
+import { isEmbedded } from '../hooks/useIsEmbedded';
 
 const ACCENT = '#3b9dff'; // App.css --accent
+
+/** Aktuelles Theme aus `data-theme` am <html> (die Shell setzt es beim Einbetten). */
+function useDomTheme(): 'dark' | 'light' {
+  const [theme, setTheme] = useState<'dark' | 'light'>(
+    () => (typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'),
+  );
+  useEffect(() => {
+    const el = document.documentElement;
+    const update = () => setTheme(el.dataset.theme === 'light' ? 'light' : 'dark');
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
+  }, []);
+  return theme;
+}
 
 const TOUR_STEPS: TourStep[] = [
   {
@@ -40,8 +58,11 @@ interface OnboardingProps {
  */
 export default function Onboarding({ onUploadFloorPlan }: OnboardingProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const theme = useDomTheme();
+  const lang = useUiStore((s) => s.language);
   const onboarding = useMemo(() => createOnboardingState({ appId: 'light-planner' }), []);
-  const [welcomeOpen, setWelcomeOpen] = useState(() => !onboarding.hasSeen('welcome'));
+  // Eingebettet stellt die Shell das Onboarding; nicht automatisch aufpoppen.
+  const [welcomeOpen, setWelcomeOpen] = useState(() => !isEmbedded && !onboarding.hasSeen('welcome'));
   const [tourOpen, setTourOpen] = useState(false);
 
   const closeWelcome = () => {
@@ -66,8 +87,8 @@ export default function Onboarding({ onUploadFloorPlan }: OnboardingProps) {
     <>
       <WelcomeDialog
         open={welcomeOpen}
-        lang="de"
-        theme="dark"
+        lang={lang}
+        theme={theme}
         accent={ACCENT}
         title="Willkommen im Light Planner"
         intro="Starte mit deinem Grundriss oder leg direkt mit einem leeren Plan los."
@@ -92,8 +113,8 @@ export default function Onboarding({ onUploadFloorPlan }: OnboardingProps) {
       />
       <TourDialog
         open={tourOpen}
-        lang="de"
-        theme="dark"
+        lang={lang}
+        theme={theme}
         accent={ACCENT}
         steps={TOUR_STEPS}
         onClose={closeTour}

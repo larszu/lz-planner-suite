@@ -18,6 +18,14 @@ export {
 export { ModuleRail, type RailModule, type ModuleRailProps } from './ModuleRail'
 export { Modal, type ModalProps } from './Modal'
 export {
+  confirmDialog,
+  alertDialog,
+  promptDialog,
+  type ConfirmDialogOptions,
+  type AlertDialogOptions,
+  type PromptDialogOptions,
+} from './dialog'
+export {
   Menu,
   MenuItem,
   MenuLabel,
@@ -42,10 +50,26 @@ export {
 } from './commands'
 export {
   connectShellTheme,
+  connectShellSettings,
+  connectShellHistory,
+  connectShellLexware,
+  declareNoHistory,
   postThemeToFrame,
+  postSettingsToFrame,
+  postCommandToFrame,
+  publishShellSetting,
+  requestLexware,
   onShellMessage,
   type ShellMessage,
   type ThemeMessage,
   type NavigateMessage,
   type ReadyMessage,
+  type SettingsMessage,
+  type CommandMessage,
+  type HistoryMessage,
+  type HistoryHandlers,
+  type SettingChangedMessage,
+  type LexwareRequestMessage,
+  type LexwareResultMessage,
+  type LexwareRequestResult,
 } from './embed'

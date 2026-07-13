@@ -10,6 +10,9 @@ import '@fontsource/inter/600.css'
 import '@fontsource/inter/700.css'
 import './index.css'
 import { connectShellTheme } from '@avplan/ui/embed'
+import { initShellSettings } from './lib/shellSettings'
+import { initShellHistory } from './lib/shellHistory'
+import { initShellLexware } from './lib/shellLexware'
 import App from './App'
 import { ErrorBoundary } from './ErrorBoundary'
 import { cablePlannerApi } from './lib/bridge'
@@ -18,8 +21,47 @@ import { initPanelPopoutSync, popoutPanel } from './lib/panelPopout'
 import { initSettingsSync } from './lib/settingsSync'
 
 // In die Suite-Shell eingebettet? Dann folgt das Theme der Shell (No-op im
-// Standalone-/Desktop-Betrieb — window.parent === window).
-connectShellTheme()
+// Standalone-/Desktop-Betrieb — window.parent === window). Die Palette der Shell
+// wird auf die --cp-* Variablen abgebildet, damit die Farben exakt passen.
+connectShellTheme({
+  '--av-bg': '--cp-bg',
+  '--av-surface-1': '--cp-surface-1',
+  '--av-surface-2': '--cp-surface-2',
+  '--av-surface-3': '--cp-surface-3',
+  '--av-surface-4': '--cp-surface-4',
+  '--av-border': '--cp-border',
+  '--av-border-muted': '--cp-border-muted',
+  '--av-text': '--cp-text',
+  '--av-text-secondary': '--cp-text-secondary',
+  '--av-text-muted': '--cp-text-muted',
+  '--av-text-faint': '--cp-text-faint',
+  '--av-accent': '--cp-accent',
+  '--av-warn': '--cp-warn',
+  '--av-danger': '--cp-danger',
+})
+// Suite-Einstellungen (Kabelfarbe, Labels, Routing …) von der Shell übernehmen.
+initShellSettings()
+// Undo/Redo der Shell an die projectHistory weiterreichen.
+initShellHistory()
+// Lexware-Office-Belege der Shell an den Lexware-IPC im Main weiterreichen.
+initShellLexware()
+// Eingebettet: das Canvas-Theme dem Shell-Theme folgen lassen, damit Cable
+// vollständig hell/dunkel mitschaltet (App.tsx setzt data-theme aus canvasTheme).
+try {
+  if (window.parent !== window) {
+    void import('./store/uiStore').then(({ useUiStore }) => {
+      window.addEventListener('message', (e: MessageEvent) => {
+        const d = e.data as { type?: string; theme?: 'dark' | 'light' } | null
+        if (d && d.type === 'avplan:theme' && (d.theme === 'dark' || d.theme === 'light')) {
+          const s = useUiStore.getState()
+          if (s.canvasTheme !== d.theme) s.setCanvasTheme(d.theme)
+        }
+      })
+    })
+  }
+} catch {
+  /* Standalone/Desktop — kein Shell-Parent */
+}
 
 // v7.8.2 — Emergency escape hatch: launch with ?reset (or hash #reset)
 // to wipe all cable-planner localStorage entries before any module

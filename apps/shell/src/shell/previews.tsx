@@ -6,13 +6,15 @@ import {
   type SignalNode,
   type SuiteProject,
 } from '../data/project'
+import { useT, format } from '../i18n'
 
 function StandaloneHint({ label }: { label: string }) {
+  const t = useT()
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-center">
-      <span className="text-[13px] font-medium text-av-text-secondary">Kein Projekt zugewiesen</span>
+      <span className="text-[13px] font-medium text-av-text-secondary">{t('chrome.preview.noProject', 'Kein Projekt zugewiesen')}</span>
       <span className="max-w-xs text-[12px] text-av-text-muted">
-        {label} lässt sich eigenständig nutzen — „Im Planer öffnen" startet das Modul ohne Projekt.
+        {format(t('chrome.preview.standaloneHint', '{label} lässt sich eigenständig nutzen — „Im Planer öffnen" startet das Modul ohne Projekt.'), { label })}
       </span>
     </div>
   )
@@ -38,12 +40,17 @@ export function SignalPreview({
   project,
   selectedId,
   onSelect,
+  hidden,
 }: {
   project: SuiteProject | null
   selectedId: string | null
   onSelect: (id: string) => void
+  /** Ausgeblendete Ebenen (stabile IDs aus der Bibliothek). */
+  hidden?: Set<string>
 }) {
-  if (!project) return <StandaloneHint label="Der Signal-Flow" />
+  const t = useT()
+  if (!project) return <StandaloneHint label={t('chrome.preview.signalLabel', 'Der Signal-Flow')} />
+  const hideSignal = !!hidden?.has('signal')
   const rects = new Map<string, Rect>(project.nodes.map((n) => [n.id, nodeRect(n)]))
 
   const link = (c: Cable): { d: string; mx: number; my: number } | null => {
@@ -64,10 +71,10 @@ export function SignalPreview({
 
   return (
     <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
-      <text x={project.nodes[0].nx * VB_W} y={project.nodes[0].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">BÜHNE / FLOOR</text>
-      <text x={project.nodes[3].nx * VB_W} y={project.nodes[3].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">REGIE / OB</text>
+      <text x={project.nodes[0].nx * VB_W} y={project.nodes[0].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">{t('chrome.preview.stageFloor', 'BÜHNE / FLOOR')}</text>
+      <text x={project.nodes[3].nx * VB_W} y={project.nodes[3].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">{t('chrome.preview.regieOb', 'REGIE / OB')}</text>
 
-      {project.cables.map((c) => {
+      {!hideSignal && project.cables.map((c) => {
         const l = link(c)
         if (!l) return null
         const active = selectedId === c.id
@@ -112,13 +119,26 @@ export function PlanPreview({
   mode,
   selectedId,
   onSelect,
+  showFov = true,
+  showHeat = true,
+  hidden,
 }: {
   project: SuiteProject | null
   mode: 'cameras' | 'licht'
   selectedId: string | null
   onSelect: (id: string) => void
+  /** Kamera-FOV-Kegel ein-/ausblenden. */
+  showFov?: boolean
+  /** Licht-Heatmap ein-/ausblenden. */
+  showHeat?: boolean
+  /** Ausgeblendete Ebenen (stabile IDs aus der Bibliothek). */
+  hidden?: Set<string>
 }) {
-  if (!project) return <StandaloneHint label={mode === 'cameras' ? 'Der Kamera-Plan' : 'Der Licht-Plan'} />
+  const t = useT()
+  if (!project) return <StandaloneHint label={mode === 'cameras' ? t('chrome.preview.camerasLabel', 'Der Kamera-Plan') : t('chrome.preview.lichtLabel', 'Der Licht-Plan')} />
+  const hideRoom = !!hidden?.has('room')
+  const hideCameras = !!hidden?.has('cameras')
+  const hideLight = !!hidden?.has('light')
   const { hall, stage } = project
   const innerW = 1000 - PLAN_PAD * 2
   const scale = innerW / hall.w
@@ -137,27 +157,37 @@ export function PlanPreview({
 
   return (
     <svg viewBox={`0 0 1000 ${vbH}`} className="h-full w-full" preserveAspectRatio="xMidYMid meet">
-      {gridX.map((x) => (
-        <line key={`gx${x}`} x1={mx(x)} y1={PLAN_PAD} x2={mx(x)} y2={PLAN_PAD + innerH} className="stroke-[var(--av-border-muted)]" strokeWidth={0.75} />
-      ))}
-      {gridY.map((y) => (
-        <line key={`gy${y}`} x1={PLAN_PAD} y1={my(y)} x2={PLAN_PAD + innerW} y2={my(y)} className="stroke-[var(--av-border-muted)]" strokeWidth={0.75} />
-      ))}
-      <rect x={PLAN_PAD} y={PLAN_PAD} width={innerW} height={innerH} rx={6} className="fill-none stroke-[var(--av-border)]" strokeWidth={1.4} />
-
-      {/* Bühne */}
-      <rect x={mx(stage.x)} y={my(stage.y)} width={stage.w * scale} height={stage.h * scale} rx={4} fill="var(--av-warn-dim)" className="stroke-[var(--mod-licht)]" strokeWidth={1.2} />
-      <text x={mx(stage.x) + 8} y={my(stage.y) + 18} className="fill-[var(--mod-licht)]" fontSize={12} fontWeight={600}>Bühne {stage.w}×{stage.h} m</text>
+      <defs>
+        <radialGradient id="lp-heat" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--mod-licht)" stopOpacity="0.5" />
+          <stop offset="60%" stopColor="var(--av-warn)" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="var(--av-warn)" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {/* Raum-Ebene: Raster + Rahmen + Bühne */}
+      {!hideRoom && (
+        <>
+          {gridX.map((x) => (
+            <line key={`gx${x}`} x1={mx(x)} y1={PLAN_PAD} x2={mx(x)} y2={PLAN_PAD + innerH} className="stroke-[var(--av-border-muted)]" strokeWidth={0.75} />
+          ))}
+          {gridY.map((y) => (
+            <line key={`gy${y}`} x1={PLAN_PAD} y1={my(y)} x2={PLAN_PAD + innerW} y2={my(y)} className="stroke-[var(--av-border-muted)]" strokeWidth={0.75} />
+          ))}
+          <rect x={PLAN_PAD} y={PLAN_PAD} width={innerW} height={innerH} rx={6} className="fill-none stroke-[var(--av-border)]" strokeWidth={1.4} />
+          <rect x={mx(stage.x)} y={my(stage.y)} width={stage.w * scale} height={stage.h * scale} rx={4} fill="var(--av-warn-dim)" className="stroke-[var(--mod-licht)]" strokeWidth={1.2} />
+          <text x={mx(stage.x) + 8} y={my(stage.y) + 18} className="fill-[var(--mod-licht)]" fontSize={12} fontWeight={600}>{t('chrome.preview.stage', 'Bühne')} {stage.w}×{stage.h} m</text>
+        </>
+      )}
 
       {mode === 'cameras'
-        ? project.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} />)
-        : project.fixtures.map((fx) => <FixtureMark key={fx.id} fx={fx} mx={mx} my={my} stageCx={stageCx} stageCy={stageCy} active={fx.id === selectedId} onSelect={onSelect} />)}
+        ? !hideCameras && project.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} showFov={showFov} />)
+        : !hideLight && project.fixtures.map((fx) => <FixtureMark key={fx.id} fx={fx} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={fx.id === selectedId} onSelect={onSelect} showHeat={showHeat} />)}
     </svg>
   )
 }
 
 function CameraMark({
-  cam, mx, my, scale, stageCx, stageCy, active, onSelect,
+  cam, mx, my, scale, stageCx, stageCy, active, onSelect, showFov,
 }: {
   cam: Camera
   mx: (x: number) => number
@@ -167,6 +197,7 @@ function CameraMark({
   stageCy: number
   active: boolean
   onSelect: (id: string) => void
+  showFov: boolean
 }) {
   const cx = mx(cam.x)
   const cy = my(cam.y)
@@ -178,7 +209,7 @@ function CameraMark({
   const color = 'var(--mod-cameras)'
   return (
     <g onClick={() => onSelect(cam.id)} style={{ cursor: 'pointer' }}>
-      <path d={`M ${cx} ${cy} L ${p1[0]} ${p1[1]} L ${p2[0]} ${p2[1]} Z`} fill={color} opacity={active ? 0.24 : 0.12} />
+      {showFov && <path d={`M ${cx} ${cy} L ${p1[0]} ${p1[1]} L ${p2[0]} ${p2[1]} Z`} fill={color} opacity={active ? 0.24 : 0.12} />}
       <circle cx={cx} cy={cy} r={active ? 8 : 6} fill={color} opacity={active ? 1 : 0.85} />
       <text x={cx} y={cy + 22} textAnchor="middle" className="fill-[var(--av-text-muted)]" fontSize={11} fontFamily="var(--av-font-mono)">{cam.name} · {cam.focalMm}mm</text>
     </g>
@@ -186,23 +217,28 @@ function CameraMark({
 }
 
 function FixtureMark({
-  fx, mx, my, stageCx, stageCy, active, onSelect,
+  fx, mx, my, scale, stageCx, stageCy, active, onSelect, showHeat,
 }: {
   fx: Fixture
   mx: (x: number) => number
   my: (y: number) => number
+  scale: number
   stageCx: number
   stageCy: number
   active: boolean
   onSelect: (id: string) => void
+  showHeat: boolean
 }) {
   const cx = mx(fx.x)
   const cy = my(fx.y)
   const tx = mx(stageCx)
   const ty = my(stageCy)
   const color = 'var(--mod-licht)'
+  // Heatmap: warmer Lichtpool am Ziel, Intensität steigt mit Dimmer-Wert.
+  const heatR = (1.2 + (fx.dimmerPct / 100) * 1.4) * scale
   return (
     <g onClick={() => onSelect(fx.id)} style={{ cursor: 'pointer' }}>
+      {showHeat && <circle cx={tx} cy={ty} r={heatR} fill="url(#lp-heat)" style={{ pointerEvents: 'none' }} />}
       <line x1={cx} y1={cy} x2={tx} y2={ty} stroke={color} strokeWidth={1} strokeDasharray="3 4" opacity={active ? 0.6 : 0.25} />
       <rect x={cx - 6} y={cy - 6} width={12} height={12} rx={2} transform={`rotate(45 ${cx} ${cy})`} fill={color} opacity={active ? 1 : 0.85} stroke={active ? 'var(--av-text)' : 'none'} strokeWidth={1} />
       <text x={cx} y={cy - 12} textAnchor="middle" className="fill-[var(--av-text-muted)]" fontSize={10} fontFamily="var(--av-font-mono)">{fx.name}</text>

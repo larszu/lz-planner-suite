@@ -8,55 +8,21 @@
 // Language lives in the uiStore (matches a host that owns the language).
 // ───────────────────────────────────────────────────────────────────────────
 import { useUiStore } from '../store/uiStore';
+import { base } from './en/base';
+import { topbar } from './en/topbar';
+import { panels } from './en/panels';
+import { app } from './en/app';
+import { dialogs } from './en/dialogs';
 
-// English overrides. Add keys here as strings get wrapped; anything missing
-// shows the inline German fallback.
+// English overrides, aus Domänen-Teildicts komponiert. Deutsch bleibt
+// Quell-Sprache (Fallback im JSX via t(key, 'Deutsch')); fehlt ein Key, greift
+// die deutsche Form.
 const en: Record<string, string> = {
-  // Menu bar
-  'menu.file': 'File',
-  'menu.edit': 'Edit',
-  'menu.view': 'View',
-  'menu.help': 'Help',
-  'menu.new': 'New',
-  'menu.save': 'Save (browser)…',
-  'menu.load': 'Load (browser)…',
-  'menu.saveFile': 'Project to file… (choose location)',
-  'menu.loadFile': 'Open project file…',
-  'menu.exportPng': 'Export as PNG…',
-  'menu.exportJpg': 'Export as JPG…',
-  'menu.exportPdf': 'Export as PDF…',
-  'menu.schedule': 'Instrument schedule & patch…',
-  'menu.undo': 'Undo',
-  'menu.redo': 'Redo',
-  'menu.copy': 'Copy',
-  'menu.paste': 'Paste',
-  'menu.duplicate': 'Duplicate',
-  'menu.plan2d': '2D plan',
-  'menu.preview3d': '3D preview',
-  'menu.heatmap': 'Heat-map',
-  'menu.snap': 'Snap to grid',
-  'menu.about': 'About Light Planner…',
-  'menu.language': 'Language: English',
-  // About
-  'about.version': 'Version',
-  'about.close': 'Close',
-  // Toolbar (tool labels)
-  'tool.select': 'Select',
-  'tool.pan': 'Pan',
-  'tool.rect': 'Rectangle',
-  'tool.line': 'Line',
-  'tool.measure': 'Measure',
-  'tool.person': 'Person',
-  'tool.stage': 'Podest',
-  'tool.stagepoly': 'Stage (polygon)',
-  'tool.truss': 'Truss',
-  'tool.wall': 'Wall',
-  'tool.camera': 'Camera',
-  'tool.heatmap': 'Heat-map',
-  'tool.photo': 'Photo',
-  'tool.grid': 'Grid',
-  'tool.floorplan': 'Floor plan',
-  'tool.export': 'Export',
+  ...base,
+  ...topbar,
+  ...panels,
+  ...app,
+  ...dialogs,
 };
 
 export function translate(language: 'de' | 'en', key: string, de: string): string {

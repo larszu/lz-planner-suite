@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Badge, Button, Icon } from '@avplan/ui'
 import { computeCounts, type SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
+import { useT, format, type TFunc } from '../i18n'
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -37,6 +38,18 @@ function Header({ eyebrow, title, sub, accent }: { eyebrow: string; title: strin
   )
 }
 
+const typeLabel = (t: TFunc): Record<string, string> => ({
+  heading: t('panels.board.type.heading', 'Überschriften'),
+  note: t('panels.board.type.note', 'Notizen'),
+  link: t('panels.board.type.link', 'Links'),
+  todo: t('panels.board.type.todo', 'To-dos'),
+  color: t('panels.board.type.color', 'Farben'),
+  look: t('panels.board.type.look', 'Looks'),
+  column: t('panels.board.type.column', 'Spalten'),
+  board: t('panels.board.type.board', 'Unterboards'),
+  image: t('panels.board.type.image', 'Bilder'),
+})
+
 export function PropertiesPanel({
   module,
   project,
@@ -48,17 +61,19 @@ export function PropertiesPanel({
   selectedId: string | null
   onNavigate: (id: ModuleId) => void
 }) {
+  const t = useT()
   const accent = module.accent
+  const modEyebrow = t(`config.mod.${module.id}.eyebrow`, module.eyebrow)
+  const modTitle = t(`config.mod.${module.id}.title`, module.title)
 
   if (!project) {
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
-        <Header eyebrow={module.eyebrow} title={module.title} sub="Eigenständiger Modus" accent={accent} />
+        <Header eyebrow={modEyebrow} title={modTitle} sub={t('panels.standalone.sub', 'Eigenständiger Modus')} accent={accent} />
         <div className="av-scroll flex-1 overflow-auto">
-          <Group title="Kein Projekt" icon="modules">
+          <Group title={t('panels.noProject.title', 'Kein Projekt')} icon="modules">
             <p className="text-[12px] leading-relaxed text-av-text-muted">
-              Dieses Modul ist ohne zugewiesenes Projekt nutzbar. Öffne den Planer zum Bearbeiten oder
-              weise oben ein Projekt zu, um Auswahl-Details, Plan-Checks und Venue-Verknüpfungen zu sehen.
+              {t('panels.noProject.body', 'Dieses Modul ist ohne zugewiesenes Projekt nutzbar. Öffne den Planer zum Bearbeiten oder weise oben ein Projekt zu, um Auswahl-Details, Plan-Checks und Venue-Verknüpfungen zu sehen.')}
             </p>
           </Group>
         </div>
@@ -70,26 +85,20 @@ export function PropertiesPanel({
     const c = computeCounts(project)
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
-        <Header eyebrow="Projekt · Übersicht" title={project.meta.name} sub={`${project.meta.venue} · Version ${project.meta.version}`} accent={accent} />
+        <Header eyebrow={t('panels.overview.eyebrow', 'Projekt · Übersicht')} title={project.meta.name} sub={`${project.meta.venue} · Version ${project.meta.version}`} accent={accent} />
         <div className="av-scroll flex-1 overflow-auto">
-          <Group title="Umfang" icon="modules">
-            <Field label="Geräte">{c.devices}</Field>
-            <Field label="Kabel">{c.cables}</Field>
-            <Field label="Kabellänge">{c.cableTotalM} m</Field>
-            <Field label="Kameras">{c.cameras}</Field>
-            <Field label="Fixtures">{c.fixtures}</Field>
+          <Group title={t('panels.group.scope', 'Umfang')} icon="modules">
+            <Field label={t('panels.field.devices', 'Geräte')}>{c.devices}</Field>
+            <Field label={t('panels.field.cables', 'Kabel')}>{c.cables}</Field>
+            <Field label={t('panels.field.cameras', 'Kameras')}>{c.cameras}</Field>
+            <Field label={t('panels.field.fixtures', 'Fixtures')}>{c.fixtures}</Field>
           </Group>
-          <Group title="Plan-Check" icon="check" accent="var(--av-ok)">
+          <Group title={t('panels.group.planCheck', 'Plan-Check')} icon="check" accent="var(--av-ok)">
             <div className="flex flex-wrap gap-1.5">
-              <Badge tone="ok">Signal ok</Badge>
-              <Badge tone="warn">1 offenes Ende</Badge>
-              <Badge tone="ok">DMX kein Konflikt</Badge>
+              <Badge tone="ok">{t('panels.badge.signalOk', 'Signal ok')}</Badge>
+              <Badge tone="warn">{t('panels.badge.openEnd', '1 offenes Ende')}</Badge>
+              <Badge tone="ok">{t('panels.badge.dmxNoConflict', 'DMX kein Konflikt')}</Badge>
             </div>
-          </Group>
-          <Group title="Venue" icon="raum">
-            <p className="text-[12px] leading-relaxed text-av-text-muted">
-              Kameras und Dimmer sind <span className="text-av-text-secondary">automatisch verknüpft</span> — Position und Details kommen aus Raum/Kameras/Licht und erscheinen in allen Modulen.
-            </p>
           </Group>
         </div>
       </div>
@@ -102,31 +111,31 @@ export function PropertiesPanel({
     const to = project.nodes.find((n) => n.id === cable.to)
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
-        <Header eyebrow={module.eyebrow} title={`${from?.name.split(' — ')[0]} → ${to?.name.split(' ')[0]} In`} sub={`${cable.type} · BNC ↔ BNC · Layer Video`} accent={accent} />
+        <Header eyebrow={modEyebrow} title={`${from?.name.split(' — ')[0]} → ${to?.name.split(' ')[0]} In`} sub={`${cable.type} · BNC ↔ BNC · Layer Video`} accent={accent} />
         <div className="av-scroll flex-1 overflow-auto">
-          <Group title="Kabel">
-            <Field label="Typ">{cable.type}</Field>
-            <Field label="Länge">{cable.lengthM} m</Field>
-            <Field label="Label">{cable.label}</Field>
+          <Group title={t('panels.group.cable', 'Kabel')}>
+            <Field label={t('panels.field.type', 'Typ')}>{cable.type}</Field>
+            <Field label={t('panels.field.length', 'Länge')}>{cable.lengthM} m</Field>
+            <Field label={t('panels.field.label', 'Label')}>{cable.label}</Field>
           </Group>
-          <Group title="Route" accent={accent}>
-            <Field label="Von">{from?.name}</Field>
-            <Field label="Nach">{to?.name}</Field>
+          <Group title={t('panels.group.route', 'Route')} accent={accent}>
+            <Field label={t('panels.field.from', 'Von')}>{from?.name}</Field>
+            <Field label={t('panels.field.to', 'Nach')}>{to?.name}</Field>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <Badge tone="ok">Plan-Check ok</Badge>
-              <Badge tone="accent">Patch-Sheet S. 2</Badge>
+              <Badge tone="ok">{t('panels.badge.planCheckOk', 'Plan-Check ok')}</Badge>
+              <Badge tone="accent">{t('panels.badge.patchSheet', 'Patch-Sheet S. 2')}</Badge>
             </div>
           </Group>
-          <Group title="Venue-Gerät" icon="camera" accent="var(--mod-cameras)">
-            <Field label="Quelle">CAM 2 @ 12,0 / 11,6 m</Field>
-            <Field label="Kabelweg">≈ 41 m + Reserve</Field>
+          <Group title={t('panels.group.venueDevice', 'Venue-Gerät')} icon="camera" accent="var(--mod-cameras)">
+            <Field label={t('panels.field.source', 'Quelle')}>CAM 2 @ 12,0 / 11,6 m</Field>
+            <Field label={t('panels.field.cableRun', 'Kabelweg')}>{format(t('panels.value.cableRunReserve', '≈ {m} m + Reserve'), { m: cable.lengthM })}</Field>
             <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('cameras')}>
-              <Icon name="camera" size={14} /> Im Kamera-Plan zeigen
+              <Icon name="camera" size={14} /> {t('panels.action.showInCameraPlan', 'Im Kamera-Plan zeigen')}
             </Button>
           </Group>
-          <Group title="Beschaffung" icon="modules">
+          <Group title={t('panels.group.procurement', 'Beschaffung')} icon="modules">
             <div className="flex items-center gap-2">
-              <span className="text-[12px] text-av-text-secondary">BOM: 12G-SDI 50 m-Klasse</span>
+              <span className="text-[12px] text-av-text-secondary">{t('panels.value.bomClass', 'BOM: 12G-SDI 50 m-Klasse')}</span>
               <Badge tone="warn">Rentman ✓</Badge>
             </div>
           </Group>
@@ -139,29 +148,29 @@ export function PropertiesPanel({
     const cam = project.cameras.find((c) => c.id === selectedId) ?? project.cameras[1]
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
-        <Header eyebrow={module.eyebrow} title={`${cam.name} — ${cam.model}`} sub={`${cam.lens}`} accent={accent} />
+        <Header eyebrow={modEyebrow} title={`${cam.name} — ${cam.model}`} sub={`${cam.lens}`} accent={accent} />
         <div className="av-scroll flex-1 overflow-auto">
-          <Group title="Position & Blick">
-            <Field label="X / Y">{cam.x.toFixed(1)} / {cam.y.toFixed(1)} m</Field>
-            <Field label="Brennweite">{cam.focalMm} mm</Field>
+          <Group title={t('panels.group.positionView', 'Position & Blick')}>
+            <Field label={t('panels.field.xy', 'X / Y')}>{cam.x.toFixed(1)} / {cam.y.toFixed(1)} m</Field>
+            <Field label={t('panels.field.focalLength', 'Brennweite')}>{cam.focalMm} mm</Field>
             <Field label="H-FOV">{cam.hfovDeg.toFixed(1)}°</Field>
           </Group>
-          <Group title="Berechnung" accent={accent}>
-            <Field label="Bildbreite">1,89 m @ 8,7 m</Field>
+          <Group title={t('panels.group.calculation', 'Berechnung')} accent={accent}>
+            <Field label={t('panels.field.imageWidth', 'Bildbreite')}>1,89 m @ 8,7 m</Field>
             <Field label="DoF">7,9 – 9,7 m</Field>
-            <Field label="Host im Bild">72 % Höhe</Field>
+            <Field label={t('panels.field.hostInFrame', 'Host im Bild')}>{t('panels.value.heightPct', '72 % Höhe')}</Field>
           </Group>
-          <Group title="Verkabelung" icon="signal" accent="var(--mod-signal)">
+          <Group title={t('panels.group.cabling', 'Verkabelung')} icon="signal" accent="var(--mod-signal)">
             <Field label="SDI Out 1">ATEM In 2 · 45 m</Field>
             <Field label="Ethernet">Switch FOH · Cat6A</Field>
             <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('signal')}>
-              <Icon name="signal" size={14} /> Im Signal-Flow zeigen
+              <Icon name="signal" size={14} /> {t('panels.action.showInSignalFlow', 'Im Signal-Flow zeigen')}
             </Button>
           </Group>
-          <Group title="Licht am Motiv" icon="light" accent="var(--mod-licht)">
+          <Group title={t('panels.group.lightAtSubject', 'Licht am Motiv')} icon="light" accent="var(--mod-licht)">
             <Field label="Host">812 lx · Key/Fill 2,8 : 1</Field>
             <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('licht')}>
-              <Icon name="light" size={14} /> Zur Licht-Ebene
+              <Icon name="light" size={14} /> {t('panels.action.toLightLayer', 'Zur Licht-Ebene')}
             </Button>
           </Group>
         </div>
@@ -175,30 +184,26 @@ export function PropertiesPanel({
       acc[c.type] = (acc[c.type] ?? 0) + 1
       return acc
     }, {})
-    const TYPE_LABEL: Record<string, string> = {
-      heading: 'Überschriften', note: 'Notizen', link: 'Links', todo: 'To-dos', color: 'Farben', look: 'Looks', column: 'Spalten', board: 'Unterboards', image: 'Bilder',
-    }
+    const TYPE_LABEL = typeLabel(t)
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
-        <Header eyebrow={module.eyebrow} title="Moodboard" sub="Look & Feel der Show" accent={accent} />
+        <Header eyebrow={modEyebrow} title="Moodboard" sub={t('panels.board.sub', 'Look & Feel der Show')} accent={accent} />
         <div className="av-scroll flex-1 overflow-auto">
-          <Group title="Inhalt" icon="board">
-            <Field label="Karten">{board.cards.length}</Field>
-            <Field label="Verbindungen">{board.connections.length}</Field>
-            {Object.entries(byType).map(([t, n]) => (
-              <Field key={t} label={TYPE_LABEL[t] ?? t}>{n}</Field>
+          <Group title={t('panels.group.content', 'Inhalt')} icon="board">
+            <Field label={t('panels.field.cards', 'Karten')}>{board.cards.length}</Field>
+            <Field label={t('panels.field.connections', 'Verbindungen')}>{board.connections.length}</Field>
+            {Object.entries(byType).map(([type, n]) => (
+              <Field key={type} label={TYPE_LABEL[type] ?? type}>{n}</Field>
             ))}
           </Group>
-          <Group title="Bedienung" icon="wand" accent={accent}>
+          <Group title={t('panels.group.operation', 'Bedienung')} icon="wand" accent={accent}>
             <p className="text-[12px] leading-relaxed text-av-text-muted">
-              Karten über die Werkzeugleiste hinzufügen, per Kopf ziehen, doppelklicken zum Bearbeiten.
-              Bei Auswahl erscheint rechts ein Handle — zu einer anderen Karte ziehen, um sie zu verbinden.
+              {t('panels.board.opBody', 'Karten über die Werkzeugleiste hinzufügen, per Kopf ziehen, doppelklicken zum Bearbeiten. Bei Auswahl erscheint rechts ein Handle — zu einer anderen Karte ziehen, um sie zu verbinden.')}
             </p>
           </Group>
-          <Group title="Kreativ → Technik" icon="light" accent="var(--mod-licht)">
+          <Group title={t('panels.group.creativeTech', 'Kreativ → Technik')} icon="light" accent="var(--mod-licht)">
             <p className="text-[12px] leading-relaxed text-av-text-muted">
-              Die Look-Stimmung fließt in die Licht-Ebene, Referenzen in die Kamerapositionen. Das Board ist
-              die Vor-Produktionsebene vor den technischen Modulen.
+              {t('panels.board.creativeBody', 'Die Look-Stimmung fließt in die Licht-Ebene, Referenzen in die Kamerapositionen. Das Board ist die Vor-Produktionsebene vor den technischen Modulen.')}
             </p>
           </Group>
         </div>
@@ -210,30 +215,30 @@ export function PropertiesPanel({
   const fx = project.fixtures.find((f) => f.id === selectedId) ?? project.fixtures[2]
   return (
     <div className="flex h-full flex-col bg-av-surface-1">
-      <Header eyebrow={module.eyebrow} title={`${fx.name} — ${fx.model}`} sub={`Truss 1 · Purpose: ${fx.purpose}`} accent={accent} />
+      <Header eyebrow={modEyebrow} title={`${fx.name} — ${fx.model}`} sub={`Truss 1 · Purpose: ${fx.purpose}`} accent={accent} />
       <div className="av-scroll flex-1 overflow-auto">
-        <Group title="Position & Aim">
-          <Field label="X / Y">{fx.x.toFixed(1)} / {fx.y.toFixed(1)} m</Field>
-          <Field label="Höhe">6,0 m</Field>
+        <Group title={t('panels.group.positionAim', 'Position & Aim')}>
+          <Field label={t('panels.field.xy', 'X / Y')}>{fx.x.toFixed(1)} / {fx.y.toFixed(1)} m</Field>
+          <Field label={t('panels.field.height', 'Höhe')}>6,0 m</Field>
         </Group>
-        <Group title="Dimmer & Beam" accent={accent}>
+        <Group title={t('panels.group.dimmerBeam', 'Dimmer & Beam')} accent={accent}>
           <Field label="Dimmer">{fx.dimmerPct} %</Field>
           <Field label="Zoom">26°</Field>
           <Field label="CCT">3200 K</Field>
         </Group>
-        <Group title="DMX-Patch" icon="check" accent="var(--av-ok)">
-          <Field label="Kanal / Universe">{fx.dmxChannel} / 1</Field>
-          <div className="mt-2"><Badge tone="ok">kein Konflikt · Auto-Patch aktiv</Badge></div>
+        <Group title={t('panels.group.dmxPatch', 'DMX-Patch')} icon="check" accent="var(--av-ok)">
+          <Field label={t('panels.field.channelUniverse', 'Kanal / Universe')}>{fx.dmxChannel} / 1</Field>
+          <div className="mt-2"><Badge tone="ok">{t('panels.badge.noConflictAutoPatch', 'kein Konflikt · Auto-Patch aktiv')}</Badge></div>
         </Group>
-        <Group title="Verkabelung & Strom" icon="signal" accent="var(--mod-signal)">
-          <Field label="Speisung">Dimmer Rack 2 · Circ 4</Field>
-          <Field label="Last">750 W · L2: 9,2 / 16 A</Field>
+        <Group title={t('panels.group.cablingPower', 'Verkabelung & Strom')} icon="signal" accent="var(--mod-signal)">
+          <Field label={t('panels.field.feed', 'Speisung')}>Dimmer Rack 2 · Circ 4</Field>
+          <Field label={t('panels.field.load', 'Last')}>750 W · L2: 9,2 / 16 A</Field>
           <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('signal')}>
-            <Icon name="signal" size={14} /> Im Signal-Flow zeigen
+            <Icon name="signal" size={14} /> {t('panels.action.showInSignalFlow', 'Im Signal-Flow zeigen')}
           </Button>
         </Group>
-        <Group title="Im Bild von" icon="camera" accent="var(--mod-cameras)">
-          <p className="text-[12px] text-av-text-muted">CAM 2 (85 mm) · CAM 3 (Tele) — Fixture liegt im FOV, Blendung prüfen.</p>
+        <Group title={t('panels.group.inFrameFrom', 'Im Bild von')} icon="camera" accent="var(--mod-cameras)">
+          <p className="text-[12px] text-av-text-muted">{t('panels.fixture.inFrameBody', 'CAM 2 (85 mm) · CAM 3 (Tele) — Fixture liegt im FOV, Blendung prüfen.')}</p>
         </Group>
       </div>
     </div>

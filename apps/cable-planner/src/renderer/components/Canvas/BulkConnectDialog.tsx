@@ -3,6 +3,7 @@ import { useUiStore } from '../../store/uiStore'
 import { useProjectStore } from '../../store/projectStore'
 import { projectHistory } from '../../store/projectHistory'
 import { useTranslation, format } from '../../lib/i18n'
+import { infoDialog } from '../../lib/infoDialog'
 import { ModalShell } from '../shared/ModalShell'
 import { cableCatalog } from '../../types/cableSpec'
 import type { CableType } from '../../types/cable'
@@ -92,11 +93,12 @@ export const BulkConnectDialog = () => {
     })
     const result = projectHistory.transact(() => addCablesBulk(drafts))
     if (result.skipped > 0) {
-      alert(
+      void infoDialog(
         format(
           t('bulk.resultSkipped', '{created} Kabel angelegt, {skipped} übersprungen (Ziel-Port belegt oder ungültig).'),
           { created: result.created, skipped: result.skipped },
         ),
+        { tone: 'warning' },
       )
     }
     close()

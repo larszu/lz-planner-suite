@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@avplan/inventory-core": "*",
+    "@avplan/lexware-core": "*",
     "@avplan/ui": "*",
     "@fontsource/inter": "^5.2.8",
     "react": "^19.2.7",

@@ -6,11 +6,25 @@ import { TEMPLATES } from '../data/templates';
 import { loadJSON, saveJSON } from '../utils/storage';
 import { fromVenueExchange, type VenueExchange } from '../utils/venueExchange';
 import type { AvPlan } from '../utils/avplan';
+import { alertDialog } from '@avplan/ui';
+import { translate } from '../i18n';
 
 // Injected by Vite from package.json. In a release build that came through
 // the GitHub Actions workflow this matches the git release tag exactly,
 // because the workflow runs `npm version <tag>` before invoking the build.
 export const APP_VERSION = __APP_VERSION__;
+
+/** Suite-weite Sprache. Englisch ist bei MultiCam die Quell-Sprache. */
+export type Language = 'de' | 'en';
+
+const LANG_KEY = 'multicam-lang';
+function loadLanguage(): Language {
+  try {
+    return localStorage.getItem(LANG_KEY) === 'de' ? 'de' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 interface AppState {
   // Venue
@@ -86,6 +100,10 @@ interface AppState {
   // Layout UI
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (v: boolean) => void;
+
+  // Sprache (suite-weit von der Shell gebrückt, sonst lokal persistiert).
+  language: Language;
+  setLanguage: (lang: Language) => void;
 
   // Scale & grid
   pixelsPerMeter: number;
@@ -527,6 +545,16 @@ export const useStore = create<AppState>((set, get) => ({
   sidebarCollapsed: false,
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
 
+  language: loadLanguage(),
+  setLanguage: (lang) => {
+    try {
+      localStorage.setItem(LANG_KEY, lang);
+    } catch {
+      /* Storage gesperrt */
+    }
+    set({ language: lang });
+  },
+
   pixelsPerMeter: 30,
   setPixelsPerMeter: (ppm) => set({ pixelsPerMeter: ppm }),
 
@@ -689,7 +717,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   applyProjectFile: (project: ProjectFile) => {
     if (project.formatVersion !== 1) {
-      alert('Unsupported project file format.');
+      void alertDialog(translate(get().language, 'store.unsupportedFormat', 'Unsupported project file format.'), {
+        okLabel: translate(get().language, 'common.ok', 'OK'),
+      });
       return;
     }
     nextId = 1;

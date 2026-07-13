@@ -10,6 +10,8 @@ import { CustomCameraForm } from './CustomCameraForm';
 import { CalculationBreakdown } from './CalculationBreakdown';
 import AiPlanAnalysis from './AiPlanAnalysis';
 import * as pdfjsLib from 'pdfjs-dist';
+import { useTranslation, format } from '../../i18n';
+import { confirmDialog, alertDialog } from '@avplan/ui';
 
 /** Group lenses by mount for the dropdown */
 function groupByMount(lenses: typeof LENSES) {
@@ -36,6 +38,7 @@ function sortFavoritesFirst<T extends { id: string; manufacturer?: string; model
 }
 
 function CameraCard({ camId }: { camId: string }) {
+  const { t } = useTranslation();
   const {
     cameras,
     selectedCameraId,
@@ -128,10 +131,10 @@ function CameraCard({ camId }: { camId: string }) {
           />
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={(e) => { e.stopPropagation(); duplicateCamera(cam.id); }} className="p-1 hover:text-bc-accent" title="Duplicate">
+          <button onClick={(e) => { e.stopPropagation(); duplicateCamera(cam.id); }} className="p-1 hover:text-bc-accent" title={t('sidebar.cam.duplicate', 'Duplicate')}>
             <FiCopy size={14} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); removeCamera(cam.id); }} className="p-1 hover:text-bc-red" title="Remove">
+          <button onClick={(e) => { e.stopPropagation(); removeCamera(cam.id); }} className="p-1 hover:text-bc-red" title={t('sidebar.cam.remove', 'Remove')}>
             <FiTrash2 size={14} />
           </button>
           <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }} className="p-1 hover:text-bc-accent">
@@ -153,9 +156,9 @@ function CameraCard({ camId }: { camId: string }) {
       {adapterInfo && (
         <div
           className="text-xs mt-0.5 text-bc-yellow cursor-help"
-          title={adapterInfo.notes ?? 'Adapter automatically applied — see Mount section below for details.'}
+          title={adapterInfo.notes ?? t('sidebar.cam.adapterAuto', 'Adapter automatically applied — see Mount section below for details.')}
         >
-          ⚡ {adapterInfo.name}{adapterInfo.lightLossStops > 0 ? ` (−${adapterInfo.lightLossStops}T)` : ''}{adapterInfo.lightLossStops < 0 ? ` (+${Math.abs(adapterInfo.lightLossStops)}T gain)` : ''}{adapterInfo.cropSensor ? ` → ${adapterInfo.cropSensor.name}` : ''}
+          ⚡ {adapterInfo.name}{adapterInfo.lightLossStops > 0 ? ` (−${adapterInfo.lightLossStops}T)` : ''}{adapterInfo.lightLossStops < 0 ? format(t('sidebar.cam.adapterGain', ' (+{x}T gain)'), { x: Math.abs(adapterInfo.lightLossStops) }) : ''}{adapterInfo.cropSensor ? ` → ${adapterInfo.cropSensor.name}` : ''}
         </div>
       )}
       {/* Lens-mount mismatch warning — the picked lens doesn't physically fit
@@ -166,9 +169,9 @@ function CameraCard({ camId }: { camId: string }) {
       {lensMismatch && lensDef && (
         <div
           className="text-xs mt-0.5 text-bc-red cursor-help"
-          title={`Switch the Mount selector below to "${lensDef.mount}" (if available) to fit the matching adapter / plate, or pick a lens that matches the current "${activeMount}" mount.`}
+          title={format(t('sidebar.cam.mismatchTitle', 'Switch the Mount selector below to "{lens}" (if available) to fit the matching adapter / plate, or pick a lens that matches the current "{active}" mount.'), { lens: lensDef.mount, active: String(activeMount) })}
         >
-          ⚠ Lens mount {lensDef.mount} ≠ active mount {activeMount} — incompatible
+          ⚠ {format(t('sidebar.cam.mismatch', 'Lens mount {lens} ≠ active mount {active} — incompatible'), { lens: lensDef.mount, active: String(activeMount) })}
         </div>
       )}
       {/* Speed Booster toggle — shown when a focal reducer exists for the
@@ -181,7 +184,7 @@ function CameraCard({ camId }: { camId: string }) {
             onChange={(e) => updateCamera(cam.id, { useSpeedbooster: e.target.checked })}
             className="accent-bc-accent"
           />
-          {speedBooster.name} (focal reducer)
+          {speedBooster.name} {t('sidebar.cam.focalReducer', '(focal reducer)')}
         </label>
       )}
 
@@ -191,7 +194,7 @@ function CameraCard({ camId }: { camId: string }) {
           {/* Camera selector grouped by type */}
           <label className="block">
             <span className="flex items-center justify-between gap-2 text-gray-400">
-              <span>Camera ({camDef?.mount} mount, {camDef?.sensor.name})</span>
+              <span>{format(t('sidebar.cam.cameraLabel', 'Camera ({mount} mount, {sensor})'), { mount: String(camDef?.mount), sensor: String(camDef?.sensor.name) })}</span>
               {camDef && (
                 <span className="flex items-center gap-0.5">
                   {/* Edit applies to every camera. For built-ins it creates a
@@ -202,22 +205,26 @@ function CameraCard({ camId }: { camId: string }) {
                     onClick={() => setEditingCustomCam(camDef.id)}
                     className="p-1 rounded text-gray-500 hover:text-bc-accent"
                     title={isPureCustom(camDef.id)
-                      ? 'Edit this custom camera'
+                      ? t('sidebar.cam.editCustom', 'Edit this custom camera')
                       : isBuiltInShadow(camDef.id)
-                        ? 'Continue editing this modified built-in'
-                        : 'Edit (creates a modified copy you can tweak — original stays untouched)'}
+                        ? t('sidebar.cam.editModified', 'Continue editing this modified built-in')
+                        : t('sidebar.cam.editBuiltIn', 'Edit (creates a modified copy you can tweak — original stays untouched)')}
                   >
                     <FiEdit2 size={12} />
                   </button>
                   {isBuiltInShadow(camDef.id) && (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!confirm(`Reset "${camDef.manufacturer} ${camDef.model}" to its built-in defaults? Your changes will be lost.`)) return;
+                      onClick={async () => {
+                        if (!(await confirmDialog(format(t('sidebar.cam.resetConfirm', 'Reset "{name}" to its built-in defaults? Your changes will be lost.'), { name: `${camDef.manufacturer} ${camDef.model}` }), {
+                          okLabel: t('common.reset', 'Reset'),
+                          cancelLabel: t('common.cancel', 'Cancel'),
+                          destructive: true,
+                        }))) return;
                         useStore.getState().removeCustomCamera(camDef.id);
                       }}
                       className="p-1 rounded text-gray-500 hover:text-bc-yellow"
-                      title="Reset to the original built-in spec (discards your edits)"
+                      title={t('sidebar.cam.resetTitle', 'Reset to the original built-in spec (discards your edits)')}
                     >
                       <FiRotateCcw size={12} />
                     </button>
@@ -225,13 +232,19 @@ function CameraCard({ camId }: { camId: string }) {
                   {isPureCustom(camDef.id) && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         const used = useStore.getState().cameras.filter((c) => c.cameraId === camDef.id).length;
                         if (used > 1) {
-                          alert(`Cannot delete "${camDef.manufacturer} ${camDef.model}" — it is still used by ${used} placed camera(s).`);
+                          await alertDialog(format(t('sidebar.cam.deleteInUse', 'Cannot delete "{name}" — it is still used by {count} placed camera(s).'), { name: `${camDef.manufacturer} ${camDef.model}`, count: used }), {
+                            okLabel: t('common.ok', 'OK'),
+                          });
                           return;
                         }
-                        if (!confirm(`Delete custom camera "${camDef.manufacturer} ${camDef.model}"?`)) return;
+                        if (!(await confirmDialog(format(t('sidebar.cam.deleteConfirm', 'Delete custom camera "{name}"?'), { name: `${camDef.manufacturer} ${camDef.model}` }), {
+                          okLabel: t('common.delete', 'Delete'),
+                          cancelLabel: t('common.cancel', 'Cancel'),
+                          destructive: true,
+                        }))) return;
                         // Swap this placement to the first built-in so the card stays valid
                         const fallback = CAMERAS[0];
                         updateCamera(cam.id, {
@@ -242,7 +255,7 @@ function CameraCard({ camId }: { camId: string }) {
                         useStore.getState().removeCustomCamera(camDef.id);
                       }}
                       className="p-1 rounded text-gray-500 hover:text-bc-red"
-                      title="Delete this custom camera"
+                      title={t('sidebar.cam.deleteTitle', 'Delete this custom camera')}
                     >
                       <FiTrash2 size={12} />
                     </button>
@@ -251,7 +264,7 @@ function CameraCard({ camId }: { camId: string }) {
                     type="button"
                     onClick={() => toggleFavoriteCameraId(camDef.id)}
                     className={`p-1 rounded ${favoriteCameraIds.includes(camDef.id) ? 'text-bc-yellow' : 'text-gray-500 hover:text-bc-yellow'}`}
-                    title={favoriteCameraIds.includes(camDef.id) ? 'Remove camera favorite' : 'Favorite camera'}
+                    title={favoriteCameraIds.includes(camDef.id) ? t('sidebar.cam.unfavCamera', 'Remove camera favorite') : t('sidebar.cam.favCamera', 'Favorite camera')}
                   >
                     <FiStar size={12} fill={favoriteCameraIds.includes(camDef.id) ? 'currentColor' : 'none'} />
                   </button>
@@ -286,20 +299,20 @@ function CameraCard({ camId }: { camId: string }) {
               }}
             >
               {sortedCameras.map((c) => {
-                const tag = isBuiltInShadow(c.id) ? ' (modified)' : isPureCustom(c.id) ? ' +custom' : '';
+                const tag = isBuiltInShadow(c.id) ? t('sidebar.cam.tagModified', ' (modified)') : isPureCustom(c.id) ? t('sidebar.cam.tagCustom', ' +custom') : '';
                 return (
                   <option key={c.id} value={c.id}>{favoriteCameraIds.includes(c.id) ? '* ' : ''}{c.manufacturer} {c.model} [{c.mount}]{tag}</option>
                 );
               })}
-              <option value="__new_custom__">＋ Custom+ Add custom camera…</option>
+              <option value="__new_custom__">{t('sidebar.cam.addCustomCamera', '＋ Custom+ Add custom camera…')}</option>
             </select>
           </label>
 
           {/* Inline custom camera creation form (Custom+ entry in the dropdown) */}
           {showNewCustomCam && (
             <CustomCameraForm
-              title="New Custom Camera"
-              submitLabel="Create & Select"
+              title={t('sidebar.cam.newCustomCamera', 'New Custom Camera')}
+              submitLabel={t('sidebar.cam.createSelect', 'Create & Select')}
               onCancel={() => setShowNewCustomCam(false)}
               onSubmit={(spec) => {
                 const newId = addCustomCamera(spec);
@@ -322,8 +335,8 @@ function CameraCard({ camId }: { camId: string }) {
           {/* Inline edit form for the currently-selected custom camera */}
           {editingCustomCam && editingCustomCam === camDef?.id && camDef && (
             <CustomCameraForm
-              title={`Edit ${camDef.manufacturer} ${camDef.model}`}
-              submitLabel="Save changes"
+              title={format(t('sidebar.cam.editTitle', 'Edit {name}'), { name: `${camDef.manufacturer} ${camDef.model}` })}
+              submitLabel={t('sidebar.cam.saveChanges', 'Save changes')}
               initial={camDef}
               onCancel={() => setEditingCustomCam(null)}
               onSubmit={(spec) => {
@@ -352,7 +365,7 @@ function CameraCard({ camId }: { camId: string }) {
           {/* Mount selector — only visible when the body offers swappable mount plates */}
           {camDef && camDef.adaptedMounts && camDef.adaptedMounts.length > 0 && (
             <label className="block">
-              <span className="text-gray-400">Mount</span>
+              <span className="text-gray-400">{t('sidebar.cam.mount', 'Mount')}</span>
               <select
                 className="block w-full mt-0.5 bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
                 value={activeMount}
@@ -382,9 +395,9 @@ function CameraCard({ camId }: { camId: string }) {
                   });
                 }}
               >
-                <option value={camDef.mount}>{camDef.mount} (native)</option>
+                <option value={camDef.mount}>{camDef.mount} {t('sidebar.cam.native', '(native)')}</option>
                 {camDef.adaptedMounts.map((m) => (
-                  <option key={m} value={m}>{m} (mount plate / adapter)</option>
+                  <option key={m} value={m}>{m} {t('sidebar.cam.mountPlate', '(mount plate / adapter)')}</option>
                 ))}
               </select>
               {/* Detail card for the active mount adapter, if the body defines one.
@@ -399,10 +412,10 @@ function CameraCard({ camId }: { camId: string }) {
                       ⚡ {ma.name}
                     </div>
                     <div className="text-gray-400 mt-0.5">
-                      {ma.lightLossStops > 0 && <span>Light loss: −{ma.lightLossStops}T · </span>}
-                      {ma.lightLossStops < 0 && <span>Light gain: +{Math.abs(ma.lightLossStops)}T · </span>}
-                      {ma.lightLossStops === 0 && <span>No light loss · </span>}
-                      {ma.cropSensor ? <span>Forces {ma.cropSensor.name}</span> : <span>No sensor crop</span>}
+                      {ma.lightLossStops > 0 && <span>{format(t('sidebar.cam.lightLoss', 'Light loss: −{x}T · '), { x: ma.lightLossStops })}</span>}
+                      {ma.lightLossStops < 0 && <span>{format(t('sidebar.cam.lightGain', 'Light gain: +{x}T · '), { x: Math.abs(ma.lightLossStops) })}</span>}
+                      {ma.lightLossStops === 0 && <span>{t('sidebar.cam.noLightLoss', 'No light loss · ')}</span>}
+                      {ma.cropSensor ? <span>{format(t('sidebar.cam.forces', 'Forces {name}'), { name: ma.cropSensor.name })}</span> : <span>{t('sidebar.cam.noSensorCrop', 'No sensor crop')}</span>}
                     </div>
                     {ma.notes && (
                       <div className="text-gray-500 mt-1 italic">{ma.notes}</div>
@@ -421,7 +434,7 @@ function CameraCard({ camId }: { camId: string }) {
                   ? 'border-bc-red/60 bg-bc-red/10 text-red-300'
                   : 'border-bc-yellow/60 bg-bc-yellow/10 text-bc-yellow'
               }`}
-              title={`Lens image circle vs sensor diagonal: ${(coverage.ratio * 100).toFixed(0)} %`}
+              title={format(t('sidebar.cam.coverageTitle', 'Lens image circle vs sensor diagonal: {pct} %'), { pct: (coverage.ratio * 100).toFixed(0) })}
             >
               {coverage.status === 'vignette' ? '⛔' : '⚠️'} {coverage.message}
             </div>
@@ -430,13 +443,13 @@ function CameraCard({ camId }: { camId: string }) {
           {/* Hardware sensor mode (URSA B4 crop, VENICE windows, FX9 S35 etc.) */}
           {camDef?.sensorModes && camDef.sensorModes.length > 1 && (
             <label className="block">
-              <span className="text-gray-400">Sensor Mode</span>
+              <span className="text-gray-400">{t('sidebar.cam.sensorMode', 'Sensor Mode')}</span>
               <select
                 className="block w-full mt-0.5 bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
                 value={cam.sensorModeIndex ?? 0}
                 onChange={(e) => updateCamera(cam.id, { sensorModeIndex: parseInt(e.target.value) })}
                 disabled={!!adapterInfo?.cropSensor}
-                title={adapterInfo?.cropSensor ? 'Adapter crop overrides the sensor mode' : 'Pick the camera body crop mode'}
+                title={adapterInfo?.cropSensor ? t('sidebar.cam.sensorModeLocked', 'Adapter crop overrides the sensor mode') : t('sidebar.cam.sensorModePick', 'Pick the camera body crop mode')}
               >
                 {camDef.sensorModes.map((mode, idx) => (
                   <option key={idx} value={idx}>{mode.name}</option>
@@ -444,7 +457,7 @@ function CameraCard({ camId }: { camId: string }) {
               </select>
               {adapterInfo?.cropSensor && (
                 <span className="text-[10px] text-bc-yellow">
-                  Adapter forces {adapterInfo.cropSensor.name}
+                  {format(t('sidebar.cam.adapterForces', 'Adapter forces {name}'), { name: adapterInfo.cropSensor.name })}
                 </span>
               )}
             </label>
@@ -453,13 +466,13 @@ function CameraCard({ camId }: { camId: string }) {
           {/* Lens selector grouped by mount */}
           <label className="block">
             <span className="flex items-center justify-between gap-2 text-gray-400">
-              <span>Lens</span>
+              <span>{t('sidebar.cam.lens', 'Lens')}</span>
               {lensDef && (
                 <button
                   type="button"
                   onClick={() => toggleFavoriteLensId(lensDef.id)}
                   className={`p-1 rounded ${favoriteLensIds.includes(lensDef.id) ? 'text-bc-yellow' : 'text-gray-500 hover:text-bc-yellow'}`}
-                  title={favoriteLensIds.includes(lensDef.id) ? 'Remove lens favorite' : 'Favorite lens'}
+                  title={favoriteLensIds.includes(lensDef.id) ? t('sidebar.cam.unfavLens', 'Remove lens favorite') : t('sidebar.cam.favLens', 'Favorite lens')}
                 >
                   <FiStar size={12} fill={favoriteLensIds.includes(lensDef.id) ? 'currentColor' : 'none'} />
                 </button>
@@ -484,13 +497,13 @@ function CameraCard({ camId }: { camId: string }) {
               }}
             >
               {Object.entries(grouped).map(([mount, lenses]) => (
-                <optgroup key={mount} label={`── ${mount} mount ──`}>
+                <optgroup key={mount} label={format(t('sidebar.cam.mountGroup', '── {mount} mount ──'), { mount })}>
                   {lenses.map((l) => (
-                    <option key={l.id} value={l.id}>{favoriteLensIds.includes(l.id) ? '* ' : ''}{l.manufacturer} {l.model}{l.isCustom ? ' +custom' : ''}</option>
+                    <option key={l.id} value={l.id}>{favoriteLensIds.includes(l.id) ? '* ' : ''}{l.manufacturer} {l.model}{l.isCustom ? t('sidebar.cam.tagCustom', ' +custom') : ''}</option>
                   ))}
                 </optgroup>
               ))}
-              <option value="__new__">＋ Add custom lens…</option>
+              <option value="__new__">{t('sidebar.cam.addCustomLens', '＋ Add custom lens…')}</option>
             </select>
           </label>
           {/* Custom lens: delete button for active custom lens */}
@@ -515,26 +528,26 @@ function CameraCard({ camId }: { camId: string }) {
                 }
               }}
               className="text-[10px] text-bc-red hover:text-red-400 mt-0.5"
-            >Remove custom lens "{lensDef.manufacturer} {lensDef.model}"</button>
+            >{format(t('sidebar.cam.removeCustomLens', 'Remove custom lens "{name}"'), { name: `${lensDef.manufacturer} ${lensDef.model}` })}</button>
           )}
           {/* Inline custom lens creation form */}
           {showNewLens && (
             <div className="bg-bc-dark rounded p-2 border border-bc-border space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300 font-medium text-[11px]">New Custom Lens</span>
+                <span className="text-gray-300 font-medium text-[11px]">{t('sidebar.cam.newCustomLens', 'New Custom Lens')}</span>
                 <button onClick={() => setShowNewLens(false)} className="text-gray-500 hover:text-white text-xs">✕</button>
               </div>
               <div className="grid grid-cols-2 gap-1">
-                <input placeholder="Manufacturer" className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+                <input placeholder={t('sidebar.form.manufacturer', 'Manufacturer')} className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
                   value={newLens.manufacturer} onChange={(e) => setNewLens({ ...newLens, manufacturer: e.target.value })} />
-                <input placeholder="Model" className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+                <input placeholder={t('sidebar.form.model', 'Model')} className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
                   value={newLens.model} onChange={(e) => setNewLens({ ...newLens, model: e.target.value })} />
               </div>
               <div className="grid grid-cols-3 gap-1">
-                <label><span className="text-gray-500 text-[10px]">Min mm</span>
+                <label><span className="text-gray-500 text-[10px]">{t('sidebar.cam.minMm', 'Min mm')}</span>
                   <input type="number" className="w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
                     value={newLens.focalMin} onChange={(e) => setNewLens({ ...newLens, focalMin: e.target.value })} /></label>
-                <label><span className="text-gray-500 text-[10px]">Max mm</span>
+                <label><span className="text-gray-500 text-[10px]">{t('sidebar.cam.maxMm', 'Max mm')}</span>
                   <input type="number" className="w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
                     value={newLens.focalMax} onChange={(e) => setNewLens({ ...newLens, focalMax: e.target.value })} /></label>
                 <label><span className="text-gray-500 text-[10px]">f/</span>
@@ -550,8 +563,8 @@ function CameraCard({ camId }: { camId: string }) {
                 </select>
                 <select className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
                   value={newLens.type} onChange={(e) => setNewLens({ ...newLens, type: e.target.value as 'zoom' | 'prime' })}>
-                  <option value="zoom">Zoom</option>
-                  <option value="prime">Prime</option>
+                  <option value="zoom">{t('sidebar.cam.zoom', 'Zoom')}</option>
+                  <option value="prime">{t('sidebar.cam.prime', 'Prime')}</option>
                 </select>
               </div>
               <button
@@ -576,14 +589,14 @@ function CameraCard({ camId }: { camId: string }) {
                 }}
                 className="flex items-center gap-1 px-2 py-1 rounded bg-bc-green/20 text-bc-green text-xs hover:bg-bc-green/30 w-full justify-center"
               >
-                <FiPlus size={12} /> Create & Select
+                <FiPlus size={12} /> {t('sidebar.cam.createSelect', 'Create & Select')}
               </button>
             </div>
           )}
 
           {/* Focal length slider */}
           <label className="block">
-            <span className="text-gray-400">Focal Length: {cam.focalLength.toFixed(1)}mm{cam.extenderActive > 1 ? ` (eff. ${(cam.focalLength * cam.extenderActive).toFixed(0)}mm)` : ''}</span>
+            <span className="text-gray-400">{format(t('sidebar.cam.focalLength', 'Focal Length: {v}mm'), { v: cam.focalLength.toFixed(1) })}{cam.extenderActive > 1 ? format(t('sidebar.cam.focalEff', ' (eff. {e}mm)'), { e: (cam.focalLength * cam.extenderActive).toFixed(0) }) : ''}</span>
             <input
               type="range"
               className="w-full accent-bc-accent"
@@ -597,7 +610,7 @@ function CameraCard({ camId }: { camId: string }) {
 
           {/* Aperture */}
           <label className="block">
-            <span className="text-gray-400">Aperture: f/{cam.aperture.toFixed(1)}{adapterInfo && adapterInfo.lightLossStops !== 0 ? ` (eff. T${(cam.aperture * Math.pow(2, adapterInfo.lightLossStops / 2)).toFixed(1)})` : ''}</span>
+            <span className="text-gray-400">{format(t('sidebar.cam.aperture', 'Aperture: f/{v}'), { v: cam.aperture.toFixed(1) })}{adapterInfo && adapterInfo.lightLossStops !== 0 ? format(t('sidebar.cam.apertureEff', ' (eff. T{e})'), { e: (cam.aperture * Math.pow(2, adapterInfo.lightLossStops / 2)).toFixed(1) }) : ''}</span>
             <input
               type="range"
               className="w-full accent-bc-accent"
@@ -611,7 +624,7 @@ function CameraCard({ camId }: { camId: string }) {
 
           {/* Focus distance */}
           <label className="block">
-            <span className="text-gray-400">Distance: {cam.focusDistance.toFixed(1)}m</span>
+            <span className="text-gray-400">{format(t('sidebar.cam.distance', 'Distance: {v}m'), { v: cam.focusDistance.toFixed(1) })}</span>
             <input
               type="range"
               className="w-full accent-bc-accent"
@@ -625,7 +638,7 @@ function CameraCard({ camId }: { camId: string }) {
 
           {/* Pan */}
           <label className="block">
-            <span className="text-gray-400">Pan: {cam.pan.toFixed(0)}°</span>
+            <span className="text-gray-400">{format(t('sidebar.cam.pan', 'Pan: {v}°'), { v: cam.pan.toFixed(0) })}</span>
             <input
               type="range"
               className="w-full accent-bc-accent"
@@ -639,7 +652,7 @@ function CameraCard({ camId }: { camId: string }) {
 
           {/* Tilt */}
           <label className="block">
-            <span className="text-gray-400">Tilt: {cam.tilt.toFixed(0)}°</span>
+            <span className="text-gray-400">{format(t('sidebar.cam.tilt', 'Tilt: {v}°'), { v: cam.tilt.toFixed(0) })}</span>
             <input
               type="range"
               className="w-full accent-bc-accent"
@@ -654,15 +667,15 @@ function CameraCard({ camId }: { camId: string }) {
           {/* Extender */}
           {lensDef?.extenderFactors && lensDef.extenderFactors.length > 0 && (
             <label className="block">
-              <span className="text-gray-400">Extender</span>
+              <span className="text-gray-400">{t('sidebar.cam.extender', 'Extender')}</span>
               <select
                 className="block w-full mt-0.5 bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
                 value={cam.extenderActive}
                 onChange={(e) => updateCamera(cam.id, { extenderActive: parseFloat(e.target.value) })}
               >
-                <option value={1}>Off (1×)</option>
+                <option value={1}>{t('sidebar.cam.extenderOff', 'Off (1×)')}</option>
                 {lensDef.extenderFactors.map((f) => (
-                  <option key={f} value={f}>{f}× Extender</option>
+                  <option key={f} value={f}>{format(t('sidebar.cam.extenderFactor', '{f}× Extender'), { f })}</option>
                 ))}
               </select>
             </label>
@@ -671,7 +684,7 @@ function CameraCard({ camId }: { camId: string }) {
           {/* Position X / Y */}
           <div className="grid grid-cols-2 gap-2">
             <label>
-              <span className="text-gray-400">X (m)</span>
+              <span className="text-gray-400">{t('sidebar.cam.xM', 'X (m)')}</span>
               <input
                 type="number"
                 className="w-full bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
@@ -681,7 +694,7 @@ function CameraCard({ camId }: { camId: string }) {
               />
             </label>
             <label>
-              <span className="text-gray-400">Y (m)</span>
+              <span className="text-gray-400">{t('sidebar.cam.yM', 'Y (m)')}</span>
               <input
                 type="number"
                 className="w-full bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
@@ -696,7 +709,7 @@ function CameraCard({ camId }: { camId: string }) {
               ergonomic height range below and whether a live-motion track slider
               (jib swing / dolly travel) appears. */}
           <label className="block">
-            <span className="text-gray-400">Mount</span>
+            <span className="text-gray-400">{t('sidebar.cam.mount', 'Mount')}</span>
             <select
               className="block w-full mt-0.5 bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
               value={cam.mountType ?? 'tripod'}
@@ -720,7 +733,7 @@ function CameraCard({ camId }: { camId: string }) {
             const range = MOUNT_HEIGHT_RANGE[cam.mountType ?? 'tripod'];
             return (
               <label className="block">
-                <span className="text-gray-400">Height: {cam.z.toFixed(2)}m <span className="text-[10px] text-gray-600">({range.min}–{range.max}m)</span></span>
+                <span className="text-gray-400">{format(t('sidebar.cam.height', 'Height: {v}m'), { v: cam.z.toFixed(2) })} <span className="text-[10px] text-gray-600">({range.min}–{range.max}m)</span></span>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
@@ -752,7 +765,7 @@ function CameraCard({ camId }: { camId: string }) {
             const offset = cam.trackOffset ?? 0;
             return (
               <label className="block">
-                <span className="text-gray-400">Track: {offset.toFixed(2)}m <span className="text-[10px] text-gray-600">(0–{range.track}m)</span></span>
+                <span className="text-gray-400">{format(t('sidebar.cam.track', 'Track: {v}m'), { v: offset.toFixed(2) })} <span className="text-[10px] text-gray-600">(0–{range.track}m)</span></span>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
@@ -766,8 +779,8 @@ function CameraCard({ camId }: { camId: string }) {
                   <button
                     onClick={() => updateCamera(cam.id, { trackOffset: 0 })}
                     className="text-[10px] text-gray-500 hover:text-white px-1.5 py-0.5 rounded border border-bc-border"
-                    title="Park rig at zero"
-                  >park</button>
+                    title={t('sidebar.cam.parkTitle', 'Park rig at zero')}
+                  >{t('sidebar.cam.park', 'park')}</button>
                 </div>
               </label>
             );
@@ -775,11 +788,11 @@ function CameraCard({ camId }: { camId: string }) {
 
           {/* Notes — free-form, shown in export when filled */}
           <label className="block">
-            <span className="text-gray-400">Notes</span>
+            <span className="text-gray-400">{t('sidebar.cam.notes', 'Notes')}</span>
             <textarea
               className="block w-full mt-0.5 bg-bc-dark border border-bc-border rounded px-2 py-1 text-white text-xs resize-y min-h-[2.5rem]"
               rows={2}
-              placeholder="Mount, operator, shot notes…"
+              placeholder={t('sidebar.cam.notesPlaceholder', 'Mount, operator, shot notes…')}
               value={cam.notes ?? ''}
               onChange={(e) => updateCamera(cam.id, { notes: e.target.value })}
             />
@@ -788,12 +801,12 @@ function CameraCard({ camId }: { camId: string }) {
           {/* DoF readout */}
           {dof && (
             <div className="bg-bc-dark rounded p-2 mt-2 border border-bc-border">
-              <span className="text-gray-400">Depth of Field</span>
+              <span className="text-gray-400">{t('sidebar.cam.depthOfField', 'Depth of Field')}</span>
               <div className="text-white">
-                Near: {dof.nearLimit < 0.01 ? '0m' : dof.nearLimit.toFixed(2) + 'm'} | Far: {dof.farLimit === Infinity ? '∞' : dof.farLimit.toFixed(2) + 'm'}
+                {format(t('sidebar.cam.dofNearFar', 'Near: {near} | Far: {far}'), { near: dof.nearLimit < 0.01 ? '0m' : dof.nearLimit.toFixed(2) + 'm', far: dof.farLimit === Infinity ? '∞' : dof.farLimit.toFixed(2) + 'm' })}
               </div>
               <div className="text-white">
-                Total: {dof.totalDof === Infinity ? '∞' : dof.totalDof.toFixed(2) + 'm'}
+                {format(t('sidebar.cam.dofTotal', 'Total: {v}'), { v: dof.totalDof === Infinity ? '∞' : dof.totalDof.toFixed(2) + 'm' })}
               </div>
             </div>
           )}
@@ -801,7 +814,7 @@ function CameraCard({ camId }: { camId: string }) {
           {/* Effective sensor info */}
           {effectiveSensor && effectiveSensor !== camDef?.sensor && (
             <div className="bg-bc-dark rounded p-2 border border-bc-border text-bc-yellow">
-              Eff. Sensor: {effectiveSensor.name} (crop ×{effectiveSensor.cropFactor.toFixed(1)})
+              {format(t('sidebar.cam.effSensor', 'Eff. Sensor: {name} (crop ×{crop})'), { name: effectiveSensor.name, crop: effectiveSensor.cropFactor.toFixed(1) })}
             </div>
           )}
 
@@ -813,7 +826,7 @@ function CameraCard({ camId }: { camId: string }) {
                 className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-bc-accent w-full"
               >
                 {showCalc ? <FiChevronUp size={11} /> : <FiChevronDown size={11} />}
-                {showCalc ? 'Hide' : 'Show'} calculation breakdown
+                {showCalc ? t('sidebar.cam.hide', 'Hide') : t('sidebar.cam.show', 'Show')} {t('sidebar.cam.calcBreakdown', 'calculation breakdown')}
               </button>
               {showCalc && (
                 <div className="mt-1">
@@ -839,6 +852,7 @@ function CameraCard({ camId }: { camId: string }) {
 }
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const {
     cameras, addCamera, venue, setVenue, showAllFov, toggleShowAllFov, clearAll,
     pixelsPerMeter, setPixelsPerMeter,
@@ -866,13 +880,13 @@ export default function Sidebar() {
   /** Convert a PDF first page to a data URL at 2× DPI */
   const pdfToDataUrl = useCallback(async (file: File): Promise<{ dataUrl: string; width: number; height: number }> => {
     if (file.size > MAX_PDF_SIZE_BYTES) {
-      throw new Error(`PDF too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 50 MB.`);
+      throw new Error(format(t('sidebar.pdfTooLarge', 'PDF too large ({size} MB). Maximum is 50 MB.'), { size: (file.size / 1024 / 1024).toFixed(1) }));
     }
     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
     const arrayBuf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuf, isEvalSupported: false } as Parameters<typeof pdfjsLib.getDocument>[0]).promise;
     if (pdf.numPages > MAX_PDF_PAGES) {
-      throw new Error(`PDF has ${pdf.numPages} pages (max ${MAX_PDF_PAGES}). Use a single-page floor plan.`);
+      throw new Error(format(t('sidebar.pdfTooManyPages', 'PDF has {pages} pages (max {max}). Use a single-page floor plan.'), { pages: pdf.numPages, max: MAX_PDF_PAGES }));
     }
     const page = await pdf.getPage(1);
     const scale = 2;
@@ -882,7 +896,7 @@ export default function Sidebar() {
     canvas.height = viewport.height;
     await page.render({ canvas, viewport }).promise;
     return { dataUrl: canvas.toDataURL('image/png'), width: viewport.width, height: viewport.height };
-  }, []);
+  }, [t]);
 
   const handleBgUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -908,8 +922,8 @@ export default function Sidebar() {
         };
         setBackgroundPlan(plan);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        alert(`Failed to render PDF: ${msg}`);
+        const msg = err instanceof Error ? err.message : t('sidebar.unknownError', 'Unknown error');
+        await alertDialog(format(t('sidebar.pdfRenderFailed', 'Failed to render PDF: {msg}'), { msg }), { okLabel: t('common.ok', 'OK') });
       }
     } else {
       const reader = new FileReader();
@@ -936,7 +950,7 @@ export default function Sidebar() {
     }
     // Reset input so same file can be re-uploaded
     e.target.value = '';
-  }, [venue.widthM, setBackgroundPlan, pdfToDataUrl]);
+  }, [venue.widthM, setBackgroundPlan, pdfToDataUrl, t]);
 
   /** Start/stop calibration mode — dispatches custom event to Venue2D */
   const startCalibration = useCallback((axis: 'x' | 'y') => {
@@ -970,13 +984,13 @@ export default function Sidebar() {
           className="flex items-center justify-between w-full text-sm text-white font-semibold"
           onClick={() => setVenueOpen(!venueOpen)}
         >
-          <span>Venue Settings</span>
+          <span>{t('sidebar.venueSettings', 'Venue Settings')}</span>
           {venueOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
         </button>
         {venueOpen && (
           <div className="mt-2 space-y-2 text-xs">
             <label className="block">
-              <span className="text-gray-400">Name</span>
+              <span className="text-gray-400">{t('sidebar.name', 'Name')}</span>
               <input
                 className="w-full bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
                 value={venue.name}
@@ -985,7 +999,7 @@ export default function Sidebar() {
             </label>
             <div className="grid grid-cols-2 gap-2">
               <label>
-                <span className="text-gray-400">Width (m)</span>
+                <span className="text-gray-400">{t('sidebar.widthM', 'Width (m)')}</span>
                 <input
                   type="number"
                   className="w-full bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
@@ -994,7 +1008,7 @@ export default function Sidebar() {
                 />
               </label>
               <label>
-                <span className="text-gray-400">Depth (m)</span>
+                <span className="text-gray-400">{t('sidebar.depthM', 'Depth (m)')}</span>
                 <input
                   type="number"
                   className="w-full bg-bc-dark border border-bc-border rounded px-2 py-1 text-white"
@@ -1004,7 +1018,7 @@ export default function Sidebar() {
               </label>
             </div>
             <label className="block">
-              <span className="text-gray-400">Zoom: {pixelsPerMeter}px/m</span>
+              <span className="text-gray-400">{format(t('sidebar.zoom', 'Zoom: {v}px/m'), { v: pixelsPerMeter })}</span>
               <input
                 type="range"
                 className="w-full accent-bc-accent"
@@ -1024,7 +1038,7 @@ export default function Sidebar() {
           className="flex items-center justify-between w-full text-sm text-white font-semibold"
           onClick={() => setStagesOpen(!stagesOpen)}
         >
-          <span><FiMap className="inline mr-1" size={13} />Stages ({venue.stages.length})</span>
+          <span><FiMap className="inline mr-1" size={13} />{format(t('sidebar.stages', 'Stages ({n})'), { n: venue.stages.length })}</span>
           {stagesOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
         </button>
         {stagesOpen && (
@@ -1037,7 +1051,7 @@ export default function Sidebar() {
                     value={s.label}
                     onChange={(e) => updateStage(s.id, { label: e.target.value })}
                   />
-                  <button onClick={() => removeStage(s.id)} className="p-0.5 hover:text-bc-red" title="Remove stage">
+                  <button onClick={() => removeStage(s.id)} className="p-0.5 hover:text-bc-red" title={t('sidebar.removeStage', 'Remove stage')}>
                     <FiTrash2 size={12} />
                   </button>
                 </div>
@@ -1069,7 +1083,7 @@ export default function Sidebar() {
               onClick={() => addStage()}
               className="flex items-center gap-1 px-2 py-1 rounded bg-bc-accent/20 text-bc-accent text-xs hover:bg-bc-accent/30 w-full justify-center"
             >
-              <FiPlus size={12} /> Add Stage
+              <FiPlus size={12} /> {t('sidebar.addStage', 'Add Stage')}
             </button>
           </div>
         )}
@@ -1081,7 +1095,7 @@ export default function Sidebar() {
           className="flex items-center justify-between w-full text-sm text-white font-semibold"
           onClick={() => setBgOpen(!bgOpen)}
         >
-          <span><FiUpload className="inline mr-1" size={13} />Floor Plan</span>
+          <span><FiUpload className="inline mr-1" size={13} />{t('sidebar.floorPlan', 'Floor Plan')}</span>
           {bgOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
         </button>
         {bgOpen && (
@@ -1091,18 +1105,18 @@ export default function Sidebar() {
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-1 px-2 py-1 rounded bg-bc-accent/20 text-bc-accent text-xs hover:bg-bc-accent/30 w-full justify-center"
             >
-              <FiUpload size={12} /> {backgroundPlan ? 'Replace Image/PDF' : 'Upload Image or PDF'}
+              <FiUpload size={12} /> {backgroundPlan ? t('sidebar.replaceImage', 'Replace Image/PDF') : t('sidebar.uploadImage', 'Upload Image or PDF')}
             </button>
             {backgroundPlan && (
               <>
                 <label className="block">
-                  <span className="text-gray-400">Opacity: {(backgroundPlan.opacity * 100).toFixed(0)}%</span>
+                  <span className="text-gray-400">{format(t('sidebar.opacity', 'Opacity: {v}%'), { v: (backgroundPlan.opacity * 100).toFixed(0) })}</span>
                   <input type="range" className="w-full accent-bc-accent" min={0.05} max={1} step={0.05}
                     value={backgroundPlan.opacity}
                     onChange={(e) => setBackgroundPlan({ ...backgroundPlan, opacity: parseFloat(e.target.value) })} />
                 </label>
                 <label className="block">
-                  <span className="text-gray-400">Scale X: {(backgroundPlan.scaleX * 1000).toFixed(1)} mm/px ({(backgroundPlan.widthPx * backgroundPlan.scaleX).toFixed(1)}m wide)</span>
+                  <span className="text-gray-400">{format(t('sidebar.scaleX', 'Scale X: {v} mm/px ({w}m wide)'), { v: (backgroundPlan.scaleX * 1000).toFixed(1), w: (backgroundPlan.widthPx * backgroundPlan.scaleX).toFixed(1) })}</span>
                   <input type="range" className="w-full accent-bc-accent"
                     min={0.001} max={0.5} step={0.001}
                     value={backgroundPlan.scaleX}
@@ -1112,14 +1126,14 @@ export default function Sidebar() {
                   <button
                     onClick={() => setScaleLocked(!scaleLocked)}
                     className={`p-1 rounded border ${scaleLocked ? 'border-bc-accent text-bc-accent' : 'border-bc-border text-gray-500 hover:text-gray-300'}`}
-                    title={scaleLocked ? 'Unlock Y scale for independent adjustment' : 'Lock Y scale to X'}
+                    title={scaleLocked ? t('sidebar.unlockY', 'Unlock Y scale for independent adjustment') : t('sidebar.lockY', 'Lock Y scale to X')}
                   >
                     {scaleLocked ? <FiLock size={11} /> : <FiUnlock size={11} />}
                   </button>
-                  <span className="text-[10px] text-gray-500">{scaleLocked ? 'X/Y linked' : 'X/Y independent'}</span>
+                  <span className="text-[10px] text-gray-500">{scaleLocked ? t('sidebar.xyLinked', 'X/Y linked') : t('sidebar.xyIndependent', 'X/Y independent')}</span>
                 </div>
                 <label className={`block ${scaleLocked ? 'opacity-40 pointer-events-none' : ''}`}>
-                  <span className="text-gray-400">Scale Y: {(backgroundPlan.scaleY * 1000).toFixed(1)} mm/px ({(backgroundPlan.heightPx * backgroundPlan.scaleY).toFixed(1)}m tall)</span>
+                  <span className="text-gray-400">{format(t('sidebar.scaleY', 'Scale Y: {v} mm/px ({h}m tall)'), { v: (backgroundPlan.scaleY * 1000).toFixed(1), h: (backgroundPlan.heightPx * backgroundPlan.scaleY).toFixed(1) })}</span>
                   <input type="range" className="w-full accent-bc-accent"
                     min={0.001} max={0.5} step={0.001}
                     value={backgroundPlan.scaleY}
@@ -1131,34 +1145,34 @@ export default function Sidebar() {
                     onClick={() => { const s = venue.widthM / backgroundPlan.widthPx; setBackgroundPlan({ ...backgroundPlan, scaleX: s, ...(scaleLocked ? { scaleY: s } : {}) }); }}
                     className="flex-1 px-1 py-0.5 rounded bg-bc-dark border border-bc-border text-gray-400 hover:text-white text-[10px]"
                   >
-                    Fit Width
+                    {t('sidebar.fitWidth', 'Fit Width')}
                   </button>
                   <button
                     onClick={() => { const s = venue.heightM / backgroundPlan.heightPx; setBackgroundPlan({ ...backgroundPlan, scaleY: s, ...(scaleLocked ? { scaleX: s } : {}) }); }}
                     className={`flex-1 px-1 py-0.5 rounded bg-bc-dark border border-bc-border text-gray-400 hover:text-white text-[10px] ${scaleLocked ? 'opacity-40 pointer-events-none' : ''}`}
                   >
-                    Fit Height
+                    {t('sidebar.fitHeight', 'Fit Height')}
                   </button>
                   <button
                     onClick={() => { const s = venue.widthM / backgroundPlan.widthPx; setBackgroundPlan({ ...backgroundPlan, scaleX: s, scaleY: s }); }}
                     className="flex-1 px-1 py-0.5 rounded bg-bc-dark border border-bc-border text-gray-400 hover:text-white text-[10px]"
                   >
-                    Fit Both
+                    {t('sidebar.fitBoth', 'Fit Both')}
                   </button>
                 </div>
                 {/* Calibration */}
                 <div className="p-2 rounded bg-bc-dark border border-bc-border space-y-1.5">
                   <div className="flex items-center gap-1 text-gray-300 font-medium">
-                    <FiMaximize2 size={11} /> Calibrate Scale{scaleLocked ? '' : ' (X / Y)'}
+                    <FiMaximize2 size={11} /> {t('sidebar.calibrateScale', 'Calibrate Scale')}{scaleLocked ? '' : t('sidebar.calibrateXY', ' (X / Y)')}
                   </div>
                   <p className="text-gray-500 text-[10px] leading-tight">
                     {scaleLocked
-                      ? 'Click two points on the 2D plan to measure a known distance. Both X and Y scale will be set equally.'
-                      : 'Measure a known horizontal (X) and vertical (Y) distance separately. Click two points on the 2D plan for each axis.'}
+                      ? t('sidebar.calibHelpLocked', 'Click two points on the 2D plan to measure a known distance. Both X and Y scale will be set equally.')
+                      : t('sidebar.calibHelpUnlocked', 'Measure a known horizontal (X) and vertical (Y) distance separately. Click two points on the 2D plan for each axis.')}
                   </p>
                   <div className="flex gap-1 items-end">
                     <label className="flex-1">
-                      <span className="text-gray-500">{scaleLocked ? 'Known distance (m)' : 'Known X distance (m)'}</span>
+                      <span className="text-gray-500">{scaleLocked ? t('sidebar.knownDistance', 'Known distance (m)') : t('sidebar.knownXDistance', 'Known X distance (m)')}</span>
                       <input type="number" min={0.1} step={0.1}
                         className="w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white"
                         value={calibDistX}
@@ -1168,13 +1182,13 @@ export default function Sidebar() {
                       onClick={() => startCalibration('x')}
                       className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${calibAxis === 'x' ? 'bg-bc-red text-white' : 'bg-bc-green/20 text-bc-green hover:bg-bc-green/30'}`}
                     >
-                      {calibAxis === 'x' ? 'Cancel' : (scaleLocked ? 'Calibrate' : 'Cal X')}
+                      {calibAxis === 'x' ? t('sidebar.cancel', 'Cancel') : (scaleLocked ? t('sidebar.calibrate', 'Calibrate') : t('sidebar.calX', 'Cal X'))}
                     </button>
                   </div>
                   {!scaleLocked && (
                     <div className="flex gap-1 items-end">
                       <label className="flex-1">
-                        <span className="text-gray-500">Known Y distance (m)</span>
+                        <span className="text-gray-500">{t('sidebar.knownYDistance', 'Known Y distance (m)')}</span>
                         <input type="number" min={0.1} step={0.1}
                           className="w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white"
                           value={calibDistY}
@@ -1184,24 +1198,24 @@ export default function Sidebar() {
                         onClick={() => startCalibration('y')}
                         className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${calibAxis === 'y' ? 'bg-bc-red text-white' : 'bg-bc-green/20 text-bc-green hover:bg-bc-green/30'}`}
                       >
-                        {calibAxis === 'y' ? 'Cancel' : 'Cal Y'}
+                        {calibAxis === 'y' ? t('sidebar.cancel', 'Cancel') : t('sidebar.calY', 'Cal Y')}
                       </button>
                     </div>
                   )}
                   <label className="flex items-center gap-1.5 text-[10px] text-gray-400 cursor-pointer">
                     <input type="checkbox" checked={autoResize} onChange={(e) => setAutoResize(e.target.checked)} className="accent-bc-accent" />
-                    Auto-resize venue to match floor plan
+                    {t('sidebar.autoResize', 'Auto-resize venue to match floor plan')}
                   </label>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <label>
-                    <span className="text-gray-400">Offset X (m)</span>
+                    <span className="text-gray-400">{t('sidebar.offsetX', 'Offset X (m)')}</span>
                     <input type="number" className="w-full bg-bc-dark border border-bc-border rounded px-1 py-0.5 text-white"
                       value={backgroundPlan.offsetX} step={0.5}
                       onChange={(e) => setBackgroundPlan({ ...backgroundPlan, offsetX: parseFloat(e.target.value) || 0 })} />
                   </label>
                   <label>
-                    <span className="text-gray-400">Offset Y (m)</span>
+                    <span className="text-gray-400">{t('sidebar.offsetY', 'Offset Y (m)')}</span>
                     <input type="number" className="w-full bg-bc-dark border border-bc-border rounded px-1 py-0.5 text-white"
                       value={backgroundPlan.offsetY} step={0.5}
                       onChange={(e) => setBackgroundPlan({ ...backgroundPlan, offsetY: parseFloat(e.target.value) || 0 })} />
@@ -1211,7 +1225,7 @@ export default function Sidebar() {
                   onClick={() => setBackgroundPlan(null)}
                   className="w-full py-1 rounded bg-bc-red/20 text-bc-red text-xs hover:bg-bc-red/30"
                 >
-                  Remove Background
+                  {t('sidebar.removeBackground', 'Remove Background')}
                 </button>
               </>
             )}
@@ -1228,7 +1242,7 @@ export default function Sidebar() {
           className="flex items-center justify-between w-full text-sm text-white font-semibold"
           onClick={() => setWallsOpen(!wallsOpen)}
         >
-          <span>▇ Walls ({walls.length})</span>
+          <span>▇ {format(t('sidebar.walls', 'Walls ({n})'), { n: walls.length })}</span>
           {wallsOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
         </button>
         {wallsOpen && (
@@ -1237,11 +1251,11 @@ export default function Sidebar() {
               onClick={() => setWallDrawMode((active) => !active)}
               className={`flex items-center gap-1 px-2 py-1 rounded text-xs w-full justify-center ${wallDrawMode ? 'bg-bc-yellow/20 text-bc-yellow hover:bg-bc-yellow/30' : 'bg-bc-dark text-gray-300 hover:text-white border border-bc-border'}`}
             >
-              {wallDrawMode ? 'Stop Drawing' : 'Draw Walls'}
+              {wallDrawMode ? t('sidebar.stopDrawing', 'Stop Drawing') : t('sidebar.drawWalls', 'Draw Walls')}
             </button>
             {wallDrawMode && (
               <div className="rounded border border-bc-border bg-bc-dark px-2 py-1.5 text-[10px] text-gray-400 leading-relaxed">
-                Click once to place the start point, click again to finish. Hold Shift to snap the angle. Right-click a wall to delete it.
+                {t('sidebar.wallDrawHelp', 'Click once to place the start point, click again to finish. Hold Shift to snap the angle. Right-click a wall to delete it.')}
               </div>
             )}
             {/* Endpoint snapping toggle (issue #40) */}
@@ -1252,7 +1266,7 @@ export default function Sidebar() {
                 checked={wallSnap}
                 onChange={(e) => setWallSnap(e.target.checked)}
               />
-              Snap wall endpoints together
+              {t('sidebar.snapEndpoints', 'Snap wall endpoints together')}
             </label>
             {walls.map((w) => (
               <div key={w.id} className="bg-bc-dark rounded p-1.5 border border-bc-border space-y-1.5">
@@ -1272,20 +1286,20 @@ export default function Sidebar() {
                     className="w-5 h-5 rounded border border-bc-border cursor-pointer bg-transparent shrink-0"
                     value={w.color ?? '#6b7280'}
                     onChange={(e) => updateWall(w.id, { color: e.target.value })}
-                    title="Wall colour"
+                    title={t('sidebar.wallColour', 'Wall colour')}
                   />
                   <select
                     className="flex-1 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-[10px]"
                     value={w.pattern ?? 'solid'}
                     onChange={(e) => updateWall(w.id, { pattern: e.target.value as WallPattern })}
                   >
-                    <option value="solid">Solid</option>
-                    <option value="grid">Grid</option>
-                    <option value="flowers">Flowers</option>
-                    <option value="image">Image…</option>
+                    <option value="solid">{t('sidebar.patternSolid', 'Solid')}</option>
+                    <option value="grid">{t('sidebar.patternGrid', 'Grid')}</option>
+                    <option value="flowers">{t('sidebar.patternFlowers', 'Flowers')}</option>
+                    <option value="image">{t('sidebar.patternImage', 'Image…')}</option>
                   </select>
                   {w.pattern === 'image' && (
-                    <label className="px-1.5 py-0.5 rounded bg-bc-accent/20 text-bc-accent text-[10px] cursor-pointer hover:bg-bc-accent/30" title="Upload a tiled image">
+                    <label className="px-1.5 py-0.5 rounded bg-bc-accent/20 text-bc-accent text-[10px] cursor-pointer hover:bg-bc-accent/30" title={t('sidebar.uploadTiledImage', 'Upload a tiled image')}>
                       <FiUpload size={10} className="inline" />
                       <input
                         type="file"
@@ -1305,9 +1319,9 @@ export default function Sidebar() {
                   <button
                     onClick={() => walls.forEach((other) => other.id !== w.id && updateWall(other.id, { color: w.color, pattern: w.pattern, patternImage: w.patternImage }))}
                     className="px-1.5 py-0.5 rounded border border-bc-border text-gray-400 hover:text-bc-accent hover:border-bc-accent text-[10px] shrink-0"
-                    title="Apply this wall's colour & pattern to all walls"
+                    title={t('sidebar.applyToAllWalls', "Apply this wall's colour & pattern to all walls")}
                   >
-                    All
+                    {t('sidebar.all', 'All')}
                   </button>
                 </div>
               </div>
@@ -1316,7 +1330,7 @@ export default function Sidebar() {
               onClick={() => addWall()}
               className="flex items-center gap-1 px-2 py-1 rounded bg-bc-accent/20 text-bc-accent text-xs hover:bg-bc-accent/30 w-full justify-center"
             >
-              <FiPlus size={12} /> Add Wall
+              <FiPlus size={12} /> {t('sidebar.addWall', 'Add Wall')}
             </button>
           </div>
         )}
@@ -1328,7 +1342,7 @@ export default function Sidebar() {
           className="flex items-center justify-between w-full text-sm text-white font-semibold"
           onClick={() => setPersonsOpen(!personsOpen)}
         >
-          <span><FiUser className="inline mr-1" size={13} />Objects & Persons ({persons.length})</span>
+          <span><FiUser className="inline mr-1" size={13} />{format(t('sidebar.objectsPersons', 'Objects & Persons ({n})'), { n: persons.length })}</span>
           {personsOpen ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
         </button>
         {personsOpen && (
@@ -1356,7 +1370,7 @@ export default function Sidebar() {
                     className="w-5 h-5 rounded border border-bc-border cursor-pointer bg-transparent"
                     value={p.color ?? (OBJECT_PRESETS[p.objectType]?.color ?? '#f59e0b')}
                     onChange={(e) => updatePerson(p.id, { color: e.target.value })}
-                    title="Custom accent colour"
+                    title={t('sidebar.customAccentColour', 'Custom accent colour')}
                   />
                   <span className="text-gray-500">({p.x.toFixed(1)}, {p.y.toFixed(1)})</span>
                   <button onClick={() => removePerson(p.id)} className="ml-auto p-0.5 hover:text-bc-red"><FiTrash2 size={11} /></button>
@@ -1365,31 +1379,31 @@ export default function Sidebar() {
             })}
             <div className="grid grid-cols-3 gap-1">
               <button onClick={() => addPerson()} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                <FiUser size={10} /> Person
+                <FiUser size={10} /> {t('sidebar.objPerson', 'Person')}
               </button>
               <button onClick={() => addStageObject('person-guitar')} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                🎸 Guitarist
+                🎸 {t('sidebar.objGuitarist', 'Guitarist')}
               </button>
               <button onClick={() => addStageObject('sitting-person')} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                🪑 Seated
+                🪑 {t('sidebar.objSeated', 'Seated')}
               </button>
               <button onClick={() => addStageObject('drums')} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                🥁 Drums
+                🥁 {t('sidebar.objDrums', 'Drums')}
               </button>
               <button onClick={() => addStageObject('keys')} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                🎹 Keys
+                🎹 {t('sidebar.objKeys', 'Keys')}
               </button>
               <button onClick={() => addStageObject('mic-stand')} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                🎤 Mic Stand
+                🎤 {t('sidebar.objMicStand', 'Mic Stand')}
               </button>
               <button onClick={() => addStageObject('chair')} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                💺 Chair
+                💺 {t('sidebar.objChair', 'Chair')}
               </button>
               <button onClick={() => addStageObject('table')} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                🟫 Table
+                🟫 {t('sidebar.objTable', 'Table')}
               </button>
               <button onClick={() => addStageObject('lectern')} className="flex items-center justify-center gap-1 px-1 py-1 rounded bg-bc-accent/20 text-bc-accent text-[10px] hover:bg-bc-accent/30">
-                🎙️ Lectern
+                🎙️ {t('sidebar.objLectern', 'Lectern')}
               </button>
               <button onClick={() => addStageObject('schneetiger')} className="col-span-3 flex items-center justify-center gap-1 px-1 py-1 rounded bg-sky-500/20 text-sky-300 text-[10px] hover:bg-sky-500/30">
                 🐅 Schneetiger
@@ -1402,12 +1416,12 @@ export default function Sidebar() {
       {/* Camera list */}
       <div className="flex-1 p-3 overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-white font-semibold">Cameras ({cameras.length})</span>
+          <span className="text-sm text-white font-semibold">{format(t('sidebar.cameras', 'Cameras ({n})'), { n: cameras.length })}</span>
           <div className="flex gap-1">
             <button
               onClick={toggleShowAllFov}
               className="p-1.5 rounded hover:bg-bc-border text-gray-400 hover:text-white"
-              title={showAllFov ? 'Hide all FOV' : 'Show all FOV'}
+              title={showAllFov ? t('sidebar.hideAllFov', 'Hide all FOV') : t('sidebar.showAllFov', 'Show all FOV')}
             >
               {showAllFov ? <FiEye size={14} /> : <FiEyeOff size={14} />}
             </button>
@@ -1415,7 +1429,7 @@ export default function Sidebar() {
               onClick={() => addCamera()}
               className="flex items-center gap-1 px-2 py-1 rounded bg-bc-accent text-white text-xs font-semibold hover:bg-bc-accent/80"
             >
-              <FiPlus size={12} /> Add
+              <FiPlus size={12} /> {t('sidebar.add', 'Add')}
             </button>
           </div>
         </div>
@@ -1425,19 +1439,23 @@ export default function Sidebar() {
         ))}
 
         {cameras.length === 0 && (
-          <p className="text-gray-500 text-xs text-center mt-8">No cameras. Click "Add" or load a template.</p>
+          <p className="text-gray-500 text-xs text-center mt-8">{t('sidebar.noCameras', 'No cameras. Click "Add" or load a template.')}</p>
         )}
       </div>
 
       {/* Bottom actions */}
       <div className="p-3 border-t border-bc-border">
         <button
-          onClick={() => {
-            if (window.confirm('Are you sure you want to clear everything? This cannot be undone.')) clearAll();
+          onClick={async () => {
+            if (await confirmDialog(t('sidebar.clearConfirm', 'Are you sure you want to clear everything? This cannot be undone.'), {
+              okLabel: t('common.clearAll', 'Clear All'),
+              cancelLabel: t('common.cancel', 'Cancel'),
+              destructive: true,
+            })) clearAll();
           }}
           className="w-full py-1.5 rounded bg-bc-red/20 text-bc-red text-xs font-semibold hover:bg-bc-red/30"
         >
-          Clear All
+          {t('sidebar.clearAll', 'Clear All')}
         </button>
       </div>
     </div>
