@@ -21,7 +21,12 @@ export default {
   // `--publish never` im Workflow verhindert weiterhin das eigentliche Hochladen
   // (die Installer haengt die release-Job via action-gh-release ans Release).
   publish: [{ provider: 'github', owner: 'larszu', repo: 'av-planner-suite', releaseType: 'release' }],
-  files: ['dist/**/*', 'electron/**/*', 'package.json'],
+  files: ['dist/**/*', 'electron/**/*', 'planners/**/*', 'package.json'],
+  // Die mitverpackten Planer-Renderer aus dem asar auspacken: der Hauptprozess
+  // liefert sie via net.fetch('file://…') über die planner-*://-Protokolle aus,
+  // und dynamische Imports/Worker der SPAs lesen zuverlässiger von echtem
+  // Dateisystem als aus dem asar-Archiv.
+  asarUnpack: ['planners/**/*'],
   directories: {
     output: 'release',
   },
