@@ -9,12 +9,15 @@ import { useState } from 'react'
 import { Button, Icon, Modal } from '@avplan/ui'
 import {
   DEPARTMENT_LABEL,
+  PHASE_LABEL,
   type BudgetLine,
+  type Contact,
   type CrewMember,
   type Department,
   type LogisticsInfo,
   type ProjectTask,
   type ScheduleItem,
+  type ShowPhase,
 } from '../data/project'
 import { useT, type TFunc } from '../i18n'
 
@@ -434,6 +437,110 @@ export function LogisticsEditor({
           </div>
         ))}
         <AddRowButton label={t('overview.editor.logistics.add', 'Fahrzeug hinzufügen')} onClick={() => setVehicles((vs) => [...vs, { label: '', detail: '' }])} />
+      </div>
+    </EditorShell>
+  )
+}
+
+/* ── Kontakte ──────────────────────────────────────────────────────────────*/
+
+export function ContactsEditor({
+  open,
+  value,
+  onClose,
+  onSave,
+}: {
+  open: boolean
+  value: Contact[]
+  onClose: () => void
+  onSave: (next: Contact[]) => void
+}) {
+  const t = useT()
+  // Nur die Kern-Felder hier bearbeiten; Rechnungs-/Lexware-Felder (billTo,
+  // email, street, …) bleiben unverändert erhalten (Spread des Originals).
+  const [rows, setRows] = useState<Contact[]>(() => value.map((r) => ({ ...r })))
+  const patch = (i: number, p: Partial<Contact>) =>
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...p } : r)))
+  return (
+    <EditorShell open={open} title={t('overview.editor.contacts.title', 'Kontakte bearbeiten')} onClose={onClose} onSave={() => onSave(rows)}>
+      <div className="flex flex-col gap-2">
+        {rows.map((r, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <TextField value={r.name} onChange={(v) => patch(i, { name: v })} ariaLabel={t('overview.editor.contacts.name', 'Name')} placeholder={t('overview.editor.contacts.namePh', 'Name / Firma')} className="w-40" />
+            <TextField value={r.role} onChange={(v) => patch(i, { role: v })} ariaLabel={t('overview.editor.contacts.role', 'Funktion')} placeholder={t('overview.editor.contacts.rolePh', 'Funktion')} className="w-32" />
+            <TextField value={r.org} onChange={(v) => patch(i, { org: v })} ariaLabel={t('overview.editor.contacts.org', 'Organisation')} placeholder={t('overview.editor.contacts.orgPh', 'Bereich / Firma')} className="flex-1" />
+            <TextField value={r.phone} onChange={(v) => patch(i, { phone: v })} ariaLabel={t('overview.editor.contacts.phone', 'Telefon')} placeholder="+49 …" className="w-36" />
+            <RowTools index={i} total={rows.length} onMove={(f, d) => setRows((rs) => moveItem(rs, f, d))} onRemove={(idx) => setRows((rs) => rs.filter((_, k) => k !== idx))} removeLabel={t('overview.editor.contacts.remove', 'Kontakt entfernen')} />
+          </div>
+        ))}
+        <AddRowButton label={t('overview.editor.contacts.add', 'Kontakt hinzufügen')} onClick={() => setRows((rs) => [...rs, { name: '', role: '', org: '', phone: '' }])} />
+      </div>
+    </EditorShell>
+  )
+}
+
+/* ── Projekt-Kopf (Name / Venue / Datum / Phase / Fortschritt) ─────────────*/
+
+export interface HeaderDraft {
+  name: string
+  venue: string
+  dateLabel: string
+  phase: ShowPhase
+  progress: number
+}
+
+export function HeaderEditor({
+  open,
+  value,
+  onClose,
+  onSave,
+}: {
+  open: boolean
+  value: HeaderDraft
+  onClose: () => void
+  onSave: (next: HeaderDraft) => void
+}) {
+  const t = useT()
+  const [name, setName] = useState(value.name)
+  const [venue, setVenue] = useState(value.venue)
+  const [dateLabel, setDateLabel] = useState(value.dateLabel)
+  const [phase, setPhase] = useState<ShowPhase>(value.phase)
+  const [progressPct, setProgressPct] = useState(Math.round(value.progress * 100))
+  const phaseOpts: { value: ShowPhase; label: string }[] = [
+    { value: 'planning', label: t('overview.phase.planning', PHASE_LABEL.planning) },
+    { value: 'setup', label: t('overview.phase.setup', PHASE_LABEL.setup) },
+    { value: 'show', label: t('overview.phase.show', PHASE_LABEL.show) },
+    { value: 'teardown', label: t('overview.phase.teardown', PHASE_LABEL.teardown) },
+  ]
+  const save = () =>
+    onSave({ name: name.trim() || value.name, venue, dateLabel, phase, progress: Math.min(100, Math.max(0, progressPct)) / 100 })
+  return (
+    <EditorShell open={open} title={t('overview.editor.header.title', 'Projekt bearbeiten')} onClose={onClose} onSave={save}>
+      <div className="flex flex-col gap-3">
+        <label className="flex flex-col gap-1 text-[12px] text-av-text-secondary">
+          {t('overview.editor.header.name', 'Projektname')}
+          <TextField value={name} onChange={setName} ariaLabel={t('overview.editor.header.name', 'Projektname')} className="w-full" />
+        </label>
+        <div className="flex flex-wrap gap-3">
+          <label className="flex flex-1 flex-col gap-1 text-[12px] text-av-text-secondary">
+            {t('overview.editor.header.venue', 'Location')}
+            <TextField value={venue} onChange={setVenue} ariaLabel={t('overview.editor.header.venue', 'Location')} className="w-full" />
+          </label>
+          <label className="flex flex-1 flex-col gap-1 text-[12px] text-av-text-secondary">
+            {t('overview.editor.header.date', 'Datum')}
+            <TextField value={dateLabel} onChange={setDateLabel} ariaLabel={t('overview.editor.header.date', 'Datum')} placeholder="Sa 18. Juli 2026" className="w-full" />
+          </label>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <label className="flex flex-1 flex-col gap-1 text-[12px] text-av-text-secondary">
+            {t('overview.editor.header.phase', 'Phase')}
+            <SelectField value={phase} onChange={setPhase} options={phaseOpts} ariaLabel={t('overview.editor.header.phase', 'Phase')} className="w-full" />
+          </label>
+          <label className="flex w-40 flex-col gap-1 text-[12px] text-av-text-secondary">
+            {t('overview.editor.header.progress', 'Fortschritt (%)')}
+            <NumField value={progressPct} onChange={setProgressPct} min={0} ariaLabel={t('overview.editor.header.progress', 'Fortschritt (%)')} className="w-full" />
+          </label>
+        </div>
       </div>
     </EditorShell>
   )

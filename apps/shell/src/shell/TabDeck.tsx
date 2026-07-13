@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { emptyBoard, type ShowDetails, type SuiteProject } from '../data/project'
+import type { HeaderDraft } from './dashboardEditors'
 import { PlannerFrame } from '../embed/PlannerFrame'
 import { PlanPreview, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
@@ -54,6 +55,7 @@ export function TabDeck({
   onNavigate,
   onAssign,
   onUpdateShow,
+  onUpdateHeader,
   zoom,
   plannerSettings,
   onPlannerHistory,
@@ -72,6 +74,8 @@ export function TabDeck({
   onAssign: () => void
   /** Show-Details des Dashboards ändern (persistiert via Shell). */
   onUpdateShow?: (updater: (show: ShowDetails) => ShowDetails) => void
+  /** Projekt-Kopf (Name/Venue/Datum/Phase/Fortschritt) ändern. */
+  onUpdateHeader?: (draft: HeaderDraft) => void
   /** Zoom der Vorschau in Prozent. */
   zoom: number
   /** Suite-Einstellungen für den eingebetteten Planer (nur App-Module). */
@@ -115,7 +119,7 @@ export function TabDeck({
       {/* Übersicht = scrollbares Dashboard (keine Canvas-Leiste) */}
       {isOverview ? (
         <div className="av-scroll min-h-0 flex-1 overflow-auto p-5">
-          <OverviewSurface project={project} onNavigate={onNavigate} onAssign={onAssign} onUpdateShow={onUpdateShow} />
+          <OverviewSurface project={project} onNavigate={onNavigate} onAssign={onAssign} onUpdateShow={onUpdateShow} onUpdateHeader={onUpdateHeader} />
         </div>
       ) : isBoard ? (
         <div className="min-h-0 flex-1 p-3">

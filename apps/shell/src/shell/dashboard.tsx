@@ -15,6 +15,7 @@ import {
 } from '../data/project'
 import {
   BudgetEditor,
+  ContactsEditor,
   CrewEditor,
   LogisticsEditor,
   ScheduleEditor,
@@ -261,10 +262,19 @@ export function LogisticsCard({ logistics, onChange }: { logistics: LogisticsInf
 }
 
 /* ── Kontakte ──────────────────────────────────────────────────────────────*/
-export function ContactsCard({ contacts }: { contacts: Contact[] }) {
+export function ContactsCard({ contacts, onChange }: { contacts: Contact[]; onChange?: (next: Contact[]) => void }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
   return (
-    <Card title={t('overview.card.contacts.title', 'Kontakte')} icon="raum">
+    <Card
+      title={t('overview.card.contacts.title', 'Kontakte')}
+      icon="raum"
+      action={onChange && <EditButton onClick={() => setEditing(true)} />}
+    >
+      {onChange && (
+        <ContactsEditor open={editing} value={contacts} onClose={() => setEditing(false)} onSave={(next) => { onChange(next); setEditing(false) }} />
+      )}
+      {contacts.length === 0 && <p className="text-[12.5px] text-av-text-muted">{t('overview.card.empty', 'Noch nichts eingetragen.')}</p>}
       <ul className="flex flex-col gap-2">
         {contacts.map((c) => (
           <li key={c.name} className="flex items-center gap-2.5">

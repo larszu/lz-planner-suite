@@ -33,6 +33,7 @@ import { loadLanguage, saveLanguage, type Language } from './shell/language'
 import { LibraryPanel } from './shell/LibraryPanel'
 import { PropertiesPanel } from './shell/PropertiesPanel'
 import { TabDeck } from './shell/TabDeck'
+import type { HeaderDraft } from './shell/dashboardEditors'
 import { StatusBar } from './shell/StatusBar'
 import { buildCommands } from './shell/buildCommands'
 import { LanguageProvider, translate } from './i18n'
@@ -96,6 +97,19 @@ export function App() {
         ...h.present,
         show: updater(h.present.show),
         meta: { ...h.present.meta, saved: false },
+      }
+      return { past: [...h.past, h.present], present: next, future: [] }
+    })
+  }, [])
+  // Projekt-Kopf (Name/Venue in meta, Datum/Phase/Fortschritt in show) atomar
+  // ändern — ein Historien-Eintrag, ebenfalls als ungespeichert markiert.
+  const updateHeader = useCallback((draft: HeaderDraft) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const next: SuiteProject = {
+        ...h.present,
+        meta: { ...h.present.meta, name: draft.name, venue: draft.venue, saved: false },
+        show: { ...h.present.show, dateLabel: draft.dateLabel, phase: draft.phase, progress: draft.progress },
       }
       return { past: [...h.past, h.present], present: next, future: [] }
     })
@@ -362,6 +376,7 @@ export function App() {
             onNavigate={goToModule}
             onAssign={() => switchProject(PROJECT)}
             onUpdateShow={updateShow}
+            onUpdateHeader={updateHeader}
             zoom={zoom}
             plannerSettings={
               moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht'

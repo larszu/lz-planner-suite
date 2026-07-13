@@ -150,4 +150,28 @@ export const overview: Record<string, string> = {
   'overview.editor.logistics.detailPh': 'Load / purpose',
   'overview.editor.logistics.add': 'Add vehicle',
   'overview.editor.logistics.remove': 'Remove vehicle',
+
+  // Kontakte
+  'overview.editor.contacts.title': 'Edit contacts',
+  'overview.editor.contacts.name': 'Name',
+  'overview.editor.contacts.namePh': 'Name / company',
+  'overview.editor.contacts.role': 'Role',
+  'overview.editor.contacts.rolePh': 'Role',
+  'overview.editor.contacts.org': 'Organisation',
+  'overview.editor.contacts.orgPh': 'Area / company',
+  'overview.editor.contacts.phone': 'Phone',
+  'overview.editor.contacts.add': 'Add contact',
+  'overview.editor.contacts.remove': 'Remove contact',
+
+  // Projekt-Kopf
+  'overview.editor.header.title': 'Edit project',
+  'overview.editor.header.name': 'Project name',
+  'overview.editor.header.venue': 'Location',
+  'overview.editor.header.date': 'Date',
+  'overview.editor.header.phase': 'Phase',
+  'overview.editor.header.progress': 'Progress (%)',
+  'overview.phase.planning': 'Planning',
+  'overview.phase.setup': 'Setup',
+  'overview.phase.show': 'Show',
+  'overview.phase.teardown': 'Teardown',
 }
