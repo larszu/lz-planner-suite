@@ -4,33 +4,35 @@
   "version": "1.0.0",
   "description": "Gemeinsame App-Shell der AV Planner Suite — vereint Signal (cable), Kameras (multicam) und Licht (light) unter einer Oberfläche",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dist:app": "electron-builder --config electron-builder.js"
   },
-  "dependencies": {
+  "devDependencies": {
     "@avplan/inventory-core": "*",
     "@avplan/lexware-core": "*",
     "@avplan/ui": "*",
-    "@fontsource/inter": "^5.2.8",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
-  },
-  "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@fontsource/inter": "^5.2.8",
     "@tailwindcss/postcss": "^4.3.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.2",
+    "electron": "42.6.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.6.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
     "postcss": "^8.5.15",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "tailwindcss": "^4.3.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.62.0",
