@@ -77,4 +77,77 @@ export const overview: Record<string, string> = {
   'overview.card.logistics.distance': 'Travel',
   'overview.card.contacts.title': 'Contacts',
   'overview.card.tasks.title': 'Tasks',
+
+  // Editier-Karten (Dashboard bearbeitbar)
+  'overview.card.edit': 'Edit',
+  'overview.card.empty': 'Nothing added yet.',
+  'overview.card.tasks.toggle': 'Toggle task “{title}”',
+
+  // Departments
+  'overview.dept.all': 'All',
+  'overview.dept.video': 'Video',
+  'overview.dept.light': 'Light',
+  'overview.dept.audio': 'Audio',
+  'overview.dept.prod': 'Production',
+
+  // Editor-Hülle
+  'overview.editor.save': 'Save',
+  'overview.editor.cancel': 'Cancel',
+  'overview.editor.moveUp': 'Move up',
+  'overview.editor.moveDown': 'Move down',
+
+  // Tagesablauf
+  'overview.editor.schedule.title': 'Edit run of show',
+  'overview.editor.schedule.time': 'Time',
+  'overview.editor.schedule.name': 'Item',
+  'overview.editor.schedule.namePh': 'Programme item',
+  'overview.editor.schedule.dept': 'Department',
+  'overview.editor.schedule.add': 'Add item',
+  'overview.editor.schedule.remove': 'Remove item',
+
+  // Aufgaben
+  'overview.editor.tasks.title': 'Edit tasks',
+  'overview.editor.tasks.done': 'Done',
+  'overview.editor.tasks.name': 'Task',
+  'overview.editor.tasks.namePh': 'Task',
+  'overview.editor.tasks.owner': 'Owner',
+  'overview.editor.tasks.ownerPh': 'Who?',
+  'overview.editor.tasks.due': 'Due',
+  'overview.editor.tasks.duePh': 'When?',
+  'overview.editor.tasks.add': 'Add task',
+  'overview.editor.tasks.remove': 'Remove task',
+
+  // Crew
+  'overview.editor.crew.title': 'Edit crew',
+  'overview.editor.crew.name': 'Name',
+  'overview.editor.crew.namePh': 'Name',
+  'overview.editor.crew.role': 'Role',
+  'overview.editor.crew.rolePh': 'Role',
+  'overview.editor.crew.dept': 'Department',
+  'overview.editor.crew.call': 'Call time',
+  'overview.editor.crew.status': 'Status',
+  'overview.editor.crew.confirmed': 'confirmed',
+  'overview.editor.crew.pending': 'pending',
+  'overview.editor.crew.add': 'Add person',
+  'overview.editor.crew.remove': 'Remove person',
+
+  // Budget
+  'overview.editor.budget.title': 'Edit budget',
+  'overview.editor.budget.category': 'Category',
+  'overview.editor.budget.categoryPh': 'Category',
+  'overview.editor.budget.estimated': 'Planned €',
+  'overview.editor.budget.actual': 'Actual €',
+  'overview.editor.budget.add': 'Add category',
+  'overview.editor.budget.remove': 'Remove line',
+
+  // Logistik
+  'overview.editor.logistics.title': 'Edit logistics',
+  'overview.editor.logistics.distance': 'Travel (km)',
+  'overview.editor.logistics.vehicles': 'Vehicles',
+  'overview.editor.logistics.vehicle': 'Vehicle',
+  'overview.editor.logistics.vehiclePh': 'e.g. 7.5 t truck',
+  'overview.editor.logistics.detail': 'Load',
+  'overview.editor.logistics.detailPh': 'Load / purpose',
+  'overview.editor.logistics.add': 'Add vehicle',
+  'overview.editor.logistics.remove': 'Remove vehicle',
 }

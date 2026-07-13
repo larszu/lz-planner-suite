@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
 import type { ModuleDef, ModuleId } from '../modules/registry'
-import { emptyBoard, type SuiteProject } from '../data/project'
+import { emptyBoard, type ShowDetails, type SuiteProject } from '../data/project'
 import { PlannerFrame } from '../embed/PlannerFrame'
 import { PlanPreview, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
@@ -53,6 +53,7 @@ export function TabDeck({
   onSelect,
   onNavigate,
   onAssign,
+  onUpdateShow,
   zoom,
   plannerSettings,
   onPlannerHistory,
@@ -69,6 +70,8 @@ export function TabDeck({
   onSelect: (id: string) => void
   onNavigate: (id: ModuleId) => void
   onAssign: () => void
+  /** Show-Details des Dashboards ändern (persistiert via Shell). */
+  onUpdateShow?: (updater: (show: ShowDetails) => ShowDetails) => void
   /** Zoom der Vorschau in Prozent. */
   zoom: number
   /** Suite-Einstellungen für den eingebetteten Planer (nur App-Module). */
@@ -112,7 +115,7 @@ export function TabDeck({
       {/* Übersicht = scrollbares Dashboard (keine Canvas-Leiste) */}
       {isOverview ? (
         <div className="av-scroll min-h-0 flex-1 overflow-auto p-5">
-          <OverviewSurface project={project} onNavigate={onNavigate} onAssign={onAssign} />
+          <OverviewSurface project={project} onNavigate={onNavigate} onAssign={onAssign} onUpdateShow={onUpdateShow} />
         </div>
       ) : isBoard ? (
         <div className="min-h-0 flex-1 p-3">

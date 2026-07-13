@@ -10,7 +10,7 @@ import {
 } from '@avplan/ui'
 import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './modules/registry'
-import { PROJECT, type SuiteProject } from './data/project'
+import { PROJECT, type ShowDetails, type SuiteProject } from './data/project'
 import {
   blankProject,
   downloadProject,
@@ -85,6 +85,20 @@ export function App() {
   // Projektwechsel mit Historie (assign/clear/neu/öffnen).
   const commitProject = useCallback((next: SuiteProject | null) => {
     setHistory((h) => ({ past: [...h.past, h.present], present: next, future: [] }))
+  }, [])
+  // Show-Details des Dashboards (Tagesablauf/Crew/Budget/Aufgaben/Logistik)
+  // ändern: geht durch die Projekt-Historie (Undo/Redo) und markiert das Projekt
+  // als ungespeichert, damit die „Speichern"-Aufforderung greift.
+  const updateShow = useCallback((updater: (show: ShowDetails) => ShowDetails) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const next: SuiteProject = {
+        ...h.present,
+        show: updater(h.present.show),
+        meta: { ...h.present.meta, saved: false },
+      }
+      return { past: [...h.past, h.present], present: next, future: [] }
+    })
   }, [])
   const undo = useCallback(() => {
     setHistory((h) =>
@@ -347,6 +361,7 @@ export function App() {
             onSelect={selectItem}
             onNavigate={goToModule}
             onAssign={() => switchProject(PROJECT)}
+            onUpdateShow={updateShow}
             zoom={zoom}
             plannerSettings={
               moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht'

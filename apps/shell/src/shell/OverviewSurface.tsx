@@ -3,6 +3,7 @@ import { Badge, Button, Icon, Menu, MenuLabel, MenuSeparator } from '@avplan/ui'
 import {
   PHASE_LABEL,
   computeCounts,
+  type ShowDetails,
   type SuiteProject,
 } from '../data/project'
 import { MODULES, type ModuleId } from '../modules/registry'
@@ -211,10 +212,13 @@ export function OverviewSurface({
   project,
   onNavigate,
   onAssign,
+  onUpdateShow,
 }: {
   project: SuiteProject | null
   onNavigate: (id: ModuleId) => void
   onAssign: () => void
+  /** Show-Details (Tagesablauf/Crew/Budget/…) ändern — persistiert via Shell. */
+  onUpdateShow?: (updater: (show: ShowDetails) => ShowDetails) => void
 }) {
   const t = useT()
   const [prefs, setPrefs] = useState<DashboardPrefs>(loadDashboardPrefs)
@@ -244,14 +248,21 @@ export function OverviewSurface({
 
   const { show } = project
 
+  // Änderungs-Handler je Karte — nur gesetzt, wenn die Shell Persistenz anbietet.
+  const editSchedule = onUpdateShow && ((schedule: ShowDetails['schedule']) => onUpdateShow((s) => ({ ...s, schedule })))
+  const editCrew = onUpdateShow && ((crew: ShowDetails['crew']) => onUpdateShow((s) => ({ ...s, crew })))
+  const editBudget = onUpdateShow && ((budget: ShowDetails['budget']) => onUpdateShow((s) => ({ ...s, budget })))
+  const editTasks = onUpdateShow && ((tasks: ShowDetails['tasks']) => onUpdateShow((s) => ({ ...s, tasks })))
+  const editLogistics = onUpdateShow && ((logistics: ShowDetails['logistics']) => onUpdateShow((s) => ({ ...s, logistics })))
+
   // Renderer je Karten-Widget (nur die Masonry-Karten).
   const cardRender: Record<Exclude<WidgetId, 'gewerke'>, ReactNode> = {
-    runofshow: <RunOfShowCard schedule={show.schedule} />,
-    crew: <CrewCard crew={show.crew} />,
-    budget: <BudgetCard budget={show.budget} />,
+    runofshow: <RunOfShowCard schedule={show.schedule} onChange={editSchedule} />,
+    crew: <CrewCard crew={show.crew} onChange={editCrew} />,
+    budget: <BudgetCard budget={show.budget} onChange={editBudget} />,
     readiness: <ReadinessCard project={project} />,
-    tasks: <TasksCard tasks={show.tasks} />,
-    logistics: <LogisticsCard logistics={show.logistics} />,
+    tasks: <TasksCard tasks={show.tasks} onChange={editTasks} />,
+    logistics: <LogisticsCard logistics={show.logistics} onChange={editLogistics} />,
     contacts: <ContactsCard contacts={show.contacts} />,
   }
   const visibleCards = prefs.order.filter(
