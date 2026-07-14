@@ -4,6 +4,7 @@ import type { ModuleDef, ModuleId } from '../modules/registry'
 import { emptyBoard, type ShowDetails, type SuiteProject } from '../data/project'
 import type { HeaderDraft } from './dashboardEditors'
 import { PlannerFrame } from '../embed/PlannerFrame'
+import { NativeSignalRegion, hasNativeCable } from '../embed/NativeSignalRegion'
 import { PlanPreview, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
 import { BoardCanvas } from './BoardCanvas'
@@ -131,7 +132,11 @@ export function TabDeck({
         </div>
       ) : (
         <div className="relative min-h-0 flex-1 p-3">
-          {mounted && module.planner && module.plannerUrl ? (
+          {mounted && module.id === 'signal' && hasNativeCable() ? (
+            // Nativer Cable-Planer (WebContentsView) statt iframe — echte
+            // IPC-Funktionalität. Nur aktiv, wenn der Suite-Host ihn bereitstellt.
+            <NativeSignalRegion />
+          ) : mounted && module.planner && module.plannerUrl ? (
             <PlannerFrame url={module.plannerUrl} title={t(`config.mod.${module.id}.title`, module.title)} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} />
           ) : (
             <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-bg">
