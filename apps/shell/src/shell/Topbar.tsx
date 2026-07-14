@@ -52,11 +52,9 @@ function ProjectPicker({
           <MenuLabel>{t('chrome.topbar.projectLabel', 'Projekt')}</MenuLabel>
           <MenuItem
             icon={<Icon name="modules" size={16} style={{ color: 'var(--av-accent)' }} />}
-            active={project !== null}
-            hint={project !== null ? <Icon name="check" size={14} /> : undefined}
             onClick={() => { onAssign(); close() }}
           >
-            Sommershow 2026
+            {t('chrome.topbar.manageProjects', 'Projekte verwalten…')}
           </MenuItem>
           <MenuItem
             icon={<Icon name="close" size={16} />}
