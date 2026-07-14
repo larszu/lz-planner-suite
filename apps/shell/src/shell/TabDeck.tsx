@@ -15,31 +15,23 @@ type OverlayId = 'fov' | 'heat'
 interface ToolbarButton {
   icon: Parameters<typeof Icon>[0]['name']
   label: string
-  /** overlay = Ein/Aus-Overlay, edit = im Planer bearbeiten. Reine „Werkzeug"-
-   *  Buttons (Auswahl/Verschieben) gab es früher, sie hatten auf der statischen
-   *  Vorschau aber keine Wirkung (Elemente sind ohnehin per Klick wählbar) und
-   *  wurden als tote Affordanz entfernt. */
-  kind: 'overlay' | 'edit'
-  overlay?: OverlayId
-  sep?: boolean
+  /** Nur echte Overlay-Toggles (FOV/Heatmap), die die Vorschau wirklich
+   *  umschalten. Frühere „Gerät platzieren / Messen / Auto-Route"-Buttons taten
+   *  alle nur dasselbe (Planer öffnen) und wurden als irreführende Attrappen
+   *  entfernt — „Im Planer öffnen" steht bereits im Tab-Kopf. */
+  kind: 'overlay'
+  overlay: OverlayId
 }
 
 type CanvasModuleId = 'signal' | 'cameras' | 'licht'
 
 const toolbars = (t: TFunc): Record<CanvasModuleId, ToolbarButton[]> => ({
-  signal: [
-    { icon: 'plus', label: t('chrome.tabdeck.tool.placeDevice', 'Gerät platzieren (im Planer)'), kind: 'edit' },
-    { icon: 'nodes', label: t('chrome.tabdeck.tool.autoRoute', 'Auto-Route (im Planer)'), kind: 'edit' },
-  ],
+  signal: [],
   cameras: [
-    { icon: 'camera', label: t('chrome.tabdeck.tool.placeCamera', 'Kamera platzieren (im Planer)'), kind: 'edit' },
-    { icon: 'ruler', label: t('chrome.tabdeck.tool.measure', 'Messen (im Planer)'), kind: 'edit' },
-    { icon: 'eye', label: t('chrome.tabdeck.tool.showFov', 'FOV anzeigen'), kind: 'overlay', overlay: 'fov', sep: true },
+    { icon: 'eye', label: t('chrome.tabdeck.tool.showFov', 'FOV anzeigen'), kind: 'overlay', overlay: 'fov' },
   ],
   licht: [
-    { icon: 'light', label: t('chrome.tabdeck.tool.placeFixture', 'Fixture platzieren (im Planer)'), kind: 'edit' },
-    { icon: 'ruler', label: t('chrome.tabdeck.tool.measure', 'Messen (im Planer)'), kind: 'edit' },
-    { icon: 'eye', label: t('chrome.tabdeck.tool.heatmap', 'Heatmap'), kind: 'overlay', overlay: 'heat', sep: true },
+    { icon: 'eye', label: t('chrome.tabdeck.tool.heatmap', 'Heatmap'), kind: 'overlay', overlay: 'heat' },
   ],
 })
 
@@ -140,27 +132,24 @@ export function TabDeck({
             <PlannerFrame url={module.plannerUrl} title={t(`config.mod.${module.id}.title`, module.title)} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} />
           ) : (
             <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-bg">
-              {/* schwebende Werkzeugleiste */}
+              {/* schwebende Werkzeugleiste — nur echte Overlay-Toggles (FOV/Heatmap) */}
+              {toolbars(t)[module.id as CanvasModuleId].length > 0 && (
               <div className="pointer-events-auto absolute left-1/2 top-4 z-10 -translate-x-1/2">
                 <div className="av-toolbar">
                   {toolbars(t)[module.id as CanvasModuleId].map((b) => {
-                    const active =
-                      b.kind === 'overlay' ? (b.overlay === 'fov' ? showFov : showHeat) : false
+                    const active = b.overlay === 'fov' ? showFov : showHeat
                     const onClick = () => {
-                      if (b.kind === 'overlay') {
-                        if (b.overlay === 'fov') setShowFov((v) => !v)
-                        else setShowHeat((v) => !v)
-                      } else if (b.kind === 'edit') onToggleMount()
+                      if (b.overlay === 'fov') setShowFov((v) => !v)
+                      else setShowHeat((v) => !v)
                     }
                     return (
                       <span key={b.label} className="contents">
-                        {b.sep && <span className="av-toolbar-sep" />}
                         <button
                           type="button"
                           className="av-toolbar-btn av-focus"
                           data-active={active ? 'true' : undefined}
                           aria-label={b.label}
-                          aria-pressed={b.kind !== 'edit' ? active : undefined}
+                          aria-pressed={active}
                           title={b.label}
                           onClick={onClick}
                         >
@@ -171,6 +160,7 @@ export function TabDeck({
                   })}
                 </div>
               </div>
+              )}
 
               {/* Modul-Fläche (zoombar) */}
               <div

@@ -24,6 +24,18 @@ import { useT, type TFunc } from '../i18n'
 const fieldCls =
   'av-focus rounded-av-control border border-av-border bg-av-surface-3 px-2 py-1 text-[12.5px] text-av-text'
 
+/** ISO-Datum (YYYY-MM-DD) → deutsch formatiertes Label (z. B. „Sa, 18. Juli 2026"). */
+function formatGermanDate(iso: string): string {
+  try {
+    const [y, m, d] = iso.split('-').map(Number)
+    return new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1)).toLocaleDateString('de-DE', {
+      weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
+    })
+  } catch {
+    return iso
+  }
+}
+
 /* ── kleine Feld-Bausteine ─────────────────────────────────────────────────*/
 
 function TextField({
@@ -567,7 +579,16 @@ export function HeaderEditor({
           </label>
           <label className="flex flex-1 flex-col gap-1 text-[12px] text-av-text-secondary">
             {t('overview.editor.header.date', 'Datum')}
-            <TextField value={dateLabel} onChange={setDateLabel} ariaLabel={t('overview.editor.header.date', 'Datum')} placeholder="Sa 18. Juli 2026" className="w-full" />
+            <div className="flex gap-2">
+              <TextField value={dateLabel} onChange={setDateLabel} ariaLabel={t('overview.editor.header.date', 'Datum')} placeholder="Sa 18. Juli 2026" className="flex-1" />
+              {/* Datums-Picker füllt das Freitext-Feld mit einem deutsch formatierten Datum. */}
+              <input
+                type="date"
+                aria-label={t('overview.editor.header.datePick', 'Datum wählen')}
+                className={`${fieldCls} w-[9.5rem]`}
+                onChange={(e) => { if (e.target.value) setDateLabel(formatGermanDate(e.target.value)) }}
+              />
+            </div>
           </label>
         </div>
         <div className="flex flex-wrap gap-3">
