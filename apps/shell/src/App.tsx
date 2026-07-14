@@ -427,7 +427,7 @@ export function App() {
             dort ausgeblendet (Navigation läuft über die Rail). */}
         {libraryOpen && (
           <aside className="hidden w-64 flex-none flex-col border-r border-av-border-muted md:flex" aria-label={tt('config.aria.libraryLayers', 'Bibliothek und Ebenen')}>
-            <LibraryPanel key={mod.id} module={mod} project={project} hiddenLayers={hiddenLayers} onToggleLayer={toggleLayer} />
+            <LibraryPanel key={mod.id} module={mod} project={project} hiddenLayers={hiddenLayers} onToggleLayer={toggleLayer} selectedId={selected[moduleId]} onSelect={selectItem} />
           </aside>
         )}
 
