@@ -456,21 +456,60 @@ export function ContactsEditor({
   onSave: (next: Contact[]) => void
 }) {
   const t = useT()
-  // Nur die Kern-Felder hier bearbeiten; Rechnungs-/Lexware-Felder (billTo,
-  // email, street, …) bleiben unverändert erhalten (Spread des Originals).
   const [rows, setRows] = useState<Contact[]>(() => value.map((r) => ({ ...r })))
   const patch = (i: number, p: Partial<Contact>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...p } : r)))
+  // Rechnungsempfänger ist exklusiv — nur ein Kontakt trägt billTo. Genau dieser
+  // wird in der Beleg-Erstellung (Lexware) als Kunde/Empfänger verwendet.
+  const toggleBillTo = (i: number) =>
+    setRows((rs) => rs.map((r, idx) => ({ ...r, billTo: idx === i ? !r.billTo : false })))
   return (
     <EditorShell open={open} title={t('overview.editor.contacts.title', 'Kontakte bearbeiten')} onClose={onClose} onSave={() => onSave(rows)}>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         {rows.map((r, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <TextField value={r.name} onChange={(v) => patch(i, { name: v })} ariaLabel={t('overview.editor.contacts.name', 'Name')} placeholder={t('overview.editor.contacts.namePh', 'Name / Firma')} className="w-40" />
-            <TextField value={r.role} onChange={(v) => patch(i, { role: v })} ariaLabel={t('overview.editor.contacts.role', 'Funktion')} placeholder={t('overview.editor.contacts.rolePh', 'Funktion')} className="w-32" />
-            <TextField value={r.org} onChange={(v) => patch(i, { org: v })} ariaLabel={t('overview.editor.contacts.org', 'Organisation')} placeholder={t('overview.editor.contacts.orgPh', 'Bereich / Firma')} className="flex-1" />
-            <TextField value={r.phone} onChange={(v) => patch(i, { phone: v })} ariaLabel={t('overview.editor.contacts.phone', 'Telefon')} placeholder="+49 …" className="w-36" />
-            <RowTools index={i} total={rows.length} onMove={(f, d) => setRows((rs) => moveItem(rs, f, d))} onRemove={(idx) => setRows((rs) => rs.filter((_, k) => k !== idx))} removeLabel={t('overview.editor.contacts.remove', 'Kontakt entfernen')} />
+          <div key={i} className="rounded-av-control border border-av-border bg-av-surface-2 p-2.5">
+            <div className="flex items-center gap-2">
+              <TextField value={r.name} onChange={(v) => patch(i, { name: v })} ariaLabel={t('overview.editor.contacts.name', 'Name')} placeholder={t('overview.editor.contacts.namePh', 'Name / Firma')} className="w-40" />
+              <TextField value={r.role} onChange={(v) => patch(i, { role: v })} ariaLabel={t('overview.editor.contacts.role', 'Funktion')} placeholder={t('overview.editor.contacts.rolePh', 'Funktion')} className="w-32" />
+              <TextField value={r.org} onChange={(v) => patch(i, { org: v })} ariaLabel={t('overview.editor.contacts.org', 'Organisation')} placeholder={t('overview.editor.contacts.orgPh', 'Bereich / Firma')} className="flex-1" />
+              <TextField value={r.phone} onChange={(v) => patch(i, { phone: v })} ariaLabel={t('overview.editor.contacts.phone', 'Telefon')} placeholder="+49 …" className="w-36" />
+              <RowTools index={i} total={rows.length} onMove={(f, d) => setRows((rs) => moveItem(rs, f, d))} onRemove={(idx) => setRows((rs) => rs.filter((_, k) => k !== idx))} removeLabel={t('overview.editor.contacts.remove', 'Kontakt entfernen')} />
+            </div>
+            {/* Rechnungsempfänger-Umschalter — blendet die Kunden-/Rechnungsdaten ein. */}
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!r.billTo}
+                onClick={() => toggleBillTo(i)}
+                className="av-focus flex items-center gap-1.5 rounded-av-control px-1.5 py-1 text-[12px] text-av-text-secondary hover:bg-av-surface-3"
+              >
+                <span
+                  className="grid h-4 w-4 flex-none place-items-center rounded border"
+                  style={{ background: r.billTo ? 'var(--av-accent)' : 'transparent', borderColor: r.billTo ? 'var(--av-accent)' : 'var(--av-border)', color: 'var(--av-accent-text)' }}
+                >
+                  {r.billTo && <Icon name="check" size={12} />}
+                </span>
+                {t('overview.editor.contacts.billTo', 'Rechnungsempfänger (Kunde)')}
+              </button>
+              {r.billTo && (
+                <span className="text-[11px] text-av-text-muted">{t('overview.editor.contacts.billToHint', 'wird bei Belegen (Lexware) als Kunde verwendet')}</span>
+              )}
+            </div>
+            {r.billTo && (
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="col-span-2 sm:col-span-4">
+                  <TextField value={r.email ?? ''} onChange={(v) => patch(i, { email: v || undefined })} ariaLabel={t('overview.editor.contacts.email', 'E-Mail')} placeholder={t('overview.editor.contacts.emailPh', 'E-Mail (für Beleg-Versand)')} className="w-full" />
+                </div>
+                <div className="col-span-2 sm:col-span-4">
+                  <TextField value={r.street ?? ''} onChange={(v) => patch(i, { street: v || undefined })} ariaLabel={t('overview.editor.contacts.street', 'Straße')} placeholder={t('overview.editor.contacts.streetPh', 'Straße & Nr.')} className="w-full" />
+                </div>
+                <TextField value={r.zip ?? ''} onChange={(v) => patch(i, { zip: v || undefined })} ariaLabel={t('overview.editor.contacts.zip', 'PLZ')} placeholder={t('overview.editor.contacts.zip', 'PLZ')} className="w-full" />
+                <TextField value={r.city ?? ''} onChange={(v) => patch(i, { city: v || undefined })} ariaLabel={t('overview.editor.contacts.city', 'Ort')} placeholder={t('overview.editor.contacts.city', 'Ort')} className="w-full" />
+                <TextField value={r.vatId ?? ''} onChange={(v) => patch(i, { vatId: v || undefined })} ariaLabel={t('overview.editor.contacts.vatId', 'USt-IdNr')} placeholder={t('overview.editor.contacts.vatId', 'USt-IdNr')} className="w-full" />
+                <TextField value={r.customerNumber ?? ''} onChange={(v) => patch(i, { customerNumber: v || undefined })} ariaLabel={t('overview.editor.contacts.customerNumber', 'Kd-Nr')} placeholder={t('overview.editor.contacts.customerNumber', 'Kd-Nr')} className="w-full" />
+              </div>
+            )}
           </div>
         ))}
         <AddRowButton label={t('overview.editor.contacts.add', 'Kontakt hinzufügen')} onClick={() => setRows((rs) => [...rs, { name: '', role: '', org: '', phone: '' }])} />

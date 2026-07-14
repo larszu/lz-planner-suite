@@ -259,7 +259,7 @@ function BillingBody({ project }: { project: SuiteProject }) {
             </div>
           </div>
         ) : (
-          <div className="text-[12.5px] text-av-warn">{t('billing.noRecipient', 'Kein Rechnungsempfänger gesetzt — Kontakt im Projekt als „Rechnungsempfänger" markieren.')}</div>
+          <div className="text-[12.5px] text-av-warn">{t('billing.noRecipient', 'Kein Kunde gesetzt — in der Übersicht unter „Kontakte → Bearbeiten" einen Kontakt als „Rechnungsempfänger" markieren und die Rechnungsdaten (Adresse, USt-IdNr) eintragen.')}</div>
         )}
       </section>
 
