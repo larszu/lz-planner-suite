@@ -32,8 +32,9 @@ export function ProjectHubModal({
   onChanged: () => void
 }) {
   const t = useT()
-  // Neuladen der Liste über einen Zähler (Store ist die Quelle).
+  // Liste aus dem Store; ein Zähler erzwingt Neuladen nach Mutationen.
   const [rev, setRev] = useState(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- rev triggert bewusst das Neuladen
   const projects = useMemo<ProjectListEntry[]>(() => (open ? listProjects() : []), [open, rev])
   const refresh = () => setRev((r) => r + 1)
 

@@ -130,15 +130,19 @@ function BillingBody({ project, onPersistSettings }: { project: SuiteProject; on
   // ziel, Gültigkeit, Einleitung & Bemerkung beim Schließen verloren. Ein Ref
   // hält den letzten Stand, damit die Unmount-Cleanup ihn sieht.
   const latestSettings = useRef<BillingSettings>(defaults)
-  latestSettings.current = {
-    taxType,
-    taxRatePercent: defaults.taxRatePercent,
-    rentalDays: defaults.rentalDays,
-    paymentTermDays: payDays,
-    quoteValidDays: validDays,
-    introduction: intro,
-    remark,
-  }
+  // Ref NICHT im Render mutieren (react-hooks/refs) — in einem Effekt, der bei
+  // jeder Änderung läuft, den letzten Stand festhalten.
+  useEffect(() => {
+    latestSettings.current = {
+      taxType,
+      taxRatePercent: defaults.taxRatePercent,
+      rentalDays: defaults.rentalDays,
+      paymentTermDays: payDays,
+      quoteValidDays: validDays,
+      introduction: intro,
+      remark,
+    }
+  })
   useEffect(() => {
     if (!onPersistSettings) return
     return () => {
