@@ -10,7 +10,7 @@ import {
 } from '@avplan/ui'
 import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './modules/registry'
-import { PROJECT, type SuiteProject } from './data/project'
+import { PROJECT, type ShowDetails, type SuiteProject } from './data/project'
 import {
   blankProject,
   downloadProject,
@@ -33,6 +33,7 @@ import { loadLanguage, saveLanguage, type Language } from './shell/language'
 import { LibraryPanel } from './shell/LibraryPanel'
 import { PropertiesPanel } from './shell/PropertiesPanel'
 import { TabDeck } from './shell/TabDeck'
+import type { HeaderDraft } from './shell/dashboardEditors'
 import { StatusBar } from './shell/StatusBar'
 import { buildCommands } from './shell/buildCommands'
 import { LanguageProvider, translate } from './i18n'
@@ -85,6 +86,33 @@ export function App() {
   // Projektwechsel mit Historie (assign/clear/neu/öffnen).
   const commitProject = useCallback((next: SuiteProject | null) => {
     setHistory((h) => ({ past: [...h.past, h.present], present: next, future: [] }))
+  }, [])
+  // Show-Details des Dashboards (Tagesablauf/Crew/Budget/Aufgaben/Logistik)
+  // ändern: geht durch die Projekt-Historie (Undo/Redo) und markiert das Projekt
+  // als ungespeichert, damit die „Speichern"-Aufforderung greift.
+  const updateShow = useCallback((updater: (show: ShowDetails) => ShowDetails) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const next: SuiteProject = {
+        ...h.present,
+        show: updater(h.present.show),
+        meta: { ...h.present.meta, saved: false },
+      }
+      return { past: [...h.past, h.present], present: next, future: [] }
+    })
+  }, [])
+  // Projekt-Kopf (Name/Venue in meta, Datum/Phase/Fortschritt in show) atomar
+  // ändern — ein Historien-Eintrag, ebenfalls als ungespeichert markiert.
+  const updateHeader = useCallback((draft: HeaderDraft) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const next: SuiteProject = {
+        ...h.present,
+        meta: { ...h.present.meta, name: draft.name, venue: draft.venue, saved: false },
+        show: { ...h.present.show, dateLabel: draft.dateLabel, phase: draft.phase, progress: draft.progress },
+      }
+      return { past: [...h.past, h.present], present: next, future: [] }
+    })
   }, [])
   const undo = useCallback(() => {
     setHistory((h) =>
@@ -347,6 +375,8 @@ export function App() {
             onSelect={selectItem}
             onNavigate={goToModule}
             onAssign={() => switchProject(PROJECT)}
+            onUpdateShow={updateShow}
+            onUpdateHeader={updateHeader}
             zoom={zoom}
             plannerSettings={
               moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht'

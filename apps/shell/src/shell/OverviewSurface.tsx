@@ -3,6 +3,7 @@ import { Badge, Button, Icon, Menu, MenuLabel, MenuSeparator } from '@avplan/ui'
 import {
   PHASE_LABEL,
   computeCounts,
+  type ShowDetails,
   type SuiteProject,
 } from '../data/project'
 import { MODULES, type ModuleId } from '../modules/registry'
@@ -25,6 +26,7 @@ import {
   type WidgetId,
 } from './dashboardPrefs'
 import { DashboardGrid, type DashboardItem } from './DashboardGrid'
+import { HeaderEditor, type HeaderDraft } from './dashboardEditors'
 import { useT, format, type TFunc } from '../i18n'
 import { WIDGET_LABEL as WIDGET_LABEL_DE } from './dashboardPrefs'
 
@@ -211,13 +213,20 @@ export function OverviewSurface({
   project,
   onNavigate,
   onAssign,
+  onUpdateShow,
+  onUpdateHeader,
 }: {
   project: SuiteProject | null
   onNavigate: (id: ModuleId) => void
   onAssign: () => void
+  /** Show-Details (Tagesablauf/Crew/Budget/…) ändern — persistiert via Shell. */
+  onUpdateShow?: (updater: (show: ShowDetails) => ShowDetails) => void
+  /** Projekt-Kopf (Name/Venue/Datum/Phase/Fortschritt) ändern. */
+  onUpdateHeader?: (draft: HeaderDraft) => void
 }) {
   const t = useT()
   const [prefs, setPrefs] = useState<DashboardPrefs>(loadDashboardPrefs)
+  const [headerEditing, setHeaderEditing] = useState(false)
 
   const persist = (next: DashboardPrefs) => {
     saveDashboardPrefs(next)
@@ -244,15 +253,23 @@ export function OverviewSurface({
 
   const { show } = project
 
+  // Änderungs-Handler je Karte — nur gesetzt, wenn die Shell Persistenz anbietet.
+  const editSchedule = onUpdateShow && ((schedule: ShowDetails['schedule']) => onUpdateShow((s) => ({ ...s, schedule })))
+  const editCrew = onUpdateShow && ((crew: ShowDetails['crew']) => onUpdateShow((s) => ({ ...s, crew })))
+  const editBudget = onUpdateShow && ((budget: ShowDetails['budget']) => onUpdateShow((s) => ({ ...s, budget })))
+  const editTasks = onUpdateShow && ((tasks: ShowDetails['tasks']) => onUpdateShow((s) => ({ ...s, tasks })))
+  const editLogistics = onUpdateShow && ((logistics: ShowDetails['logistics']) => onUpdateShow((s) => ({ ...s, logistics })))
+  const editContacts = onUpdateShow && ((contacts: ShowDetails['contacts']) => onUpdateShow((s) => ({ ...s, contacts })))
+
   // Renderer je Karten-Widget (nur die Masonry-Karten).
   const cardRender: Record<Exclude<WidgetId, 'gewerke'>, ReactNode> = {
-    runofshow: <RunOfShowCard schedule={show.schedule} />,
-    crew: <CrewCard crew={show.crew} />,
-    budget: <BudgetCard budget={show.budget} />,
+    runofshow: <RunOfShowCard schedule={show.schedule} onChange={editSchedule} />,
+    crew: <CrewCard crew={show.crew} onChange={editCrew} />,
+    budget: <BudgetCard budget={show.budget} onChange={editBudget} />,
     readiness: <ReadinessCard project={project} />,
-    tasks: <TasksCard tasks={show.tasks} />,
-    logistics: <LogisticsCard logistics={show.logistics} />,
-    contacts: <ContactsCard contacts={show.contacts} />,
+    tasks: <TasksCard tasks={show.tasks} onChange={editTasks} />,
+    logistics: <LogisticsCard logistics={show.logistics} onChange={editLogistics} />,
+    contacts: <ContactsCard contacts={show.contacts} onChange={editContacts} />,
   }
   const visibleCards = prefs.order.filter(
     (id): id is Exclude<WidgetId, 'gewerke'> =>
@@ -270,7 +287,24 @@ export function OverviewSurface({
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-av-text">{project.meta.name}</h1>
             <Badge tone="accent" dot>{PHASE_LABEL[show.phase]}</Badge>
+            {onUpdateHeader && (
+              <button
+                type="button"
+                className="av-focus rounded-av-control px-1.5 py-0.5 text-[11px] font-medium text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
+                onClick={() => setHeaderEditing(true)}
+              >
+                {t('overview.card.edit', 'Bearbeiten')}
+              </button>
+            )}
           </div>
+          {onUpdateHeader && (
+            <HeaderEditor
+              open={headerEditing}
+              value={{ name: project.meta.name, venue: project.meta.venue, dateLabel: show.dateLabel, phase: show.phase, progress: show.progress }}
+              onClose={() => setHeaderEditing(false)}
+              onSave={(draft) => { onUpdateHeader(draft); setHeaderEditing(false) }}
+            />
+          )}
           <p className="mt-1 text-sm text-av-text-muted">
             {format(t('overview.header.meta', '{venue} · {date} · Version {version}'), {
               venue: project.meta.venue,

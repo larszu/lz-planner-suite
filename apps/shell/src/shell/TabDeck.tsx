@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
 import type { ModuleDef, ModuleId } from '../modules/registry'
-import { emptyBoard, type SuiteProject } from '../data/project'
+import { emptyBoard, type ShowDetails, type SuiteProject } from '../data/project'
+import type { HeaderDraft } from './dashboardEditors'
 import { PlannerFrame } from '../embed/PlannerFrame'
+import { NativeSignalRegion, hasNativeCable } from '../embed/NativeSignalRegion'
 import { PlanPreview, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
 import { BoardCanvas } from './BoardCanvas'
@@ -53,6 +55,8 @@ export function TabDeck({
   onSelect,
   onNavigate,
   onAssign,
+  onUpdateShow,
+  onUpdateHeader,
   zoom,
   plannerSettings,
   onPlannerHistory,
@@ -69,6 +73,10 @@ export function TabDeck({
   onSelect: (id: string) => void
   onNavigate: (id: ModuleId) => void
   onAssign: () => void
+  /** Show-Details des Dashboards ändern (persistiert via Shell). */
+  onUpdateShow?: (updater: (show: ShowDetails) => ShowDetails) => void
+  /** Projekt-Kopf (Name/Venue/Datum/Phase/Fortschritt) ändern. */
+  onUpdateHeader?: (draft: HeaderDraft) => void
   /** Zoom der Vorschau in Prozent. */
   zoom: number
   /** Suite-Einstellungen für den eingebetteten Planer (nur App-Module). */
@@ -112,7 +120,7 @@ export function TabDeck({
       {/* Übersicht = scrollbares Dashboard (keine Canvas-Leiste) */}
       {isOverview ? (
         <div className="av-scroll min-h-0 flex-1 overflow-auto p-5">
-          <OverviewSurface project={project} onNavigate={onNavigate} onAssign={onAssign} />
+          <OverviewSurface project={project} onNavigate={onNavigate} onAssign={onAssign} onUpdateShow={onUpdateShow} onUpdateHeader={onUpdateHeader} />
         </div>
       ) : isBoard ? (
         <div className="min-h-0 flex-1 p-3">
@@ -124,7 +132,11 @@ export function TabDeck({
         </div>
       ) : (
         <div className="relative min-h-0 flex-1 p-3">
-          {mounted && module.planner && module.plannerUrl ? (
+          {mounted && module.id === 'signal' && hasNativeCable() ? (
+            // Nativer Cable-Planer (WebContentsView) statt iframe — echte
+            // IPC-Funktionalität. Nur aktiv, wenn der Suite-Host ihn bereitstellt.
+            <NativeSignalRegion />
+          ) : mounted && module.planner && module.plannerUrl ? (
             <PlannerFrame url={module.plannerUrl} title={t(`config.mod.${module.id}.title`, module.title)} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} />
           ) : (
             <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-bg">

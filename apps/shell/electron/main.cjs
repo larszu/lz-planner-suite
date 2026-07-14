@@ -10,9 +10,15 @@
 // relativen Asset-Pfaden und eigenen CSPs — ein standard/secure-Schema gibt
 // jedem Planer eine stabile, gleichbleibende Origin (planner-signal://app/…),
 // unter der Assets, dynamische Imports und Worker sauber auflösen.
-const { app, BrowserWindow, shell, protocol, net } = require('electron')
+const { app, BrowserWindow, shell, protocol, net, ipcMain, WebContentsView } = require('electron')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
+
+// Nativer Cable-Modus (experimentell, opt-in): echte Cable-Software mit IPC in
+// einer WebContentsView statt iframe. Standardmäßig AUS — der ausgelieferte
+// Build bleibt der stabile Phase-1-iframe-Pfad, bis der native Pfad in einem
+// gepackten Build verifiziert ist.
+const NATIVE_CABLE = process.env.SUITE_NATIVE_CABLE === '1'
 
 // Schema-Slug → Planer-Verzeichnis unter apps/shell/planners/.
 const PLANNERS = {
@@ -78,7 +84,33 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   }
+
+  if (NATIVE_CABLE) setupNativeCable(win)
+
+  return win
 }
+
+// Nativen Cable-Host an ein Fenster binden und die Steuer-Kanäle registrieren.
+// Der Renderer meldet die Bildschirm-Bounds des Signal-Feldes und Sichtbarkeit;
+// der Host positioniert die WebContentsView entsprechend.
+let cableHost = null
+function setupNativeCable(win) {
+  try {
+    const { createCableHost } = require('./cableHost.cjs')
+    cableHost = createCableHost(win, { WebContentsView })
+  } catch (err) {
+    console.warn(`[main] nativer Cable-Host nicht initialisierbar: ${err && err.message}`)
+    cableHost = null
+  }
+}
+
+// sendSync-Abfrage aus dem Preload: ist der native Cable-Pfad aktiv?
+ipcMain.on('suiteHost:cable:available', (e) => {
+  e.returnValue = NATIVE_CABLE && !!cableHost
+})
+ipcMain.handle('suiteHost:cable:show', (_e, bounds) => cableHost?.show(bounds))
+ipcMain.handle('suiteHost:cable:setBounds', (_e, bounds) => { cableHost?.setBounds(bounds); return true })
+ipcMain.handle('suiteHost:cable:hide', () => { cableHost?.hide(); return true })
 
 app.whenReady().then(() => {
   registerPlannerProtocols()

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Badge, Icon, type IconName } from '@avplan/ui'
 import {
   DEPARTMENT_COLOR,
@@ -13,7 +13,29 @@ import {
   type ScheduleItem,
   type SuiteProject,
 } from '../data/project'
+import {
+  BudgetEditor,
+  ContactsEditor,
+  CrewEditor,
+  LogisticsEditor,
+  ScheduleEditor,
+  TasksEditor,
+} from './dashboardEditors'
 import { useT, format } from '../i18n'
+
+/** Dezente „Bearbeiten"-Schaltfläche im Karten-Kopf (nur wenn editierbar). */
+function EditButton({ onClick }: { onClick: () => void }) {
+  const t = useT()
+  return (
+    <button
+      type="button"
+      className="av-focus rounded-av-control px-1.5 py-0.5 text-[11px] font-medium text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
+      onClick={onClick}
+    >
+      {t('overview.card.edit', 'Bearbeiten')}
+    </button>
+  )
+}
 
 const fmtEur = (n: number) => `${n.toLocaleString('de-DE')} €`
 
@@ -35,7 +57,10 @@ export function Card({
       <header className="flex items-center gap-2 border-b border-av-border-muted px-3.5 py-2.5">
         <Icon name={icon} size={14} style={{ color: 'var(--av-text-muted)' }} />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-av-text-muted">{title}</span>
-        {action && <span className="ml-auto">{action}</span>}
+        {/* mr-14 lässt oben rechts Platz für die schwebenden Grid-Steuerungen
+            (Ziehen/Schließen), die bei Hover/Fokus über die Kartenecke einblenden
+            — sonst überdecken sie die „Bearbeiten"-Schaltfläche. */}
+        {action && <span className="ml-auto mr-14">{action}</span>}
       </header>
       <div className="flex-1 p-3.5">{children}</div>
     </section>
@@ -43,10 +68,24 @@ export function Card({
 }
 
 /* ── Run of Show / Tagesablauf ─────────────────────────────────────────────*/
-export function RunOfShowCard({ schedule }: { schedule: ScheduleItem[] }) {
+export function RunOfShowCard({ schedule, onChange }: { schedule: ScheduleItem[]; onChange?: (next: ScheduleItem[]) => void }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
   return (
-    <Card title={t('overview.card.runofshow.title', 'Tagesablauf')} icon="grid" action={<Badge tone="accent">{format(t('overview.card.runofshow.points', '{n} Punkte'), { n: schedule.length })}</Badge>}>
+    <Card
+      title={t('overview.card.runofshow.title', 'Tagesablauf')}
+      icon="grid"
+      action={
+        <span className="flex items-center gap-1.5">
+          <Badge tone="accent">{format(t('overview.card.runofshow.points', '{n} Punkte'), { n: schedule.length })}</Badge>
+          {onChange && <EditButton onClick={() => setEditing(true)} />}
+        </span>
+      }
+    >
+      {onChange && (
+        <ScheduleEditor open={editing} value={schedule} onClose={() => setEditing(false)} onSave={(next) => { onChange(next); setEditing(false) }} />
+      )}
+      {schedule.length === 0 && <p className="text-[12.5px] text-av-text-muted">{t('overview.card.empty', 'Noch nichts eingetragen.')}</p>}
       <ol className="flex flex-col gap-0">
         {schedule.map((item, i) => {
           const color = item.dept === 'all' ? 'var(--av-text-faint)' : DEPARTMENT_COLOR[item.dept]
@@ -73,15 +112,25 @@ export function RunOfShowCard({ schedule }: { schedule: ScheduleItem[] }) {
 }
 
 /* ── Crew / Team ───────────────────────────────────────────────────────────*/
-export function CrewCard({ crew }: { crew: CrewMember[] }) {
+export function CrewCard({ crew, onChange }: { crew: CrewMember[]; onChange?: (next: CrewMember[]) => void }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
   const pending = crew.filter((c) => c.status === 'pending').length
   return (
     <Card
       title={t('overview.card.crew.title', 'Crew')}
       icon="raum"
-      action={pending > 0 ? <Badge tone="warn">{format(t('overview.badge.open', '{n} offen'), { n: pending })}</Badge> : <Badge tone="ok">{t('overview.card.crew.complete', 'komplett')}</Badge>}
+      action={
+        <span className="flex items-center gap-1.5">
+          {crew.length === 0 ? null : pending > 0 ? <Badge tone="warn">{format(t('overview.badge.open', '{n} offen'), { n: pending })}</Badge> : <Badge tone="ok">{t('overview.card.crew.complete', 'komplett')}</Badge>}
+          {onChange && <EditButton onClick={() => setEditing(true)} />}
+        </span>
+      }
     >
+      {onChange && (
+        <CrewEditor open={editing} value={crew} onClose={() => setEditing(false)} onSave={(next) => { onChange(next); setEditing(false) }} />
+      )}
+      {crew.length === 0 && <p className="text-[12.5px] text-av-text-muted">{t('overview.card.empty', 'Noch nichts eingetragen.')}</p>}
       <ul className="flex flex-col gap-1.5">
         {crew.map((c) => (
           <li key={c.name} className="flex items-center gap-2.5">
@@ -100,12 +149,20 @@ export function CrewCard({ crew }: { crew: CrewMember[] }) {
 }
 
 /* ── Budget ────────────────────────────────────────────────────────────────*/
-export function BudgetCard({ budget }: { budget: BudgetLine[] }) {
+export function BudgetCard({ budget, onChange }: { budget: BudgetLine[]; onChange?: (next: BudgetLine[]) => void }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
   const totals = budgetTotals(budget)
   const over = totals.actual > totals.estimated
   return (
-    <Card title={t('overview.card.budget.title', 'Budget')} icon="modules">
+    <Card
+      title={t('overview.card.budget.title', 'Budget')}
+      icon="modules"
+      action={onChange && <EditButton onClick={() => setEditing(true)} />}
+    >
+      {onChange && (
+        <BudgetEditor open={editing} value={budget} onClose={() => setEditing(false)} onSave={(next) => { onChange(next); setEditing(false) }} />
+      )}
       <div className="mb-3 flex items-baseline justify-between">
         <span className="av-num text-xl font-bold text-av-text">{fmtEur(totals.actual)}</span>
         <span className="text-[12px] text-av-text-muted">
@@ -173,10 +230,18 @@ export function ReadinessCard({ project }: { project: SuiteProject }) {
 }
 
 /* ── Logistik ──────────────────────────────────────────────────────────────*/
-export function LogisticsCard({ logistics }: { logistics: LogisticsInfo }) {
+export function LogisticsCard({ logistics, onChange }: { logistics: LogisticsInfo; onChange?: (next: LogisticsInfo) => void }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
   return (
-    <Card title={t('overview.card.logistics.title', 'Logistik')} icon="external">
+    <Card
+      title={t('overview.card.logistics.title', 'Logistik')}
+      icon="external"
+      action={onChange && <EditButton onClick={() => setEditing(true)} />}
+    >
+      {onChange && (
+        <LogisticsEditor open={editing} value={logistics} onClose={() => setEditing(false)} onSave={(next) => { onChange(next); setEditing(false) }} />
+      )}
       <div className="mb-2 flex gap-4 text-[12px]">
         <span className="text-av-text-secondary">{t('overview.card.logistics.loadIn', 'Load-in')} <span className="av-num text-av-text">{logistics.loadIn}</span></span>
         <span className="text-av-text-secondary">{t('overview.card.logistics.distance', 'Anfahrt')} <span className="av-num text-av-text">{logistics.distanceKm} km</span></span>
@@ -197,10 +262,19 @@ export function LogisticsCard({ logistics }: { logistics: LogisticsInfo }) {
 }
 
 /* ── Kontakte ──────────────────────────────────────────────────────────────*/
-export function ContactsCard({ contacts }: { contacts: Contact[] }) {
+export function ContactsCard({ contacts, onChange }: { contacts: Contact[]; onChange?: (next: Contact[]) => void }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
   return (
-    <Card title={t('overview.card.contacts.title', 'Kontakte')} icon="raum">
+    <Card
+      title={t('overview.card.contacts.title', 'Kontakte')}
+      icon="raum"
+      action={onChange && <EditButton onClick={() => setEditing(true)} />}
+    >
+      {onChange && (
+        <ContactsEditor open={editing} value={contacts} onClose={() => setEditing(false)} onSave={(next) => { onChange(next); setEditing(false) }} />
+      )}
+      {contacts.length === 0 && <p className="text-[12.5px] text-av-text-muted">{t('overview.card.empty', 'Noch nichts eingetragen.')}</p>}
       <ul className="flex flex-col gap-2">
         {contacts.map((c) => (
           <li key={c.name} className="flex items-center gap-2.5">
@@ -220,14 +294,30 @@ export function ContactsCard({ contacts }: { contacts: Contact[] }) {
 }
 
 /* ── Aufgaben / Checkliste ─────────────────────────────────────────────────*/
-export function TasksCard({ tasks }: { tasks: ProjectTask[] }) {
+export function TasksCard({ tasks, onChange }: { tasks: ProjectTask[]; onChange?: (next: ProjectTask[]) => void }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
   const open = tasks.filter((tk) => !tk.done).length
+  const toggle = (index: number) =>
+    onChange?.(tasks.map((tk, i) => (i === index ? { ...tk, done: !tk.done } : tk)))
   return (
-    <Card title={t('overview.card.tasks.title', 'Aufgaben')} icon="check" action={<Badge tone={open ? 'warn' : 'ok'}>{format(t('overview.badge.open', '{n} offen'), { n: open })}</Badge>}>
+    <Card
+      title={t('overview.card.tasks.title', 'Aufgaben')}
+      icon="check"
+      action={
+        <span className="flex items-center gap-1.5">
+          {tasks.length > 0 && <Badge tone={open ? 'warn' : 'ok'}>{format(t('overview.badge.open', '{n} offen'), { n: open })}</Badge>}
+          {onChange && <EditButton onClick={() => setEditing(true)} />}
+        </span>
+      }
+    >
+      {onChange && (
+        <TasksEditor open={editing} value={tasks} onClose={() => setEditing(false)} onSave={(next) => { onChange(next); setEditing(false) }} />
+      )}
+      {tasks.length === 0 && <p className="text-[12.5px] text-av-text-muted">{t('overview.card.empty', 'Noch nichts eingetragen.')}</p>}
       <ul className="flex flex-col gap-1.5">
-        {tasks.map((task) => (
-          <li key={task.title} className="flex items-center gap-2.5">
+        {tasks.map((task, index) => {
+          const box = (
             <span
               className="grid h-4 w-4 flex-none place-items-center rounded"
               style={{
@@ -238,11 +328,28 @@ export function TasksCard({ tasks }: { tasks: ProjectTask[] }) {
             >
               {task.done && <Icon name="check" size={11} />}
             </span>
-            <span className={`flex-1 text-[13px] ${task.done ? 'text-av-text-faint line-through' : 'text-av-text'}`}>{task.title}</span>
-            {task.owner && <span className="text-[11px] text-av-text-muted">{task.owner}</span>}
-            {task.due && !task.done && <span className="av-num text-[11px] text-av-text-faint">{task.due}</span>}
-          </li>
-        ))}
+          )
+          return (
+            <li key={`${task.title}-${index}`} className="flex items-center gap-2.5">
+              {onChange ? (
+                <button
+                  type="button"
+                  className="av-focus flex flex-none rounded"
+                  aria-pressed={task.done}
+                  aria-label={format(t('overview.card.tasks.toggle', 'Aufgabe „{title}" abhaken'), { title: task.title })}
+                  onClick={() => toggle(index)}
+                >
+                  {box}
+                </button>
+              ) : (
+                box
+              )}
+              <span className={`flex-1 text-[13px] ${task.done ? 'text-av-text-faint line-through' : 'text-av-text'}`}>{task.title}</span>
+              {task.owner && <span className="text-[11px] text-av-text-muted">{task.owner}</span>}
+              {task.due && !task.done && <span className="av-num text-[11px] text-av-text-faint">{task.due}</span>}
+            </li>
+          )
+        })}
       </ul>
     </Card>
   )

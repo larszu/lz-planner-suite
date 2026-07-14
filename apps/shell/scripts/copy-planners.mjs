@@ -35,5 +35,18 @@ for (const { key, src } of planners) {
   console.log(`[copy-planners] ${key}: ${src} → ${dest}`)
 }
 
+// Cable-Main-Prozess (IPC-Handler + Preload) mitkopieren: die Suite kann Cable
+// im nativen Modus (SUITE_NATIVE_CABLE) in einer WebContentsView mit echtem
+// IPC/Preload betreiben statt als iframe (siehe electron/cableHost.cjs). Ohne
+// gebauten Main wird der native Modus zur Laufzeit einfach übersprungen.
+const cableMainSrc = join(appsDir, 'cable-planner', 'dist', 'main')
+if (existsSync(join(cableMainSrc, 'index.js'))) {
+  const cableMainDest = join(outRoot, 'signal-main')
+  cpSync(cableMainSrc, cableMainDest, { recursive: true })
+  console.log(`[copy-planners] signal-main: ${cableMainSrc} → ${cableMainDest}`)
+} else {
+  console.warn('[copy-planners] Cable-Main nicht gebaut (dist/main) — nativer Cable-Modus bleibt inaktiv.')
+}
+
 if (!ok) process.exit(1)
 console.log('[copy-planners] fertig.')
