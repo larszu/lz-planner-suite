@@ -516,7 +516,12 @@ export function App() {
         onSetLanguage={setLanguage}
       />
 
-      <BillingModal open={billingOpen} onClose={() => setBillingOpen(false)} project={project} />
+      <BillingModal
+        open={billingOpen}
+        onClose={() => setBillingOpen(false)}
+        project={project}
+        onPersistSettings={(billing) => updateShow((s) => ({ ...s, billing }))}
+      />
       <ProjectHubModal
         open={hubOpen}
         onClose={() => setHubOpen(false)}

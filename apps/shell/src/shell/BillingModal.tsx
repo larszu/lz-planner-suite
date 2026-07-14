@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal } from '@avplan/ui'
 import {
   buildPayload,
@@ -12,7 +12,7 @@ import {
   type TaxType,
 } from '@avplan/lexware-core'
 import { format, useT } from '../i18n'
-import { billToContact, resolveBilling, type SuiteProject } from '../data/project'
+import { billToContact, resolveBilling, type BillingSettings, type SuiteProject } from '../data/project'
 import { addDaysIso, deriveLineItems, toBillingContact, type LineSource } from '../data/billing'
 import { canSendLexware, sendLexware } from '../embed/lexwareBridge'
 
@@ -82,20 +82,23 @@ export function BillingModal({
   open,
   onClose,
   project,
+  onPersistSettings,
 }: {
   open: boolean
   onClose: () => void
   project: SuiteProject | null
+  /** Beleg-Einstellungen dauerhaft ins Projekt schreiben (show.billing). */
+  onPersistSettings?: (billing: BillingSettings) => void
 }) {
   const t = useT()
   return (
     <Modal open={open} onClose={onClose} title={t('billing.title', 'Beleg erstellen · Lexware Office')} size="lg">
-      {project ? <BillingBody project={project} /> : null}
+      {project ? <BillingBody project={project} onPersistSettings={onPersistSettings} /> : null}
     </Modal>
   )
 }
 
-function BillingBody({ project }: { project: SuiteProject }) {
+function BillingBody({ project, onPersistSettings }: { project: SuiteProject; onPersistSettings?: (billing: BillingSettings) => void }) {
   const t = useT()
   const defaults = resolveBilling(project.show)
   const recipient = billToContact(project.show)
@@ -120,6 +123,36 @@ function BillingBody({ project }: { project: SuiteProject }) {
     // Anfangswert deckt der useState-Initializer ab; hier nur periodisch neu prüfen.
     const id = setInterval(() => setPlannerAvailable(canSendLexware()), 1500)
     return () => clearInterval(id)
+  }, [])
+
+  // Beleg-Einstellungen dauerhaft ins Projekt schreiben, wenn der Dialog
+  // schließt und sich etwas geändert hat. Ohne das gingen Steuerart, Zahlungs-
+  // ziel, Gültigkeit, Einleitung & Bemerkung beim Schließen verloren. Ein Ref
+  // hält den letzten Stand, damit die Unmount-Cleanup ihn sieht.
+  const latestSettings = useRef<BillingSettings>(defaults)
+  latestSettings.current = {
+    taxType,
+    taxRatePercent: defaults.taxRatePercent,
+    rentalDays: defaults.rentalDays,
+    paymentTermDays: payDays,
+    quoteValidDays: validDays,
+    introduction: intro,
+    remark,
+  }
+  useEffect(() => {
+    if (!onPersistSettings) return
+    return () => {
+      const s = latestSettings.current
+      const changed =
+        s.taxType !== defaults.taxType ||
+        s.paymentTermDays !== defaults.paymentTermDays ||
+        s.quoteValidDays !== defaults.quoteValidDays ||
+        (s.introduction ?? '') !== (defaults.introduction ?? '') ||
+        (s.remark ?? '') !== (defaults.remark ?? '')
+      if (changed) onPersistSettings(s)
+    }
+    // Nur beim Unmount persistieren — Werte kommen über das Ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const showFlash = (msg: string) => {
