@@ -25,8 +25,12 @@ export default {
   // Die mitverpackten Planer-Renderer aus dem asar auspacken: der Hauptprozess
   // liefert sie via net.fetch('file://…') über die planner-*://-Protokolle aus,
   // und dynamische Imports/Worker der SPAs lesen zuverlässiger von echtem
-  // Dateisystem als aus dem asar-Archiv.
-  asarUnpack: ['planners/**/*'],
+  // Dateisystem als aus dem asar-Archiv. Native Module (keytar.node) MÜSSEN
+  // ausgepackt sein — dlopen kann nicht aus dem asar-Archiv laden.
+  asarUnpack: ['planners/**/*', '**/*.node', 'node_modules/keytar/**/*'],
+  // npmRebuild bleibt Default true: keytar wird beim Packen gegen die Electron-
+  // ABI (nicht Node) neu gebaut — sonst schlägt das Laden im nativen Cable-
+  // Modus fehl (siehe cable-planner/electron-builder.js).
   directories: {
     output: 'release',
   },
