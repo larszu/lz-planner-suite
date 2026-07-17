@@ -19,6 +19,13 @@ import {
   type ScheduleItem,
   type ShowPhase,
 } from '../data/project'
+import {
+  contactPatchFromCustomer,
+  customerFromContact,
+  listCustomers,
+  upsertCustomer,
+  type Customer,
+} from '../data/customerStore'
 import { useT, type TFunc } from '../i18n'
 
 const fieldCls =
@@ -469,8 +476,14 @@ export function ContactsEditor({
 }) {
   const t = useT()
   const [rows, setRows] = useState<Contact[]>(() => value.map((r) => ({ ...r })))
+  const [customers, setCustomers] = useState<Customer[]>(() => listCustomers())
   const patch = (i: number, p: Partial<Contact>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...p } : r)))
+  const saveToAddressBook = (c: Contact) => {
+    if (!c.name.trim()) return
+    upsertCustomer(customerFromContact(c))
+    setCustomers(listCustomers())
+  }
   // Rechnungsempfänger ist exklusiv — nur ein Kontakt trägt billTo. Genau dieser
   // wird in der Beleg-Erstellung (Lexware) als Kunde/Empfänger verwendet.
   const toggleBillTo = (i: number) =>
@@ -510,6 +523,25 @@ export function ContactsEditor({
             </div>
             {r.billTo && (
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {/* Adressbuch (Stammdaten): gespeicherten Kunden laden oder aktuellen sichern. */}
+                <div className="col-span-2 flex items-center gap-2 sm:col-span-4">
+                  <select
+                    aria-label={t('overview.editor.contacts.loadCustomer', 'Aus Adressbuch laden')}
+                    className={`${fieldCls} flex-1`}
+                    value=""
+                    onChange={(e) => { const c = customers.find((x) => x.id === e.target.value); if (c) patch(i, contactPatchFromCustomer(c)) }}
+                  >
+                    <option value="">{customers.length ? t('overview.editor.contacts.loadCustomer', 'Aus Adressbuch laden…') : t('overview.editor.contacts.noCustomers', 'Adressbuch leer')}</option>
+                    {customers.map((c) => <option key={c.id} value={c.id}>{c.name}{c.city ? ` · ${c.city}` : ''}</option>)}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => saveToAddressBook(r)}
+                    className="av-focus flex-none rounded-av-control border border-av-border bg-av-surface-3 px-2.5 py-1 text-[12px] text-av-text-secondary hover:text-av-text"
+                  >
+                    {t('overview.editor.contacts.saveCustomer', 'Im Adressbuch speichern')}
+                  </button>
+                </div>
                 <div className="col-span-2 sm:col-span-4">
                   <TextField value={r.email ?? ''} onChange={(v) => patch(i, { email: v || undefined })} ariaLabel={t('overview.editor.contacts.email', 'E-Mail')} placeholder={t('overview.editor.contacts.emailPh', 'E-Mail (für Beleg-Versand)')} className="w-full" />
                 </div>

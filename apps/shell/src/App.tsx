@@ -521,6 +521,7 @@ export function App() {
         onClose={() => setBillingOpen(false)}
         project={project}
         onPersistSettings={(billing) => updateShow((s) => ({ ...s, billing }))}
+        onRecordInvoice={(rec) => updateShow((s) => ({ ...s, invoices: [...(s.invoices ?? []), rec] }))}
       />
       <ProjectHubModal
         open={hubOpen}

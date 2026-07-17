@@ -35,6 +35,7 @@ export const billing: Record<string, string> = {
   'billing.copy': 'Copy JSON',
   'billing.copied': 'JSON copied',
   'billing.export': 'Export JSON',
+  'billing.history': 'Document history',
   'billing.send': 'Send via planner',
   'billing.sending': 'Sending…',
   'billing.advanced': 'Advanced · JSON',

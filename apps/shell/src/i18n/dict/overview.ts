@@ -172,6 +172,9 @@ export const overview: Record<string, string> = {
   'overview.editor.contacts.city': 'City',
   'overview.editor.contacts.vatId': 'VAT ID',
   'overview.editor.contacts.customerNumber': 'Cust. no.',
+  'overview.editor.contacts.loadCustomer': 'Load from address book…',
+  'overview.editor.contacts.saveCustomer': 'Save to address book',
+  'overview.editor.contacts.noCustomers': 'Address book empty',
 
   // Projekt-Kopf
   'overview.editor.header.title': 'Edit project',

@@ -12,7 +12,7 @@ import {
   type TaxType,
 } from '@avplan/lexware-core'
 import { format, useT } from '../i18n'
-import { billToContact, resolveBilling, type BillingSettings, type SuiteProject } from '../data/project'
+import { billToContact, resolveBilling, type BillingSettings, type InvoiceRecord, type SuiteProject } from '../data/project'
 import { addDaysIso, deriveLineItems, toBillingContact, type LineSource } from '../data/billing'
 import { canSendLexware, sendLexware } from '../embed/lexwareBridge'
 
@@ -83,22 +83,25 @@ export function BillingModal({
   onClose,
   project,
   onPersistSettings,
+  onRecordInvoice,
 }: {
   open: boolean
   onClose: () => void
   project: SuiteProject | null
   /** Beleg-Einstellungen dauerhaft ins Projekt schreiben (show.billing). */
   onPersistSettings?: (billing: BillingSettings) => void
+  /** Ausgestellten Beleg in die Projekt-Historie aufnehmen. */
+  onRecordInvoice?: (rec: InvoiceRecord) => void
 }) {
   const t = useT()
   return (
     <Modal open={open} onClose={onClose} title={t('billing.title', 'Beleg erstellen · Lexware Office')} size="lg">
-      {project ? <BillingBody project={project} onPersistSettings={onPersistSettings} /> : null}
+      {project ? <BillingBody project={project} onPersistSettings={onPersistSettings} onRecordInvoice={onRecordInvoice} /> : null}
     </Modal>
   )
 }
 
-function BillingBody({ project, onPersistSettings }: { project: SuiteProject; onPersistSettings?: (billing: BillingSettings) => void }) {
+function BillingBody({ project, onPersistSettings, onRecordInvoice }: { project: SuiteProject; onPersistSettings?: (billing: BillingSettings) => void; onRecordInvoice?: (rec: InvoiceRecord) => void }) {
   const t = useT()
   const defaults = resolveBilling(project.show)
   const recipient = billToContact(project.show)
@@ -225,6 +228,20 @@ function BillingBody({ project, onPersistSettings }: { project: SuiteProject; on
       showFlash(t('billing.copyFailed', 'Kopieren fehlgeschlagen'))
     }
   }
+  // Ausgestellten Beleg in die Projekt-Historie schreiben (Export & Versand).
+  const recordInvoice = (extra?: { lexwareId?: string; webUrl?: string }) => {
+    if (!onRecordInvoice || !doc || !recipient) return
+    const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `inv_${Date.now().toString(36)}`
+    onRecordInvoice({
+      id,
+      kind: doc.kind,
+      date: voucherDate,
+      recipientName: recipient.name,
+      net: netTotal(doc),
+      gross: grossTotal(doc),
+      ...extra,
+    })
+  }
   const doExport = () => {
     const blob = new Blob([payloadJson], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -233,6 +250,7 @@ function BillingBody({ project, onPersistSettings }: { project: SuiteProject; on
     a.download = `${kind}-${project.meta.name.replace(/\s+/g, '-').toLowerCase()}.json`
     a.click()
     URL.revokeObjectURL(url)
+    recordInvoice()
     showFlash(t('billing.exported', 'JSON exportiert'))
   }
   const doSend = async () => {
@@ -246,6 +264,7 @@ function BillingBody({ project, onPersistSettings }: { project: SuiteProject; on
     setResult(null)
     const r = await sendLexware(doc)
     setSending(false)
+    if (r.ok) recordInvoice({ lexwareId: r.id, webUrl: r.webUrl })
     setResult(
       r.ok
         ? { ok: true, webUrl: r.webUrl }
@@ -299,6 +318,24 @@ function BillingBody({ project, onPersistSettings }: { project: SuiteProject; on
           <div className="text-[12.5px] text-av-warn">{t('billing.noRecipient', 'Kein Kunde gesetzt — in der Übersicht unter „Kontakte → Bearbeiten" einen Kontakt als „Rechnungsempfänger" markieren und die Rechnungsdaten (Adresse, USt-IdNr) eintragen.')}</div>
         )}
       </section>
+
+      {/* Beleg-Historie dieses Projekts */}
+      {project.show.invoices && project.show.invoices.length > 0 && (
+        <section className="rounded-av-card border border-av-border bg-av-surface-1 px-3.5 py-3">
+          <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-av-text-muted">{t('billing.history', 'Beleg-Historie')}</div>
+          <ul className="flex flex-col gap-1">
+            {[...project.show.invoices].reverse().map((inv) => (
+              <li key={inv.id} className="flex items-center gap-2 text-[12.5px]">
+                <span className="flex-none rounded bg-av-surface-3 px-1.5 py-0.5 text-[10.5px] text-av-text-secondary">{inv.kind === 'invoice' ? t('billing.kind.invoice', 'Rechnung') : t('billing.kind.quotation', 'Angebot')}</span>
+                <span className="av-num flex-none text-av-text-muted">{inv.date}</span>
+                <span className="min-w-0 flex-1 truncate text-av-text">{inv.recipientName}</span>
+                <span className="av-num flex-none text-av-text-secondary">{eur(inv.gross)}</span>
+                {inv.webUrl && <a href={inv.webUrl} target="_blank" rel="noopener noreferrer" className="flex-none text-av-accent" title={t('billing.openInLexware', 'In Lexware öffnen')}>↗</a>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Besteuerung + Belegkopf */}
       <div className="flex flex-wrap items-center gap-4">
