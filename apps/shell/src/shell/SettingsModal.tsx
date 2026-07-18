@@ -3,6 +3,9 @@ import { Badge, Icon, Modal, type ThemePreference } from '@avplan/ui'
 import { MODULES, type ModuleId } from '../modules/registry'
 import { useT, type TFunc } from '../i18n'
 import type { Language } from './language'
+import { loadBackendConfig, saveBackendConfig, type BackendConfig } from '../data/backendConfig'
+import { testConnection } from '../data/syncClient'
+import { syncNow } from '../data/projectStore'
 import {
   APP_MODULE_IDS,
   APP_SETTINGS_SCHEMA,
@@ -143,6 +146,9 @@ function SettingsBody({
         </div>
       </section>
 
+      {/* Backend / Sync — optional, opt-in. Offline-first bleibt Default. */}
+      <BackendSyncSection t={t} />
+
       {/* App-spezifische Einstellungen — als Accordion, aktives Modul offen */}
       <section>
         <div className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-av-text-muted">
@@ -204,6 +210,160 @@ function SettingsBody({
         </div>
       </section>
     </>
+  )
+}
+
+type SyncStatus =
+  | { kind: 'idle' }
+  | { kind: 'testing' }
+  | { kind: 'syncing' }
+  | { kind: 'ok'; msg: string }
+  | { kind: 'error'; msg: string }
+
+function BackendSyncSection({ t }: { t: TFunc }) {
+  // Lazy-Init aus localStorage (kein setState-in-Effect → lint-clean).
+  const [cfg, setCfg] = useState<BackendConfig>(() => loadBackendConfig())
+  const [status, setStatus] = useState<SyncStatus>({ kind: 'idle' })
+
+  const update = (patch: Partial<BackendConfig>) => {
+    const next = { ...cfg, ...patch }
+    setCfg(next)
+    saveBackendConfig(next)
+    setStatus({ kind: 'idle' })
+  }
+
+  const canUse = cfg.baseUrl.trim().length > 0
+
+  const doTest = async () => {
+    setStatus({ kind: 'testing' })
+    const r = await testConnection()
+    if (r.ok) {
+      setStatus({ kind: 'ok', msg: t('chrome.settings.sync.testOk', 'Verbindung erfolgreich') })
+    } else {
+      const map: Record<string, string> = {
+        unreachable: t('chrome.settings.sync.errUnreachable', 'Server nicht erreichbar'),
+        auth: t('chrome.settings.sync.errAuth', 'Token ungültig'),
+      }
+      setStatus({ kind: 'error', msg: map[r.error ?? ''] ?? t('chrome.settings.sync.errGeneric', 'Fehler: {e}').replace('{e}', r.error ?? '?') })
+    }
+  }
+
+  const doSync = async () => {
+    setStatus({ kind: 'syncing' })
+    const r = await syncNow()
+    if (r.ok) {
+      setStatus({
+        kind: 'ok',
+        msg: t('chrome.settings.sync.syncOk', '{p} geladen, {u} hochgeladen')
+          .replace('{p}', String(r.pulled))
+          .replace('{u}', String(r.pushed)),
+      })
+    } else {
+      const map: Record<string, string> = {
+        disabled: t('chrome.settings.sync.errDisabled', 'Sync ist nicht aktiviert'),
+        unreachable: t('chrome.settings.sync.errUnreachable', 'Server nicht erreichbar'),
+      }
+      setStatus({ kind: 'error', msg: map[r.error ?? ''] ?? t('chrome.settings.sync.errGeneric', 'Fehler: {e}').replace('{e}', r.error ?? '?') })
+    }
+  }
+
+  const busy = status.kind === 'testing' || status.kind === 'syncing'
+
+  return (
+    <section className="mb-5">
+      <div className="mb-1 flex items-center gap-2">
+        <span className="text-[12px] font-semibold uppercase tracking-wider text-av-text-muted">
+          {t('chrome.settings.sync.title', 'Backend / Sync')}
+        </span>
+        <Badge tone="accent">{t('chrome.settings.sync.optional', 'Optional')}</Badge>
+      </div>
+      <div className="rounded-av-card border border-av-border bg-av-surface-2 px-3.5 py-3">
+        <p className="mb-3 text-[12px] leading-relaxed text-av-text-muted">
+          {t(
+            'chrome.settings.sync.intro',
+            'Die Suite arbeitet immer offline. Optional kannst du einen eigenen Sync-Server anbinden, um Projekte zwischen Geräten abzugleichen. Ohne Server bleibt alles rein lokal.',
+          )}
+        </p>
+
+        {/* Aktiv-Schalter */}
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[13px] font-medium text-av-text">
+            {t('chrome.settings.sync.enable', 'Sync aktivieren')}
+          </span>
+          <Switch
+            checked={cfg.enabled}
+            accent="var(--av-accent)"
+            onChange={(c) => update({ enabled: c })}
+            label={t('chrome.settings.sync.enable', 'Sync aktivieren')}
+          />
+        </div>
+
+        {/* URL */}
+        <label className="mb-2 block">
+          <span className="mb-1 block text-[12px] text-av-text-secondary">
+            {t('chrome.settings.sync.url', 'Server-URL')}
+          </span>
+          <input
+            type="url"
+            inputMode="url"
+            placeholder="https://sync.example.com/api"
+            className="av-focus w-full rounded-av-control border border-av-border bg-av-surface-3 px-2.5 py-1.5 text-[12.5px] text-av-text"
+            value={cfg.baseUrl}
+            onChange={(e) => update({ baseUrl: e.target.value })}
+          />
+        </label>
+
+        {/* Token */}
+        <label className="mb-3 block">
+          <span className="mb-1 block text-[12px] text-av-text-secondary">
+            {t('chrome.settings.sync.token', 'Token (Bearer)')}
+          </span>
+          <input
+            type="password"
+            autoComplete="off"
+            placeholder="••••••••"
+            className="av-focus w-full rounded-av-control border border-av-border bg-av-surface-3 px-2.5 py-1.5 text-[12.5px] text-av-text"
+            value={cfg.token}
+            onChange={(e) => update({ token: e.target.value })}
+          />
+        </label>
+
+        {/* Aktionen */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={!canUse || busy}
+            onClick={doTest}
+            className="av-focus rounded-av-control border border-av-border bg-av-surface-3 px-3 py-1.5 text-[12.5px] font-medium text-av-text hover:bg-av-surface-1 disabled:opacity-50"
+          >
+            {status.kind === 'testing'
+              ? t('chrome.settings.sync.testing', 'Teste…')
+              : t('chrome.settings.sync.test', 'Verbindung testen')}
+          </button>
+          <button
+            type="button"
+            disabled={!canUse || !cfg.enabled || busy}
+            onClick={doSync}
+            className="av-focus rounded-av-control border border-transparent px-3 py-1.5 text-[12.5px] font-medium disabled:opacity-50"
+            style={{ background: 'var(--av-accent)', color: 'var(--av-accent-text)' }}
+          >
+            {status.kind === 'syncing'
+              ? t('chrome.settings.sync.syncing', 'Synchronisiere…')
+              : t('chrome.settings.sync.syncNow', 'Jetzt synchronisieren')}
+          </button>
+          {status.kind === 'ok' && (
+            <span className="flex items-center gap-1 text-[12px] text-av-success">
+              <Icon name="check" size={14} /> {status.msg}
+            </span>
+          )}
+          {status.kind === 'error' && (
+            <span className="flex items-center gap-1 text-[12px] text-av-danger">
+              <Icon name="warning" size={14} /> {status.msg}
+            </span>
+          )}
+        </div>
+      </div>
+    </section>
   )
 }
 

@@ -62,6 +62,24 @@ export const chrome: Record<string, string> = {
   'chrome.settings.active': 'Active',
   'chrome.settings.appNote':
     'Expanded is the app you are currently in. Changes take effect immediately in the open planner; if it is not open, they apply the next time you open it. The shared theme above applies everywhere.',
+  // Backend / Sync (optional, opt-in — offline-first stays the default)
+  'chrome.settings.sync.title': 'Backend / Sync',
+  'chrome.settings.sync.optional': 'Optional',
+  'chrome.settings.sync.intro':
+    'The suite always works offline. Optionally you can connect your own sync server to keep projects in sync across devices. Without a server everything stays purely local.',
+  'chrome.settings.sync.enable': 'Enable sync',
+  'chrome.settings.sync.url': 'Server URL',
+  'chrome.settings.sync.token': 'Token (bearer)',
+  'chrome.settings.sync.test': 'Test connection',
+  'chrome.settings.sync.testing': 'Testing…',
+  'chrome.settings.sync.syncNow': 'Sync now',
+  'chrome.settings.sync.syncing': 'Syncing…',
+  'chrome.settings.sync.testOk': 'Connection successful',
+  'chrome.settings.sync.syncOk': '{p} downloaded, {u} uploaded',
+  'chrome.settings.sync.errUnreachable': 'Server unreachable',
+  'chrome.settings.sync.errAuth': 'Invalid token',
+  'chrome.settings.sync.errDisabled': 'Sync is not enabled',
+  'chrome.settings.sync.errGeneric': 'Error: {e}',
   // StatusBar
   'chrome.status.zoomOut': 'Zoom out',
   'chrome.status.zoomReset': 'Reset to 100 %',

@@ -13,6 +13,8 @@
  */
 import { PROJECT, type SuiteProject } from './project'
 import { blankProject, parseProject, serializeProject } from './projectFile'
+import { isBackendEnabled } from './backendConfig'
+import { pushProject, deleteProjectRemote, pullIndex, pullProject } from './syncClient'
 
 const INDEX_KEY = 'avplan.projectIndex'
 const CURRENT_KEY = 'avplan.currentProjectId'
@@ -133,6 +135,10 @@ export function saveProjectById(id: string, project: SuiteProject): void {
   if (i >= 0) idx[i] = entry
   else idx.push(entry)
   writeIndex(idx)
+  // Offline-first: lokal ist schon gespeichert. Backend-Push ist reines
+  // fire-and-forget — Fehler/Netzausfall werden im syncClient geschluckt und
+  // beeinflussen den lokalen Speichervorgang nie.
+  if (isBackendEnabled()) void pushProject(id, project)
 }
 
 /** Neues, leeres Projekt anlegen (persistiert) und ID zurückgeben. */
@@ -167,6 +173,7 @@ export function deleteProjectById(id: string): void {
   }
   writeIndex(readIndex().filter((e) => e.id !== id))
   if (window.localStorage.getItem(CURRENT_KEY) === id) setCurrentProjectId(null)
+  if (isBackendEnabled()) void deleteProjectRemote(id)
 }
 
 /** Ein importiertes Projekt (aus Datei) als neues Hub-Projekt aufnehmen. */
@@ -175,4 +182,71 @@ export function importProjectRecord(project: SuiteProject): string {
   const id = newId()
   saveProjectById(id, project)
   return id
+}
+
+export interface SyncResult {
+  ok: boolean
+  pulled: number
+  pushed: number
+  error?: string
+}
+
+/**
+ * Zwei-Wege-Abgleich mit dem Backend (nur wenn aktiviert + erreichbar).
+ * Strategie last-write-wins über `savedAt`:
+ *   - Remote-Projekt neuer/lokal unbekannt → herunterladen (ohne Rück-Push).
+ *   - Lokal neuer/remote unbekannt → hochladen.
+ * Offline-sicher: ist kein Backend aktiv oder der Server nicht erreichbar,
+ * passiert lokal nichts und es wird ein neutrales/fehlerhaftes Ergebnis
+ * zurückgegeben — die lokalen Daten bleiben unangetastet.
+ */
+export async function syncNow(): Promise<SyncResult> {
+  if (!isBackendEnabled()) return { ok: false, pulled: 0, pushed: 0, error: 'disabled' }
+  ensureInitialized()
+  const remoteIndex = await pullIndex()
+  if (!remoteIndex) return { ok: false, pulled: 0, pushed: 0, error: 'unreachable' }
+
+  const localIndex = readIndex()
+  const localById = new Map(localIndex.map((e) => [e.id, e]))
+  const remoteById = new Map(remoteIndex.map((e) => [e.id, e]))
+  let pulled = 0
+  let pushed = 0
+
+  // 1. Remote → lokal: neuere oder unbekannte Projekte holen.
+  for (const r of remoteIndex) {
+    const l = localById.get(r.id)
+    const remoteNewer = !l || (r.savedAt ?? '').localeCompare(l.savedAt ?? '') > 0
+    if (!remoteNewer) continue
+    const p = await pullProject(r.id)
+    if (!p) continue
+    try {
+      window.localStorage.setItem(DATA_PREFIX + r.id, serializeProject(p))
+    } catch {
+      continue
+    }
+    const entry: ProjectListEntry = {
+      id: r.id,
+      name: p.meta.name,
+      venue: p.meta.venue,
+      savedAt: r.savedAt || new Date().toISOString(),
+    }
+    const cur = readIndex()
+    const i = cur.findIndex((e) => e.id === r.id)
+    if (i >= 0) cur[i] = entry
+    else cur.push(entry)
+    writeIndex(cur)
+    pulled++
+  }
+
+  // 2. Lokal → remote: lokal neuere oder dem Server unbekannte Projekte pushen.
+  for (const l of readIndex()) {
+    const r = remoteById.get(l.id)
+    const localNewer = !r || (l.savedAt ?? '').localeCompare(r.savedAt ?? '') > 0
+    if (!localNewer) continue
+    const p = loadProjectById(l.id)
+    if (!p) continue
+    if (await pushProject(l.id, p)) pushed++
+  }
+
+  return { ok: true, pulled, pushed }
 }
