@@ -152,6 +152,22 @@ export interface ShowDetails {
   board: Board
   /** Belegkopf-Voreinstellungen fürs Fakturieren (optional; Default via healBilling). */
   billing?: BillingSettings
+  /** Beleg-Historie: ausgestellte Angebote/Rechnungen dieses Projekts. */
+  invoices?: InvoiceRecord[]
+}
+
+/** Ein ausgestellter Beleg (Angebot/Rechnung) in der Projekt-Historie. */
+export interface InvoiceRecord {
+  id: string
+  kind: 'quotation' | 'invoice'
+  /** ISO-Datum der Ausstellung (YYYY-MM-DD). */
+  date: string
+  recipientName: string
+  net: number
+  gross: number
+  /** Lexware-Beleg-ID + Web-Link (falls an Lexware gesendet). */
+  lexwareId?: string
+  webUrl?: string
 }
 
 export interface Camera {

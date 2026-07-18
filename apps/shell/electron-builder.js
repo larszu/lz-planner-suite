@@ -36,9 +36,12 @@ export default {
   },
   mac: {
     category: 'public.app-category.productivity',
+    // Universal-Build (arm64 + x64 in einer .app): läuft auf Apple Silicon
+    // nativ — kein Rosetta, keine „Intel-App"-Warnung auf neuen macOS-Versionen
+    // — und weiterhin auf Intel-Macs. Ersetzt die getrennten x64-/arm64-DMGs
+    // (ein Download, kein versehentlicher Intel-Build).
     target: [
-      { target: 'dmg', arch: 'x64' },
-      { target: 'dmg', arch: 'arm64' },
+      { target: 'dmg', arch: 'universal' },
     ],
     artifactName: '${productName}-${version}-${arch}.${ext}',
     // Ad-hoc-Signatur ("-"), damit Gatekeeper auf Apple Silicon die Binary

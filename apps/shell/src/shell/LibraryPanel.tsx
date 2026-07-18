@@ -4,79 +4,69 @@ import type { SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { useT, format, type TFunc } from '../i18n'
 
-interface LibItem {
+interface LibEntry {
+  /** ID des Projekt-Objekts — gesetzt → Eintrag ist wählbar (treibt die Auswahl). */
+  id?: string
+  name: string
+  sub: string
+  star?: boolean
+}
+interface LibGroup {
   group: string
-  entries: { name: string; sub: string; star?: boolean }[]
+  entries: LibEntry[]
 }
 
-const library = (t: TFunc): Record<ModuleId, LibItem[]> => ({
-  overview: [
-    { group: t('panels.lib.overview.project', 'Projekt'), entries: [
-      { name: 'Sommershow 2026', sub: t('panels.lib.overview.hallA', 'Halle A · v12') },
-      { name: t('panels.lib.overview.client', 'Auftraggeber'), sub: 'Nordlicht Events GmbH' },
-    ] },
-    { group: t('panels.lib.overview.venueDevices', 'Venue-Geräte'), entries: [
-      { name: t('panels.lib.overview.cameras4', '4 Kameras'), sub: t('panels.lib.linkedAuto', 'automatisch verknüpft') },
-      { name: '6 Fixtures', sub: t('panels.lib.overview.fromLight', 'aus Licht-Ebene') },
-      { name: t('panels.lib.overview.dimmerRacks2', '2 Dimmer-Racks'), sub: 'Power / DMX' },
-    ] },
-  ],
-  signal: [
-    { group: t('panels.lib.signal.switcherRouter', 'Bildmischer / Router'), entries: [
-      { name: 'ATEM Constellation 8K', sub: '40× 12G-SDI In', star: true },
-      { name: 'Videohub 40×40', sub: '12G-SDI Router' },
-    ] },
-    { group: t('panels.lib.signal.camerasVenue', 'Kameras (aus Venue)'), entries: [
-      { name: 'CAM 1 — Sony FX9', sub: t('panels.lib.signal.sdiOutLinked', '3× SDI Out · verknüpft') },
-      { name: 'CAM 2 — Sony FX9', sub: t('panels.lib.signal.sdiOutLinked', '3× SDI Out · verknüpft') },
-    ] },
-    { group: t('panels.lib.signal.dimmerPower', 'Dimmer / Power'), entries: [
-      { name: 'Dimmer Rack 2', sub: t('panels.lib.signal.channelsLinked', '12 Kanäle · 16 A · verknüpft') },
-    ] },
-  ],
-  cameras: [
-    { group: t('panels.lib.cameras.cinema', 'Cinema'), entries: [
-      { name: 'Sony FX9', sub: 'FF 6K · E-Mount', star: true },
-      { name: 'Sony VENICE 2', sub: 'FF 8.6K · PL/E', star: true },
-      { name: 'Canon C500 II', sub: 'FF 5.9K · EF/PL' },
-    ] },
-    { group: t('panels.lib.cameras.broadcast', 'Broadcast'), entries: [
-      { name: 'URSA Broadcast G2', sub: 'B4 · 2/3"-Relay' },
-      { name: 'Sony HDC-3500', sub: '2/3" · B4' },
-    ] },
-    { group: t('panels.lib.cameras.ptz', 'PTZ'), entries: [{ name: 'Sony FR7', sub: 'FF PTZ · E-Mount' }] },
-  ],
-  licht: [
-    { group: t('panels.lib.licht.profiler', 'Profiler'), entries: [
-      { name: 'ETC Source Four 19°', sub: '750 W · 19° · 3200 K', star: true },
-      { name: 'ETC Source Four 26°', sub: '750 W · 26° · 3200 K', star: true },
-      { name: 'KL Profile FC', sub: '260 W LED · 5–50°' },
-    ] },
-    { group: t('panels.lib.licht.washFresnel', 'Wash / Fresnel'), entries: [
-      { name: 'KL Fresnel 8 FC', sub: '300 W LED · 15–60°', star: true },
-      { name: 'Arri 650 Plus', sub: '650 W · Fresnel' },
-    ] },
-    { group: t('panels.lib.licht.parPanel', 'PAR / Panel'), entries: [
-      { name: 'KL Panel XL', sub: '400 W LED · Softlight' },
-      { name: 'PAR 64 CP62', sub: '1000 W · MFL' },
-    ] },
-  ],
-  board: [
-    { group: t('panels.lib.board.cards', 'Karten'), entries: [
-      { name: t('panels.lib.board.note', 'Notiz'), sub: t('panels.lib.board.freeText', 'Freier Text') },
-      { name: 'Look', sub: t('panels.lib.board.lookSub', 'Referenz-/Moodboard-Kachel') },
-      { name: t('panels.lib.board.color', 'Farbe'), sub: t('panels.lib.board.colorSub', 'Farb-/Gel-Swatch') },
-      { name: 'To-do', sub: t('panels.lib.board.checklist', 'Checkliste') },
-      { name: 'Link', sub: t('panels.lib.board.refUrl', 'Referenz-URL') },
-      { name: t('panels.lib.board.heading', 'Überschrift'), sub: t('panels.lib.board.section', 'Abschnitt') },
-    ] },
-    { group: t('panels.lib.board.templates', 'Vorlagen'), entries: [
-      { name: 'Moodboard', sub: t('panels.board.sub', 'Look & Feel der Show'), star: true },
-      { name: t('panels.lib.board.creativeBrief', 'Kreativ-Brief'), sub: t('panels.lib.board.creativeBriefSub', 'Ziel · Stil · Referenzen') },
-      { name: 'Storyboard', sub: t('panels.lib.board.storyboardSub', 'Szenen-Abfolge') },
-    ] },
-  ],
-})
+const cardLabel = (type: string, t: TFunc): string => t(`panels.lib.board.type.${type}`, type)
+
+/**
+ * Bibliothek aus den *echten* Projektdaten des aktiven Moduls ableiten — keine
+ * erfundenen Katalog-Einträge mehr. Einträge mit `id` sind wählbar und treiben
+ * dieselbe Auswahl wie die Canvas-Vorschau.
+ */
+const deriveGroups = (module: ModuleId, project: SuiteProject | null, t: TFunc): LibGroup[] => {
+  if (!project) return []
+  const join = (...parts: (string | undefined)[]) => parts.filter(Boolean).join(' · ')
+  switch (module) {
+    case 'overview': {
+      const client = project.show.contacts.find((c) => c.billTo)?.name ?? project.show.contacts[0]?.org
+      return [
+        { group: t('panels.lib.overview.project', 'Projekt'), entries: [
+          { name: project.meta.name, sub: join(project.meta.venue, `v${project.meta.version}`) },
+          ...(client ? [{ name: t('panels.lib.overview.client', 'Auftraggeber'), sub: client }] : []),
+        ] },
+        { group: t('panels.lib.overview.scope', 'Umfang'), entries: [
+          { name: t('panels.layer.cameras', 'Kameras'), sub: String(project.cameras.length) },
+          { name: t('panels.layer.light', 'Licht'), sub: String(project.fixtures.length) },
+          { name: t('panels.layer.signalCables', 'Signal / Kabel'), sub: String(project.cables.length) },
+          { name: t('panels.lib.overview.crew', 'Crew'), sub: String(project.show.crew.length) },
+        ] },
+      ]
+    }
+    case 'signal':
+      return [
+        { group: t('panels.lib.signal.devices', 'Geräte'), entries: project.nodes.map((n) => ({ id: n.id, name: n.name, sub: n.sub })) },
+        { group: t('panels.lib.signal.cablesGroup', 'Kabel'), entries: project.cables.map((c) => ({ id: c.id, name: c.label, sub: join(c.type, `${c.lengthM} m`) })) },
+      ].filter((g) => g.entries.length > 0)
+    case 'cameras':
+      return [
+        { group: t('panels.lib.cameras.title', 'Kameras'), entries: project.cameras.map((c) => ({ id: c.id, name: c.name, sub: join(c.model, c.lens) })) },
+      ].filter((g) => g.entries.length > 0)
+    case 'licht':
+      return [
+        { group: t('panels.lib.licht.title', 'Fixtures'), entries: project.fixtures.map((f) => ({ id: f.id, name: f.name, sub: join(f.model, f.purpose) })) },
+      ].filter((g) => g.entries.length > 0)
+    case 'board':
+      return [
+        { group: t('panels.lib.board.cards', 'Karten'), entries: project.show.board.cards.map((c) => ({
+          id: c.id,
+          name: c.title || c.text?.slice(0, 40) || cardLabel(c.type, t),
+          sub: cardLabel(c.type, t),
+        })) },
+      ].filter((g) => g.entries.length > 0)
+    default:
+      return []
+  }
+}
 
 const layersFor = (project: SuiteProject | null, t: TFunc) => [
   { id: 'room', name: t('panels.layer.roomWallsStage', 'Raum · Wände & Bühne'), count: project ? String(project.nodes.length) : '—', tone: 'raum' },
@@ -99,19 +89,23 @@ export function LibraryPanel({
   project,
   hiddenLayers,
   onToggleLayer,
+  selectedId,
+  onSelect,
 }: {
   module: ModuleDef
   project: SuiteProject | null
   /** Ausgeblendete Ebenen-IDs (suite-weit, treibt die Canvas-Vorschau). */
   hiddenLayers: Set<string>
   onToggleLayer: (id: string) => void
+  /** Aktuell gewähltes Objekt (treibt die Hervorhebung, geteilt mit der Vorschau). */
+  selectedId?: string | null
+  onSelect?: (id: string) => void
 }) {
   const t = useT()
-  const groups = library(t)[module.id]
+  const groups = deriveGroups(module.id, project, t)
   const tabNames = [t('panels.tab.all', 'Alle'), ...groups.map((g) => g.group)]
   const [tab, setTab] = useState(0)
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<string | null>(null)
   const q = query.trim().toLowerCase()
   const layers = layersFor(project, t)
 
@@ -164,20 +158,11 @@ export function LibraryPanel({
             <div key={g.group} className="mb-3">
               <div className="px-1 py-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-av-text-faint">{g.group}</div>
               <div className="flex flex-col gap-1">
-                {entries.map((e) => {
-                  const isSel = selected === e.name
-                  return (
-                    <button
-                      key={e.name}
-                      type="button"
-                      aria-pressed={isSel}
-                      onClick={() => setSelected(isSel ? null : e.name)}
-                      className="av-focus group flex items-start gap-2.5 rounded-av-control border bg-av-surface-2 px-2.5 py-2 text-left transition-colors hover:border-av-border"
-                      style={{
-                        borderColor: isSel ? 'var(--av-accent)' : 'transparent',
-                        background: isSel ? 'color-mix(in srgb, var(--av-accent) 12%, var(--av-surface-2))' : undefined,
-                      }}
-                    >
+                {entries.map((e, ei) => {
+                  const selectable = !!e.id
+                  const isSel = selectable && selectedId === e.id
+                  const inner = (
+                    <>
                       <span className="mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-md bg-av-surface-3 text-av-text-muted">
                         <Icon name={module.icon} size={15} />
                       </span>
@@ -189,7 +174,28 @@ export function LibraryPanel({
                         <span className="block truncate text-[11px] text-av-text-muted">{e.sub}</span>
                       </span>
                       {isSel && <Icon name="check" size={14} style={{ color: 'var(--av-accent)', marginTop: 4 }} />}
+                    </>
+                  )
+                  const cls = 'flex items-start gap-2.5 rounded-av-control border bg-av-surface-2 px-2.5 py-2 text-left'
+                  const selStyle = {
+                    borderColor: isSel ? 'var(--av-accent)' : 'transparent',
+                    background: isSel ? 'color-mix(in srgb, var(--av-accent) 12%, var(--av-surface-2))' : undefined,
+                  }
+                  return selectable ? (
+                    <button
+                      key={e.id}
+                      type="button"
+                      aria-pressed={isSel}
+                      onClick={() => e.id && onSelect?.(e.id)}
+                      className={`av-focus group transition-colors hover:border-av-border ${cls}`}
+                      style={selStyle}
+                    >
+                      {inner}
                     </button>
+                  ) : (
+                    <div key={`${e.name}-${ei}`} className={cls} style={{ borderColor: 'transparent' }}>
+                      {inner}
+                    </div>
                   )
                 })}
               </div>

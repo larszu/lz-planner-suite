@@ -12,12 +12,19 @@ import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './modules/registry'
 import { PROJECT, type ShowDetails, type SuiteProject } from './data/project'
 import {
-  blankProject,
   downloadProject,
-  loadProjectLocal,
   parseProject,
-  saveProjectLocal,
 } from './data/projectFile'
+import {
+  createProjectRecord,
+  getCurrentProjectId,
+  importProjectRecord,
+  listProjects,
+  loadProjectById,
+  saveProjectById,
+  setCurrentProjectId as persistCurrentId,
+} from './data/projectStore'
+import { ProjectHubModal } from './shell/ProjectHubModal'
 import { sendPlannerCommand } from './embed/plannerBridge'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
@@ -62,13 +69,19 @@ export function App() {
     setLanguageState(lang)
   }, [])
   const tt = useCallback((key: string, de: string) => translate(language, key, de), [language])
-  // Projekt-Historie: zugewiesenes Projekt (oder null) mit Undo/Redo-Stapeln.
-  // Startwert: zuletzt gespeichertes Projekt, sonst das Demo-Projekt.
+  // Aktive Projekt-ID im Hub (mehrere Shows lokal). Startwert: zuletzt geöffnete.
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(() => getCurrentProjectId())
+  const [hubOpen, setHubOpen] = useState(false)
+  // Projekt-Historie: aktives Projekt (oder null) mit Undo/Redo-Stapeln.
+  // Startwert: das zuletzt geöffnete Hub-Projekt (sonst Demo als Fallback).
   const [history, setHistory] = useState<{
     past: (SuiteProject | null)[]
     present: SuiteProject | null
     future: (SuiteProject | null)[]
-  }>(() => ({ past: [], present: loadProjectLocal() ?? PROJECT, future: [] }))
+  }>(() => {
+    const id = getCurrentProjectId()
+    return { past: [], present: (id && loadProjectById(id)) || PROJECT, future: [] }
+  })
   const project = history.present
   const shellCanUndo = history.past.length > 0
   const shellCanRedo = history.future.length > 0
@@ -129,43 +142,73 @@ export function App() {
     )
   }, [])
 
+  // Aktuelles Projekt im Hub-Store ablegen (Version hochzählen, wenn es
+  // ungespeicherte Änderungen gab). Legt bei Bedarf einen Datensatz an.
+  const persistProject = useCallback((p: SuiteProject): SuiteProject => {
+    const saved: SuiteProject = {
+      ...p,
+      meta: { ...p.meta, saved: true, version: p.meta.saved ? p.meta.version : p.meta.version + 1 },
+    }
+    let id = currentProjectId
+    if (!id) {
+      const rec = createProjectRecord(saved.meta.name)
+      id = rec.id
+      setCurrentProjectId(id)
+    }
+    saveProjectById(id, saved)
+    persistCurrentId(id)
+    return saved
+  }, [currentProjectId])
+
   // Datei-Operationen (Topbar „Datei"-Menü).
   const saveProject = useCallback(() => {
     if (!project) return
-    const saved = { ...project, meta: { ...project.meta, saved: true } }
-    saveProjectLocal(saved)
+    const saved = persistProject(project)
     setHistory((h) => ({ ...h, present: saved }))
     pushToast(tt('config.toast.saved', 'Projekt gespeichert'), { tone: 'ok' })
-  }, [project, pushToast, tt])
+  }, [project, persistProject, pushToast, tt])
   const saveProjectAs = useCallback(() => {
     if (!project) return
     downloadProject(project)
-    const saved = { ...project, meta: { ...project.meta, saved: true } }
-    saveProjectLocal(saved)
+    const saved = persistProject(project)
     setHistory((h) => ({ ...h, present: saved }))
     pushToast(tt('config.toast.exported', 'Projekt exportiert & gespeichert'), { tone: 'ok' })
-  }, [project, pushToast, tt])
+  }, [project, persistProject, pushToast, tt])
 
-  // Projektwechsel mit Schutz vor Datenverlust: bei ungespeichertem Stand eine
-  // Rückmeldung mit „Rückgängig" (nutzt die Projekt-Historie).
+  // Bei ungespeichertem Stand eine „verworfen"-Rückmeldung mit „Rückgängig".
+  const warnIfUnsaved = useCallback(() => {
+    if (project && !project.meta.saved) {
+      pushToast(tt('config.toast.discarded', 'Ungespeicherte Änderungen verworfen'), {
+        tone: 'warn',
+        actionLabel: tt('config.action.undo', 'Rückgängig'),
+        onAction: undo,
+      })
+    }
+  }, [project, pushToast, undo, tt])
   const switchProject = useCallback(
     (next: SuiteProject | null) => {
-      if (project && !project.meta.saved) {
-        pushToast(tt('config.toast.discarded', 'Ungespeicherte Änderungen verworfen'), {
-          tone: 'warn',
-          actionLabel: tt('config.action.undo', 'Rückgängig'),
-          onAction: undo,
-        })
-      }
+      warnIfUnsaved()
       commitProject(next)
     },
-    [project, pushToast, undo, commitProject, tt],
+    [warnIfUnsaved, commitProject],
   )
-  const newProject = useCallback(() => switchProject(blankProject()), [switchProject])
+  // „Neues Projekt" legt jetzt einen echten Hub-Datensatz an und öffnet ihn.
+  const newProject = useCallback(() => {
+    warnIfUnsaved()
+    const rec = createProjectRecord(tt('config.newProjectName', 'Neues Projekt'))
+    setCurrentProjectId(rec.id)
+    persistCurrentId(rec.id)
+    commitProject(rec.project)
+  }, [warnIfUnsaved, commitProject, tt])
   const importProject = useCallback(
     (text: string) => {
       try {
-        switchProject(parseProject(text))
+        const parsed = parseProject(text)
+        warnIfUnsaved()
+        const id = importProjectRecord(parsed)
+        setCurrentProjectId(id)
+        persistCurrentId(id)
+        commitProject(parsed)
       } catch (e) {
         pushToast(
           `${tt('config.toast.loadFailed', 'Projekt konnte nicht geladen werden')}: ${e instanceof Error ? e.message : tt('config.error.unknown', 'Unbekannter Fehler')}`,
@@ -173,8 +216,34 @@ export function App() {
         )
       }
     },
-    [switchProject, pushToast, tt],
+    [warnIfUnsaved, commitProject, pushToast, tt],
   )
+  // Projekt-Hub: ein anderes gespeichertes Projekt öffnen.
+  const openProject = useCallback((id: string) => {
+    const loaded = loadProjectById(id)
+    if (!loaded) return
+    warnIfUnsaved()
+    setCurrentProjectId(id)
+    persistCurrentId(id)
+    commitProject(loaded)
+    setHubOpen(false)
+  }, [warnIfUnsaved, commitProject])
+  const newProjectFromHub = useCallback(() => { newProject(); setHubOpen(false) }, [newProject])
+  // Nach Umbenennen/Löschen im Hub den aktiven Zustand nachziehen.
+  const hubChanged = useCallback(() => {
+    const list = listProjects()
+    if (currentProjectId && !list.some((e) => e.id === currentProjectId)) {
+      const nextId = list[0]?.id ?? null
+      setCurrentProjectId(nextId)
+      persistCurrentId(nextId)
+      commitProject(nextId ? loadProjectById(nextId) : null)
+    } else if (currentProjectId) {
+      const p = loadProjectById(currentProjectId)
+      if (p && project && p.meta.name !== project.meta.name) {
+        setHistory((h) => ({ ...h, present: p }))
+      }
+    }
+  }, [currentProjectId, project, commitProject])
 
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
   const [tabs, setTabs] = useState<Record<ModuleId, string>>(DEFAULT_TAB)
@@ -330,7 +399,7 @@ export function App() {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenPalette={() => setPaletteOpen(true)}
         onOpenBilling={() => setBillingOpen(true)}
-        onAssign={() => switchProject(PROJECT)}
+        onAssign={() => setHubOpen(true)}
         onClear={() => switchProject(null)}
         onNew={newProject}
         onSave={saveProject}
@@ -358,7 +427,7 @@ export function App() {
             dort ausgeblendet (Navigation läuft über die Rail). */}
         {libraryOpen && (
           <aside className="hidden w-64 flex-none flex-col border-r border-av-border-muted md:flex" aria-label={tt('config.aria.libraryLayers', 'Bibliothek und Ebenen')}>
-            <LibraryPanel key={mod.id} module={mod} project={project} hiddenLayers={hiddenLayers} onToggleLayer={toggleLayer} />
+            <LibraryPanel key={mod.id} module={mod} project={project} hiddenLayers={hiddenLayers} onToggleLayer={toggleLayer} selectedId={selected[moduleId]} onSelect={selectItem} />
           </aside>
         )}
 
@@ -374,7 +443,7 @@ export function App() {
             selectedId={selected[moduleId]}
             onSelect={selectItem}
             onNavigate={goToModule}
-            onAssign={() => switchProject(PROJECT)}
+            onAssign={newProject}
             onUpdateShow={updateShow}
             onUpdateHeader={updateHeader}
             zoom={zoom}
@@ -447,7 +516,21 @@ export function App() {
         onSetLanguage={setLanguage}
       />
 
-      <BillingModal open={billingOpen} onClose={() => setBillingOpen(false)} project={project} />
+      <BillingModal
+        open={billingOpen}
+        onClose={() => setBillingOpen(false)}
+        project={project}
+        onPersistSettings={(billing) => updateShow((s) => ({ ...s, billing }))}
+        onRecordInvoice={(rec) => updateShow((s) => ({ ...s, invoices: [...(s.invoices ?? []), rec] }))}
+      />
+      <ProjectHubModal
+        open={hubOpen}
+        onClose={() => setHubOpen(false)}
+        currentId={currentProjectId}
+        onOpen={openProject}
+        onNew={newProjectFromHub}
+        onChanged={hubChanged}
+      />
     </div>
    </LanguageProvider>
   )
