@@ -4,6 +4,10 @@ import { connectShellTheme, declareNoHistory } from '@avplan/ui/embed';
 import { initShellSettings } from './shellSettings';
 import App from './App';
 import './index.css';
+import { loadZoom, applyZoom } from './utils/uiZoom';
+
+// Gespeicherten UI-Zoom vor dem ersten Render anwenden (kein Flash).
+applyZoom(loadZoom());
 
 // In die Suite-Shell eingebettet? Dann folgt das Theme der Shell (No-op im
 // Standalone-Betrieb — window.parent === window). Vollständigen Shell-Token-Satz

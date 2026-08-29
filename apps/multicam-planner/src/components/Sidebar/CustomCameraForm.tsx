@@ -170,7 +170,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
       setMount(m);
       setMountIsCustom(!(MOUNTS as readonly string[]).includes(m));
     }
-    if (data.type && TYPES.some((t) => t.value === data.type)) setType(data.type as Camera['type']);
+    if (data.type && TYPES.some((ty) => ty.value === data.type)) setType(data.type as Camera['type']);
     if (Array.isArray(data.adaptedMounts)) {
       setAdaptedMounts(
         data.adaptedMounts
