@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue" />
   <img src="https://img.shields.io/badge/offline-first-success" />
   <img src="https://img.shields.io/badge/status-active%20development-orange" />
-  <img src="https://img.shields.io/badge/license-MIT-lightgrey" />
+  <img src="https://img.shields.io/badge/license-proprietär-critical" />
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
     <img src="https://img.shields.io/badge/⬇%20Download%20for%20macOS%20%26%20Windows-863bff?style=for-the-badge&logo=github&logoColor=white" alt="Download AV Planner Suite for macOS and Windows" height="42" />
   </a>
   <br />
-  <sub>Free &amp; MIT-licensed · <code>.dmg</code> (Apple Silicon + Intel) and <code>.exe</code> installers attached to every release</sub>
+  <sub>Kostenlos nutzbar, proprietär lizenziert · <code>.dmg</code> (Apple Silicon + Intel) and <code>.exe</code> installers attached to every release</sub>
 </p>
 
 ---
@@ -199,10 +199,10 @@ If the AV Planner Suite saves you time on your next show, consider buying me a c
   </a>
 </p>
 
-Donations are completely optional — the suite stays MIT-licensed and free either way. 🙌
+Donations are completely optional — the suite stays free to use. It is proprietary software, not open source. 🙌
 
 ---
 
 ## 📄 License
 
-MIT — see [`LICENSE`](LICENSE).
+Proprietär — © 2026 Lars Zumpe, alle Rechte vorbehalten. Nutzung der veröffentlichten Builds ist kostenlos; Weiterverbreitung und abgeleitete Werke sind es nicht. Siehe [`LICENSE`](LICENSE).

@@ -93,5 +93,6 @@
       "createStartMenuShortcut": true,
       "artifactName": "Light-Planner-Setup-${version}.${ext}"
     }
-  }
+  },
+  "license": "UNLICENSED"
 }
