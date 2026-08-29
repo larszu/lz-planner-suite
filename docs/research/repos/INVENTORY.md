@@ -50,15 +50,46 @@ than one place, kept aligned by human discipline — reproduced inside our own c
 ("information should only be entered once") and section 23 ("single source of truth") apply to
 source code as much as to camera records.
 
-**Caveat, stated precisely:** this is a *structural* risk, not yet realised drift. The inventory
-copies are currently identical, and the `.avplan` and `venue-exchange` formats, while maintained
-as separate files in three repos with differing md5s, are **semantically equivalent today**:
-same `AVPLAN_VERSION = 1`, same `domains: { cameras, lighting, cabling }` slots, same
-`VENUE_EXCHANGE_VERSION = 1`, same field lists on `VenueExchangeWall` and
-`VenueExchangeStageObject`. The md5 differences are import paths and semicolon style. Two guards
-exist and work: `packages/inventory-core/test/contract.test.ts` freezes the inventory wire format,
-and `light-planner/scripts/avplan-check.ts` round-trip-tests the `.avplan` envelope. Neither
-guard spans repository boundaries, which is where the exposure is.
+### Correction: the drift is real, and it has already happened
+
+An earlier revision of this document called the fork a *structural* risk and said drift had not
+yet occurred. **That was wrong, and the error is worth naming because of how it was made.** The
+shared contract files were checked — `inventory.ts` is byte-identical, `.avplan` and
+`venue-exchange` are semantically equivalent — and that narrow, correct result was generalised to
+the whole codebase without diffing the applications themselves. Checking the contracts is not
+checking the code.
+
+Measured 2026-08-29 by direct `diff -rq` of `av-planner-suite/apps/<app>/src` against the
+standalone repository's `src`:
+
+| App | Divergent or missing paths | Suite LOC | Standalone LOC | Delta |
+| --- | --- | --- | --- | --- |
+| cable-planner | 56 | 110,931 | 113,652 | standalone +2,721 |
+| multicam-planner | 72 | 11,964 | 20,109 | **standalone +8,145** |
+| light-planner | 26 | 15,482 | 15,272 | suite +210 |
+
+The drift is **bidirectional** — each side carries whole features the other does not have:
+
+| | Only in the suite copy | Only in the standalone repo |
+| --- | --- | --- |
+| cable-planner | `lexwareIpc.ts`, `lexwareService.ts`, `shellLexware.ts`, `shellSettings.ts`, `shellHistory.ts`, `isEmbedded.ts` (shell integration + Lexware billing) | `netboxIpc.ts`, `netboxApiClient.ts`, `components/Netbox/`, `netboxMapping.ts`, `netboxImportSlice.ts`, `types/netbox.ts`, `portOccupancy.ts`, `inventoryPortable.ts`, `types/inventory.ts` (**the entire NetBox import feature**) |
+| multicam-planner | 3 files | **45 files**, including ten test files (`rigDrive`, `rigGeometry`, `rigTake`, `motionProfile`, `lensScale`, `previewPreset`, `idRepair`, `color`, `inventoryContract`, `projectLoadIds`) |
+| light-planner | `Onboarding.tsx`, `hooks/`, `i18n/en/`, `shellSettings.ts` | `ErrorBoundary.tsx`, `MenuBar.tsx`, `Toolbar.tsx`, `inventory/portable.ts`, `inventory/types.ts` |
+
+Recency confirms the mechanism: the suite's vendored copies were last touched 2026-07-14
+(multicam) and 2026-07-21 (cable), while the standalone repos moved on to 2026-08-01 and
+2026-08-18. Features land upstream and the vendored copy silently falls behind; shell-side work
+lands in the suite and never reaches upstream.
+
+**Consequences.** The suite cannot build NetBox import because it does not have it. The standalone
+cable-planner cannot do Lexware billing. `multicam-planner` inside the suite is missing 40% of its
+own source and ten test files, so the suite's CI is not testing what the standalone repo tests.
+The two guards that do exist — `packages/inventory-core/test/contract.test.ts` and
+`light-planner/scripts/avplan-check.ts` — are sound but only cover the shared wire formats, which
+are precisely the part that has *not* drifted. Nothing guards the applications.
+
+This makes roadmap position 0 remedial rather than preventive, and moves it from "cheap hygiene"
+to "the reason two of three planners disagree with themselves".
 
 ## cable-planner
 
