@@ -102,3 +102,77 @@ haben. Der Code entsteht in `larszu/cable-planner`, die Suite zieht nach.
   und ein Haupt-/Backup-Paar ist eine Rolle, nicht zwei Geräte.
 - **Sofort ein Schema festlegen.** Ohne die Ableitung wissen wir nicht, welche Felder der Graph
   ohnehin beantwortet. Ein zu früh eingefrorenes Schema speichert Redundanz.
+
+## Was die Umsetzung gelehrt hat
+
+### Inkrement 0 — Routing-Zustand ins Projekt (erledigt, `cable-planner#601`)
+
+Die gegnerische Prüfung hatte recht: Der Videohub-Export-Dialog hielt sein Routing in
+`localStorage`, der Kommentar im Exporter sagte es sogar selbst. Der Zustand liegt jetzt als
+`EquipmentItem.videohubRouting` im Projekt, wird von `healProjectPositions` migriert und normalisiert
+(ein falscher Kreuzpunkt geht live auf Sendung — lieber verlieren als raten), Alt-Salvos werden
+einmalig aus `localStorage` übernommen.
+
+### Inkrement 1 — Ableitung + `LabelTargetSpec` (erledigt, `cable-planner#602`)
+
+Zwei Regeln haben sich beim Bauen als tragend erwiesen; beide sind im Code als Kommentar
+festgehalten, weil sie sonst beim nächsten Anfassen wieder verloren gehen.
+
+**Treue-Regel: ein Kandidat behauptet nur, was der Exporter heute wirklich sendet.** Der erste
+Entwurf setzte den aus dem Kabelgraph aufgelösten Quellnamen als ATEM-Label ein — schönerer Text,
+aber kein Gerät hätte ihn je gesehen. Der Plan-Check hätte Kollisionen auf Texten gemeldet, die nie
+ein Draht erreicht. Die Ableitung spiegelt deshalb exakt `portDisplayLabel` + `shortenForAtem`
+(ATEM) bzw. `portDisplayLabel` (Videohub). Dass die Exporter den Resolver übernehmen, ist ein
+eigener Schritt — er gehört zu Inkrement 2, nicht als stiller Nebeneffekt hierher.
+
+Der Nebeneffekt dieser Strenge ist der eigentliche Gewinn: Zwei Eingänge mit den Portnamen
+„1 SDI 3G" und „2 SDI 3G" bekommen im ATEM **beide** den Langnamen „3G". Das ist heute so, in
+ausgelieferten Plänen.
+
+**Kein Anker ohne Ziel-Spec.** `unanswered` meldet heute genau ein Feld, die UMD-Adresse. ISO-Präfix
+und Comms-Kanal stehen bewusst noch nicht darin: Für beide fehlt ein belegtes Zielsystem in
+`labelTargets.ts`, und ein Anker ohne Ziel ist eine Wunschliste, kein Arbeitsvorrat. Sie kommen mit
+ihrem Ziel, nicht davor. Dieselbe Disziplin gilt für die Tabelle selbst — Green-GO-Kanalnamen
+fehlen, weil für sie kein Limit belegt ist; eine geratene Zahl erzeugt Befunde, die niemand
+nachprüfen kann.
+
+**Was die Tests gefunden haben.** `shortenForAtem` verstümmelte „SDI 1" zur nackten „1" — genau der
+Fall, den sein eigener Kommentar seit jeher ausschließt. Und die Rückwärtssuche wäre durch den
+Genlock-Eingang einer Kamera gelaufen: Eine Kamera mit verkabeltem Referenz-Eingang sieht
+strukturell aus wie ein Konverter, eine zählbasierte Regel kann das nicht unterscheiden. Jetzt
+entscheidet der Signalbereich (gleicher Steckverbinder, kein Referenz-/Rückweg-/Steuer-Port), und
+bei allem Mehrdeutigen hält die Suche an und nennt das Zwischengerät — das sagt weniger, stimmt
+aber. Beide Fehler hätte kein Review gefunden, das nur den Diff liest; beide fielen, weil die
+Ableitung eine reine Funktion über ein Fixture-Projekt ist. Genau dafür war die Reihenfolge gewählt.
+
+### Inkrement 3 — das Austauschformat (erledigt, `cable-planner#603`)
+
+`.avsourcemap` steht neben dem `.avplan`, nicht in ihm. Der `.avplan` trägt das ganze Projekt und
+richtet sich an die Planungs-Apps; der Konsument der *Identität* ist eine **Runtime** — ein
+Tally-Rechner, ein UMD-Sender —, und die soll nicht ein komplettes Kabelprojekt parsen müssen, um
+zu erfahren, dass „Kamera 1" auf ATEM-Eingang 3 liegt. Geschrieben wird das **Ergebnis** der
+Ableitung, nicht ihre Grundlage: Wer die Karte liest, baut den Kabelgraphen nicht nach.
+
+Die beiden Regeln aus dem interchange-first-Entwurf, die ADR-001 übernommen hat, sind hier wörtlich
+umgesetzt. **Provenienz pro Wert:** `planned` / `commanded` / `confirmed`, und der Cable-Planner
+schreibt ausschließlich `planned` — er plant, er misst nicht. **Verweigerung statt stillen
+Verlusts:** offene Anker stehen in `unresolved`, unbekannte Felder einer fremden Datei überleben
+als `extra`, und was hier keinen Platz hat, wird beim Namen genannt.
+
+Die tragende Entscheidung steckt im Import: Er **füllt nur Lücken**. Ein abweichender Wert wird
+gemeldet, nicht übernommen; eine Adresse außerhalb 0–126 wird verworfen und benannt. Ein Import,
+der stillschweigend die Tally-Adresse ändert, ist im Betrieb nicht zurückzuverfolgen — und genau
+solche Automatik ist der Grund, warum die Recherche „stille Überschreibung" so oft als Schmerzpunkt
+fand.
+
+Ein Plan ohne Rollen exportiert eine leere Liste. Das ist die richtige Antwort, kein Fehler: Das
+Format transportiert Identität, und ohne Rolle gibt es keine. Was dabei offen bleibt, steht dann
+umso deutlicher in `unresolved`.
+
+## Damit ist ADR-001 umgesetzt
+
+Alle vier Inkremente stehen. Was offen bleibt, ist bewusst offen und in der Regel *kein Anker ohne
+Ziel-Spec* begründet: ISO-Präfix und Comms-Kanal warten auf ein belegtes Zielsystem in
+`labelTargets.ts`. Der nächste ehrliche Schritt ist nicht, das Schema zu erweitern, sondern die
+Exporter den Resolver übernehmen zu lassen — die Treue-Regel aus Inkrement 1 hält sie bis dahin
+absichtlich auseinander.
