@@ -14,8 +14,9 @@ lives in `../landscape/` and `../pain-points/`; per-role evidence in `../roles/`
 > each conclusion below, including this document's central one. Do not quote a figure from this
 > corpus commercially without re-checking it on open egress.
 
-Status: all sixteen market segments and all eleven roles are complete. The paired pain-point
-passes are outstanding (see the caveat at the end). **The central finding below is
+Status: complete — all sixteen segments (landscape and pain points) and all eleven roles. The
+competitor-side analysis is in `COMPETITOR-PAIN-SYNTHESIS.md`, which adds two findings this
+document could not see from the landscape pass alone. **The central finding below is
 over-determined** — it was reached independently by every completed segment agent, none of which
 could see the others' output.
 
@@ -142,8 +143,10 @@ them and the projections that come off it**:
 
 ## Caveats
 
-- All sixteen segments are now complete; the eight later ones did not overturn the convergence
-  above. The paired pain-point passes are still outstanding and are the corpus's real gap.
+- All sixteen segments are now complete, landscape and pain points both; the later segments did
+  not overturn the convergence above. The corpus's real gap is now the *source mix* rather than
+  coverage: the pain evidence is GitHub-weighted because review sites and Reddit were blocked,
+  which under-represents closed commercial products. See `../METHOD.md`.
 - Several pricing and mobile-app questions are recorded as UNKNOWN rather than guessed, notably
   intercom mobile client quality — an explicit analysis target that could not be met and should be
   the first thing re-attempted.

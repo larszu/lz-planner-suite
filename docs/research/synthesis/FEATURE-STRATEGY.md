@@ -1,7 +1,8 @@
 # AV Planner feature strategy
 
 Derived from the research corpus per section 29. Inputs: `AV-INDUSTRY-SOFTWARE-LANDSCAPE.md`
-(all 16 segments), `USER-NEED-DATABASE.md` (150 needs, 11 professions), `FEATURE-MATRIX.md`,
+(all 16 segments), `USER-NEED-DATABASE.md` (150 needs, 11 professions),
+`COMPETITOR-PAIN-SYNTHESIS.md` (224 competitor pain points, 16 segments), `FEATURE-MATRIX.md`,
 and `../repos/INVENTORY.md` (the eight existing repositories, read from source).
 
 Read `../METHOD.md` for what the research could and could not verify.
@@ -55,6 +56,8 @@ Score = `UV + FR + TS + ER + AV + IV - CX`.
 | **7** | **Return path: plan vs as-built reconciliation** | 5 | 4 | 4 | 4 | 4 | 5 | 6 | **20** |
 | **8** | **Network/IP plan from the same device records** | 4 | 3 | 4 | 4 | 4 | 4 | 4 | **19** |
 | **9** | **Delivery/streaming chain as signal flow** | 4 | 3 | 3 | 4 | 4 | 3 | 3 | **18** |
+| **10** | **Confirmed-state discipline across every module** | 5 | 4 | 2 | 5 | 5 | 5 | 3 | **23** |
+| **11** | **Public device-capability registry** | 4 | 4 | 3 | 4 | 5 | 5 | 3 | **22** |
 
 ### 0. Consolidate the fork — do this first, it is cheap and it blocks everything
 
@@ -117,6 +120,35 @@ route back into the record it came from. Production managers and warehouse staff
 asked for the return path ("make the printed artefact scannable back in"). Because we are already
 offline-first and already have a strong print pipeline, this is mostly assembly.
 
+### 10. Confirmed-state discipline — a rule before it is a feature
+
+Added after the pain research, which found five segments independently asking for the same thing:
+**read the device's real state, do not just display the last command sent.** Camera panels drift
+open-loop, intercom buttons lie about whether a mic is open, media servers cannot be read back,
+show-control layers only fire triggers. The `video-engineer-shader` role dossier stated the rule
+from the other side: *never display a value the system has not confirmed.*
+
+It scores high because it costs little and touches everything. `sony-camera-bridge` already does
+it — `CameraCapabilities` disables unsupported functions rather than failing silently. The work is
+to make it a suite-wide invariant: every displayed value carries provenance (confirmed by device /
+last commanded / planned), and the UI must render the difference. This is cheap now and very
+expensive to retrofit later, which is why it is a rule adopted early rather than a feature
+scheduled late.
+
+### 11. Public device-capability registry
+
+Five segments want machine-readable compatibility truth that exists nowhere: which camera model
+supports which paint parameter over which transport, which tally lamp talks to which switcher,
+which Dante devices actually interoperate, which firmware combinations work. The best artefact the
+camera-control researcher could find in the whole segment was a CSV with French headers inside a
+documentation repository.
+
+We already hold an unusual amount of this knowledge across `sony-camera-bridge` (eleven camera
+families with verified/tuning status per protocol), `cable-planner`'s connector and device
+catalogues, and `tally-pi`. Publishing it as a versioned, machine-readable registry is cheap
+relative to its value, compounds over time, and is the kind of asset that makes a tool the default
+reference in a field that currently has none.
+
 ### 5–9
 
 Change-impact analysis answers a question no product in the corpus answers. Intercom planning
@@ -144,6 +176,24 @@ camera position placed (multicam-planner)
 
 Every arrow above is between two modules we already own. That is the section 27 advantage stated
 as an engineering plan rather than a claim.
+
+## 4b. Design rules the research forces
+
+These are not features. They are constraints that every feature must satisfy, each derived from a
+widespread, multi-source finding.
+
+1. **Never display an unconfirmed value as fact.** Every value carries provenance: confirmed by
+   the device, last commanded, or planned. (Five segments; see initiative 10.)
+2. **An import that cannot preserve a field must refuse, not drop it.** Silent data loss is the
+   single most damaging integration failure named across both role and competitor research.
+3. **Direction and signal type are first-class, everywhere.** The same connector carries different
+   things in different directions; a model without direction cannot validate anything.
+4. **Identity is stable and separate from position.** A rehearsal-day edit must not silently
+   re-point every controller button; a main+backup pair is one role, not two devices.
+5. **Every printed artefact is version-stamped and scannable back.** Paper is deliberate, not
+   legacy; the failure is that it goes stale invisibly.
+6. **The container is the unit of handling.** Cases nest, and their contents and weight follow
+   them.
 
 ## 5. What we will not build
 
@@ -177,11 +227,15 @@ offline-first architecture is a genuine advantage and should not be traded for c
 
 ## 7. Open questions
 
-- All sixteen segments are researched. Visual workspace, crew scheduling, asset tracking and
-  video switching arrived after the ranking was set and have not yet been folded into the matrix
-  directly; doing so is the next refresh, and is not expected to move the ranking.
+- All sixteen segments are researched, landscape and pain points both. Visual workspace, crew
+  scheduling, asset tracking and video switching arrived after the matrix was first drafted and
+  are represented there only through adjacent segments; folding them in directly is the next
+  refresh. The pain research did not move the existing ranking — it confirmed initiatives 2 and 3
+  verbatim from the competitor side and added initiatives 10 and 11.
 - The section 15 user research (Reddit, G2, Capterra, Trustpilot) could not be performed in this
-  environment. The role dossiers partly compensate, but the pain-point half of the mandate should
-  be redone with open egress before the roadmap is treated as final.
+  environment. The 224 pain points rest on GitHub issues plus search summaries, which
+  systematically under-represents closed commercial products whose users never file public issues
+  — precisely the expensive, proprietary end of the market. Conclusions drawn from silence in
+  those segments are weak and should be redone with open egress.
 - Pricing across the market is unverified here, so no positioning claim about cost should be made
   from this corpus yet.

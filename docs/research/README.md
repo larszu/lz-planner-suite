@@ -13,6 +13,7 @@ verified.
 | --- | --- |
 | [`synthesis/AV-INDUSTRY-SOFTWARE-LANDSCAPE.md`](synthesis/AV-INDUSTRY-SOFTWARE-LANDSCAPE.md) | Cross-segment summary. The central finding: the market is all runtime and no design time. |
 | [`synthesis/USER-NEED-DATABASE.md`](synthesis/USER-NEED-DATABASE.md) | 150 needs from 11 professions, priority-scored, clustered into six themes. |
+| [`synthesis/COMPETITOR-PAIN-SYNTHESIS.md`](synthesis/COMPETITOR-PAIN-SYNTHESIS.md) | 224 competitor pain points across 16 segments, with the two findings the landscape pass could not see. |
 | [`synthesis/FEATURE-MATRIX.md`](synthesis/FEATURE-MATRIX.md) | Capability comparison, with nine deliberate "won't build" decisions. |
 | [`synthesis/FEATURE-STRATEGY.md`](synthesis/FEATURE-STRATEGY.md) | The derived roadmap, prioritised, with the cross-module automation chain. |
 
@@ -21,12 +22,14 @@ verified.
 | Directory | Contents |
 | --- | --- |
 | [`landscape/`](landscape/) | Per-segment market dossiers: products, data models, standards, prices, APIs, offline behaviour. |
-| [`pain-points/`](pain-points/) | Per-segment user complaints. **See METHOD.md — the review-site and Reddit sources this needs were unreachable in the research environment.** |
+| [`pain-points/`](pain-points/) | Per-segment user complaints, all 16 segments. **See METHOD.md — the review-site and Reddit sources this needs were unreachable, so the evidence is GitHub-weighted.** |
 | [`roles/`](roles/) | Eleven professions: time sinks, double entry, what is on paper, in Excel, in WhatsApp. |
 | [`repos/`](repos/) | Capability inventory of the eight existing repositories, read from source rather than from READMEs. |
 | [`workflow-chain.md`](workflow-chain.md) | The enquiry-to-invoice chain and its media breaks. |
 
-## The three findings that drive the strategy
+Scale: 16/16 market segments (landscape and pain points), 11/11 professions, 8/8 repositories.
+
+## The findings that drive the strategy
 
 1. **The market has no design-time layer.** Six segment researchers, working independently,
    each concluded that every product in their segment is a runtime. Nothing holds the technical
@@ -36,6 +39,11 @@ verified.
 3. **Offline exists, but always for the wrong half.** Where offline capability exists it covers
    warehouse scanning, or means "you may host the server yourself". Nobody offers offline
    planning on a laptop in a truck.
+4. **Control is open-loop and the surface lies.** Five segments independently asked to read a
+   device's real state rather than see the last command echoed back. The operational twin of (1).
+5. **Nobody publishes machine-readable capability truth.** Five segments want to know what a
+   device can actually do, over which transport, with which firmware — and no such registry
+   exists in any of them.
 
 ## Standing obligation
 
