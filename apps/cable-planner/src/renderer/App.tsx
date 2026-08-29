@@ -9,6 +9,7 @@ import { MenuBar } from './components/Layout/MenuBar'
 import { StatusBar } from './components/Layout/StatusBar'
 import { PropertiesPanel } from './components/Properties/PropertiesPanel'
 import { RentmanImportDialog } from './components/Rentman/RentmanImportDialog'
+import { NetboxImportDialog } from './components/Netbox/NetboxImportDialog'
 import { GraphmlImportDialog } from './components/Import/GraphmlImportDialog'
 import { RentmanCableExportDialog } from './components/Rentman/RentmanCableExportDialog'
 import { OnboardingTour } from './components/Onboarding/OnboardingTour'
@@ -105,6 +106,7 @@ import { infoDialog } from './lib/infoDialog'
 import { AlertTriangle } from 'lucide-react'
 import { useTranslation, format } from './lib/i18n'
 import { Icon } from './components/shared/Icon'
+import { cableTouches } from './lib/portOccupancy'
 
 export default function App() {
   const t = useTranslation()
@@ -171,6 +173,8 @@ export default function App() {
     open ? useUiStore.getState().openSettings() : useUiStore.getState().closeSettings()
   const rentmanImport = useUiStore((state) => state.rentmanImport)
   const closeRentmanImport = useUiStore((state) => state.closeRentmanImport)
+  const netboxImport = useUiStore((state) => state.netboxImport)
+  const closeNetboxImport = useUiStore((state) => state.closeNetboxImport)
   const rentmanCableExport = useUiStore((state) => state.rentmanCableExport)
   const openRentmanCableExport = useUiStore((state) => state.openRentmanCableExport)
   const closeRentmanCableExport = useUiStore((state) => state.closeRentmanCableExport)
@@ -926,11 +930,11 @@ export default function App() {
       const fromPortId = pending.sourceHandle
       const toEqId = pending.target
       const toPortId = pending.targetHandle
-      const usesPort = (cable: Cable, eqId: string, portId: string) =>
-        (cable.fromEquipmentId === eqId && cable.fromPortId === portId) ||
-        (cable.toEquipmentId === eqId && cable.toPortId === portId)
+      // #595 — Geraet UND Port, nie die Port-ID allein (lib/portOccupancy).
       const conflicts = stateBefore.project.cables.filter(
-        (c) => usesPort(c, fromEqId, fromPortId) || usesPort(c, toEqId, toPortId),
+        (c) =>
+          cableTouches(c, { equipmentId: fromEqId, portId: fromPortId }) ||
+          cableTouches(c, { equipmentId: toEqId, portId: toPortId }),
       )
       if (conflicts.length > 0) {
         const list = conflicts
@@ -1092,6 +1096,7 @@ export default function App() {
         initialSection={settingsSection}
       />
       <RentmanImportDialog open={rentmanImport.open} onClose={closeRentmanImport} />
+      <NetboxImportDialog open={netboxImport.open} onClose={closeNetboxImport} />
       <GraphmlImportDialog open={graphmlImportOpen} onClose={() => setGraphmlImportOpen(false)} />
       <RentmanCableExportDialog
         open={rentmanCableExport.open}
@@ -1532,11 +1537,9 @@ const CableEditDialog = ({ cable, onClose, onSave }: CableEditDialogProps) => {
   // its own existing endpoint, so we exclude this cable's id.
   const portConflict = (eqId: string, portId: string): Cable | undefined => {
     if (!eqId || !portId) return undefined
+    // #595 — Geraet UND Port (lib/portOccupancy).
     return cables.find(
-      (c) =>
-        c.id !== cable.id &&
-        ((c.fromEquipmentId === eqId && c.fromPortId === portId) ||
-          (c.toEquipmentId === eqId && c.toPortId === portId)),
+      (c) => c.id !== cable.id && cableTouches(c, { equipmentId: eqId, portId }),
     )
   }
   const fromConflict = portConflict(fromEquipmentId, fromPortId)

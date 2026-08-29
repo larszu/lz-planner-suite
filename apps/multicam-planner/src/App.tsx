@@ -6,6 +6,8 @@ import Venue2D from './components/Venue2D/Venue2D';
 import Venue3D from './components/Venue3D/Venue3D';
 import CameraPreview from './components/Preview/CameraPreview';
 import Calculator from './components/Sidebar/Calculator';
+import ShotlistPanel from './components/Shotlist/ShotlistPanel';
+import RigControlPanel from './components/RigControl/RigControlPanel';
 import TemplateSelector from './components/Templates/TemplateSelector';
 import ExportPanel from './components/Export/ExportPanel';
 import { ErrorBoundary } from '@avplan/ui';
@@ -13,6 +15,7 @@ import { getExportRegistry } from './store/exportRegistry';
 import { loadJSON, saveJSON } from './utils/storage';
 import { Suspense, useState, useRef, useCallback, useEffect } from 'react';
 import { FiChevronLeft, FiChevronRight, FiMaximize2, FiMinimize2, FiMinus, FiX } from 'react-icons/fi';
+import { InventoryDialog } from './inventory/InventoryDialog';
 import { Layout, Model, TabNode, Actions } from 'flexlayout-react';
 import type { IJsonModel, ITabSetRenderValues, TabSetNode, BorderNode, ILayoutApi } from 'flexlayout-react';
 import 'flexlayout-react/style/dark.css';
@@ -36,6 +39,10 @@ function getSelectedIndexForTab(tabId: string) {
       return 2;
     case 'tab-calc':
       return 3;
+    case 'tab-shotlist':
+      return 4;
+    case 'tab-rig':
+      return 5;
     case 'tab-2d':
     default:
       return 0;
@@ -63,6 +70,8 @@ function createFocusLayoutJson(t: TFn, selectedTabId = 'tab-2d'): IJsonModel {
             { type: 'tab', name: t('header.tab.3dView', '3D View'), component: 'venue3d', id: 'tab-3d' },
             { type: 'tab', name: t('header.tab.preview', 'Preview'), component: 'preview', id: 'tab-preview' },
             { type: 'tab', name: t('header.tab.calculator', 'Calculator'), component: 'calculator', id: 'tab-calc' },
+            { type: 'tab', name: 'Shotlist', component: 'shotlist', id: 'tab-shotlist' },
+            { type: 'tab', name: 'Rig-Steuerung', component: 'rigcontrol', id: 'tab-rig' },
           ],
         },
       ],
@@ -165,6 +174,7 @@ export default function App() {
   const { t } = useTranslation();
   const { sidebarCollapsed, setSidebarCollapsed } = useStore();
   const [sidebarTab, setSidebarTab] = useState<'cameras' | 'templates'>('cameras');
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const [model, setModel] = useLayoutModel(t);
   const [layoutEpoch, setLayoutEpoch] = useState(0);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('focus');
@@ -256,6 +266,8 @@ export default function App() {
     'tab-3d': { component: 'venue3d', name: t('header.tab.3dView', '3D View') },
     'tab-preview': { component: 'preview', name: t('header.tab.preview', 'Preview') },
     'tab-calc': { component: 'calculator', name: t('header.tab.calculator', 'Calculator') },
+    'tab-shotlist': { component: 'shotlist', name: 'Shotlist' },
+    'tab-rig': { component: 'rigcontrol', name: 'Rig-Steuerung' },
   };
 
   const handleDragNewPanel = useCallback((tabId: string, event: DragEvent) => {
@@ -365,6 +377,10 @@ export default function App() {
         return <CameraPreview undocked={false} onUndock={() => {}} />;
       case 'calculator':
         return <Calculator />;
+      case 'shotlist':
+        return <ShotlistPanel />;
+      case 'rigcontrol':
+        return <RigControlPanel />;
       default:
         return <div className="p-4 text-gray-500">{format(t('header.panel.unknown', 'Unknown panel: {component}'), { component: component ?? '' })}</div>;
     }
@@ -422,13 +438,23 @@ export default function App() {
         onDragNewPanel={handleDragNewPanel}
         layoutPresetOptions={layoutPresetOptions}
         layoutMode={layoutMode}
+        onOpenInventory={() => setInventoryOpen(true)}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* ── Left sidebar ── */}
-        <div className={`border-r border-bc-border flex flex-col bg-bc-panel shrink-0 transition-[width] duration-200 ${sidebarCollapsed ? 'w-0 overflow-hidden' : 'w-80'}`}>
+        {/* ── Left sidebar ──
+            Breite skaliert mit dem Fenster statt fest 320 px: auf grossen
+            Schirmen darf die Spalte mitwachsen (die Kamera-Karte nutzt das per
+            Container-Query fuer zweispaltige Zeilen), auf kleinen schrumpft sie
+            bis 264 px, bevor der Auto-Collapse aus dem Media-Query greift.
+            `min-w` an den Kindern muss dafuer weg — sonst kann sie nicht kleiner
+            werden und die Spalte ueberlaeuft. */}
+        <div
+          style={sidebarCollapsed ? undefined : { width: 'clamp(264px, 22vw, 420px)' }}
+          className={`border-r border-bc-border flex flex-col bg-bc-panel shrink-0 transition-[width] duration-200 ${sidebarCollapsed ? 'w-0 overflow-hidden' : ''}`}
+        >
           {/* Sidebar tabs */}
-          <div className="flex border-b border-bc-border min-w-[320px]">
+          <div className="flex border-b border-bc-border">
             <button
               className={`flex-1 py-2 text-xs font-medium ${sidebarTab === 'cameras' ? 'text-bc-accent border-b-2 border-bc-accent' : 'text-gray-500 hover:text-gray-300'}`}
               onClick={() => setSidebarTab('cameras')}
@@ -442,7 +468,7 @@ export default function App() {
               {t('header.sidebar.templates', 'Templates')}
             </button>
           </div>
-          <div className="min-w-[320px] flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-hidden flex flex-col">
             {sidebarTab === 'cameras' ? <Sidebar /> : <TemplateSelector />}
           </div>
         </div>
@@ -452,6 +478,7 @@ export default function App() {
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="shrink-0 w-5 flex items-center justify-center bg-bc-panel border-r border-bc-border hover:bg-bc-border text-gray-500 hover:text-white transition-colors"
           title={sidebarCollapsed ? t('header.sidebar.open', 'Open sidebar') : t('header.sidebar.collapse', 'Collapse sidebar')}
+          aria-label={sidebarCollapsed ? t('header.sidebar.open', 'Open sidebar') : t('header.sidebar.collapse', 'Collapse sidebar')}
         >
           {sidebarCollapsed ? <FiChevronRight size={14} /> : <FiChevronLeft size={14} />}
         </button>
@@ -472,6 +499,10 @@ export default function App() {
 
       <ExportPanel />
       <StartupAssistant />
+
+      {/* Lager / Bestand — projektübergreifend, App-kompatibel via avplan-inventory.
+          Geoeffnet ueber den Button in der Kopfzeile (statt frueher schwebend). */}
+      <InventoryDialog open={inventoryOpen} onClose={() => setInventoryOpen(false)} />
     </div>
     </ErrorBoundary>
   );

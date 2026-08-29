@@ -155,6 +155,17 @@ export interface Port {
    */
   direction?: 'in' | 'out' | 'bidirectional'
   /**
+   * #597 — ID der NetBox-Komponente (Interface, FrontPort, PowerPort, …),
+   * aus der dieser Port importiert wurde, zusammen mit ihrem NetBox-
+   * `object_type` (`interface`, `frontport`, …). Beides zusammen ist der
+   * stabile Schlüssel, über den der Aktualisieren-Lauf bereits importierte
+   * Ports wiederfindet und Kabel-Endpunkte auflöst. Bidirektionale
+   * NetBox-Komponenten erzeugen ein gespiegeltes In/Out-Paar — beide Ports
+   * tragen dieselbe `netboxId`.
+   */
+  netboxId?: number
+  netboxObjectType?: string
+  /**
    * #410 — Steckverbinder-Geschlecht (male/female). Optional; alte Projekte
    * heilen zu undefined. Wird als ♂/♀ am Port-Handle gezeigt und in
    * Patchliste/Etiketten durchgereicht — relevant fuer die Kabel-Konfektion
@@ -333,6 +344,13 @@ export interface EquipmentItem {
   rentmanId?: string
   /** Set to true when a Rentman re-fetch no longer finds this item in the project. */
   rentmanRemoved?: boolean
+  /** #597 — `dcim.device`-ID aus der importierten NetBox-Instanz. Stabile
+   *  Identität über Import-Läufe hinweg: der Aktualisieren-Lauf erkennt
+   *  daran, welche Geräte bereits im Plan sind, und fügt nur Neues hinzu. */
+  netboxId?: number
+  /** #597 — Basis-URL der NetBox-Instanz, aus der das Gerät stammt. Trennt
+   *  Geräte gleicher ID aus verschiedenen Instanzen (Test vs. Produktion). */
+  netboxSourceUrl?: string
   /** Stable origin id from an imported yEd / GraphML node. Lets a
    *  re-import correlate the same device across runs even when names or
    *  positions change. Set by the GraphML import flow only. */
@@ -549,6 +567,12 @@ export interface EquipmentItem {
    * (verteilt dann faktisch nichts).
    */
   isDistributionAmp?: boolean
+  /** #580 — Namen der Personen, die bestätigt haben, dass die eingetragenen
+   *  Ports/Daten dieses Geräts korrekt sind (Community-Verifizierung). Beim
+   *  Zusammenführen geteilter Bibliotheken werden die Listen vereinigt, sodass
+   *  sich "von N Personen verifiziert" über mehrere Nutzer aufbaut. Ein
+   *  nicht-leeres Array zeigt auf dem Canvas ein Verifiziert-Badge. */
+  verifiedBy?: string[]
   /** Festinstallation — Betriebs-Status des Geräts (geplant…außer Betrieb). */
   installStatus?: InstallStatus
   /** Festinstallation — Inventar-/Asset-Nummer für das Asset-Register. */

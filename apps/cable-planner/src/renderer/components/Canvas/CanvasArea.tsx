@@ -49,6 +49,7 @@ import { colorByLength } from '../../lib/cableColors'
 import { promptDialog } from '../../lib/promptDialog'
 import {
   setViewportCenterGetter,
+  setCanvasSizeGetter,
   setCanvasSelectionClearer,
   setCanvasInteractionLockHandlers,
   setCanvasFitViewHandler,
@@ -151,6 +152,10 @@ const CanvasContent = ({ mode = 'main' }: { mode?: CanvasMode }) => {
   // v7.9.67 / #177 — Toolbar-Sperren für ganze Objektarten.
   const lockFrames = useUiStore((s) => s.lockFrames)
   const lockEquipment = useUiStore((s) => s.lockEquipment)
+  // #585 — Rack-Editor aus Doppelklick/Rechtsklick auf eine Rack-Black-Box.
+  const triggerRackBuilderEditFromBlackBox = useUiStore(
+    (s) => s.triggerRackBuilderEditFromBlackBox,
+  )
   const wrapperRef = useRef<HTMLDivElement>(null)
   // Last screen-pixel mouse position over the canvas. Used by Strg++ quick-add
   // (#44) so the new device lands where the user pointed instead of always at
@@ -200,6 +205,23 @@ const CanvasContent = ({ mode = 'main' }: { mode?: CanvasMode }) => {
     })
     return () => setViewportCenterGetter(null)
   }, [screenToFlowPosition])
+
+  // Gemessene Canvas-Groesse fuer Zoom-to-fit nach Importen bereitstellen.
+  // Lazy Getter statt ResizeObserver: der Wert wird nur beim Import gebraucht
+  // und ist so garantiert frisch (inkl. aktueller Panel-Breiten), ohne bei
+  // jedem Resize State zu schreiben.
+  // Nur die Haupt-Canvas registriert sich — das Rack-Overlay rendert dieselbe
+  // Komponente und wuerde die Messung sonst verdraengen (vgl. #515).
+  useEffect(() => {
+    if (mode !== 'main') return
+    setCanvasSizeGetter(() => {
+      const el = wrapperRef.current
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { width: r.width, height: r.height }
+    })
+    return () => setCanvasSizeGetter(null)
+  }, [mode])
 
   useEffect(() => {
     setCanvasInteractionLockHandlers({
@@ -1750,6 +1772,14 @@ const CanvasContent = ({ mode = 'main' }: { mode?: CanvasMode }) => {
             if (newName !== null && newName.trim()) {
               updateLocation(node.id, { name: newName.trim() })
             }
+            return
+          }
+          // #585 — Doppelklick auf eine Rack-Black-Box öffnet den Rack-Editor.
+          if (node.type === 'equipment') {
+            const eq = project.equipment.find((e) => e.id === node.id)
+            if (eq?.rackInternalSnapshot) {
+              triggerRackBuilderEditFromBlackBox(node.id)
+            }
           }
         }}
         onNodeDragStart={onNodeDragStart}
@@ -1843,6 +1873,13 @@ const CanvasContent = ({ mode = 'main' }: { mode?: CanvasMode }) => {
           : project.equipment.find((e) => e.id === nodeContextMenu.nodeId)
         if (!target) return null
         const isLocked = !!target.positionLocked
+        // #585 — Rack-Black-Box (Equipment mit rackInternalSnapshot) bietet
+        // zusätzlich "Rack-Editor öffnen".
+        const isRack = !isLocation && !!(target as { rackInternalSnapshot?: unknown }).rackInternalSnapshot
+        const openRackEditor = () => {
+          triggerRackBuilderEditFromBlackBox(nodeContextMenu.nodeId)
+          setNodeContextMenu(null)
+        }
         const toggle = () => {
           if (isLocation) {
             updateLocation(nodeContextMenu.nodeId, { positionLocked: !isLocked })
@@ -1911,6 +1948,36 @@ const CanvasContent = ({ mode = 'main' }: { mode?: CanvasMode }) => {
               color: '#e2e8f0',
             }}
           >
+            {isRack && (
+              <>
+                <button
+                  type="button"
+                  onClick={openRackEditor}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '6px 10px',
+                    background: 'transparent',
+                    color: 'inherit',
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#334155')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="2" width="10" height="12" rx="1" />
+                    <path d="M3 5.5h10M3 9h10" />
+                  </svg>
+                  <span>{t('canvas.nodeMenu.openRackEditor', 'Rack-Editor öffnen')}</span>
+                </button>
+                <div style={{ height: 1, background: '#334155', margin: '4px 0' }} />
+              </>
+            )}
             <button
               type="button"
               onClick={toggle}

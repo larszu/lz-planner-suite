@@ -31,7 +31,73 @@ import { execFileSync } from 'node:child_process'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const APPS = ['cable-planner', 'multicam-planner', 'light-planner']
+
+/**
+ * Verglichene Wurzeln je App. Anfangs war das nur `src`, was einen blinden
+ * Fleck hatte: cable-planner haelt seine Tests in `tests/`, also blieben fuenf
+ * fehlende Testdateien unsichtbar — darunter die Tests fuer den NetBox-Code.
+ * `scripts/` bleibt bewusst draussen: Build-Skripte duerfen sich zwischen
+ * Monorepo und Standalone unterscheiden.
+ */
+const ROOTS = ['src', 'tests']
 const BASELINE = join(ROOT, 'scripts', 'planner-drift-baseline.json')
+
+/**
+ * Deklarativer Overlay: Upstream-Pfade, die die Suite BEWUSST nicht hat, weil
+ * ein geteiltes Paket sie ersetzt. Das ist die geglueckte Konsolidierung, kein
+ * Drift — diese Dateien zurueckzukopieren waere ein Rueckschritt.
+ *
+ * Alle drei Apps beziehen Typen und Serialisierung aus @avplan/inventory-core
+ * (siehe inventory/store.ts bzw. renderer/store/inventoryStore.ts und die
+ * serializeInventory/parseInventory-Aufrufe in den InventoryDialogs).
+ */
+const REPLACED_BY_PACKAGE = {
+  'cable-planner': [
+    'renderer/types/inventory.ts',      // -> @avplan/inventory-core (Typen)
+    'renderer/lib/inventoryPortable.ts', // -> @avplan/inventory-core (Wire-Format)
+  ],
+  'multicam-planner': [
+    'inventory/types.ts',
+    'inventory/portable.ts',
+    'components/ErrorBoundary.tsx', // -> @avplan/ui (App.tsx importiert es von dort)
+  ],
+  'light-planner': [
+    'inventory/types.ts',
+    'inventory/portable.ts',
+    'components/ErrorBoundary.tsx', // -> @avplan/ui (main.tsx importiert es von dort)
+  ],
+}
+
+/**
+ * Upstream-Dateien, die dort selbst toter Code sind: nichts importiert sie.
+ * Sie in die Suite zu vendoren wuerde toten Code einschleppen — geprueft, indem
+ * upstream nach Importen der Datei durchsucht wurde (keine Treffer ausser der
+ * Definition selbst). Sauberer waere, sie upstream zu loeschen.
+ */
+const SUITE_OVERLAY = {
+  'cable-planner': [
+    'main/ipc/lexwareIpc.ts', 'main/services/lexwareService.ts', 'renderer/lib/shellLexware.ts',
+    'renderer/lib/isEmbedded.ts', 'renderer/lib/shellHistory.ts', 'renderer/lib/shellSettings.ts',
+  ],
+  'multicam-planner': [
+    'hooks/useDomTheme.ts', 'hooks/useIsEmbedded.ts', 'shellSettings.ts',
+    'i18n/index.ts', 'i18n/de.ts', 'i18n/de/common.ts', 'i18n/de/header.ts',
+    'i18n/de/inventory.ts', 'i18n/de/preview.ts', 'i18n/de/sidebar.ts', 'i18n/de/venue.ts',
+  ],
+  'light-planner': [
+    'components/Onboarding.tsx', 'hooks/useIsEmbedded.ts', 'shellSettings.ts',
+    'i18n/en/app.ts', 'i18n/en/base.ts', 'i18n/en/dialogs.ts', 'i18n/en/panels.ts',
+    'i18n/en/topbar.ts',
+    'tests/i18n.test.ts', 'tests/pdfExport.test.ts',
+  ],
+}
+
+const DEAD_UPSTREAM = {
+  'light-planner': [
+    'components/MenuBar.tsx', // App.tsx nutzt TopBar
+    'components/Toolbar.tsx', // App.tsx nutzt ToolRail
+  ],
+}
 
 const args = process.argv.slice(2)
 const opt = (name, fallback) => {
@@ -56,11 +122,35 @@ function walk(dir, base = dir, out = []) {
   return out
 }
 
-/** Zeilen-Multimenge: getrimmt, Leerzeilen raus. */
+/**
+ * Normalisiert die i18n-Transformation der Suite weg.
+ *
+ * Die Suite ersetzt nackte deutsche Literale durch t('key', 'Text'). Ohne
+ * Normalisierung zaehlt jede uebersetzte Zeile doppelt — einmal als
+ * suite-only (die t()-Form), einmal als upstream-only (die nackte Form) —
+ * und ein vollstaendig gemergtes File sieht aus wie schwere Divergenz.
+ * Genau das hat die erste Fassung dieses Skripts getan und die two-way-Zahl
+ * massiv aufgeblaeht.
+ *
+ * t('a.b', 'Text') -> 'Text'  ·  translate(lang, 'a.b', 'Text') -> 'Text'
+ * Reine Overlay-Zeilen (useTranslation, @avplan/*-Importe) fallen ganz weg.
+ */
+function normalise(line) {
+  let l = line
+  // t('key', 'Fallback') / t("key", "Fallback") -> 'Fallback'
+  l = l.replace(/\bt\(\s*(['"])(?:[^'"\\]|\\.)*?\1\s*,\s*(['"])((?:[^'"\\]|\\.)*?)\2\s*\)/g, '$2$3$2')
+  // translate(lang, 'key', 'Fallback') -> 'Fallback'
+  l = l.replace(/\btranslate\(\s*[A-Za-z0-9_.]+\s*,\s*(['"])(?:[^'"\\]|\\.)*?\1\s*,\s*(['"])((?:[^'"\\]|\\.)*?)\2\s*\)/g, '$2$3$2')
+  // JSX-Wrapper um einen reinen Ausdruck: {'Text'} -> Text
+  l = l.replace(/\{\s*(['"])((?:[^'"\\]|\\.)*?)\1\s*\}/g, '$2')
+  return l.trim()
+}
+
+/** Zeilen-Multimenge: getrimmt, i18n-normalisiert, Leerzeilen raus. */
 function lineBag(file) {
   const bag = new Map()
   for (const raw of readFileSync(file, 'utf8').split('\n')) {
-    const line = raw.trim()
+    const line = normalise(raw)
     if (!line) continue
     bag.set(line, (bag.get(line) ?? 0) + 1)
   }
@@ -122,25 +212,44 @@ function upstreamSha(app) {
 }
 
 function analyseApp(app) {
-  const suiteSrc = join(ROOT, 'apps', app, 'src')
-  const upSrc = join(upstreamRoot, app, 'src')
-  if (!existsSync(upSrc)) return { app, missingUpstream: true, findings: [] }
+  // Upstream gilt als vorhanden, sobald mindestens `src` da ist.
+  if (!existsSync(join(upstreamRoot, app, 'src'))) return { app, missingUpstream: true, findings: [] }
 
-  const suiteFiles = new Set(walk(suiteSrc))
-  const upFiles = new Set(walk(upSrc))
+  const replaced = new Set(REPLACED_BY_PACKAGE[app] ?? [])
+  const dead = new Set(DEAD_UPSTREAM[app] ?? [])
+  const overlay = new Set(SUITE_OVERLAY[app] ?? [])
   const findings = []
 
-  for (const f of upFiles) {
-    if (!suiteFiles.has(f)) { findings.push({ file: f, kind: 'only-upstream' }); continue }
-    const c = classify(join(suiteSrc, f), join(upSrc, f))
-    if (c) findings.push({ file: f, ...c })
+  for (const root of ROOTS) {
+    const suiteDir = join(ROOT, 'apps', app, root)
+    const upDir = join(upstreamRoot, app, root)
+    if (!existsSync(suiteDir) && !existsSync(upDir)) continue
+
+    const suiteFiles = new Set(walk(suiteDir))
+    const upFiles = new Set(walk(upDir))
+    // Pfade tragen die Wurzel, damit src/x und tests/x unterscheidbar bleiben.
+    const label = (f) => (root === 'src' ? f : `${root}/${f}`)
+
+    for (const f of upFiles) {
+      if (!suiteFiles.has(f)) {
+        const kind = replaced.has(f) ? 'expected-overlay' : dead.has(f) ? 'dead-upstream' : 'only-upstream'
+        findings.push({ file: label(f), kind })
+        continue
+      }
+      const c = classify(join(suiteDir, f), join(upDir, f))
+      if (c) findings.push({ file: label(f), ...c })
+    }
+    for (const f of suiteFiles) {
+      if (upFiles.has(f)) continue
+      // Bewusstes Overlay der Suite (Shell, Lexware, i18n) — kein Drift.
+      findings.push({ file: label(f), kind: overlay.has(label(f)) ? 'expected-overlay' : 'only-suite' })
+    }
   }
-  for (const f of suiteFiles) if (!upFiles.has(f)) findings.push({ file: f, kind: 'only-suite' })
 
   return { app, findings }
 }
 
-const KINDS = ['only-upstream', 'only-suite', 'two-way', 'upstream-ahead', 'suite-ahead', 'expected-overlay']
+const KINDS = ['only-upstream', 'only-suite', 'two-way', 'upstream-ahead', 'suite-ahead', 'expected-overlay', 'dead-upstream']
 const results = APPS.map(analyseApp)
 
 const summary = {}
@@ -148,7 +257,7 @@ for (const r of results) {
   const counts = Object.fromEntries(KINDS.map((k) => [k, 0]))
   for (const f of r.findings) counts[f.kind]++
   // expected-overlay ist gewollt und zaehlt nicht als Drift.
-  const drift = r.findings.length - counts['expected-overlay']
+  const drift = r.findings.length - counts['expected-overlay'] - counts['dead-upstream']
   summary[r.app] = {
     ...counts, drift, total: r.findings.length,
     missingUpstream: !!r.missingUpstream,
@@ -161,13 +270,14 @@ const lines = ['# Planner drift report', '']
 lines.push('Divergence between the suite\'s vendored `apps/*` copies and the standalone upstream repos.')
 lines.push('Classification compares line multisets and is triage, not a merge. See the header of')
 lines.push('`scripts/planner-drift.mjs`.', '')
-lines.push('`expected-overlay` is the deliberate `@avplan/*` import rewrite and is not drift.', '')
-lines.push('| App | drift | only-upstream | only-suite | two-way | upstream-ahead | suite-ahead | expected-overlay |')
-lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |')
+lines.push('`expected-overlay` is the deliberate `@avplan/*` replacement and `dead-upstream` is', '')
+lines.push('code nothing imports upstream. Neither counts as drift.', '')
+lines.push('| App | drift | only-upstream | only-suite | two-way | upstream-ahead | suite-ahead | expected-overlay | dead-upstream |')
+lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |')
 for (const app of APPS) {
   const s = summary[app]
-  if (s.missingUpstream) { lines.push(`| ${app} | upstream checkout not found | | | | | | |`); continue }
-  lines.push(`| ${app} | ${s.drift} | ${s['only-upstream']} | ${s['only-suite']} | ${s['two-way']} | ${s['upstream-ahead']} | ${s['suite-ahead']} | ${s['expected-overlay']} |`)
+  if (s.missingUpstream) { lines.push(`| ${app} | upstream checkout not found | | | | | | | |`); continue }
+  lines.push(`| ${app} | ${s.drift} | ${s['only-upstream']} | ${s['only-suite']} | ${s['two-way']} | ${s['upstream-ahead']} | ${s['suite-ahead']} | ${s['expected-overlay']} | ${s['dead-upstream']} |`)
 }
 lines.push('', '## Files needing manual reconciliation (two-way)', '')
 let anyTwoWay = false
@@ -180,6 +290,14 @@ for (const r of results) {
   lines.push('')
 }
 if (!anyTwoWay) lines.push('None.', '')
+
+// Maschinenlesbar fuer Skripte (Stufe 2 der Konsolidierung).
+if (has('json')) {
+  const byApp = {}
+  for (const r of results) byApp[r.app] = r.findings
+  console.log(JSON.stringify({ summary, findings: byApp }, null, 2))
+  process.exit(0)
+}
 
 const report = lines.join('\n')
 const reportPath = opt('report', null)

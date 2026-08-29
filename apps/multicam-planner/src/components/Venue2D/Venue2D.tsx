@@ -5,8 +5,10 @@ import { getCameraById, getEffectiveSensor } from '../../data/cameras';
 import { getLensById } from '../../data/lenses';
 import { computeFov } from '../../utils/fov';
 import type { VenueCamera, Wall } from '../../types';
-import { MOUNT_HEIGHT_RANGE } from '../../types';
-import { effectiveCameraPos } from '../../utils/camera';
+import { effectiveCameraPos, rigYaw } from '../../utils/camera';
+import { stageColor, stageTopZ } from '../../utils/stageBody';
+import { alphaSuffix, shadeHex } from '../../utils/color';
+import RigOverlay, { RIG_HANDLE_RADIUS } from './RigOverlay';
 import { getExportRegistry } from '../../store/exportRegistry';
 import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import type Konva from 'konva';
@@ -383,15 +385,18 @@ export default function Venue2D() {
       const dropX = e.target.x() / ppm;
       const dropY = e.target.y() / ppm;
       const offset = cam.trackOffset ?? 0;
-      const panRad = (cam.pan * Math.PI) / 180;
-      const parkedX = dropX - Math.cos(panRad) * offset;
-      const parkedY = dropY - Math.sin(panRad) * offset;
+      // Der Fahrweg laeuft entlang der Rig-Achse, nicht entlang der
+      // Blickrichtung — sonst springt die Parkposition, sobald das Rig eine
+      // eigene Ausrichtung hat.
+      const yawRad = (rigYaw(cam) * Math.PI) / 180;
+      const parkedX = dropX - Math.cos(yawRad) * offset;
+      const parkedY = dropY - Math.sin(yawRad) * offset;
       const newX = Math.max(0, Math.min(venue.widthM, parkedX));
       const newY = Math.max(0, Math.min(venue.heightM, parkedY));
       // Snap the visual back to the (possibly clamped) effective position.
       e.target.position({
-        x: (newX + Math.cos(panRad) * offset) * ppm,
-        y: (newY + Math.sin(panRad) * offset) * ppm,
+        x: (newX + Math.cos(yawRad) * offset) * ppm,
+        y: (newY + Math.sin(yawRad) * offset) * ppm,
       });
       moveCamera(cam.id, newX, newY);
     },
@@ -413,6 +418,19 @@ export default function Venue2D() {
       const rad = (deg * Math.PI) / 180;
       e.target.position({ x: Math.cos(rad) * PAN_HANDLE_RADIUS, y: Math.sin(rad) * PAN_HANDLE_RADIUS });
       updateCamera(cam.id, { pan: deg });
+    },
+    [updateCamera],
+  );
+
+  // Rig-Ausricht-Griff: dreht Schiene/Chassis/Beinstellung, ohne den Pan der
+  // Kamera anzufassen. Shift rastet auf 15°.
+  const handleRigRotate = useCallback(
+    (cam: VenueCamera, e: Konva.KonvaEventObject<DragEvent>) => {
+      let deg = (Math.atan2(e.target.y(), e.target.x()) * 180) / Math.PI;
+      if (shiftHeld.current) deg = Math.round(deg / 15) * 15;
+      const rad = (deg * Math.PI) / 180;
+      e.target.position({ x: Math.cos(rad) * RIG_HANDLE_RADIUS, y: Math.sin(rad) * RIG_HANDLE_RADIUS });
+      updateCamera(cam.id, { rigRotation: deg });
     },
     [updateCamera],
   );
@@ -655,9 +673,27 @@ export default function Venue2D() {
             onContextMenu={(e) => openContextMenu('stage', s.id, !!s.locked, e)}
             onTransformEnd={(e) => handleStageTransformEnd(s.id, e)}
           >
-            <Rect width={s.width * ppm} height={s.height * ppm} fill="rgba(59,130,246,0.15)" stroke={selectedStageId === s.id ? '#60a5fa' : '#3b82f6'} strokeWidth={selectedStageId === s.id ? 3 : 2} cornerRadius={4} />
-            <Text x={4} y={4} text={s.locked ? `${s.label} 🔒` : s.label} fontSize={12} fill="#3b82f6" fontStyle="bold" />
-            <Text x={4} y={s.height * ppm - 16} text={`${s.width}×${s.height}m`} fontSize={9} fill="#3b82f688" />
+            {/* Farbe wie in 3D/Preview, damit dieselbe Buehne ueberall gleich
+                aussieht. Die Fuellung bleibt bewusst duenn (nicht `s.opacity`)
+                — im Grundriss soll der Hintergrundplan durchscheinen. */}
+            <Rect
+              width={s.width * ppm}
+              height={s.height * ppm}
+              fill={stageColor(s) + alphaSuffix(0.15)}
+              stroke={selectedStageId === s.id ? shadeHex(stageColor(s), 1.3) : stageColor(s)}
+              strokeWidth={selectedStageId === s.id ? 3 : 2}
+              cornerRadius={4}
+            />
+            <Text x={4} y={4} text={s.locked ? `${s.label} 🔒` : s.label} fontSize={12} fill={stageColor(s)} fontStyle="bold" />
+            {/* Podesthoehe mit in die Maßzeile, sonst sieht man im Grundriss
+                nicht, dass die Buehne erhoeht ist (#73). */}
+            <Text
+              x={4}
+              y={s.height * ppm - 16}
+              text={`${s.width}×${s.height}m${stageTopZ(s) > 0 ? ` · ${stageTopZ(s).toFixed(2)}m hoch` : ''}`}
+              fontSize={9}
+              fill={stageColor(s) + '88'}
+            />
           </Group>
         ))}
         {/* Resize handles for the selected stage */}
@@ -731,22 +767,23 @@ export default function Venue2D() {
           );
         })}
 
-        {/* Track range — dashed line showing the rig's full travel envelope.
-            Drawn before the camera icon so the camera marker sits on top. */}
+        {/* Rig in der Draufsicht: Standflaeche, Schiene mit Sektionsstoeßen,
+            Ausleger und Fahrweg — aus den echten Maßen des gewaehlten Rigs
+            (utils/rigGeometry). Vor der Kamera-Marke gezeichnet, damit die
+            Marke oben liegt. */}
         {cameras.map((cam) => {
-          const range = MOUNT_HEIGHT_RANGE[cam.mountType ?? 'tripod'];
-          if (!range.track) return null;
           if (!showAllFov && cam.id !== selectedCameraId) return null;
-          const panRad = (cam.pan * Math.PI) / 180;
-          const dx = Math.cos(panRad) * range.track * ppm;
-          const dy = Math.sin(panRad) * range.track * ppm;
-          const x0 = cam.x * ppm;
-          const y0 = cam.y * ppm;
           return (
-            <Line
-              key={`track-${cam.id}`}
-              points={[x0 - dx, y0 - dy, x0 + dx, y0 + dy]}
-              stroke={cam.color} strokeWidth={1.5} dash={[4, 4]} opacity={0.6} listening={false}
+            <RigOverlay
+              key={`rig-${cam.id}`}
+              cam={cam}
+              ppm={ppm}
+              isSelected={cam.id === selectedCameraId}
+              onRotate={
+                cam.id === selectedCameraId && !cam.locked && !lockCameras && !drawingWall
+                  ? handleRigRotate
+                  : undefined
+              }
             />
           );
         })}
