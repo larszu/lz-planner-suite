@@ -6,6 +6,14 @@ the market is, and derives the one structural opportunity that the segment dossi
 Read `../METHOD.md` first for the source rubric and the frequency grading. Per-segment evidence
 lives in `../landscape/` and `../pain-points/`; per-role evidence in `../roles/`.
 
+> **Read this first.** The research ran in a sandbox that blocks most of the public web —
+> Reddit, G2, Capterra, Wikipedia and nearly every vendor domain were unreachable; GitHub was
+> not. Findings sourced from open-source repositories were read directly and are solid; claims
+> about commercial products mostly rest on search-engine summaries, and pricing is largely
+> unverifiable here. `../METHOD.md` sets out exactly what was reachable and what that does to
+> each conclusion below, including this document's central one. Do not quote a figure from this
+> corpus commercially without re-checking it on open egress.
+
 Status: eight of seventeen segments and six of eleven roles complete at the time of writing;
 the remaining passes are in progress. **The central finding below is already
 over-determined** — it was reached independently by every completed segment agent, none of which
