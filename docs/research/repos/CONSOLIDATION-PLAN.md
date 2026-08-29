@@ -43,8 +43,22 @@ consolidation working as intended and is excluded from the drift count.
 
 **Stage 1 — stop the bleeding (done).** `scripts/planner-drift.mjs` measures and classifies the
 divergence; `scripts/planner-drift-baseline.json` freezes it; the `planner-drift` CI job fails if
-drift grows. The guard degrades gracefully: if the upstream checkouts are not available to CI it
-skips rather than failing, so it can never block an unrelated PR.
+drift grows.
+
+Two things keep the guard from crying wolf, because a guard that produces false failures gets
+disabled within a week:
+
+- **Upstream movement is not this repo's fault.** Drift also grows when the standalone repos move
+  ahead, which they will — that is the whole point. The baseline therefore records each upstream
+  commit SHA, and the check fails *only* when the SHA is unchanged and the drift still grew, i.e.
+  when the suite side is what moved. If upstream has advanced, the job reports the new number and
+  asks for a baseline refresh, and passes.
+- **Missing checkouts skip, they do not fail.** The job needs read access to the three neighbour
+  repositories. Without it the script skips the comparison and exits 0, so the guard can never
+  block an unrelated PR.
+
+Both paths, plus the genuine-failure path, are verified: baseline unchanged passes; a manipulated
+upstream SHA reports and passes; a raised suite-side drift with an unchanged SHA exits 1.
 
 **Stage 2 — harvest the mechanical cases.** 63 findings need no judgement:
 

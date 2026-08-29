@@ -27,6 +27,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { execFileSync } from 'node:child_process'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const APPS = ['cable-planner', 'multicam-planner', 'light-planner']
@@ -104,6 +105,22 @@ function classify(suiteFile, upstreamFile) {
   return { kind: 'two-way', suiteOnly, upstreamOnly }
 }
 
+/**
+ * Commit des Upstream-Checkouts. Die Baseline ist nur gegen genau diesen
+ * Stand aussagekraeftig: bewegt sich upstream, aendert sich der Drift ohne
+ * Zutun der Suite. Ohne diese Unterscheidung wuerde ein fremder Suite-PR rot,
+ * weil jemand in cable-planner gepusht hat.
+ */
+function upstreamSha(app) {
+  try {
+    return execFileSync('git', ['-C', join(upstreamRoot, app), 'rev-parse', 'HEAD'], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim().slice(0, 12)
+  } catch {
+    return null
+  }
+}
+
 function analyseApp(app) {
   const suiteSrc = join(ROOT, 'apps', app, 'src')
   const upSrc = join(upstreamRoot, app, 'src')
@@ -132,7 +149,11 @@ for (const r of results) {
   for (const f of r.findings) counts[f.kind]++
   // expected-overlay ist gewollt und zaehlt nicht als Drift.
   const drift = r.findings.length - counts['expected-overlay']
-  summary[r.app] = { ...counts, drift, total: r.findings.length, missingUpstream: !!r.missingUpstream }
+  summary[r.app] = {
+    ...counts, drift, total: r.findings.length,
+    missingUpstream: !!r.missingUpstream,
+    upstreamSha: r.missingUpstream ? null : upstreamSha(r.app),
+  }
 }
 
 // ---------- Bericht ----------
@@ -187,8 +208,19 @@ if (has('check')) {
       console.log(`~ ${app}: upstream checkout fehlt, uebersprungen`)
       continue
     }
+    // Upstream hat sich bewegt: der Drift-Vergleich ist dann nicht mehr
+    // aussagekraeftig, denn die Ursache liegt ausserhalb dieses Repos.
+    // Melden, aber nicht fehlschlagen — sonst faellt ein fremder Suite-PR
+    // ueber einen Push in einem Nachbar-Repo.
+    if (was.upstreamSha && now.upstreamSha && was.upstreamSha !== now.upstreamSha) {
+      console.log(
+        `~ ${app}: upstream bewegt (${was.upstreamSha} -> ${now.upstreamSha}), ` +
+        `Drift ${was.drift} -> ${now.drift}. Baseline mit --write-baseline nachziehen.`,
+      )
+      continue
+    }
     if (now.drift > was.drift) {
-      console.error(`FEHLER ${app}: Drift gewachsen ${was.drift} -> ${now.drift}`)
+      console.error(`FEHLER ${app}: Drift gewachsen ${was.drift} -> ${now.drift} (upstream unveraendert)`)
       failed = true
     } else if (now.drift < was.drift) {
       console.log(`OK ${app}: Drift gesunken ${was.drift} -> ${now.drift} (Baseline mit --write-baseline nachziehen)`)

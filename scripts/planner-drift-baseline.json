@@ -8,7 +8,8 @@
     "expected-overlay": 3,
     "drift": 53,
     "total": 56,
-    "missingUpstream": false
+    "missingUpstream": false,
+    "upstreamSha": "f13a7e7fd4c7"
   },
   "multicam-planner": {
     "only-upstream": 45,
@@ -19,7 +20,8 @@
     "expected-overlay": 1,
     "drift": 79,
     "total": 80,
-    "missingUpstream": false
+    "missingUpstream": false,
+    "upstreamSha": "500832562ff6"
   },
   "light-planner": {
     "only-upstream": 5,
@@ -30,6 +32,7 @@
     "expected-overlay": 1,
     "drift": 29,
     "total": 30,
-    "missingUpstream": false
+    "missingUpstream": false,
+    "upstreamSha": "cd9846988602"
   }
 }
