@@ -767,7 +767,7 @@ function CameraCard({
               Bahn mit Rastung, Zahl direkt eingebbar. Vorher hatte die Sidebar
               lineare Regler ohne Anker, also zwei Bedienungen fuer dieselbe Groesse. */}
           <LensSlider
-            label="Brennweite"
+            label={t('sidebar.cam.focalLength.label', 'Focal Length')}
             value={cam.focalLength}
             min={focalMin}
             max={focalMax}
@@ -781,7 +781,7 @@ function CameraCard({
           />
 
           <LensSlider
-            label="Blende"
+            label={t('sidebar.cam.aperture.label', 'Aperture')}
             value={cam.aperture}
             min={apertureMin}
             max={apertureMax}
@@ -798,7 +798,7 @@ function CameraCard({
           />
 
           <LensSlider
-            label="Fokusdistanz"
+            label={t('sidebar.cam.distance.label', 'Focus Distance')}
             value={Math.min(Math.max(cam.focusDistance, FOCUS_MIN_M), FOCUS_MAX_M)}
             min={FOCUS_MIN_M}
             max={FOCUS_MAX_M}
@@ -830,7 +830,7 @@ function CameraCard({
 
           <Group id="aim" title="Blickrichtung" summary={`${cam.pan.toFixed(0)}° / ${cam.tilt.toFixed(0)}°`}>
             <ValueSlider
-              label="Schwenk (Pan)"
+              label={t('sidebar.cam.pan.label', 'Pan')}
               value={cam.pan}
               min={-180}
               max={180}
@@ -841,7 +841,7 @@ function CameraCard({
               title="0° zeigt nach rechts, positive Werte drehen im Uhrzeigersinn."
             />
             <ValueSlider
-              label="Neigung (Tilt)"
+              label={t('sidebar.cam.tilt.label', 'Tilt')}
               value={cam.tilt}
               min={-90}
               max={45}
@@ -854,7 +854,7 @@ function CameraCard({
           </Group>
 
           <Group id="place" title="Standort & Rig" summary={`${MOUNT_TYPE_LABELS[cam.mountType ?? 'tripod']} · ${cam.z.toFixed(2)} m`}>
-          <FieldRow label="Position (m)">
+          <FieldRow label={t('sidebar.cam.position', 'Position (m)')}>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="number"
@@ -886,7 +886,7 @@ function CameraCard({
             const catRigs = rigsForType(limits.type);
             return (
               <>
-                <FieldRow label="Montage" htmlFor={`mount-${cam.id}`}>
+                <FieldRow label={t('sidebar.cam.mount.label', 'Mount')} htmlFor={`mount-${cam.id}`}>
                   <select
                     id={`mount-${cam.id}`}
                     className="block w-full bg-bc-dark border border-bc-border rounded text-white"
@@ -977,7 +977,7 @@ function CameraCard({
 
                 {/* Hoehe — durch die echten Grenzen des Rigs begrenzt */}
                 <ValueSlider
-                  label="Objektivhöhe"
+                  label={t('sidebar.cam.height.label', 'Lens Height')}
                   value={clampHeight(limits, cam.z)}
                   min={limits.minHeightM}
                   max={limits.maxHeightM}
@@ -990,7 +990,7 @@ function CameraCard({
                 {/* Gelegte Schienenlaenge — nur wo es eine Schiene gibt */}
                 {(limits.type === 'dolly' || limits.type === 'slider') && (
                   <ValueSlider
-                    label="Schienenlänge"
+                    label={t('sidebar.cam.railLength.label', 'Rail Length')}
                     value={limits.trackM}
                     min={0.5}
                     max={60}
@@ -1026,7 +1026,7 @@ function CameraCard({
                 {/* Live-Fahrweg — Jib-Schwenk, Dolly-Fahrt, Teleskop, Flug */}
                 {limits.travelM > 0 && (
                   <ValueSlider
-                    label="Fahrweg"
+                    label={t('sidebar.cam.track.label', 'Track')}
                     value={clampTrack(limits, cam.trackOffset ?? 0)}
                     min={-limits.travelM}
                     max={limits.travelM}
@@ -1067,9 +1067,9 @@ function CameraCard({
             )}
             {dof && (
               <>
-                <Readout label="Schärfe von" value={dof.nearLimit < 0.01 ? '0 m' : `${dof.nearLimit.toFixed(2)} m`} />
-                <Readout label="Schärfe bis" value={dof.farLimit === Infinity ? '∞' : `${dof.farLimit.toFixed(2)} m`} />
-                <Readout label="Schärfentiefe gesamt" value={dof.totalDof === Infinity ? '∞' : `${dof.totalDof.toFixed(2)} m`} tone="muted" />
+                <Readout label={t('sidebar.cam.dofNear', 'Near')} value={dof.nearLimit < 0.01 ? '0 m' : `${dof.nearLimit.toFixed(2)} m`} />
+                <Readout label={t('sidebar.cam.dofFar', 'Far')} value={dof.farLimit === Infinity ? '∞' : `${dof.farLimit.toFixed(2)} m`} />
+                <Readout label={t('sidebar.cam.dofTotal.label', 'Total Depth of Field')} value={dof.totalDof === Infinity ? '∞' : `${dof.totalDof.toFixed(2)} m`} tone="muted" />
               </>
             )}
             {effectiveSensor && effectiveSensor !== camDef?.sensor && (
@@ -1472,7 +1472,7 @@ export default function Sidebar() {
       <div className={`border-b border-bc-border/60 ${stagesOpen ? 'bg-white/[0.015]' : ''}`}>
         <AccordionHeader
           icon={<FiMap size={14} />}
-          title="Bühnen"
+          title={t('sidebar.stages.title', 'Stages')}
           count={venue.stages.length}
           open={stagesOpen}
           onToggle={() => setStagesOpen(!stagesOpen)}
@@ -1576,7 +1576,7 @@ export default function Sidebar() {
       <div className={`border-b border-bc-border/60 ${wallsOpen ? 'bg-white/[0.015]' : ''}`}>
         <AccordionHeader
           icon={<FiColumns size={14} />}
-          title="Wände"
+          title={t('sidebar.walls.title', 'Walls')}
           count={walls.length}
           open={wallsOpen}
           onToggle={() => setWallsOpen(!wallsOpen)}
@@ -1716,7 +1716,7 @@ export default function Sidebar() {
       <div className={`border-b border-bc-border/60 ${personsOpen ? 'bg-white/[0.015]' : ''}`}>
         <AccordionHeader
           icon={<FiUsers size={14} />}
-          title="Objekte & Personen"
+          title={t('sidebar.objectsPersons.title', 'Objects & Persons')}
           count={persons.length}
           open={personsOpen}
           onToggle={() => setPersonsOpen(!personsOpen)}
@@ -1795,7 +1795,7 @@ export default function Sidebar() {
           <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-bc-accent/20 text-bc-accent">
             <FiVideo size={14} />
           </span>
-          <span className="text-[13.5px] font-semibold text-white">Kameras</span>
+          <span className="text-[13.5px] font-semibold text-white">{t('sidebar.cameras.title', 'Cameras')}</span>
           <span
             style={{ padding: '2px 7px' }}
             className="rounded-full bg-bc-dark text-[10.5px] font-semibold tabular-nums text-gray-300"
