@@ -24,7 +24,7 @@ verified.
 | [`landscape/`](landscape/) | Per-segment market dossiers: products, data models, standards, prices, APIs, offline behaviour. |
 | [`pain-points/`](pain-points/) | Per-segment user complaints, all 16 segments. **See METHOD.md — the review-site and Reddit sources this needs were unreachable, so the evidence is GitHub-weighted.** |
 | [`roles/`](roles/) | Eleven professions: time sinks, double entry, what is on paper, in Excel, in WhatsApp. |
-| [`repos/`](repos/) | Capability inventory of the eight existing repositories, read from source rather than from READMEs. |
+| [`repos/`](repos/) | Capability inventory of the eight existing repositories, read from source rather than from READMEs. Includes the measured fork divergence between the suite's vendored copies and the standalone repos. |
 | [`workflow-chain.md`](workflow-chain.md) | The enquiry-to-invoice chain and its media breaks. |
 
 Scale: 16/16 market segments (landscape and pain points), 11/11 professions, 8/8 repositories.

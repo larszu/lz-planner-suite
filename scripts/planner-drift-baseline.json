@@ -1,0 +1,38 @@
+{
+  "cable-planner": {
+    "only-upstream": 9,
+    "only-suite": 6,
+    "two-way": 26,
+    "upstream-ahead": 10,
+    "suite-ahead": 2,
+    "expected-overlay": 3,
+    "drift": 53,
+    "total": 56,
+    "missingUpstream": false,
+    "upstreamSha": "f13a7e7fd4c7"
+  },
+  "multicam-planner": {
+    "only-upstream": 45,
+    "only-suite": 11,
+    "two-way": 21,
+    "upstream-ahead": 2,
+    "suite-ahead": 0,
+    "expected-overlay": 1,
+    "drift": 79,
+    "total": 80,
+    "missingUpstream": false,
+    "upstreamSha": "500832562ff6"
+  },
+  "light-planner": {
+    "only-upstream": 5,
+    "only-suite": 8,
+    "two-way": 16,
+    "upstream-ahead": 0,
+    "suite-ahead": 0,
+    "expected-overlay": 1,
+    "drift": 29,
+    "total": 30,
+    "missingUpstream": false,
+    "upstreamSha": "cd9846988602"
+  }
+}

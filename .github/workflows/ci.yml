@@ -48,3 +48,67 @@ jobs:
 
       - name: Test
         run: npm run test --workspaces --if-present
+
+  # ---------------------------------------------------------------------------
+  # Drift-Guard fuer die vendorten Planer-Kopien unter apps/.
+  #
+  # Die Suite enthaelt Kopien der drei Planer statt sie zu konsumieren, und
+  # diese Kopien sind bereits in beide Richtungen auseinandergelaufen (siehe
+  # docs/research/repos/INVENTORY.md). Bis die Konsolidierung durch ist,
+  # verhindert dieser Job wenigstens, dass die Divergenz weiter waechst.
+  #
+  # Die Upstream-Checkouts brauchen Lesezugriff auf die Nachbar-Repos. Ist der
+  # nicht da, ueberspringt das Skript die Pruefung und der Job bleibt gruen —
+  # der Guard soll nie fremde PRs blockieren, nur echtes Driftwachstum melden.
+  # ---------------------------------------------------------------------------
+  planner-drift:
+    name: Planner drift guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout suite
+        uses: actions/checkout@v4
+        with:
+          path: suite
+
+      - name: Checkout cable-planner
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: larszu/cable-planner
+          path: upstream/cable-planner
+
+      - name: Checkout multicam-planner
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: larszu/multicam-planner
+          path: upstream/multicam-planner
+
+      - name: Checkout light-planner
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: larszu/light-planner
+          path: upstream/light-planner
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check drift against baseline
+        working-directory: suite
+        run: node scripts/planner-drift.mjs --upstream ../upstream --check
+
+      - name: Write report
+        if: always()
+        working-directory: suite
+        run: node scripts/planner-drift.mjs --upstream ../upstream --report drift-report.md || true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: planner-drift-report
+          path: suite/drift-report.md
+          if-no-files-found: ignore

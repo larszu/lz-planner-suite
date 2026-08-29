@@ -46,7 +46,7 @@ Score = `UV + FR + TS + ER + AV + IV - CX`.
 
 | # | Initiative | UV | FR | TS | ER | AV | IV | CX | Score |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **0** | **Consolidate the fork** (enabling, not a feature) | 3 | 5 | 3 | 4 | 1 | 5 | 3 | **18** |
+| **0** | **Consolidate the fork** (enabling, not a feature) | 4 | 5 | 3 | 5 | 1 | 5 | 3 | **20** |
 | **1** | **Source identity spine + label projection** | 5 | 5 | 5 | 5 | 5 | 5 | 3 | **27** |
 | **2** | **Tally map generated from the plan** | 5 | 4 | 3 | 5 | 5 | 4 | 2 | **24** |
 | **3** | **BOM / pick list derived from the technical plan** | 5 | 5 | 5 | 4 | 4 | 5 | 4 | **24** |
@@ -62,15 +62,19 @@ Score = `UV + FR + TS + ER + AV + IV - CX`.
 ### 0. Consolidate the fork — do this first, it is cheap and it blocks everything
 
 `../repos/INVENTORY.md` establishes that the suite does not consume the planners; it contains
-vendored copies of them. `packages/inventory-core/src/types.ts`,
-`cable-planner/src/renderer/types/inventory.ts` and `light-planner/src/inventory/types.ts` are
-byte-identical (md5 `33e0a5aa32d0150b86c68184b2e880f5`), the standalone repos declare no
-`@avplan/*` dependency, and active development lands upstream in the standalone repos.
+vendored copies, and **those copies have already diverged substantially in both directions.**
+Measured: 56 divergent paths in cable-planner, 72 in multicam-planner, 26 in light-planner. The
+suite's cable-planner has no NetBox import at all; the standalone cable-planner has no Lexware
+billing; the suite's multicam-planner is missing 8,145 lines and ten test files.
 
-An identity spine that spans modules cannot be built on top of three hand-synced copies of the
-domain model. This is the same defect we are attacking in the market, and fixing it is a
-precondition, not a nice-to-have. It is ranked 0 rather than 1 because it delivers no user value
-by itself — but nothing after it is safe until it is done.
+An identity spine that spans modules cannot be built on three hand-synced copies of the domain
+model — still less on three copies that already disagree. This is the same defect we are attacking
+in the market, reproduced in our own tree.
+
+It is ranked 0 rather than 1 because it delivers no user value by itself. But it is not hygiene:
+two of the three planners currently disagree with themselves about what features they have, and
+every initiative below assumes one shared model. Nothing after it is safe until it is done, and
+the cost grows with every commit to either side.
 
 ### 1. Source identity spine + label projection — the product
 
