@@ -78,6 +78,13 @@ the cost grows with every commit to either side.
 
 ### 1. Source identity spine + label projection — the product
 
+> **Entwurf entschieden:** [`../../decisions/ADR-001-identity-spine.md`](../../decisions/ADR-001-identity-spine.md).
+> Vier unabhängige Ansätze wurden gegeneinander bewertet (14/13/12/11) und synthetisiert statt
+> einen Sieger zu küren. Die gegnerische Prüfung deckte einen Blocker auf, den der bestplatzierte
+> Entwurf nur als Risiko geführt hatte: der Videohub-Routing-Zustand liegt nicht im Projekt
+> (`lib/exportVideohub.ts` sagt es im eigenen Kommentar), weshalb die geforderte
+> Kamera-zu-Tally-Kette ohne ihn nicht ableitbar ist. Er wird damit zu Inkrement 0.
+
 One record per real-world thing. Every label, sheet, export and device configuration becomes a
 *rendering* of that record. A rename costs one edit.
 
