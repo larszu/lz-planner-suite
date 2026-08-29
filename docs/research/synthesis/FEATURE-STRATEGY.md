@@ -1,7 +1,7 @@
 # AV Planner feature strategy
 
 Derived from the research corpus per section 29. Inputs: `AV-INDUSTRY-SOFTWARE-LANDSCAPE.md`
-(12 of 17 segments), `USER-NEED-DATABASE.md` (150 needs, 11 professions), `FEATURE-MATRIX.md`,
+(all 16 segments), `USER-NEED-DATABASE.md` (150 needs, 11 professions), `FEATURE-MATRIX.md`,
 and `../repos/INVENTORY.md` (the eight existing repositories, read from source).
 
 Read `../METHOD.md` for what the research could and could not verify.
@@ -177,9 +177,9 @@ offline-first architecture is a genuine advantage and should not be traded for c
 
 ## 7. Open questions
 
-- Five segments are still in research; visual workspace, crew scheduling, asset tracking and
-  video switching may add rows to the matrix. None is likely to change the ranking above, but
-  that is a prediction.
+- All sixteen segments are researched. Visual workspace, crew scheduling, asset tracking and
+  video switching arrived after the ranking was set and have not yet been folded into the matrix
+  directly; doing so is the next refresh, and is not expected to move the ranking.
 - The section 15 user research (Reddit, G2, Capterra, Trustpilot) could not be performed in this
   environment. The role dossiers partly compensate, but the pain-point half of the mandate should
   be redone with open egress before the roadmap is treated as final.

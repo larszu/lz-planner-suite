@@ -7,7 +7,7 @@ and a product decision built on a single angry forum post is worse than no decis
 ## Scope
 
 The corpus covers the software landscape a professional AV/broadcast production touches, in
-seventeen segments:
+sixteen segments:
 
 | Area | Segments |
 | --- | --- |

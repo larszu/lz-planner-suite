@@ -136,7 +136,8 @@ the warehouse needs it writable.
 
 - Competitor cells marked `?` are unverified, not absent. In a matrix this is a dangerous
   distinction to lose, because `?` read as `no` manufactures an advantage that may not exist.
-- Five of seventeen segments are still in research; visual workspace, crew scheduling, asset
-  tracking and video switching are not yet represented here except through adjacent segments.
+- All sixteen segments are researched. Visual workspace, crew scheduling, asset tracking and
+  video switching landed after this matrix was first drafted and are represented here only
+  through adjacent segments; a refresh pass should fold them in directly.
 - The `WON'T` decisions are judgements made from this research, not immovable. Section 25 keeps
   them open to revision if the market moves.

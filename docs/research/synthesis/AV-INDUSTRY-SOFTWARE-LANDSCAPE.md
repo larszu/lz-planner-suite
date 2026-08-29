@@ -14,8 +14,8 @@ lives in `../landscape/` and `../pain-points/`; per-role evidence in `../roles/`
 > each conclusion below, including this document's central one. Do not quote a figure from this
 > corpus commercially without re-checking it on open egress.
 
-Status: eight of seventeen segments and six of eleven roles complete at the time of writing;
-the remaining passes are in progress. **The central finding below is already
+Status: all sixteen market segments and all eleven roles are complete. The paired pain-point
+passes are outstanding (see the caveat at the end). **The central finding below is
 over-determined** — it was reached independently by every completed segment agent, none of which
 could see the others' output.
 
@@ -142,11 +142,8 @@ them and the projections that come off it**:
 
 ## Caveats
 
-- Eight of seventeen segments are complete. Audio, lighting, networking, project management,
-  visual workspace, crew scheduling, asset tracking and video switching remain in progress, as do
-  the paired pain-point passes for six completed segments. Those may add nuance; the convergence
-  above is strong enough that they are unlikely to overturn it, but that is a prediction and it
-  should be checked rather than assumed.
+- All sixteen segments are now complete; the eight later ones did not overturn the convergence
+  above. The paired pain-point passes are still outstanding and are the corpus's real gap.
 - Several pricing and mobile-app questions are recorded as UNKNOWN rather than guessed, notably
   intercom mobile client quality — an explicit analysis target that could not be met and should be
   the first thing re-attempted.
