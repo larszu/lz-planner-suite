@@ -128,6 +128,28 @@ follows from that rather than from file counts:
 Each merge should end with the result pushed **upstream**, so the suite copy becomes reproducible
 from it.
 
+### Stage 3 result
+
+| App | drift before | after | `only-upstream` before | after |
+| --- | --- | --- | --- | --- |
+| multicam-planner | 79 | **31** | 45 | **0** |
+| cable-planner | 53 | **27** | 9 | **0** |
+| light-planner | 29 | 29 | 5 | 3 |
+
+Suite-wide tests went from **317 to 643**, because the vendored copies had been missing whole test
+files: sixteen in multicam, five in cable.
+
+*A blind spot in the guard, found while doing this.* The classifier only compared `src/`.
+cable-planner keeps its tests in `tests/`, so five missing test files — including
+`netboxMapping.test.ts` and `portOccupancy.test.ts`, the tests for the NetBox code being vendored
+— were invisible to it. `ROOTS` now covers `src` and `tests`. `scripts/` stays out on purpose:
+build scripts may legitimately differ between monorepo and standalone.
+
+Two upstream test files import the modules that `@avplan/inventory-core` replaced
+(`inventoryContract.test.ts` in both multicam and cable). Rather than dropping them, their imports
+were rewritten to the package — every symbol they need is exported from it — so the wire-format
+contract is now checked at app level as well as in the package's own test.
+
 **Stage 4 — make the overlay declarative.** Once the two sides differ only by shell integration
 (`shellSettings.ts`, `shellLexware.ts`, `shellHistory.ts`, `isEmbedded.ts`, `lexwareIpc.ts`,
 `lexwareService.ts`, the `@avplan/*` import rewrites), that difference can be expressed as a small

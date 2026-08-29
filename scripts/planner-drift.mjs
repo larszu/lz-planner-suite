@@ -31,6 +31,15 @@ import { execFileSync } from 'node:child_process'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const APPS = ['cable-planner', 'multicam-planner', 'light-planner']
+
+/**
+ * Verglichene Wurzeln je App. Anfangs war das nur `src`, was einen blinden
+ * Fleck hatte: cable-planner haelt seine Tests in `tests/`, also blieben fuenf
+ * fehlende Testdateien unsichtbar — darunter die Tests fuer den NetBox-Code.
+ * `scripts/` bleibt bewusst draussen: Build-Skripte duerfen sich zwischen
+ * Monorepo und Standalone unterscheiden.
+ */
+const ROOTS = ['src', 'tests']
 const BASELINE = join(ROOT, 'scripts', 'planner-drift-baseline.json')
 
 /**
@@ -170,26 +179,32 @@ function upstreamSha(app) {
 }
 
 function analyseApp(app) {
-  const suiteSrc = join(ROOT, 'apps', app, 'src')
-  const upSrc = join(upstreamRoot, app, 'src')
-  if (!existsSync(upSrc)) return { app, missingUpstream: true, findings: [] }
-
-  const suiteFiles = new Set(walk(suiteSrc))
-  const upFiles = new Set(walk(upSrc))
-  const findings = []
+  // Upstream gilt als vorhanden, sobald mindestens `src` da ist.
+  if (!existsSync(join(upstreamRoot, app, 'src'))) return { app, missingUpstream: true, findings: [] }
 
   const replaced = new Set(REPLACED_BY_PACKAGE[app] ?? [])
+  const findings = []
 
-  for (const f of upFiles) {
-    if (!suiteFiles.has(f)) {
-      // Bewusst entfernt, weil ein geteiltes Paket die Datei ersetzt.
-      findings.push({ file: f, kind: replaced.has(f) ? 'expected-overlay' : 'only-upstream' })
-      continue
+  for (const root of ROOTS) {
+    const suiteDir = join(ROOT, 'apps', app, root)
+    const upDir = join(upstreamRoot, app, root)
+    if (!existsSync(suiteDir) && !existsSync(upDir)) continue
+
+    const suiteFiles = new Set(walk(suiteDir))
+    const upFiles = new Set(walk(upDir))
+    // Pfade tragen die Wurzel, damit src/x und tests/x unterscheidbar bleiben.
+    const label = (f) => (root === 'src' ? f : `${root}/${f}`)
+
+    for (const f of upFiles) {
+      if (!suiteFiles.has(f)) {
+        findings.push({ file: label(f), kind: replaced.has(f) ? 'expected-overlay' : 'only-upstream' })
+        continue
+      }
+      const c = classify(join(suiteDir, f), join(upDir, f))
+      if (c) findings.push({ file: label(f), ...c })
     }
-    const c = classify(join(suiteSrc, f), join(upSrc, f))
-    if (c) findings.push({ file: f, ...c })
+    for (const f of suiteFiles) if (!upFiles.has(f)) findings.push({ file: label(f), kind: 'only-suite' })
   }
-  for (const f of suiteFiles) if (!upFiles.has(f)) findings.push({ file: f, kind: 'only-suite' })
 
   return { app, findings }
 }

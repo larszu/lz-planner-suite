@@ -8,9 +8,9 @@ Classification compares line multisets and is triage, not a merge. See the heade
 
 | App | drift | only-upstream | only-suite | two-way | upstream-ahead | suite-ahead | expected-overlay |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| cable-planner | 40 | 6 | 6 | 26 | 0 | 2 | 5 |
+| cable-planner | 27 | 0 | 6 | 13 | 0 | 8 | 9 |
 | multicam-planner | 31 | 0 | 11 | 19 | 0 | 1 | 3 |
-| light-planner | 27 | 3 | 8 | 16 | 0 | 0 | 3 |
+| light-planner | 29 | 3 | 10 | 16 | 0 | 0 | 3 |
 
 ## Files needing manual reconciliation (two-way)
 
@@ -18,31 +18,18 @@ Classification compares line multisets and is triage, not a merge. See the heade
 
 | File | lines only in suite | lines only upstream |
 | --- | --- | --- |
-| `renderer/components/Settings/tabs/IntegrationsTab.tsx` | 60 | 148 |
 | `renderer/components/Onboarding/OnboardingTour.tsx` | 19 | 93 |
 | `renderer/components/Project/WelcomeDialog.tsx` | 35 | 59 |
-| `main/services/credentialsService.ts` | 18 | 36 |
-| `renderer/components/Properties/sections/OptionalFieldsSection.tsx` | 1 | 53 |
-| `renderer/store/slices/cableSlice.ts` | 16 | 26 |
-| `renderer/components/Canvas/EquipmentNode.tsx` | 3 | 37 |
-| `renderer/store/projectStore.ts` | 9 | 30 |
-| `main/preload.cts` | 8 | 23 |
-| `renderer/components/Layout/MenuBar.tsx` | 25 | 6 |
-| `renderer/components/Onboarding/onboardingState.ts` | 11 | 18 |
-| `renderer/App.tsx` | 14 | 10 |
-| `renderer/lib/modules.ts` | 2 | 12 |
-| `renderer/store/slices/mobileSyncSlice.ts` | 5 | 9 |
+| `renderer/components/Onboarding/onboardingState.ts` | 15 | 18 |
 | `main/ipc/collabDiscoveryIpc.ts` | 7 | 3 |
 | `renderer/components/Sync/CollabPanel.tsx` | 6 | 4 |
 | `main/ipc/videohubIpc.ts` | 6 | 3 |
 | `main/ipc/atemIpc.ts` | 5 | 2 |
-| `renderer/components/Properties/CableProperties.tsx` | 4 | 3 |
 | `renderer/components/Rack/RackBuilderDialogExportMenu.tsx` | 3 | 2 |
-| `renderer/lib/equipmentLayout.ts` | 1 | 4 |
-| `main/index.ts` | 2 | 2 |
 | `renderer/components/Canvas/BulkConnectDialog.tsx` | 3 | 1 |
 | `renderer/components/Inventory/InventoryDialog.tsx` | 2 | 2 |
 | `renderer/lib/storageTree.ts` | 2 | 2 |
+| `tests/inventoryContract.test.ts` | 2 | 2 |
 | `renderer/store/inventoryStore.ts` | 1 | 1 |
 
 ### multicam-planner

@@ -21,6 +21,7 @@ import { createGroupPresetSpawnSlice } from './slices/groupPresetSpawnSlice'
 import { createSelectionLifecycleSlice } from './slices/selectionLifecycleSlice'
 import { createLifecycleSlice } from './slices/lifecycleSlice'
 import { createPendingChangesSlice } from './slices/pendingChangesSlice'
+import { createNetboxImportSlice } from './slices/netboxImportSlice'
 import {
   loadCustomLibrary,
   persistCustomLibrary,
@@ -57,6 +58,7 @@ type CableDraft = Pick<Cable, 'name' | 'type' | 'length' | 'color' | 'notes'> &
 
 import { STORAGE_KEYS } from '../lib/storageKeys'
 import { VIEWPORT_DEFAULTS } from '../lib/layoutConstants'
+import { getCanvasSize } from '../lib/canvasViewport'
 import { seedLibrarySyncCache } from '../lib/librarySync'
 
 const CUSTOM_LIB_KEY = STORAGE_KEYS.customLibrary
@@ -193,6 +195,23 @@ export interface ProjectState {
   /** #414 — Fügt KI-generierte Geräte + Kabel atomar ein, ohne IDs neu zu
    *  vergeben (die Kabel referenzieren die mitgelieferten IDs). */
   insertGeneratedPlan: (equipment: EquipmentItem[], cables: import('../types/cable').Cable[]) => void
+  /**
+   * #597 — Ergebnis eines NetBox-Abgleichs anwenden (Erstimport wie
+   * „Aktualisieren"). Rein additiv: neue Geräte/Kabel/Rack-Rahmen kommen
+   * dazu, an bestehenden Geräten werden nur neu hinzugekommene Ports
+   * ergänzt. Nichts wird ersetzt oder gelöscht — der Plan gibt in
+   * `staleDeviceIds`/`staleCableIds` nur Hinweise auf in NetBox
+   * verschwundene Elemente, das Aufräumen bleibt beim Planer.
+   *
+   * Der Plan kommt aus `lib/netboxMapping.ts#buildNetboxImportPlan`.
+   */
+  applyNetboxImport: (payload: {
+    newEquipment: EquipmentItem[]
+    newCables: Cable[]
+    portAdditions: Array<{ equipmentId: string; deviceName: string; inputs: Port[]; outputs: Port[] }>
+    newLocations: LocationFrame[]
+    source: { baseUrl: string; scope: 'site' | 'rack'; scopeId: number; scopeName: string }
+  }) => void
   /**
    * Insert devices and cables coming from a yEd / GraphML import. Each
    * device carries an optional `graphmlId` so a re-import (`mode:
@@ -757,6 +776,7 @@ const buildProjectStore = (
   ...createSelectionLifecycleSlice(set, get, store),
   ...createLifecycleSlice(set, get, store),
   ...createPendingChangesSlice(set, get, store),
+  ...createNetboxImportSlice(set, get, store),
   project:
     opts.initialProject ??
     (() => {
@@ -940,15 +960,16 @@ const buildProjectStore = (
         if (d.x + w > maxX) maxX = d.x + w
         if (d.y + h > maxY) maxY = d.y + h
       }
-      // Approximate the visible canvas area. The real value depends on
-      // the user's library / properties panel widths, but the constants
-      // below produce a sensible default for both default and collapsed
-      // layouts.
-      // v7.9.23 — vorher hardcoded 1200x700; jetzt aus VIEWPORT_DEFAULTS.
-      // TODO: an die tatsächliche Canvas-Größe binden (ResizeObserver auf
-      // dem CanvasArea-Wrapper) — derzeit ist es ein Fallback.
-      const VIEWPORT_W = VIEWPORT_DEFAULTS.FALLBACK_WIDTH
-      const VIEWPORT_H = VIEWPORT_DEFAULTS.FALLBACK_HEIGHT
+      // Sichtbare Canvas-Flaeche. v7.9.23 war das hardcoded 1200x700, danach
+      // VIEWPORT_DEFAULTS — beides nur geraten. Jetzt wird die Canvas real
+      // gemessen (CanvasArea registriert den Getter), inkl. der aktuellen
+      // Library-/Properties-Panel-Breiten. Auf breiten Screens landete der
+      // Import sonst in der linken Bildschirmhaelfte statt mittig, weil auf
+      // 1200/2 = 600 px zentriert wurde. Fallback bleibt fuer den Fall, dass
+      // noch keine Canvas gemountet ist (Import direkt beim Start).
+      const measured = getCanvasSize()
+      const VIEWPORT_W = measured?.width ?? VIEWPORT_DEFAULTS.FALLBACK_WIDTH
+      const VIEWPORT_H = measured?.height ?? VIEWPORT_DEFAULTS.FALLBACK_HEIGHT
       let canvasState = state.project.canvasState
       if (Number.isFinite(minX)) {
         const bboxW = Math.max(1, maxX - minX)
