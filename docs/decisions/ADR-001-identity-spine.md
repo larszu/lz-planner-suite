@@ -144,3 +144,35 @@ entscheidet der Signalbereich (gleicher Steckverbinder, kein Referenz-/Rückweg-
 bei allem Mehrdeutigen hält die Suche an und nennt das Zwischengerät — das sagt weniger, stimmt
 aber. Beide Fehler hätte kein Review gefunden, das nur den Diff liest; beide fielen, weil die
 Ableitung eine reine Funktion über ein Fixture-Projekt ist. Genau dafür war die Reihenfolge gewählt.
+
+### Inkrement 3 — das Austauschformat (erledigt, `cable-planner#603`)
+
+`.avsourcemap` steht neben dem `.avplan`, nicht in ihm. Der `.avplan` trägt das ganze Projekt und
+richtet sich an die Planungs-Apps; der Konsument der *Identität* ist eine **Runtime** — ein
+Tally-Rechner, ein UMD-Sender —, und die soll nicht ein komplettes Kabelprojekt parsen müssen, um
+zu erfahren, dass „Kamera 1" auf ATEM-Eingang 3 liegt. Geschrieben wird das **Ergebnis** der
+Ableitung, nicht ihre Grundlage: Wer die Karte liest, baut den Kabelgraphen nicht nach.
+
+Die beiden Regeln aus dem interchange-first-Entwurf, die ADR-001 übernommen hat, sind hier wörtlich
+umgesetzt. **Provenienz pro Wert:** `planned` / `commanded` / `confirmed`, und der Cable-Planner
+schreibt ausschließlich `planned` — er plant, er misst nicht. **Verweigerung statt stillen
+Verlusts:** offene Anker stehen in `unresolved`, unbekannte Felder einer fremden Datei überleben
+als `extra`, und was hier keinen Platz hat, wird beim Namen genannt.
+
+Die tragende Entscheidung steckt im Import: Er **füllt nur Lücken**. Ein abweichender Wert wird
+gemeldet, nicht übernommen; eine Adresse außerhalb 0–126 wird verworfen und benannt. Ein Import,
+der stillschweigend die Tally-Adresse ändert, ist im Betrieb nicht zurückzuverfolgen — und genau
+solche Automatik ist der Grund, warum die Recherche „stille Überschreibung" so oft als Schmerzpunkt
+fand.
+
+Ein Plan ohne Rollen exportiert eine leere Liste. Das ist die richtige Antwort, kein Fehler: Das
+Format transportiert Identität, und ohne Rolle gibt es keine. Was dabei offen bleibt, steht dann
+umso deutlicher in `unresolved`.
+
+## Damit ist ADR-001 umgesetzt
+
+Alle vier Inkremente stehen. Was offen bleibt, ist bewusst offen und in der Regel *kein Anker ohne
+Ziel-Spec* begründet: ISO-Präfix und Comms-Kanal warten auf ein belegtes Zielsystem in
+`labelTargets.ts`. Der nächste ehrliche Schritt ist nicht, das Schema zu erweitern, sondern die
+Exporter den Resolver übernehmen zu lassen — die Treue-Regel aus Inkrement 1 hält sie bis dahin
+absichtlich auseinander.
