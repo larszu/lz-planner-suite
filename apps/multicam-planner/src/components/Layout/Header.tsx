@@ -453,9 +453,9 @@ export default function Header({
             </button>
           </>
         )}
-        <button onClick={onOpenInventory} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-bc-border transition-colors" title="Lager / Bestand — projektübergreifender Equipment-Bestand (QR/Barcode, Cases, App-übergreifend)">
+        <button onClick={onOpenInventory} className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-bc-border transition-colors" title={t('header.inventory.title', 'Inventory / stock — cross-project equipment stock (QR/barcode, cases, shared across apps)')}>
           <FiBox size={14} />
-          <span className="hidden md:inline">Lager</span>
+          <span className="hidden md:inline">{t('header.inventory', 'Inventory')}</span>
         </button>
         {/* Austausch mit anderen Apps — frueher 5 einzelne Buttons (.avplan/Venue/Cable),
             jetzt gebuendelt in einem Menue, damit die Kopfzeile nicht ueberlaeuft. */}
@@ -463,35 +463,35 @@ export default function Header({
           <button
             onClick={() => setExchangeMenuOpen((o) => !o)}
             className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-400 hover:text-white hover:bg-bc-border transition-colors"
-            title="Import / Export mit anderen Apps (.avplan, Venue, Cable)"
+            title={t('header.exchange.title', 'Import / export with other apps (.avplan, Venue, Cable)')}
           >
             <FiRepeat size={14} />
-            <span className="hidden md:inline">Austausch</span>
+            <span className="hidden md:inline">{t('header.exchange', 'Exchange')}</span>
             <FiChevronDown size={12} />
           </button>
           {exchangeMenuOpen && (
             <div className="absolute right-0 top-full mt-2 min-w-[260px] rounded-lg border border-bc-border bg-bc-panel shadow-2xl overflow-hidden z-30">
-              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-b border-bc-border">Gesamtprojekt (.avplan)</div>
+              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-b border-bc-border">{t('header.exchange.avplanSection', 'Full project (.avplan)')}</div>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleExportAvplan(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors">
                 <FiBox size={13} /> {t('header.avplanExport', 'Full project')} <span className="ml-auto text-gray-500">↑</span>
               </button>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleImportAvplan(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors border-t border-bc-border">
                 <FiBox size={13} /> {t('header.avplanImport', 'Combined project')} <span className="ml-auto text-gray-500">↓</span>
               </button>
-              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-t border-b border-bc-border">Raum (.venue.json)</div>
+              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-t border-b border-bc-border">{t('header.exchange.venueSection', 'Venue (.venue.json)')}</div>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleExportVenue(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors">
                 <FiMapPin size={13} /> {t('header.venueExport', 'Venue')} <span className="ml-auto text-gray-500">↑</span>
               </button>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleImportVenue(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors border-t border-bc-border">
                 <FiMapPin size={13} /> {t('header.venueImport', 'Venue')} <span className="ml-auto text-gray-500">↓</span>
               </button>
-              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-t border-b border-bc-border">Kabel-Planner</div>
+              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-t border-b border-bc-border">{t('header.exchange.cableSection', 'Cable Planner')}</div>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleExportCameras(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors">
                 <FiCamera size={13} /> {t('header.camerasExport', 'Cameras → Cable-Planner')}
               </button>
               {hasForeignLighting && (
                 <button type="button" onClick={() => { setExchangeMenuOpen(false); toggleShowForeign(); }} className={`flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors border-t border-bc-border ${showForeign ? 'text-bc-yellow' : 'text-gray-200 hover:bg-bc-border hover:text-white'}`}>
-                  <FiSliders size={13} /> Fremd-Lampen {showForeign ? 'ausblenden' : 'einblenden'}
+                  <FiSliders size={13} /> {showForeign ? t('header.foreignLamps.hide', 'Hide foreign lamps') : t('header.foreignLamps.show', 'Show foreign lamps')}
                 </button>
               )}
             </div>

@@ -174,9 +174,27 @@ plan had been followed literally:
 | `only-suite` | 27 | **0** |
 | suite-wide tests | 317 | **643** |
 
-What is left is 48 `two-way` files whose residual difference is line-level, and 9 `suite-ahead`
-files where the suite is the better version — those should be pushed **upstream**, which is the
-direction the whole exercise is meant to run in.
+What is left is 48 `two-way` files whose residual difference is line-level, plus 9 `suite-ahead`
+files.
+
+**`suite-ahead` after a reconciliation is the expected steady state, not a to-do list.** An
+earlier revision of this plan called those nine files "the better version" and said they should be
+pushed upstream. That was wrong, and checking it cost one command: the 131 extra lines in
+`cable/renderer/components/Settings/tabs/IntegrationsTab.tsx` are the Lexware API-key UI, added by
+the suite's own commit `127a5f7`. Pushing them upstream would put Lexware billing into a
+repository that has no Lexware integration.
+
+The mechanics are simply that a correctly merged file contains *upstream ∪ suite overlay*, which
+makes upstream a strict subset — so the classifier reports `suite-ahead`. Seeing that label on a
+reconciled file is confirmation the merge worked.
+
+A crude grep for "lexware" and "@avplan" flagged only 29 of those 137 extra lines as overlay,
+because the rest are ordinary React state and effects (`apiKey`, `setApiKeyValue`, `useEffect`)
+inside a Lexware-specific component. The lesson for anyone extending this tooling: overlay cannot
+be detected by keyword, only by knowing which feature a block belongs to.
+
+What genuinely remains open is therefore the `two-way` residue and the orphaned i18n keys —
+not a batch of files waiting to go upstream.
 
 **Stage 4 — make the overlay declarative.** Once the two sides differ only by shell integration
 (`shellSettings.ts`, `shellLexware.ts`, `shellHistory.ts`, `isEmbedded.ts`, `lexwareIpc.ts`,
