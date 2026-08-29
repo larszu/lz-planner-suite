@@ -10,7 +10,7 @@
     "drift": 21,
     "total": 36,
     "missingUpstream": false,
-    "upstreamSha": "f13a7e7fd4c7"
+    "upstreamSha": "0ce407b6c5d4"
   },
   "multicam-planner": {
     "only-upstream": 0,
@@ -23,7 +23,7 @@
     "drift": 20,
     "total": 35,
     "missingUpstream": false,
-    "upstreamSha": "500832562ff6"
+    "upstreamSha": "e495f1ec94da"
   },
   "light-planner": {
     "only-upstream": 0,
@@ -36,6 +36,6 @@
     "drift": 16,
     "total": 32,
     "missingUpstream": false,
-    "upstreamSha": "cd9846988602"
+    "upstreamSha": "4568dc6f253d"
   }
 }
