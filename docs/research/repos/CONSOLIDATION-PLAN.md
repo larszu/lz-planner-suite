@@ -90,11 +90,43 @@ import in each copied file resolves in the suite, then `npm run build --workspac
 
 Drift after stage 2: **161 → 142.**
 
-**Stage 3 — reconcile the two-way files, and the features that depend on them.** Ordered by size in `DRIFT-REPORT.md`. The
-heavy ones are `multicam/components/Sidebar/Sidebar.tsx` (358 suite-only lines against 718
-upstream-only) and `multicam/components/Preview/CameraPreview.tsx` (171 / 494). Each needs a real
-three-way merge, and each should end with the merged result pushed **upstream**, so the suite copy
-becomes reproducible from it.
+**Stage 3 — reconcile the two-way files, and the features that depend on them.**
+
+*A correction to this plan's own numbers first.* The original `two-way` line counts overstated the
+work badly, because the classifier compared raw lines. The suite replaces bare German literals
+with `t('key', 'Text')` calls, so every translated line counted twice — once as suite-only in its
+`t()` form, once as upstream-only in its bare form. A fully reconciled file still looked like heavy
+divergence.
+
+The classifier now normalises that transformation away (`t('k','Text')` and
+`translate(lang,'k','Text')` both collapse to `'Text'`) before comparing. The effect is large:
+
+| File | claimed before | actual |
+| --- | --- | --- |
+| `light/components/PropertyPanel.tsx` | 218 / 215 | 37 / 34 |
+| `light/components/ScheduleDialog.tsx` | 85 / 72 | 38 / 25 |
+| `light/components/TopBar.tsx` | 74 / 55 | 34 / 15 |
+| `multicam/components/Sidebar/Sidebar.tsx` | 358 / 718 | 321 / 681 |
+
+With honest numbers the three apps are in very different states, and the reconciliation order
+follows from that rather than from file counts:
+
+- **multicam-planner is the real work: 2,149 upstream-only lines** across its two-way files —
+  `Sidebar.tsx` (681), `CameraPreview.tsx` (481), `useStore.ts` (193), `types/index.ts` (157).
+  This matches the LOC gap (11,964 in the suite against 20,109 upstream). Its 43 `only-upstream`
+  files (rig control, shotlist) unlock once `types/index.ts` carries the `Shot`, `Shotlist` and
+  `RigTake` types.
+- **cable-planner is moderate: 589 upstream-only lines**, concentrated in `IntegrationsTab.tsx`
+  (148), `OnboardingTour.tsx` (93) and `WelcomeDialog.tsx` (59), plus the NetBox feature waiting on
+  its wiring.
+- **light-planner is essentially caught up.** A per-file merge pass over all sixteen of its
+  two-way files concluded that the suite already carries the upstream features and differs only by
+  the i18n and shell overlay. The suite copy is in fact *larger* than upstream (15,482 against
+  15,272 lines) and additionally holds onboarding, hooks and the English dictionary. Nothing was
+  changed, and nothing needed to be.
+
+Each merge should end with the result pushed **upstream**, so the suite copy becomes reproducible
+from it.
 
 **Stage 4 — make the overlay declarative.** Once the two sides differ only by shell integration
 (`shellSettings.ts`, `shellLexware.ts`, `shellHistory.ts`, `isEmbedded.ts`, `lexwareIpc.ts`,

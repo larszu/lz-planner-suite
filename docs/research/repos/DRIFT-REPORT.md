@@ -18,7 +18,7 @@ Classification compares line multisets and is triage, not a merge. See the heade
 
 | File | lines only in suite | lines only upstream |
 | --- | --- | --- |
-| `renderer/components/Settings/tabs/IntegrationsTab.tsx` | 63 | 151 |
+| `renderer/components/Settings/tabs/IntegrationsTab.tsx` | 60 | 148 |
 | `renderer/components/Onboarding/OnboardingTour.tsx` | 19 | 93 |
 | `renderer/components/Project/WelcomeDialog.tsx` | 35 | 59 |
 | `main/services/credentialsService.ts` | 18 | 36 |
@@ -49,45 +49,45 @@ Classification compares line multisets and is triage, not a merge. See the heade
 
 | File | lines only in suite | lines only upstream |
 | --- | --- | --- |
-| `components/Sidebar/Sidebar.tsx` | 358 | 718 |
-| `components/Preview/CameraPreview.tsx` | 171 | 494 |
-| `components/Layout/Header.tsx` | 135 | 160 |
+| `components/Sidebar/Sidebar.tsx` | 321 | 681 |
+| `components/Preview/CameraPreview.tsx` | 158 | 481 |
+| `components/Layout/Header.tsx` | 107 | 132 |
 | `store/useStore.ts` | 35 | 193 |
 | `components/Venue3D/Venue3D.tsx` | 69 | 132 |
 | `types/index.ts` | 5 | 157 |
-| `App.tsx` | 48 | 74 |
-| `components/Venue2D/Venue2D.tsx` | 47 | 74 |
-| `components/Layout/StartupAssistant.tsx` | 68 | 48 |
+| `components/Venue2D/Venue2D.tsx` | 45 | 72 |
+| `components/Layout/StartupAssistant.tsx` | 63 | 43 |
 | `index.css` | 80 | 18 |
-| `components/Export/ExportPanel.tsx` | 46 | 45 |
-| `inventory/InventoryDialog.tsx` | 49 | 41 |
-| `components/Templates/TemplateSelector.tsx` | 49 | 38 |
-| `components/Sidebar/CustomCameraForm.tsx` | 42 | 37 |
-| `components/Sidebar/Calculator.tsx` | 24 | 22 |
-| `components/Sidebar/AiPlanAnalysis.tsx` | 19 | 17 |
+| `App.tsx` | 34 | 60 |
+| `inventory/InventoryDialog.tsx` | 43 | 35 |
+| `components/Export/ExportPanel.tsx` | 38 | 37 |
+| `components/Templates/TemplateSelector.tsx` | 37 | 26 |
+| `components/Sidebar/CustomCameraForm.tsx` | 24 | 19 |
 | `main.tsx` | 29 | 3 |
 | `__tests__/camera.test.ts` | 1 | 27 |
 | `utils/camera.ts` | 6 | 17 |
-| `components/Sidebar/CalculationBreakdown.tsx` | 4 | 2 |
+| `components/Sidebar/AiPlanAnalysis.tsx` | 12 | 10 |
+| `components/Sidebar/Calculator.tsx` | 5 | 3 |
+| `components/Sidebar/CalculationBreakdown.tsx` | 3 | 1 |
 | `data/cameras.ts` | 2 | 2 |
 
 ### light-planner
 
 | File | lines only in suite | lines only upstream |
 | --- | --- | --- |
-| `components/PropertyPanel.tsx` | 218 | 215 |
-| `components/ScheduleDialog.tsx` | 85 | 72 |
-| `App.tsx` | 100 | 53 |
-| `components/TopBar.tsx` | 74 | 55 |
-| `components/FixtureEditor.tsx` | 56 | 55 |
+| `App.tsx` | 81 | 34 |
+| `components/PropertyPanel.tsx` | 37 | 34 |
 | `components/PlanCanvas.tsx` | 41 | 24 |
 | `App.css` | 45 | 19 |
+| `components/ScheduleDialog.tsx` | 38 | 25 |
 | `components/Scene3D.tsx` | 53 | 7 |
 | `i18n/index.ts` | 13 | 47 |
-| `components/Sidebar.tsx` | 25 | 22 |
+| `components/TopBar.tsx` | 34 | 15 |
 | `components/ToolRail.tsx` | 19 | 11 |
 | `main.tsx` | 26 | 2 |
-| `components/StatusBar.tsx` | 12 | 8 |
+| `components/FixtureEditor.tsx` | 11 | 10 |
 | `components/VersionDialog.tsx` | 11 | 4 |
 | `inventory/InventoryDialog.tsx` | 7 | 3 |
-| `components/AboutDialog.tsx` | 2 | 4 |
+| `components/Sidebar.tsx` | 6 | 3 |
+| `components/StatusBar.tsx` | 5 | 1 |
+| `components/AboutDialog.tsx` | 1 | 3 |

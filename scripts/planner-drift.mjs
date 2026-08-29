@@ -80,11 +80,35 @@ function walk(dir, base = dir, out = []) {
   return out
 }
 
-/** Zeilen-Multimenge: getrimmt, Leerzeilen raus. */
+/**
+ * Normalisiert die i18n-Transformation der Suite weg.
+ *
+ * Die Suite ersetzt nackte deutsche Literale durch t('key', 'Text'). Ohne
+ * Normalisierung zaehlt jede uebersetzte Zeile doppelt — einmal als
+ * suite-only (die t()-Form), einmal als upstream-only (die nackte Form) —
+ * und ein vollstaendig gemergtes File sieht aus wie schwere Divergenz.
+ * Genau das hat die erste Fassung dieses Skripts getan und die two-way-Zahl
+ * massiv aufgeblaeht.
+ *
+ * t('a.b', 'Text') -> 'Text'  ·  translate(lang, 'a.b', 'Text') -> 'Text'
+ * Reine Overlay-Zeilen (useTranslation, @avplan/*-Importe) fallen ganz weg.
+ */
+function normalise(line) {
+  let l = line
+  // t('key', 'Fallback') / t("key", "Fallback") -> 'Fallback'
+  l = l.replace(/\bt\(\s*(['"])(?:[^'"\\]|\\.)*?\1\s*,\s*(['"])((?:[^'"\\]|\\.)*?)\2\s*\)/g, '$2$3$2')
+  // translate(lang, 'key', 'Fallback') -> 'Fallback'
+  l = l.replace(/\btranslate\(\s*[A-Za-z0-9_.]+\s*,\s*(['"])(?:[^'"\\]|\\.)*?\1\s*,\s*(['"])((?:[^'"\\]|\\.)*?)\2\s*\)/g, '$2$3$2')
+  // JSX-Wrapper um einen reinen Ausdruck: {'Text'} -> Text
+  l = l.replace(/\{\s*(['"])((?:[^'"\\]|\\.)*?)\1\s*\}/g, '$2')
+  return l.trim()
+}
+
+/** Zeilen-Multimenge: getrimmt, i18n-normalisiert, Leerzeilen raus. */
 function lineBag(file) {
   const bag = new Map()
   for (const raw of readFileSync(file, 'utf8').split('\n')) {
-    const line = raw.trim()
+    const line = normalise(raw)
     if (!line) continue
     bag.set(line, (bag.get(line) ?? 0) + 1)
   }
