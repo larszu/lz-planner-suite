@@ -1,1126 +1,1014 @@
 # Streaming / REMI Engineers
 
-Research dossier for AV Planner Suite. Compiled 2026-08-28.
+Research dossier for AV Planner Suite. Compiled 2026-08-28, substantially rewritten 2026-08-29
+with a new evidence layer.
 
-> **Method and evidence caveat — read this first.**
+> **Method note — how to read the evidence labels.**
 >
-> This session began with its `WebSearch` budget already exhausted (200/200 calls consumed
-> before the first query), and the egress proxy refused CONNECT to every destination except
-> `github.com`, `raw.githubusercontent.com`, `api.github.com` and `gitlab.com`. Reddit,
-> ProSoundWeb, Control Booth, the Blackmagic forum, the vMix forum, videohelp, obsproject.com,
-> help.twitch.tv, haivision.com, srtalliance.org, liveu.tv, teradek.com, TVBEurope, The
-> Broadcast Bridge, NewscastStudio, Wikipedia, Stack Overflow, YouTube and **every**
-> German-language source (film-tv-video.de, production-partner.de, VPLT) returned `000` or a
-> proxy 403. Search-engine gateways are blocked as well.
+> This session had working web search and working direct access to `github.com`,
+> `raw.githubusercontent.com` and `gitlab.com`. It did **not** have direct fetch access to
+> Reddit, ProSoundWeb, Control Booth, Blue Room, the Blackmagic forum, the vMix forum, the OBS
+> forum, videohelp, TVBEurope, The Broadcast Bridge, NewscastStudio, film-tv-video.de,
+> production-partner.de or any other non-GitHub host — the egress proxy answers 403 to CONNECT
+> for those. Reddit is additionally excluded from the search index available here.
 >
-> The consequence is the same as for the sibling dossiers in this corpus: **the forum-venting
-> layer is missing**, and with it most of the direct evidence about paper, Excel and WhatsApp.
-> What replaces it here is unusually good for *this particular role*, because the streaming/REMI
-> toolchain is disproportionately open source and its users file issues in public. Almost every
-> claim below is anchored in an issue or a README **that I opened and read in this session**,
-> written by a person describing their own production.
+> The practical consequence is that this dossier has **two grades of directness**, and every
+> claim says which one it is:
 >
-> Labels used throughout, following [`METHOD.md`](../METHOD.md):
+> - **[FETCHED]** — I opened the page myself in this session and read it. All GitHub issues,
+>   READMEs and the local repositories are in this class. Dated and attributable.
+> - **[SEARCH-EXTRACT]** — the content reached me as a verbatim-ish extract returned by the
+>   search tool from a *named URL* that I could not open directly. The URL is cited so it can
+>   be re-verified. This is one remove from the source: the extract is real page content, but
+>   I could not read the surrounding context, the comment thread, or the date unless the
+>   extract carried it.
+> - **[PRIOR-SESSION]** — carried over from the 2026-08-28 version of this dossier, which read
+>   those pages directly. URLs given so they can be re-checked.
+> - **[INFERENCE]** — my reasoning from the above, flagged as reasoning, not as finding.
+> - **unverified** — could not be established. Left visible rather than quietly dropped.
 >
-> - **[FACT]** — stated in a page I opened and read in full this session (GitHub issue body,
->   README, or protocol documentation). Dated and attributable.
-> - **[SECOND-HAND]** — a claim carried over from a sibling dossier in this corpus
->   ([`technical-director.md`](./technical-director.md),
->   [`camera-operator.md`](./camera-operator.md), [`workflow-chain.md`](../workflow-chain.md)),
->   collected in an earlier session that had search access. The URL is given so it can be
->   re-verified; in this session it is one remove from the source.
-> - **[INFERENCE]** — my reasoning from the facts, flagged as reasoning.
-> - **unverified** — could not be established here. Left visible rather than quietly dropped.
->
-> **Frequency grades are deliberately conservative.** With no forum layer, `widespread` is used
-> only where either (a) several *independent* projects exist for no purpose other than to solve
-> the problem, or (b) the vendor/maintainer concedes it. Several findings that are probably
+> **Frequency grades follow [`METHOD.md`](../METHOD.md)** and are deliberately conservative
+> here. `widespread` is used only where (a) several *independent* projects exist for no purpose
+> other than to solve the problem, (b) the vendor or maintainer concedes it, or (c) both a
+> practitioner source and a vendor/platform document describe the same thing. Because the
+> Reddit and pro-forum venting layer is still missing, several findings that are probably
 > widespread are graded `recurring`.
 >
-> **Dates matter here.** The streaming stack moves fast. Anything from before ~2022 is marked,
-> and where a complaint is old but the issue is still open, that is stated — an issue left open
-> for four years is itself evidence.
+> **Dates matter here more than in any other role in this corpus.** The streaming stack changes
+> every quarter. Anything before ~2022 is marked as such. Where a complaint is old but the
+> issue is *still open*, that is stated — an issue open for four years is itself the finding.
 
 ---
 
 ## Who they are / where they sit in the production
 
-There is no settled title. The same job is advertised and self-described as **streaming
-engineer**, **encoding engineer**, **transmission engineer**, **broadcast IT**, **REMI operator**
-or **at-home operator**, and in German-speaking productions as *Streaming-Techniker* or
-*Encoder-Verantwortlicher* (unverified — the German-language sources could not be reached this
-session). What is consistent is the shape of the role, and the shape explains everything else in
-this document.
+There is no settled job title. The same work is advertised and self-described as **streaming
+engineer**, **encoding engineer**, **transmission engineer**, **broadcast IT**, **live event
+technology engineer**, **REMI operator** or **at-home operator**; in German-speaking productions
+as *Streaming-Techniker* or, in smaller companies, simply as "der mit dem Encoder". Job postings
+confirm the spread: Paramount advertises a "Sr Live Event Technology Engineer", Meta a "Video
+Streaming and Broadcast Engineer", the NFL a "Seasonal Video Streaming Engineer"
+[SEARCH-EXTRACT: https://careers.paramount.com/job/New-York-Sr-Live-Event-Technology-Engineer-NY-10036/1374027700/ ,
+https://www.metacareers.com/profile/job_details/1017266434469763/ ,
+https://www.showbizjobs.com/jobs/nfl-seasonal-video-streaming-engineer-in-inglewood/jid-233wy7].
 
-**They sit at the end of the chain and own the part nobody else can see.** Every other
-department produces something a human in the room can verify: the lighting is on the stage, the
-audio is in the PA, the camera is on the multiviewer. The streaming engineer's output exists
-only somewhere else — on a platform's CDN, in a viewer's browser, on a client's Teams call. The
-practical result appears verbatim in an OBS bug report from a working production:
+What is consistent is the *shape* of the role, and the shape explains everything else in this
+document.
 
-> "So we were streaming. Then all of a sudden the stream stops there is no indication on OBS
-> that this is occuring. The onyl way to know is to monitor the live stream simultaneously."
-> — [obs-studio#11016](https://github.com/obsproject/obs-studio/issues/11016), 2024-07, macOS,
-> OBS 30.2.0 **[FACT]**
+### They own the only output nobody in the room can see
 
-That sentence is the role in one line: **the tool that is doing the work cannot tell you whether
-the work is arriving**, so the engineer builds a second, parallel apparatus whose only job is to
-watch the first one.
+Every other department produces something a human on site can verify by looking at it. Lighting
+is on the stage. Audio is in the PA. The camera is on the multiviewer. The streaming engineer's
+output exists somewhere else entirely — on a CDN edge, in a viewer's browser, on a client's
+Teams call. Verification requires a *second device on a different network*, which the monitoring
+literature states plainly: open the stream as a viewer on a separate network, because what you
+see in the production feed and what the audience receives are not the same thing, and this is
+the fastest way to catch CDN-side and geo-specific problems that source-side monitoring misses
+[SEARCH-EXTRACT: https://www.obsbot.com/blog/live-streaming/streaming-monitoring ,
+https://touchstream.media/blog/live-stream-monitoring/].
 
-**In REMI they own a second invisible thing: the path between two buildings.** Remote
-Integration Model production — cameras and a small crew at the venue, the gallery/control room
-somewhere else — turns what used to be an internal SDI problem into a public-internet problem.
-The sibling dossier records that the camera-control landscape has explicitly reorganised around
-this: Cyanview's RIO gateway is positioned for "REMI and unreliable networks", with a separate
-WAN licence tier
-([`landscape/camera-control-rcp.md`](../landscape/camera-control-rcp.md)) **[SECOND-HAND]**. The
-streaming engineer is the person who has to make that WAN behave.
+That single structural fact drives the rest: the alarm path, the double-checking rituals, the
+"is it still up?" anxiety, and the fact that the streaming engineer is usually the last person
+in the room to be told the rundown changed.
 
-**Team size determines whether this is a job or a hat.** Three configurations recur in the
-evidence:
+### They sit across three org boundaries at once
 
-| Configuration | Who does it | What the evidence looks like |
-| --- | --- | --- |
-| Broadcast / large corporate | A dedicated transmission or encoding engineer, sometimes a whole IP team | Companion module requests for rack encoders (Haivision KB, Wowza Clearcaster, Matrox Maevex) — these are appliances nobody buys for a one-person show **[FACT]** |
-| Mid-size event / agency | The TD or video engineer wearing the streaming hat | [`camera-operator.md`](./camera-operator.md) records job descriptions collapsing "live switcher, and a stream engineer" into one line **[SECOND-HAND]** |
-| Church, school, club, IRL, single-operator | One person, entirely | Church/PTZ/StreamYard module requests ([companion-module-requests#777](https://github.com/bitfocus/companion-module-requests/issues/777)); the whole IRL tooling ecosystem **[FACT]** |
+1. **Downstream of production.** They receive a program feed (and increasingly a *second*,
+   differently-framed feed) from the TD/switcher, and an audio mix from the audio department.
+   Neither is designed for them; both are designed for the room.
+2. **Upstream of a platform they do not control.** YouTube, Twitch, LinkedIn, Vimeo, a client's
+   webinar portal, or a corporate CDN. Each has its own ingest rules, its own credentials, its
+   own console, its own idea of what "backup" means.
+3. **Sideways into IT.** The venue's network is owned by someone whose job is to *keep ports
+   closed*. RTMP's default port 1935 "is not a well-known port like 80 or 443, which means many
+   corporate, campus, and public Wi-Fi networks block it by default"
+   [SEARCH-EXTRACT: https://www.videosdk.live/developer-hub/rtmp/port-rtmp]. Encoding
+   requirements documents ask venue IT for things that read as absurd to a security team —
+   "each encoding unit must have an individual port assigned that travels a unique path out to
+   the internet", ports 80 and 1935 open *for the full duration of testing and the event*, and
+   "firewall, gatekeeper or other security protocols must be disabled if in place"
+   [SEARCH-EXTRACT: https://help.webcasts.com/books/live-events/page/onsite-encoding-requirements/export/html].
 
-**The dependency map is brutally asymmetric.** They depend on: the switcher's programme output,
-the audio department's mix (and its mix-minus), graphics, the rundown, the venue's internet, the
-client's platform credentials, and the platform itself. Nothing depends on them until it fails,
-at which point everything does. [INFERENCE] This is why the role's tooling is so heavily biased
-toward *monitoring and automatic fallback* rather than toward *planning* — the planning tools
-were never built, so the engineer compensates downstream.
+### In REMI specifically, they are the production's single point of failure
+
+REMI (remote integration model, "at-home" production) puts a minimal crew and the cameras at the
+venue and the gallery hundreds or thousands of kilometres away
+[SEARCH-EXTRACT: https://www.film-tv-video.de/term-word/remote-production/]. Everything the
+gallery sees, hears, cuts and mixes crosses the streaming engineer's transport. The trade press
+is unusually blunt about what this concentrates:
+
+> "REMI punishes sloppiness. If the timing's off, the links are fragile, the comms is messy or
+> nobody's thought about what happens when something fails, remote production will find that
+> weakness and expose it live, in front of everyone."
+> — Alistair Horne, Hornets Tech, in NewscastStudio's 2026 REMI roundtable
+> [SEARCH-EXTRACT: https://www.newscaststudio.com/2026/08/21/industry-insights-remi-moves-from-experiment-to-operating-model/]
+
+The same roundtable records that the industry has stopped optimising for lowest latency and
+started optimising for *predictability*: Appear CTO Andy Rayner is quoted to the effect that
+reliable remote production depends on consistency more than on chasing the lowest possible
+delay, and that broadcasters now decide role-by-role which people stay at the venue rather than
+treating remote-vs-on-site as binary [SEARCH-EXTRACT: same URL].
+
+### Two populations, one toolchain
+
+It matters for product decisions that this role is served by two very different populations
+running largely the *same software*:
+
+- **Broadcast/corporate professionals** with hardware encoders, bonded cellular, redundant
+  paths and a service contract. German providers advertise exactly this as the differentiator:
+  hardware-based encoding with redundancy on every important device and the internet access
+  "dreifach abgesichert" (triple-secured)
+  [SEARCH-EXTRACT: https://www.uxstream.net/livestream-dienstleister/ ,
+  https://www.livecom-gruppe.de/live-event-streaming-technische-anforderungen-und-loesungen/].
+- **Houses of worship, universities, clubs and small AV shops** running OBS or vMix on a laptop,
+  often with volunteers. Church Production Magazine describes this population's relationship
+  with the encoder precisely: most churches stream every service, but techs and volunteers may
+  not fully understand what is happening inside the encoder, and "it just works… until it
+  doesn't"
+  [SEARCH-EXTRACT: https://www.churchproduction.com/magazine/encoding-101-how-streaming-really-works/ ,
+  published 2026-06-03].
+
+The pain points below are drawn from both. Where they diverge, that is noted.
 
 ---
 
 ## A day in the life
 
-Chronological. Each stage is anchored where evidence exists; stages that rest on reasoning are
-marked.
+Chronological. Sources for each claim are attached inline; the aggregate picture is
+[INFERENCE] built from them.
 
 ### Prep (days to weeks out)
 
-**Collecting destinations and credentials.** The first real task is not technical: it is getting
-the list of where the stream must go and the credentials for each. For a corporate job that means
-the client's YouTube, LinkedIn, a Vimeo or Kaltura enterprise endpoint, sometimes a customer's
-own RTMP ingest; for church/HoW it is YouTube plus Facebook plus a website player; for IRL it is
-one platform plus a personal relay. The evidence that this is a *collection and re-entry* problem
-rather than a lookup is everywhere in the multi-destination tooling — see
-[Double data entry](#double-data-entry).
+**Assemble the destination set.** For each output: platform, ingest URL, stream key, backup
+ingest URL, backup key, bitrate, resolution, frame rate, keyframe interval, audio sample rate
+and codec, plus the platform-side event object (title, description, thumbnail, scheduled start,
+privacy, monetisation, chat settings, latency mode). None of this arrives in one place. It comes
+from the client by email, from a platform console the engineer may not have access to yet, and
+from a producer's spreadsheet.
 
-**Deciding the transport and building the encoder profile.** RTMP(S) to the platform is a given;
-the contribution leg (venue → gallery, or camera → studio) is increasingly SRT, SRTLA (bonded
-SRT) or RIST. This is where the first large, invisible time sink lives, because the parameters
-are not obvious and the official guidance is inconsistent — see
-[Time sinks §2](#2-tuning-srtbonding-parameters-against-documentation-that-contradicts-itself).
+**Reconcile the per-platform specs, which genuinely differ.** Twitch caps non-partners near
+6,000 kbps; YouTube accepts 9,000–12,000 kbps at 1080p60 and supports 4K, which Twitch does not
+[SEARCH-EXTRACT: https://stream.twitch.tv/encoding/ ,
+https://streamersize.com/blog/twitch-vs-youtube-bitrate-comparison/]. So a simulcast to both is
+either a compromise on one platform or two encodes.
 
-**Provisioning connectivity.** For bonded cellular: SIMs, data plans, carrier diversity, and —
-if the encoder is a BELABOX-class Linux box — operating-system-level network configuration. The
-upstream project states the prerequisite plainly:
+**Discover that the switcher software will not do two encodes cleanly.** vMix's own
+documentation states that multi-bitrate support is *disabled* when using multiple destinations,
+and that by default all three destinations use the same quality settings — video bitrate, audio
+bitrate, encode size — and that keyframe frequency and master frame rate must match for every
+additional streaming target
+[SEARCH-EXTRACT: https://www.vmix.com/help23/StreamingMultipleDestinations.html ,
+https://www.vmix.com/help23/StreamingMultiBitrate.html]. On the OBS side, the multi-destination
+plugin's users ask the same question and do not get an answer: issue #448, "I want to broadcast
+via two plattforms with different settings; YT 4k, TWITCH 1080p", opened 2024-10-26, still open,
+no maintainer response
+[FETCHED: https://github.com/sorayuki/obs-multi-rtmp/issues/448]. And the recommended
+workaround — set secondary outputs to "Get from OBS" — explicitly gives up per-destination
+quality in order to protect the CPU
+[SEARCH-EXTRACT: search summary of https://github.com/sorayuki/obs-multi-rtmp].
 
-> "The sender needs to have [source routing](https://tldp.org/HOWTO/Adv-Routing-HOWTO/lartc.rpdb.simple.html)
-> configured, as srtla uses `bind()` to map UDP sockets to a given connection. Only Linux is
-> supported"
-> — [BELABOX/srtla README](https://raw.githubusercontent.com/BELABOX/srtla/master/README.md) **[FACT]**
+**Write the network ask and send it into a void.** A dedicated hardwired line, upload headroom,
+ports. The planning guidance is specific — a conference with three simultaneous breakout
+streams and 500 attendees on Wi-Fi should plan a minimum of 100 Mbps *dedicated* upload,
+separate from the attendee network
+[SEARCH-EXTRACT: https://trivisionstudios.com/conference-live-streaming-services-in-dc-a-planning-guide/].
+German guidance uses a headroom rule instead: reserve at least 40% of available bandwidth for
+overhead, so a 10 Mbit line should carry no more than 6 Mbit of encoding
+[SEARCH-EXTRACT: https://contentflow.live/wie-muss-ich-meinen-encoder-richtig-einstellen/].
+Whether the venue delivers it is unknown until load-in.
 
-and, two lines earlier, sets the expectation for the whole category:
+**Decide the transport and its parameters.** If SRT: caller or listener (a firewall/NAT
+decision, not a video decision — the listener needs a port-forward rule, the caller usually
+needs nothing, and rendezvous is largely unusable behind PAT)
+[SEARCH-EXTRACT: https://doc.haivision.com/SRT/1.5.3/Haivision/srt-connection-modes ,
+https://streamrus.github.io/onpremise-srt-server-docs/en/srt-basics.html ,
+https://www.kiloview.com/downloads/User%20Manual/SRT%20related%20manuals/SRT%20%20Rendezvous%20Mode.pdf].
+Then latency: the published rule of thumb is 3–4× measured RTT, while practical guides recommend
+fixed values of 1,500–2,500 ms; these do not agree for low-RTT links
+[SEARCH-EXTRACT: https://vajracast.com/srt-latency-tuning/ ,
+https://medium.com/innovation-labs-blog/examining-srt-streaming-over-4g-networks-925e71c45cdf].
+The SRT project's own tracker has carried open requests for a parameter calculator and clearer
+latency documentation for years [PRIOR-SESSION: Haivision/srt issues #621, #656, #1210, #2016,
+#2600, #3168].
 
-> "This application is experimental. Be prepared to troubleshoot it and experiment with various
-> settings for your needs." **[FACT]**
-
-**Standing up the receiving side.** Someone has to run the thing the encoder connects *to*. In
-practice that is a VPS the engineer personally administers: an nginx-RTMP or SRT-live-server
-relay, a `srtla_rec` receiver, a Restreamer instance, or a self-hosted multistreamer. The install
-path is a shell script and an API key in a dotfile:
-
-> "Run the installer script. It will create `./data` directory and `./.apikey` file … If you
-> don't have the API key anymore, navigate to the directory where srtla-receiver is installed and
-> run `cat .apikey`"
-> — [OpenIRL/srtla-receiver README](https://raw.githubusercontent.com/OpenIRL/srtla-receiver/main/README.md) **[FACT]**
-
-**Building the fallback rig.** Before the show exists, the engineer configures a separate program
-that watches the ingest statistics and switches OBS scenes when the bitrate drops or the source
-disappears. This is a hand-edited JSON file containing scene names, thresholds, an obs-websocket
-password and chat-bot credentials — reproduced in full by users in public issue threads
-([NOALBS#178](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178),
-2024-10; [NOALBS#157](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/157),
-2023-12) **[FACT]**.
+**Build the fallback logic by hand.** There is no product that ships "if the contribution feed
+dies, cut to slate and tell me". So the engineer wires one: NOALBS polls an ingest stats page and
+switches OBS scenes when bitrate crosses a threshold. Its configuration surface is the tell —
+OBS websocket host/port/password, low-bitrate threshold, offline threshold, retry count, SRT RTT
+thresholds, three scene names, server type (nginx / SRT Live Server / BELABOX / …), a stats URL,
+publisher/application/key credentials, and optionally a Twitch or Kick bot with an OAuth token,
+admin usernames and a command prefix — all as hand-edited JSON, with the README warning users to
+use a code editor rather than Notepad
+[FETCHED: https://raw.githubusercontent.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/v2/README.md].
 
 ### Load-in
 
-**Physical patch, then IP.** Programme video and the correct audio mix into the encoder or
-capture card; then the part no other department does: getting a usable network. [INFERENCE] This
-is where the venue's IT reality lands on one person — captive portals, blocked UDP, NAT,
-insufficient upload, a "we have gigabit" that is a shared 50/10.
+Rack the encoder(s), get on the network, discover what is actually blocked. Run a test stream to
+each destination — which is the only way to catch a stale key, a wrong key, an unready platform
+event, and a blocked port before it matters. Start encoders early: German operational guidance
+says at least 15 minutes before the scheduled start, and to switch on *all* cameras,
+presentations and audio sources simultaneously for the test rather than one at a time
+[SEARCH-EXTRACT: https://help.movingimage.com/docs/de/livestreaming-encoding-settings].
 
-**Bandwidth reality check and a test stream.** A private/unlisted test to each destination.
-[INFERENCE, strongly supported] The reason this is non-negotiable is that several failure modes
-in this dossier are *silent*: the stream appears healthy at the encoder and is dead, wrong, or
-silent downstream ([obs-studio#11016](https://github.com/obsproject/obs-studio/issues/11016);
-[obs-studio#5572](https://github.com/obsproject/obs-studio/issues/5572)) **[FACT]**.
-
-**Starting the monitoring stack.** The stats page, the scene-switcher, sometimes a Prometheus
-exporter and Grafana dashboard built specifically for this
-([roflb0y/SRTExporter](https://raw.githubusercontent.com/roflb0y/SRTExporter/main/README.md),
-first commit 2026-01) **[FACT]**.
+If the venue's line is inadequate or absent, the bonded-cellular rig comes out — and its
+performance is not predictable from the map. A practitioner account of a "50 states in 50 days"
+tour with a four-output bonded LiveU reports no consistency at all: sites with expected good
+signal where bandwidth collapsed, and sites expected to have no signal that delivered a lot
+[SEARCH-EXTRACT: https://medium.com/@joelouis761/packet-level-intelligence-the-hidden-variable-determining-cellular-bonding-reliability-361b7e6814c1 ;
+single account, graded `isolated` on its own]. A Control Booth thread on the same question lands
+on the more fundamental constraint: without clean upstream at the site, bonding will not save
+you, and the audience's own phones are competing for the same towers
+[SEARCH-EXTRACT: https://www.controlbooth.com/threads/help-with-cellular-bonding.47366/].
 
 ### Rehearsal
 
-**Return path and remote contributors.** In REMI and hybrid corporate events this is the stage
-where the routing of *who sees and hears what* is discovered to be wrong. The clearest
-description of the problem in the entire corpus is a 2025 feature request that opens with the
-words "THE PAIN":
+The rehearsal is the only opportunity to test the thing that most needs testing and is most often
+skipped: **the failover itself**. Platform guidance is explicit that you should stop the primary
+encoder during rehearsal and confirm the stream stays live on the backup path
+[SEARCH-EXTRACT: https://docs.castr.com/en/articles/5023371-backup-ingest-how-to-use-benefits-and-limitations].
+It is also explicit about why this is not optional: YouTube's primary and backup streams must
+have the *exact same* resolution, video codec, bitrate, framerate, keyframe frequency and audio
+sample rate, and if they drift apart, failover breaks or throws ingest errors
+[SEARCH-EXTRACT: same, plus https://support.google.com/youtube/answer/2853702].
 
-> "in the corporate events industry you often have this situation where you have an event in some
-> venue and some 'remote' speakers might connect … you put a couple of cameras with operators,
-> then get a video feed from the video mixer and a video feed from the audio mixer and send them
-> to say zoom. You also have the video and audio output from the zoom computer go to the video and
-> audio mixer. … Once is Alice time to speak … Bob and Charlie would like to see Alice speaking.
-> Alice however, would like to see the venue, because someone might ask her questions"
-> — [vdo.ninja#1218](https://github.com/steveseguin/vdo.ninja/issues/1218), 2025-12 **[FACT]**
-
-**Latency and sync.** Contribution latency (SRT buffer), platform latency, and the delay between
-what the remote speaker hears and what the room hears. [INFERENCE] Nothing in the reachable
-evidence measures this end-to-end for the engineer; they measure it with a clock on camera and a
-second screen — the technique appears incidentally in an OBS SRT bug report, where the reporter
-identified stale cached video because "an SRT source which has a clock on its output showed up
-with the time from before the connection drop"
-([obs-studio#11062](https://github.com/obsproject/obs-studio/issues/11062), 2024-08) **[FACT]**.
+Rehearsal is also where remote contributors are onboarded, and where the mix-minus is proven or
+not. VDO.Ninja's own documentation notes that its `&mixminus` parameter belongs on the *director*
+link, not on guest links, and that it stops a guest hearing their own return but does **not**
+stop speaker-to-mic acoustic bleed from a guest without headphones; the documented
+troubleshooting method for echo is to mute participants one at a time until the culprit is found
+[SEARCH-EXTRACT: https://docs.vdo.ninja/advanced-settings/other-parameters ,
+https://docs.vdo.ninja/common-errors-and-known-issues/echo-or-feedback-issues].
 
 ### Show
 
-**Watching numbers, not pictures.** Bitrate, RTT, retransmits, dropped frames, per-modem
-throughput. The tooling that exists to do this was written by users:
-[NOALBS](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching) (502 stars),
-[Loopy SRT Stats Monitor](https://github.com/loopy750/SRT-Stats-Monitor) (178 stars, written in
-QB64/VB6 — that detail alone says something about who builds these), `SRTExporter`,
-`srtla_send` (Rust rewrite, 2025-08), `BelaboxBitrateOverlay`, `belabot` **[FACT]**.
+Three things happen at once and none of them has a shared display.
 
-**Reporting status to people who are not in the room.** In the IRL world this has been solved by
-piping the bitrate into a public chat channel as a bot command (`!bitrate`, `!b`), so moderators
-and the audience can see the connection state
-([NOALBS#178 config](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178))
-**[FACT]**. [INFERENCE] In corporate REMI the equivalent channel is a WhatsApp or Teams group —
-see [Paper / Excel / WhatsApp](#paper--excel--whatsapp-inventory).
+**Watching the source side.** Encoder bitrate, dropped frames, RTT, congestion. In OBS this is a
+status bar; on a hardware encoder it is a web UI; on a bonded unit it is a per-modem readout.
 
-**Manual intervention when the automation misfires.** The automation cutting to the "offline"
-card while the show is genuinely live is a documented, recurring failure — see
-[Error sources §4](#4-the-safety-net-fires-when-nothing-is-wrong).
+**Watching the destination side.** Platform console health, viewer count, and — the giveaway —
+a second device on a different network. The monitoring literature concedes the fragmentation
+directly: most setups pull monitoring data from separate places (a software encoder, a CDN
+dashboard, an analytics platform), and "when something breaks, you're jumping between screens
+trying to match up what happened where"
+[SEARCH-EXTRACT: https://www.obsbot.com/blog/live-streaming/streaming-monitoring].
+
+**Being the escalation point.** Job descriptions for this role name it: act as the primary
+technical escalation point for live event operations during live events, and troubleshoot across
+the complete delivery chain from encoding hardware through CDN to the player and its
+authentication
+[SEARCH-EXTRACT: https://careers.paramount.com/job/New-York-Sr-Live-Event-Technology-Engineer-NY-10036/1374027700/].
+
+Meanwhile, comms is frequently the weakest link in the REMI chain and is solved with whatever is
+to hand. The RTS "indie engineer's perspective" piece documents a REMI control room where three
+operators needed to talk but only two Bluetooth connections were available on the comms system,
+so the graphics operator ran the show on a **cellphone call** instead of a headset
+[SEARCH-EXTRACT: https://rtsintercoms.com/news/2022/intercom-solutions-from-rts-play-key-role-in-pushing-ip-enabled-remote-broadcast-production-the-next-level-%E2%80%93-the-indie-engineer/ ,
+2022].
 
 ### Load-out
 
-Stop outputs in the right order, confirm the platform archive/VOD actually exists, pull the local
-ISO recording. [INFERENCE, evidenced] The "local recording as insurance" assumption has a hole in
-it: OBS users report that network trouble on the *streaming* output can overload the encoder and
-corrupt the *recording* as well —
+Stop the outputs in the right order, end the platform events, confirm the recordings exist and
+are not corrupt. That last check is not paranoia: OBS issue #12087 records network congestion
+corrupting the local recording [PRIOR-SESSION:
+https://github.com/obsproject/obs-studio/issues/12087], and issue #13147 records the sharper
+version — when a *stream upload* stalls while using the multi-RTMP plugin, the encoder overloads
+and the frame rate of the independent local **recording** degrades, producing unusable material
+that has to be discarded. The reporter's argument is worth quoting as a design principle: stream
+upload connectivity should be isolated from encoder logic; a transmission problem should not
+compromise local encoding. It was closed as *not planned* on 2026-02-20
+[FETCHED: https://github.com/obsproject/obs-studio/issues/13147].
 
-> "every time any overloading of the encoder happens because of network, recording gets corrupted
-> unnecessarily … it can be corrupted by reasons that should not be happening"
-> — [obs-studio#12087](https://github.com/obsproject/obs-studio/issues/12087), 2025-04 **[FACT]**
+Then: tear down, and take with you the configuration that exists only in this machine's profile.
 
 ### Post
 
-VOD trim/upload, deliverables to the client, analytics, and — where it happens at all — an
-incident note. [INFERENCE] Nothing in the reachable evidence suggests a structured post-show
-record exists; the artefacts that *do* survive are the config files, which is why users paste
-them wholesale into issue threads when something breaks.
+Trim, retitle, unlist or publish the VOD; export clips; deliver an archive; and — when something
+went wrong — explain it. Live-to-VOD is not a no-op: archives need post-event reprocessing to
+normalise loudness, rebuild thumbnails, trim dead air and regenerate the ABR ladder for
+on-demand behaviour [SEARCH-EXTRACT: https://callaba.io/video-on-demand].
+
+The explanation is the part with no tooling. There is no artefact that says what the transport
+did during the show. The community's answer has been to build one repeatedly — SRT stats
+monitors and Prometheus exporters exist as standalone hobby projects precisely because the
+encoders do not keep a record anyone can hand to a client
+[PRIOR-SESSION: https://github.com/loopy750/SRT-Stats-Monitor ,
+https://github.com/roflb0y/SRTExporter].
 
 ---
 
 ## Tools they actually use
 
-Feelings are only recorded where there is evidence for them in a source I read; otherwise the
-cell says so.
-
 | Tool | For what | How they feel about it |
 | --- | --- | --- |
-| **OBS Studio** | The production switcher and encoder for most non-broadcast streaming | Load-bearing and grudgingly trusted. Praise is implicit; the complaints are about silence and reconnection ([#11016](https://github.com/obsproject/obs-studio/issues/11016), [#5572](https://github.com/obsproject/obs-studio/issues/5572), [#6497](https://github.com/obsproject/obs-studio/issues/6497)). One user, on a scene-import bug: "Extremely irritating bug. Makes OBS unusable in any serious production environment" ([#8953](https://github.com/obsproject/obs-studio/issues/8953), 2023) **[FACT]** |
-| **obs-multi-rtmp** (plugin) | Sending one show to several platforms at once | Necessary, under-documented. Users cannot find whether per-destination bitrate is safe ([#344](https://github.com/sorayuki/obs-multi-rtmp/issues/344)), cannot start all outputs together ([#17](https://github.com/sorayuki/obs-multi-rtmp/issues/17), open since 2020, 16 comments), and ask for per-platform rate control ([#329](https://github.com/sorayuki/obs-multi-rtmp/issues/329)) **[FACT]** |
-| **SRT** (protocol/library) | Contribution transport venue → gallery | Trusted as a protocol, distrusted as a configuration surface. See [Time sinks §2](#2-tuning-srtbonding-parameters-against-documentation-that-contradicts-itself) **[FACT]** |
-| **SRTLA / BELABOX / belaUI** | Bonded-cellular contribution from a venue with no usable fixed line | Openly experimental by the maintainer's own description; the free server component is declared "unsupported … not suitable for production deployment" with a pointer to the paid cloud ([srtla README](https://raw.githubusercontent.com/BELABOX/srtla/master/README.md)) **[FACT]** |
-| **Moblin** (iOS) / phone-as-encoder | Cheap bonded contribution, backup path | Actively developed; bonding logic is still being corrected in 2026 ([moblin#418](https://github.com/eerimoq/moblin/issues/418)) **[FACT]** |
-| **Hardware encoders** — LiveU, Teradek VidiU, Kiloview, Haivision KB, Matrox Maevex, Resi, DataVideo NVS, Cerevo | Contribution and platform delivery in the mid/large tier | Present in the evidence mainly as *things that cannot be controlled from the show's button surface* — eight separate open Companion module requests, 2020–2023, none fulfilled **[FACT]** |
-| **NOALBS** | Automatic scene switching on low bitrate / signal loss | The de-facto standard safety net, configured by hand-editing JSON. Recurring false-offline behaviour ([#125](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/125), [#119](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/119), [#120](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/120)) **[FACT]** |
-| **Loopy SRT Stats Monitor** | Same job, GUI, for SRT/SRTLA/RIST/BELABOX/Restreamer/nginx | Explicitly a community workaround: "This program will not launch 'out of the box' until the bare minimum of required settings are correctly configured" ([README](https://raw.githubusercontent.com/loopy750/SRT-Stats-Monitor/main/README.md)) **[FACT]** |
-| **nginx-rtmp / SRS / SRT-Live-Server / Restreamer / Prism** | Self-hosted relay, fan-out, ingest statistics | Chosen to avoid paying for a SaaS: "No need to pay restream or cloudflare!" ([Prism README](https://raw.githubusercontent.com/MorrowShore/Prism/master/README.md)) **[FACT]** |
-| **VDO.Ninja** | Remote contributors and remote camera feeds into the switcher | Liked enough that people file detailed feature requests instead of leaving; the gaps are director-side control and per-guest routing ([#1218](https://github.com/steveseguin/vdo.ninja/issues/1218), [#569](https://github.com/steveseguin/vdo.ninja/issues/569), [#838](https://github.com/steveseguin/vdo.ninja/issues/838)) **[FACT]** |
-| **Zoom / Teams as a contribution path** | Remote speakers in corporate events | Used because the *client* uses it, and because its pinning model does what VDO.Ninja cannot ([vdo.ninja#1218](https://github.com/steveseguin/vdo.ninja/issues/1218)) — a textbook grudging tool **[FACT]** |
-| **obs-websocket / obs-websocket-http** | Remote and scripted control of the switcher; the glue for everything above | Infrastructure. IRLToolkit maintains an HTTP bridge purely because so many tools speak HTTP and not websockets ([README](https://raw.githubusercontent.com/IRLToolkit/obs-websocket-http/master/README.md)) **[FACT]** |
-| **Bitfocus Companion + Stream Deck** | The show's button surface | Liked; the complaint is what is *missing* from it (encoders) and the config-shuffling around it ([companion#2909](https://github.com/bitfocus/companion/issues/2909), [#3654](https://github.com/bitfocus/companion/issues/3654)) **[FACT]** |
-| **Prometheus / Grafana** | Because nothing in the stack has a dashboard | Built by users, for users ([SRTExporter](https://github.com/roflb0y/SRTExporter)) **[FACT]** |
-| **Excel / Google Sheets** | Destination lists, key lists, rundowns, bandwidth budgets | Not directly evidenced for *this* role this session; strongly evidenced as the universal substrate for the neighbouring roles ([`technical-director.md`](./technical-director.md): sixteen ontime Excel import/export issues, 2021–2026) **[SECOND-HAND]**. One direct data point: a Companion user asked to edit the entire button config *in Excel* ([companion#1339](https://github.com/bitfocus/companion/issues/1339), 2020) **[FACT]** |
-| **Discord** | The actual support channel and knowledge base for the whole streaming stack | Evidenced repeatedly: NOALBS, Loopy and BELABOX all route support to Discord, and a user's escalation path is "no one has replied to me on Discord about it" before opening a GitHub issue ([obs-multi-rtmp#88](https://github.com/sorayuki/obs-multi-rtmp/issues/88), 2021) **[FACT]** |
+| **OBS Studio** | Encoding, scene switching, multi-destination via plugin, SRT/RTMP out | Indispensable and free; but the failure modes below are all logged against it. Reconnect behaviour and dynamic bitrate are actively distrusted [FETCHED: obs-studio #2496, #11877]. |
+| **obs-multi-rtmp plugin** | Sending one program to several platforms | Tolerated. 213 open issues at the time of reading; the per-destination-quality question is unanswered; it can drag the main encoder down [FETCHED: sorayuki/obs-multi-rtmp #448, #458; obs-studio #13147]. |
+| **vMix** | Switching plus streaming in one box, up to three destinations | Liked for the integration, resented for the constraint that multi-bitrate is disabled with multiple destinations and all targets share quality settings [SEARCH-EXTRACT: vmix.com/help23]. |
+| **Hardware encoders** (LiveU, Teradek, Haivision, Matrox, Kiloview, Resi, Epiphan) | The reliable path; bonded cellular; rackmount REMI | Trusted more than the laptop. German trade coverage frames the LiveU LU810/LU610S class as bonding several internal 5G/4G modems plus WLAN and Ethernet with frame-synchronous multicam, for OB vans and fixed sites [SEARCH-EXTRACT: film-tv-video.de 2022-08-31]. Grudge: each has its own web UI and none is on the button surface. |
+| **BELABOX / srtla, Moblin** | Open bonded SRT for people who cannot afford LiveU | Loved for existing; the bonding logic itself has open defects, e.g. traffic still sent to a dead link [PRIOR-SESSION: eerimoq/moblin #418, 2026-07, open]. |
+| **NOALBS** | Automatic "cut to BRB when the bitrate dies" | Genuinely relied on, and brittle. Its failure mode is the worst possible one: it parks the show on the offline scene while the stream is fine [FETCHED: NOALBS #178 (2024, open), #119 (2022)]. |
+| **Restreamer / MediaMTX / nginx-rtmp / OME** | Self-hosted fan-out, ingest, re-stream | Chosen to avoid a subscription; the cost is that stream-key semantics become the operator's problem [FETCHED: datarhei/restreamer #823, #961]. |
+| **Platform consoles** (YouTube Studio, Twitch, LinkedIn, Vimeo) | Creating the event object, getting the key, watching health | Used grudgingly. Each is a separate login, a separate metadata form, and a separate definition of "backup". |
+| **Restream / StreamYard / Castr / Livepush** | Cloud fan-out to avoid retyping metadata per platform | Used grudgingly by professionals: it removes double entry but inserts a third party into the delivery path and takes away encoder control. Their own marketing sells exactly the pain — "no need to retype titles, descriptions, and other details separately" [SEARCH-EXTRACT: restream.io, livepush.io, streamyard.com]. |
+| **VDO.Ninja** | Remote contributors, return feeds, mix-minus | The de-facto standard for low-budget REMI contribution; every show is hand-built from URL parameters [SEARCH-EXTRACT: docs.vdo.ninja]. |
+| **Zoom / Microsoft Teams** | Client-mandated contribution path | Actively resented. Practitioner reports describe 4K cameras and fast lines producing roughly 480p through Teams while Zoom looked professional, and describe Teams audio through a switcher as compressed and low-resolution [SEARCH-EXTRACT: https://techcommunity.microsoft.com/discussions/microsoftteams/ms-teams-video-quality-is-terrible/1354190/replies/2085955 , https://learn.microsoft.com/en-us/answers/questions/4418410/help-in-teams-what-is-needed-to-output-video-at-fh]. |
+| **Bitfocus Companion + Stream Deck** | One button surface for OBS/vMix/switcher/playback | Loved. The grudge is what is *missing*: encoder and platform control. The module-request tracker is full of long-open asks for exactly these devices [PRIOR-SESSION: companion-module-requests #177, #194, #540, #790, #815, #880, #1080, #1143, #2075]. |
+| **Excel / Google Sheets** | Destination lists, IP plans, run of show, credentials | Universal and unloved. See the Paper/Excel/WhatsApp section. |
+| **WhatsApp / group chat** | Keys, links, "are we live?", last-minute changes | Universal and dangerous. Event-operations writing concedes group threads "work fine for planning but fall apart on event day when decisions need to happen in seconds" and that on a single channel "critical messages get buried" [SEARCH-EXTRACT: https://www.homerunent.com/blog/2026/7/7/event-operations-guide-managing-production-on-event-day , https://www.phaedrasolutions.com/blog/how-to-use-whatsapp-for-event-planning-without-hassle]. |
+| **A second phone or laptop on cellular** | Confirming the audience actually has a picture | The most-used monitoring tool in the role, and it is not a product [SEARCH-EXTRACT: obsbot.com, touchstream.media]. |
 
 ---
 
 ## Time sinks
 
-Ranked by my reading of cost × frequency across the evidence. Each carries a frequency grade and
-a time estimate; where the estimate is reasoning rather than a measured figure it says so.
+Ranked by my estimate of aggregate hours across a production, with the evidence for each.
 
 ### 1. Assembling and re-entering the destination/key set for every show
 
-`frequency: recurring` (arguably widespread — four independent projects exist to manage it) ·
-`cost: 30–90 minutes per show, plus the whole class of errors below` [INFERENCE for the figure]
+**Frequency: widespread.** Every output needs URL, key, backup URL, backup key, and a matched
+set of encoding parameters — and the sets differ per platform by design (Twitch ~6 Mbps cap
+vs YouTube 9–12 Mbps and 4K) [SEARCH-EXTRACT: stream.twitch.tv/encoding, streamersize.com].
+There is no export/import of a destination set between the tools that need it. The entire
+category of cloud multistreaming products exists to sell relief from this
+[SEARCH-EXTRACT: restream.io, livepush.io, castr.com, streamyard.com], which is the strongest
+available evidence that the underlying task is both universal and disliked.
 
-A modern job has three to six destinations. Each needs a server URL, a stream key, and its own
-bitrate/resolution/keyframe constraints. There is no shared register: the values are typed into
-the encoder, then again into the backup encoder, then again into the relay, then again into
-whatever automation starts the outputs.
+Self-hosting does not remove it, it relocates it: Restreamer users open issues asking what part
+of the generated RTMP URL is the "stream key" when pasting it into another product, and whether
+a custom stream key is even possible
+[FETCHED: https://github.com/datarhei/restreamer/issues/823 (2024-09-26, open, labelled
+"question"/"help wanted"), https://github.com/datarhei/restreamer/issues/961 (2026-01-07, open)].
 
-The clearest picture of the end state is the self-hosted multistreamer, where every platform key
-is a literal environment variable in a `docker run` line the engineer edits by hand:
+### 2. Tuning transport parameters against documentation that does not agree with itself
 
-> `-e YOUTUBE_KEY="your-youtube-key" \` … `-e FACEBOOK_KEY=…` … `-e TWITCH_KEY=…` … `-e RTMP1_URL=…`
-> `-e RTMP1_KEY=…` … "Each line starting with -e signals a destination. **Remove all the
-> destination lines that don't concern you.**"
-> — [Prism README](https://raw.githubusercontent.com/MorrowShore/Prism/master/README.md) **[FACT]**
+**Frequency: widespread.** For SRT the engineer must choose connection mode (caller / listener /
+rendezvous — a NAT decision, with rendezvous largely unusable behind PAT), latency, and overhead
+bandwidth. The published guidance splits: 3–4× RTT as a formula versus fixed 1,500–2,500 ms as
+practice [SEARCH-EXTRACT: vajracast.com/srt-latency-tuning/, medium innovation-labs;
+doc.haivision.com, kiloview rendezvous PDF, streamrus.github.io]. The SRT project's own tracker
+has carried requests for a parameter calculator, a bandwidth-overhead table, and clearer latency
+semantics since 2019, several still open [PRIOR-SESSION: Haivision/srt #621, #656, #1210, #2016,
+#2600, #2968, #3168].
 
-And the confusion this produces is a support category of its own. In Restreamer, users cannot work
-out what the "stream key" for their own server even *is*:
+The cost is not the maths. It is that the answer is re-derived per venue, per link, per show,
+and never written down anywhere the next engineer can find it.
 
-> "If i go to Streamyard and add a destination as RTMP server, i pasted the URL and it asks for a
-> streamkey. i read in the discussions that the key everything after the domain name & when i
-> tried that it doesnt work."
-> — [restreamer#823](https://github.com/datarhei/restreamer/issues/823), 2024-09 **[FACT]**
+### 3. Building and maintaining the monitoring and fallback rig that no product ships
 
-and cannot choose their own, so they must transcribe a generated GUID:
-[restreamer#961](https://github.com/datarhei/restreamer/issues/961), 2026-01 **[FACT]**.
+**Frequency: widespread**, on criterion (a) — several independent projects exist for no other
+purpose. NOALBS exists to switch OBS scenes on bitrate collapse; SRT-Stats-Monitor and
+SRTExporter exist to make transport telemetry visible; obs-websocket-http exists to let other
+things drive OBS
+[FETCHED: NOALBS README; PRIOR-SESSION: loopy750/SRT-Stats-Monitor, roflb0y/SRTExporter,
+IRLToolkit/obs-websocket-http]. Configuring NOALBS alone means hand-editing JSON containing an
+OBS websocket password, ingest credentials, and a chat OAuth token
+[FETCHED: NOALBS README].
 
-### 2. Tuning SRT/bonding parameters against documentation that contradicts itself
+And it is fragile in the direction that hurts: NOALBS #178 (2024-10-23, open) is a working
+production where NOALBS cannot reach `http://localhost/stat` — a URL that works fine in a browser
+— so it continuously switches to the offline scene while the RTMP stream is live, and the
+`!bitrate` chat command answers "No connection :(" [FETCHED]. NOALBS #119 (2022-09-14) is the
+same class: the tool reverts to the offline scene instantly, even when the stream is healthy and
+the operator switches back by hand [FETCHED].
 
-`frequency: recurring` · `cost: hours, once per new venue/route; minutes to re-check per show`
+### 4. Re-creating the same setup on the second machine, and on the next show
 
-This is the single best-documented time sink in the dossier, because I could read both the
-complaints and the documentation they are about.
+**Frequency: recurring.** Redundancy means a second encoder configured identically — and
+"identically" is a hard requirement, not a preference, because YouTube's failover breaks if
+primary and backup differ in resolution, codec, bitrate, framerate, keyframe frequency or audio
+sample rate [SEARCH-EXTRACT: docs.castr.com backup-ingest, support.google.com/youtube/answer/2853702].
+There is no first-class "copy this delivery configuration to that box" operation across
+heterogeneous encoders; the OBS-side machinery for moving profiles and scene collections has its
+own defect history [PRIOR-SESSION: obs-studio #6298 profile export broken, #5599, #8635, #8953,
+#6398].
 
-The official SRT configuration guidance gives the receiver-buffer size as a function of RTT,
-latency, bitrate and MTU. **The same document states the formula two different ways.** In
-"Calculating Target Size in Packets":
+German practice confirms the same shape at the professional end: redundant encoding of the mixed
+signal through **two** enterprise SRT hardware encoders in parallel
+[SEARCH-EXTRACT: https://www.production-partner.de/story/tividoo-events-streaming-als-gesamtkonzept/],
+and a backup connection such as an LTE modem alongside a second fixed line
+[SEARCH-EXTRACT: https://www.production-partner.de/basics/tipps-fuer-ein-gelungenes-streaming/].
+Every one of those is a config surface to keep in sync by hand.
 
-> `pktsRBufSize = bps / 8 × (RTTsec + latency_sec) / bytePayloadSize`
+### 5. Onboarding and babysitting remote contributors
 
-and eight paragraphs later, in "Summing Up":
+**Frequency: recurring.** Each remote guest needs a send link, a return feed, a mix-minus, a
+level check and a way to know they are on air. VDO.Ninja documents that mix-minus is a
+director-link parameter, that it does not solve acoustic bleed, and that the supported echo
+diagnostic is muting people one at a time [SEARCH-EXTRACT: docs.vdo.ninja]. Tally and on-air
+indication for remote guests have been open feature requests since 2020–2021
+[PRIOR-SESSION: steveseguin/vdo.ninja #569, #654]. When the client insists on Teams instead, the
+engineer absorbs a documented quality drop [SEARCH-EXTRACT: Microsoft community threads above].
 
-> `const long long targetPayloadBytes = static_cast<long long>(msLatency + msRTT / 2) * bpsRate / 1000 / 8;`
+### 6. Negotiating with venue IT
 
-— [Haivision/srt configuration-guidelines.md](https://raw.githubusercontent.com/Haivision/srt/master/docs/API/configuration-guidelines.md),
-read in full this session. `RTT` in one, `RTT/2` in the other. **[FACT — verified directly]**
+**Frequency: recurring.** Port 1935 blocked by default on corporate, campus and public networks
+[SEARCH-EXTRACT: videosdk.live]; fallback chains to 443 and then RTMPT on 80
+[SEARCH-EXTRACT: https://www.dacast.com/support/knowledgebase/firewall-ports-for-rtmp-streaming/];
+onsite encoding requirement documents that ask for security controls to be disabled outright
+[SEARCH-EXTRACT: help.webcasts.com]. Each venue is a fresh negotiation with a fresh person, and
+the outcome is rarely recorded anywhere reusable.
 
-A user found exactly this and asked which is right; the issue is open:
+### 7. Explaining, afterwards, what happened
 
-> "I am trying to wrap my head around the SRT parameters for streaming at high bitrates, `maxbw`,
-> `rcvbuf`, `fc` and so forth. I read the most referenced issues, as #642, #703, #409 and others,
-> as well as the Configuration Guidelines and the Socket options page. … Here the code is almost
-> the same, except for the division by two applied to the RTT value. I think this is an error"
-> — [srt#3168](https://github.com/Haivision/srt/issues/3168), 2025-05, **open** **[FACT]**
-
-The same pattern, six years earlier and also still open — a user reading the vendor's own
-deployment guide and finding its overhead table counter-intuitive:
-
-> "why is less bandwidth overhead required for lossier networks - wouldn't it be the opposite?"
-> — [srt#656](https://github.com/Haivision/srt/issues/656), 2019-04, **open** **[FACT]**
-
-And the underlying request, from 2018, which explains why this is a *recurring per-show* cost
-rather than a one-off learning curve:
-
-> "I know we can recover from packet loss in network using latency and overhead bandwidth but how
-> do we know that there is loss in network at certain time and there is no loss otherwise and then
-> set the latency/oheadbw accordingly. If we set the latency manually, it can be too low or high
-> depending upon network loss. Is there a mechanism in SRT to check loss continuously?"
-> — [srt#460](https://github.com/Haivision/srt/issues/460), 2018-09 **[FACT]**
-
-A companion request asks outright for "a functionality for best parameter tweak calculation"
-([srt#621](https://github.com/Haivision/srt/issues/621), 2019) **[FACT]**. [INFERENCE] Nothing in
-the reachable evidence indicates such a calculator shipped; the engineer still does this by hand,
-per route, and re-does it when the venue changes.
-
-There is a second, nastier variant: **the parameters are transported in a URI**, and the escaping
-rules are undefined —
-
-> "passphrase and streamid, are usually passed in many software implementing SRT in the URI as a
-> query parameter. This makes that some special characters, such as, `'#&=/'` could be bad
-> interpreted as params URI delimiters. … I have a big doubt here."
-> — [srt#2749](https://github.com/Haivision/srt/issues/2749), 2023-06, **open** **[FACT]**
-
-[INFERENCE] A platform-generated key containing one of those characters is a connection that
-fails for a reason no log will name.
-
-### 3. Building and maintaining the monitoring/fallback rig that no product ships
-
-`frequency: widespread` (grade justified: at least five independent projects exist whose *only*
-purpose is this) · `cost: days to build once, 15–45 minutes to verify per show` [INFERENCE for
-figures]
-
-The switcher does not reliably tell you the stream stopped
-([obs-studio#11016](https://github.com/obsproject/obs-studio/issues/11016)). So the community
-built: NOALBS (Rust, 502 stars, ingest stats → OBS scene switch + chat bot), Loopy SRT Stats
-Monitor (178 stars, GUI, SRT/SLS/BELABOX/Restreamer/RIST/nginx), SRTExporter (Prometheus),
-BelaboxBitrateOverlay, belabot, SRT-Stats-Monitor's multi-camera mode, and IRLToolkit's HTTP
-bridge to obs-websocket **[FACT — all READMEs/descriptions read this session]**.
-
-Every one of these is configured by hand-editing JSON or INI. Every one of them is another place
-the same scene names and credentials must be typed. And they generate their own support load:
-ten NOALBS issues read this session are configuration problems, not bugs.
-
-### 4. Re-creating the same setup on the second machine
-
-`frequency: recurring` · `cost: 1–3 hours per new machine` [INFERENCE for the figure]
-
-Redundancy in this world means a second encoder or a second OBS machine — which means the entire
-configuration exists twice and drifts. The portability mechanisms have a poor record: profile
-export was broken on macOS and Windows in 2021–2022 (opening an *import* dialog instead of a save
-dialog — [#5599](https://github.com/obsproject/obs-studio/issues/5599),
-[#6298](https://github.com/obsproject/obs-studio/issues/6298)); cross-platform scene-collection
-import crashed ([#6398](https://github.com/obsproject/obs-studio/issues/6398), 2022) and silently
-failed ([#8635](https://github.com/obsproject/obs-studio/issues/8635), 2023); importing a
-collection could randomly change the live scene after a transition
-([#8953](https://github.com/obsproject/obs-studio/issues/8953), 2023) **[FACT]**. These are dated
-and several are closed — cited as evidence that **this class of break exists**, not that it exists
-today.
-
-### 5. Sorting out remote contributors' views, audio and return feeds
-
-`frequency: recurring` · `cost: most of the rehearsal window in a hybrid event` [INFERENCE]
-
-Covered in the rehearsal section and in [Missing interfaces](#missing-interfaces). The 2025
-"THE PAIN" request ([vdo.ninja#1218](https://github.com/steveseguin/vdo.ninja/issues/1218))
-describes an entire signal-flow problem — venue video mixer and audio mixer feeding a
-conferencing platform, and the platform's output feeding back into both — that the streaming
-engineer has to design, patch and explain, per event, with no drawing tool that models it.
-
-### 6. Explaining what happened, afterwards
-
-`frequency: recurring` · `cost: unknown` — [INFERENCE] The evidence for this is indirect but
-consistent: when something breaks, the engineer's reconstruction material is a pasted config file
-and a log URL. Every OBS bug report read this session leads with a hosted log link; every NOALBS
-report leads with the full `config.json`. There is no show record; there is a pile of artefacts.
+**Frequency: recurring** [INFERENCE from the tooling gap]. No mainstream encoder produces a
+show-shaped transport record. The community-built stats exporters are the workaround
+[PRIOR-SESSION: SRT-Stats-Monitor, SRTExporter]. Absent that, the post-mortem is reconstructed
+from OBS log files, a platform console's health graph, and memory.
 
 ---
 
 ## Double data entry
 
-What the same fact has to be typed into. Each row lists the systems and the evidence that the
-duplication is real.
+What gets typed into more than one system, with the second and third system named.
 
-| Fact | Typed into | Evidence |
-| --- | --- | --- |
-| **Stream key + ingest URL** (per platform) | Platform dashboard → primary encoder → backup encoder → relay/multistreamer config → the automation that starts outputs → the handover document | [Prism README](https://raw.githubusercontent.com/MorrowShore/Prism/master/README.md) (env vars per platform); [obs-multi-rtmp](https://github.com/sorayuki/obs-multi-rtmp/issues/88); [restreamer#823](https://github.com/datarhei/restreamer/issues/823), [#961](https://github.com/datarhei/restreamer/issues/961) **[FACT]** |
-| **Per-destination bitrate / rate control / profile** | Encoder output settings, then again per destination in the multi-destination plugin, then against each platform's published limit | "Such as 'Rate control' (CBR or VBR) and 'Profile' so I can restream on multiple platforms with different settings, because each platform have it's own requirements" — [obs-multi-rtmp#329](https://github.com/sorayuki/obs-multi-rtmp/issues/329), 2023 **[FACT]** |
-| **Scene names** | OBS scene collection → NOALBS `switchingScenes` *and* `overrideScenes` *and* `optionalScenes` → Companion buttons → the chat-bot command aliases | [NOALBS#178 config](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178) shows the same scene names entered three times in one file **[FACT]** |
-| **SRT connection parameters** (latency, passphrase, streamid, MSS, FC, buffer) | Sender, receiver, and any middlebox — with no negotiation of the human-meaningful ones | [srt configuration-guidelines](https://raw.githubusercontent.com/Haivision/srt/master/docs/API/configuration-guidelines.md); [srt#2016](https://github.com/Haivision/srt/issues/2016) ("Negotiated SRT link latency is unknown") **[FACT]** |
-| **obs-websocket host/port/password** | OBS itself, NOALBS config, Loopy config, Companion connection, any custom script | [NOALBS#178](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178), [#157](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/157); [obs-websocket-http config.ini](https://raw.githubusercontent.com/IRLToolkit/obs-websocket-http/master/README.md) **[FACT]** |
-| **Ingest stats endpoint** | The relay server config, the scene-switcher config, the Prometheus scrape config, the overlay | [NOALBS#178](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178); [SRTExporter README](https://raw.githubusercontent.com/roflb0y/SRTExporter/main/README.md) **[FACT]** |
-| **Source/camera naming** | Switcher inputs → OBS scenes/sources → tally system → rundown → the streaming engineer's own scene list | [`technical-director.md`](./technical-director.md) documents the input map living in the switcher, the router table, the tally mapping, a paper sheet and the rundown simultaneously **[SECOND-HAND]** |
-| **Event metadata** (title, description, schedule, privacy, category) | Each platform's broadcast-creation UI, separately | unverified — no reachable source this session. Flagged because it is the obvious remaining duplication and should be confirmed before it drives a build decision |
+| Datum | System 1 | System 2 | System 3 | Evidence |
+| --- | --- | --- | --- | --- |
+| Ingest URL + stream key | Platform console | Encoder / OBS / vMix profile | Backup encoder; often also a run-of-show sheet or chat message | [SEARCH-EXTRACT: vmix.com/help23/StreamingMultipleDestinations.html; gitguardian stream-key remediation] |
+| Bitrate / resolution / fps / keyframe / audio sample rate | Primary encoder | Backup encoder (must match exactly or failover breaks) | Each additional destination in a multi-RTMP plugin | [SEARCH-EXTRACT: docs.castr.com backup-ingest; support.google.com/youtube/answer/2853702] [FETCHED: sorayuki/obs-multi-rtmp #448] |
+| Event metadata (title, description, thumbnail, start time, privacy) | YouTube Studio | Facebook/LinkedIn/Vimeo event | Client's CMS or webinar portal; plus the marketing team's calendar | [SEARCH-EXTRACT: multistreaming vendor pages sell removal of exactly this retyping — restream.io, livepush.io, streamyard.com] |
+| SRT/RIST parameters (mode, port, latency, passphrase, streamid) | Sender | Receiver | Firewall rule request to venue IT | [SEARCH-EXTRACT: doc.haivision.com connection modes; help.webcasts.com onsite requirements] |
+| Scene names used by the fallback logic | OBS scene collection | NOALBS JSON config | The operator's memory during the show | [FETCHED: NOALBS README, #119, #178] |
+| Device IPs / ports / VLANs | Encoder web UIs | The network plan spreadsheet | The venue IT ticket | [SEARCH-EXTRACT: thebroadcastbridge.com — broadcasters "traditionally maintain spreadsheets that need manual intervention"] |
+| Credentials (OBS websocket password, ingest auth, chat OAuth) | The tool's settings | The JSON config file | A password manager, a shared doc, or a chat thread | [FETCHED: NOALBS README] [PRIOR-SESSION: NOALBS #157 with credentials pasted into a public issue; obs-studio #8966 clear-text credentials] |
+| Which output feeds which platform | The engineer's head | The multi-RTMP plugin's output list | The run-of-show / cue sheet the TD reads | [INFERENCE] |
 
-**The pattern behind the table.** There is no *register of destinations* anywhere in this stack.
-Each tool holds its own private copy of the same handful of facts, in its own format, with the
-secret embedded in the same file as the operational settings. That is simultaneously the
-double-entry problem and the security problem — see below.
+The pattern worth naming for product purposes: **the same delivery configuration is expressed
+three times in three vocabularies** — once as a platform event, once as encoder settings, once as
+a human-readable line in a document — and nothing checks that the three agree.
 
 ---
 
 ## Error sources
 
-What goes wrong, what it costs, and how often the evidence says it happens.
+### 1. The stream stops and nothing tells anyone
 
-### 1. The stream stops and nothing says so
+**Cost: the show is off air for as long as it takes a human to look at the right screen.**
+Structurally, the operator's only reliable detector is a second device on another network
+[SEARCH-EXTRACT: obsbot.com, touchstream.media]. Concretely, OBS's reconnect machinery is
+documented to fail in ways that leave the operator with a dead stream and a UI that does not
+insist:
 
-`frequency: recurring` · `cost: minutes of dead air, discovered only by an out-of-band check`
+- **Dynamic Bitrate breaks Automatically Reconnect.** The stream sticks at 0 kbps, no
+  reconnection is attempted, and the operator must close and restart OBS. The reporter's
+  conclusion: disabling Dynamic Bitrate fixes it — i.e. choose between adaptive bitrate and
+  reliable reconnection [FETCHED: https://github.com/obsproject/obs-studio/issues/2496 ,
+  2020-03-13, closed]. A second, later report describes the same interaction on bonded LTE
+  [PRIOR-SESSION: obs-studio #6497, 2022].
+- **On instability, OBS drops the stream key, not just the connection.** Issue #11877
+  (2025-02-18): the user expected a temporary disconnect and reconnect; instead OBS disconnected
+  from the Twitch stream key entirely and would not accept it again without a full restart
+  [FETCHED].
+- **Silent stop.** "Stream stops with no indication" and "Live Streaming Keeps Stopping" are
+  separate 2024 reports [PRIOR-SESSION: obs-studio #11016; also #11864 "Stream was stopped by
+  the system"].
 
-The canonical report ([obs-studio#11016](https://github.com/obsproject/obs-studio/issues/11016),
-2024-07): stream stops after a few minutes, "no indication on OBS", occurred "over 5 times within
-one hour this morning", fixed only by stop/start. Upload capacity was not the constraint
-("we are doing a upload of over 200"). **[FACT]**
+**Frequency: widespread** — the vendor concedes it in the form of multiple long-lived issues
+across five years.
 
-[INFERENCE] The consequence in a paid production is not the outage itself but the *detection
-lag*: whatever time passes between the failure and the engineer glancing at the second screen is
-broadcast as nothing.
+### 2. The redundancy is decorative
 
-### 2. It reconnects, and comes back wrong
+**Cost: the backup path is proven wrong at the exact moment it is needed.** YouTube's backup
+ingest requires primary and backup to match on resolution, codec, bitrate, framerate, keyframe
+frequency and audio sample rate; if they drift, failover breaks or the ingest errors
+[SEARCH-EXTRACT: docs.castr.com backup-ingest]. Nothing in the encoder validates this. The only
+proof is a rehearsal in which you deliberately kill the primary
+[SEARCH-EXTRACT: same]. **Frequency: recurring**, and the corresponding failure at the bonding
+layer is worse — Moblin issue #418 (2026-07, open) reports RIST bonding continuing to send
+traffic down a link that is already dead [PRIOR-SESSION].
 
-`frequency: recurring` · `cost: the rest of the show is silent, or the archive is split`
+### 3. The safety net fires when nothing is wrong
 
-The most-commented instance read this session
-([obs-studio#5572](https://github.com/obsproject/obs-studio/issues/5572), 2021-11, **65
-comments**): after an automatic reconnect the video continues and the **audio does not**, while
-every meter in OBS and Windows shows audio present. The reporter's own summary of the cost:
+**Cost: the audience sees a "be right back" slate during the keynote.** NOALBS #178 (2024, open):
+stats endpoint unreachable from the tool though fine in a browser, so it parks on the offline
+scene while the stream is live [FETCHED]. NOALBS #119 (2022): sticky offline scene that
+reasserts itself instantly after manual correction [FETCHED]. #125 records a transient blank
+stats page causing an instant offline switch [PRIOR-SESSION]. **Frequency: recurring** — four
+issues, same failure class, three years apart.
 
-> "Stop the stream manually in the OBS, relaunch it - everything works now, but the VOD is split
-> and half of the viewers are gone." **[FACT]**
+### 4. It reconnects, and comes back wrong
 
-Independently reported at [#6557](https://github.com/obsproject/obs-studio/issues/6557) (2022,
-"I have noticed another streamer friend of mine having this issue as well") and
-[#6813](https://github.com/obsproject/obs-studio/issues/6813) (2022) **[FACT]**. Dated —
-but three independent reports of the same silent-audio-after-reconnect signature is the shape of
-a class of bug, not a one-off.
+**Cost: the show continues but the deliverable is damaged, often unnoticed until post.**
+Documented variants: audio missing after reconnect [PRIOR-SESSION: obs-studio #5572 (65
+comments), #6557, #6813]; SRT freezing on stale cached video after reconnect [PRIOR-SESSION:
+#11062, 2024, open]; SRT sources unable to reconnect while a recording is running
+[PRIOR-SESSION: #4596 (2021, open, 26 comments), #13506 (2026-05, open)]; AV1 output to YouTube
+not recovering after dropped frames when other encoders do [PRIOR-SESSION: #10584].
 
-The SRT equivalent, on the receiving side: after a reconnect OBS plays a few seconds of *stale
-cached video* and freezes, and takes minutes to notice
-([obs-studio#11062](https://github.com/obsproject/obs-studio/issues/11062), 2024-08, open)
-**[FACT]**. And SRT reconnection while recording has been broken since 2021 and is still open
-([#4596](https://github.com/obsproject/obs-studio/issues/4596), 26 comments), with the reporter
-naming the trust consequence explicitly:
+### 5. A transmission problem damages the local recording
 
-> "as SRT is all about providing stability and a robust stream under any circumstances, hopefully
-> this and any other stability related issues can be resolved, else users might not trust being
-> able to leave OBS/SRT unattended." **[FACT]**
+**Cost: the client's archive copy is unusable, and the failure is discovered after load-out.**
+Issue #13147: an upload stall on any multi-RTMP output overloads the encoder and degrades the
+independently-configured recording's frame rate; the reporter had to discard the material. Closed
+as not planned, 2026-02-20 [FETCHED]. Issue #12087 reports network congestion corrupting the
+recording [PRIOR-SESSION]. **Frequency: recurring.** This is the single most expensive error
+class in the list, because it destroys the insurance copy using the same event it was insuring
+against.
 
-### 3. The redundancy sends the show down the dead path
+### 6. Keys and services bleed into each other
 
-`frequency: recurring` · `cost: 60–70% packet loss while a healthy link sits idle`
+**Cost: broadcasting to the wrong destination, or not broadcasting at all.** OBS issue #11079
+(2024) records stream keys bleeding between services and settings being lost [PRIOR-SESSION].
+On the SRT side, OBS discarded the "Stream Key" field entirely for years, forcing operators to
+hand-assemble a `streamid` into the URL, and a `streamid` containing key/value pairs was
+truncated at the `?`
+[FETCHED: https://github.com/obsproject/obs-studio/issues/4250 (2021, fixed 2022-11),
+https://github.com/obsproject/obs-studio/issues/2990 (2020)]. The consequence class is well
+known enough that platform-side guidance names it: wrong destination is among the most expensive
+operator mistakes, and the recommended mitigations are a two-step verification before a
+high-stakes broadcast and a short test stream to catch wrong or stale keys
+[SEARCH-EXTRACT: https://heystream.com/blog/twitch-stream-key-rtmp-setup].
 
-The most technically precise report in the dossier
-([moblin#418](https://github.com/eerimoq/moblin/issues/418), 2026-07, open): with RIST bonding,
-the link-weighting logic uses only RTT, and a dead interface's RTT estimate *freezes at a low
-value* — so the scheduler treats the dead link as the best one. Measured over a 10-second window
-of a real stream:
+### 7. Credentials end up in places they should not be
 
-| metric | delta / 10 s |
-| --- | --- |
-| received (delivered directly) | +2275 |
-| missing (sent to the dead link) | +8525 |
-| recovered (retransmit via good link) | +1790 |
-| lost (never recovered) | +6307 |
-
-> "So ~60–70% of packets go to the dead interface … most is permanently lost → continuous
-> buffering." **[FACT]**
-
-The reporter's workaround is to give up aggregation entirely. A related bonding failure — cellular
-silently excluded from the bond depending on IPv6 and DNS strategy — is
-[moblin#89](https://github.com/eerimoq/moblin/issues/89), 2024-12 **[FACT]**.
-
-[INFERENCE] This is the most expensive error class conceptually, because it is *invisible in the
-plan*: the redundancy diagram shows two paths, the engineer has two paths, and the system is
-routing the show into the one that does not work.
-
-The OBS-side counterpart, from an engineer explicitly testing bonded-LTE conditions:
-
-> "The purpose of my test case is to replicate a symptom that I frequently see while streaming on
-> bonded LTE connections … which I have observed in more than half of my recent streams. … I have
-> never seen the issue when Dynamic Bitrate (beta) is disabled."
-> — [obs-studio#6497](https://github.com/obsproject/obs-studio/issues/6497), 2022-05 (closed)
-> **[FACT]**
-
-Automatic reconnect and dynamic bitrate — the two features that exist to *survive* a bad network
-— deadlocked each other, requiring a force-quit of the switcher mid-show.
-
-### 4. The safety net fires when nothing is wrong
-
-`frequency: recurring` · `cost: the live content is replaced by a holding card, on air`
-
-The scene-switcher's failure mode is a false negative on *its own stats source*, not on the
-stream:
-
-- The ingest stats page intermittently returns blank, and the switcher cuts to "offline" while the
-  feed is fine: "Bitrate is definitely fine, i managed to catch it when I had the liveU stats open
-  and the stream in parallel in VLC, no drops. … Is there a way that NOALBS can ignore this
-  behavior and not switch to the offline scene immediately?"
-  ([NOALBS#125](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/125),
-  2022-10) **[FACT]**
-- With a bonded hardware encoder (Kiloview P2) the nginx channel stays open at 0 bit/s, so
-  "offline" never triggers *and* the bot reports a healthy `nginx: 0`
-  ([NOALBS#120](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/120),
-  2022-09) **[FACT]**
-- Sticky-offline: switches to offline and instantly returns there even when forced back manually
-  ([NOALBS#119](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/119),
-  2022-09, 18 comments, open) **[FACT]**
-- Reachability of `localhost/stat` misconfigured → permanent offline scene and `No connection :(`
-  in chat, after the user "searched for hours"
-  ([NOALBS#178](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178),
-  2024-10) **[FACT]**
-
-**Both directions of this error are expensive.** A false "offline" cuts live content to a card; a
-false "online" (the 0 bit/s case) leaves a frozen or black picture on air with the automation
-convinced everything is fine.
-
-### 5. Keys and services bleed into each other
-
-`frequency: isolated-to-recurring` (one detailed report, but it names a regression class) ·
-`cost: stream fails to start at showtime with a misleading error`
-
-> "Swapping from Service: Twitch to custom, causes my twitch stream key to be pre-populated in the
-> stream key box (despite historic settings having a different stream key), and when attempting to
-> stream to the server, an error occurs stating 'failed to start streaming - no config URL
-> available for the current service'. … If enhanced broadcasting is not enabled, then on switching
-> back to custom service, all settings are lost. This feels like a step back in general UX for the
-> stream settings dialog. Stream keys also seem to 'bleed' between service providers now when they
-> did not before (in 29.x)"
-> — [obs-studio#11079](https://github.com/obsproject/obs-studio/issues/11079), 2024-08 **[FACT]**
-
-Two distinct failures in one report: a key from one destination silently offered for another, and
-a whole destination configuration lost by switching service type. Both are showtime failures.
-
-### 6. Credentials end up in places they should not be
-
-`frequency: recurring` · `cost: unquantified, but the exposure is real`
-
-- Keys as shell-command environment variables that get copied between machines and pasted into
-  chat ([Prism README](https://raw.githubusercontent.com/MorrowShore/Prism/master/README.md))
-  **[FACT]**
-- The obs-websocket password, the ingest server auth and the chat-bot token in the *same* JSON
-  file as the scene names — a file users paste wholesale into public issue threads when asking for
-  help. One user redacted with `XXXX`
-  ([NOALBS#178](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178));
-  another pasted an ingest `"auth": {"username": "admin", "password": "admin"}` block unredacted
-  ([NOALBS#157](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/157))
-  **[FACT]**
-- OBS itself has had a clear-text credential report filed against it
-  ([#8966](https://github.com/obsproject/obs-studio/issues/8966), 2023, closed) **[FACT]**
-- The receiver's API key is a plaintext dotfile recovered with `cat .apikey`
-  ([OpenIRL/srtla-receiver](https://raw.githubusercontent.com/OpenIRL/srtla-receiver/main/README.md))
-  **[FACT]**
-
-[INFERENCE] The structural cause is the one identified under double entry: because there is no
-key register, the key lives in the operational config, and the operational config is the thing you
-send to someone when you need help.
-
-### 7. The insurance copy is damaged by the same event
-
-`frequency: isolated` (one detailed report) · `cost: no usable archive after a bad show`
-
-[obs-studio#12087](https://github.com/obsproject/obs-studio/issues/12087) (2025-04): network
-congestion on the streaming output drives encoder overload, and "recording gets corrupted
-unnecessarily … causes recording to become 5fps un-usable footage and also the audio is broken"
-**[FACT]**. Graded isolated on evidence, flagged as high-consequence: the local recording is the
-standard answer to "what if the stream fails", and here the two failures are correlated.
+**Cost: someone else broadcasts on your channel; or a platform-wide key rotation.** A stream key
+is a password — anyone holding it can broadcast from the channel without touching the login — and
+the standing advice is that keys live in one place, "and that place is not your group chat", with
+an explicit instruction to audit docs, screenshots and chat history
+[SEARCH-EXTRACT: https://onestream.live/blog/stream-leak-prevent-stream-hack/ ,
+https://www.gitguardian.com/remediation/twitch-stream-key]. That a secrets-scanning vendor
+maintains dedicated remediation playbooks for *Twitch stream key* and *generic stream key*
+detectors is itself evidence the leak path is common
+[SEARCH-EXTRACT: https://www.gitguardian.com/remediation/stream-key]. Twitch has previously
+reset stream keys for all users after a leak
+[SEARCH-EXTRACT: https://www.dexerto.com/entertainment/twitch-resets-stream-keys-for-everyone-but-says-passwords-are-safe-after-leak-1670117/].
+In this corpus the concrete instance is in the open: a NOALBS configuration pasted into a public
+issue complete with ingest auth credentials [PRIOR-SESSION: NOALBS #157, 2023, open].
+**Frequency: recurring**, with the caveat that most instances are invisible by nature.
 
 ### 8. Bitrate control that does not control the bitrate
 
-`frequency: isolated, but current` · `cost: instant congestion at showtime`
+**Cost: platform-side ingest errors and buffering for viewers.** Reports include CBR not being
+honoured on an AMD encoder [PRIOR-SESSION: obs-studio #13772, 2026-08, open], changing the
+output bitrate mid-stream dropping output to 0 kbps and ending the stream [PRIOR-SESSION:
+#13228, 2026-03], and unexplained bitrate collapse from 6,000 to under 1,000 [PRIOR-SESSION:
+#13064, 2026-01]. Separately, a documented Twitch ingest pattern: connection succeeds, then at
+roughly 25 seconds `RTMP send error 10054` and disconnect, with frame drops of 32–42% per cycle,
+on a 1,000 Mbps line, no maintainer response
+[FETCHED: https://github.com/sorayuki/obs-multi-rtmp/issues/458 , 2024-12-26, open].
 
-[obs-studio#13772](https://github.com/obsproject/obs-studio/issues/13772) (2026-08, open, OBS
-32.2.1): CBR set to 1500 kbps, actual output climbs to 11,000–16,000 kbps on AMD hardware
-encoding **[FACT]**. Fresh enough to matter; single report, so graded isolated.
+### 9. Nobody checked the upload before the show
+
+**Cost: an unrecoverable stream that looked fine in the room.** A post-mortem write-up of 50
+failed streams reports that several streamers had never actually checked upload bandwidth before
+going live, and that a single Wi-Fi drop ended streams outright because no fallback existed
+[SEARCH-EXTRACT: https://yostream.io/blog/why-live-streams-fail/ ; secondary source, treat as
+indicative]. This is the amateur end of the population, but it is the same tool stack.
 
 ---
 
 ## Paper / Excel / WhatsApp inventory
 
-**This is the weakest section of the dossier and I am not going to pretend otherwise.** The
-sources that would document it — Reddit, ProSoundWeb, Control Booth, church-AV blogs, German
-event-tech forums — were unreachable. What follows separates what is attested from what is
-inference.
+Specific artefacts. Where the artefact is attested in a source I read, that is marked; where it
+is a reasonable inference from the corpus, that is marked too, and it should be confirmed by
+interview before anything is built on it.
 
-### Attested, in sources I read this session
+### Attested
 
-**In hand-edited config files (the streaming engineer's real "spreadsheet"):**
-
-- `config.json` for the scene-switcher: thresholds, scene names three times over, obs-websocket
-  password, chat platform, admin usernames, per-command permission lists, and the ingest server's
-  auth block. Reproduced in full in
-  [NOALBS#178](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178) and
-  [#157](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/157) **[FACT]**
-- `config.ini` for the obs-websocket HTTP bridge: address, port, auth key, obsws connection
-  ([IRLToolkit README](https://raw.githubusercontent.com/IRLToolkit/obs-websocket-http/master/README.md))
-  **[FACT]**
-- A `docker run` command line holding every platform key
-  ([Prism README](https://raw.githubusercontent.com/MorrowShore/Prism/master/README.md)) **[FACT]**
-- `readme.txt` settings files that "will not launch out of the box until the bare minimum of
-  required settings are correctly configured"
-  ([Loopy README](https://raw.githubusercontent.com/loopy750/SRT-Stats-Monitor/main/README.md))
-  **[FACT]**
-
-**In Excel — one direct data point for the adjacent surface:** a Companion user asked to export
-the button configuration to Excel, edit it there and import it back, because clicking each button
-individually was untenable ([companion#1339](https://github.com/bitfocus/companion/issues/1339),
-2020, closed) **[FACT]**.
-
-**In Discord — attested and important.** The streaming stack's documentation of record is a chat
-server. NOALBS, Loopy and BELABOX all route support there; the Loopy README even names a specific
-streamer's Discord as the place where "both the hardware and software can be confusing at first,
-but as a community, helping each other, we can iron out all the bugs"; and users escalate to
-GitHub only after "no one has replied to me on Discord"
-([obs-multi-rtmp#88](https://github.com/sorayuki/obs-multi-rtmp/issues/88)) **[FACT]**.
-[INFERENCE] For this role, **Discord is what WhatsApp is for the rest of the crew**: the real
-knowledge base, unsearchable, unversioned, and gone when the server dies.
-
-**In public chat — attested and startling.** The IRL convention is to expose the connection state
-of the production *to the audience*, as chat-bot commands `!bitrate` / `!b`, with `!fix` and
-`!switch` reserved to moderators
-([NOALBS#178 config](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178))
-**[FACT]**. There is no production-internal status channel, so the public one is used.
-
-### Carried over from the corpus (second-hand, re-verify before building)
-
-- **Paper is still load-bearing next door.** A paper routing sheet for a 40x40 router, in current
-  use ([bmd-videohub#9](https://github.com/bitfocus/companion-module-bmd-videohub/issues/9), 2020,
-  open), and printed rundowns / PDF exports as an explicit requirement
-  ([ontime#542](https://github.com/cpvalente/ontime/issues/542)) — both from
-  [`technical-director.md`](./technical-director.md) **[SECOND-HAND]**
-- **Excel is the universal substrate.** Sixteen separate Excel/Sheets import-export issues in the
-  rundown tool between 2021 and 2026, chosen for "easy collaboration with others"
-  ([ontime#194](https://github.com/cpvalente/ontime/issues/194)) **[SECOND-HAND]**
-- **WhatsApp/e-mail traffic: [UNKNOWN].** [`workflow-chain.md`](../workflow-chain.md) reached the
-  same conclusion for the whole corpus and marked it unobservable without practitioner forums.
+| Artefact | Medium | Evidence |
+| --- | --- | --- |
+| **IP address / device plan for the production network** | Excel | Broadcast networks contain thousands of endpoint addresses; "keeping a record of these is a logistical nightmare", and broadcasters "traditionally maintain spreadsheets that need manual intervention to keep them up to date" — the stated motivation for NMOS is reducing "reams of spreadsheets" [SEARCH-EXTRACT: https://www.thebroadcastbridge.com/content/entry/6303/understanding-ip-broadcast-production-networks-basic-principles-of-ip]. |
+| **Run of show / cue sheet** | Excel, Google Sheets or Numbers | Template libraries for run-of-show exist explicitly in those three formats, marketed for broadcasts and webinars [SEARCH-EXTRACT: https://rundownstudio.app/templates/]. |
+| **Streaming checklist** | Web page printed, or a checklist doc | Multiple vendors publish "the ultimate live streaming checklist" as the operational artefact of record [SEARCH-EXTRACT: https://www.switcherstudio.com/blog/the-ultimate-livestreaming-checklist-to-ensure-smooth-streaming , https://ecamm.com/blog/live-streaming-checklist/]. |
+| **Onsite encoding requirements / technical rider** | PDF or web doc emailed to the venue | Named port lists, per-encoder port assignments, and instructions to disable security controls [SEARCH-EXTRACT: https://help.webcasts.com/books/live-events/page/onsite-encoding-requirements/export/html]. |
+| **Stream keys in chat threads and shared docs** | WhatsApp / Slack / a shared doc | The security guidance is written *against* an observed practice: do not store keys in plain-text shared documents, do not send them through long-lived chat threads, and audit chat history for them [SEARCH-EXTRACT: https://heystream.com/blog/twitch-stream-key-rtmp-setup , https://onestream.live/blog/stream-leak-prevent-stream-hack/]. |
+| **Credentials inside hand-edited config files** | JSON on disk | NOALBS requires OBS websocket password, ingest publisher/app/key and a chat OAuth token in one JSON file [FETCHED: NOALBS README]; a real user's config with credentials was pasted into a public issue [PRIOR-SESSION: NOALBS #157]. |
+| **Day-of coordination in a group chat** | WhatsApp / equivalent | Event-ops writing states group threads "work fine for planning but fall apart on event day when decisions need to happen in seconds" and that on one channel "critical messages get buried"; the recommended fix is *more* channels plus radios/PTT [SEARCH-EXTRACT: https://www.homerunent.com/blog/2026/7/7/event-operations-guide-managing-production-on-event-day , https://www.phaedrasolutions.com/blog/how-to-use-whatsapp-for-event-planning-without-hassle]. |
+| **The intercom workaround** | A phone call | Three operators, two Bluetooth comms connections, graphics op on a cellphone for the duration of a REMI show [SEARCH-EXTRACT: rtsintercoms.com, 2022]. |
 
 ### Inference, clearly labelled
 
-[INFERENCE] The documents I would expect to find for this role, and could not confirm:
+- **The destination sheet.** One tab per show listing platform, ingest URL, key, backup, bitrate,
+  and who owns the account. [INFERENCE] from the double-entry pattern plus the existence of
+  multistreaming products sold on removing exactly this retyping. Not directly attested in a
+  source I read; confirm before building.
+- **The SIM / data-plan inventory.** Which SIM is in which modem, which plan, how much data left.
+  [INFERENCE] supported only by vendor marketing for carrier-neutral broadcast SIMs that promises
+  "the same SIMs work at Silverstone, Monza, the Circuit de Barcelona-Catalunya… without
+  reconfiguration" [SEARCH-EXTRACT: https://weconnect.one/blogs/best-sim-for-liveu-encoder-in-europe-carrier-neutral-broadcasting-sim-compared/ ,
+  vendor source, weak].
+- **The "what we did last time at this venue" note.** [INFERENCE]. The single most valuable
+  document in the role and the one least likely to exist in a shared, findable form.
 
-- a **destination sheet** (platform, URL, key, bitrate cap, contact, who owns the account) that
-  arrives by e-mail from the client and is retyped
-- a **bandwidth/uplink budget** in a spreadsheet, per venue
-- a **redundancy plan** as prose in an e-mail or a slide, not as a model
-- a **printed showtime card** on the encoder position with the fallback procedure
+### Explicitly still unverified
 
-Every one of these is plausible and none is evidenced here. Treat them as hypotheses to test in a
-session with forum access, not as findings.
+German-market specifics about paper and spreadsheet practice remain **unverified**: the German
+sources reachable this session were vendor and trade pages about technique, not practitioner
+accounts of paperwork. Reddit and the professional forums remain unreachable, so the
+first-person "here is my actual spreadsheet" layer is still missing from this dossier.
 
 ---
 
 ## Missing interfaces
 
-Department handovers that break, with the evidence for the break.
+Department handovers that break, in the order they bite.
 
-### Audio → streaming: the mix-minus is designed twice and matches by luck
+### Audio → streaming: the stream mix is designed twice
 
-The "THE PAIN" report ([vdo.ninja#1218](https://github.com/steveseguin/vdo.ninja/issues/1218),
-2025-12) describes the topology in the engineer's own words: venue video mixer feed *and* audio
-mixer feed into the conferencing platform, and the platform's video and audio outputs back into
-both mixers. Two departments each own half of a loop, and the loop's correctness — that no
-participant hears themselves, that the remote speaker hears the room and not their own return —
-is nobody's documented deliverable. **[FACT]**
-
-A related structural gap: remote-contributor audio arrives as a single mixed stream rather than
-per-participant tracks, so the audio department cannot treat remote guests like local ones
-([vdo.ninja#898](https://github.com/steveseguin/vdo.ninja/issues/898), 2021: a user who routed the
-audio through an entirely separate system, Studio Link + Reaper, to get isolated tracks;
-[vdo.ninja#276](https://github.com/steveseguin/vdo.ninja/issues/276), complex channel routing
-"experimentally possible now. compatibility = low") **[FACT]**
+The PA mix and the stream mix are different products with different targets, and the handover is
+usually a matrix send and a verbal agreement. Nothing in either department's tooling records what
+the stream mix is supposed to contain, whether the mix-minus for remote guests is correct, or
+what the loudness target is. The remote-contribution layer makes it worse: VDO.Ninja's mix-minus
+lives in a URL parameter on the director link and does not survive being written down anywhere
+[SEARCH-EXTRACT: docs.vdo.ninja/advanced-settings/other-parameters]. **Frequency: recurring**
+[INFERENCE, corroborated by the echo-troubleshooting procedure being "mute people one at a time"].
 
 ### Switcher/TD → remote contributors: no tally crosses the boundary
 
-Local talent and camera ops get tally. Remote contributors get nothing, and the person calling the
-show cannot see who is live either. The request, from someone describing exactly the REMI split:
+On-air indication for remote guests has been an open request in the dominant remote-contribution
+tool since 2020–2021 [PRIOR-SESSION: vdo.ninja #569 tally in director view, #654 on-air
+indication and audible alert for guests, both open]. Meanwhile the in-room tally chain is solved.
+The result is a class of guest who does not know they are live. **Frequency: recurring.**
 
-> "With the mention of #438 Multiple Directors I can see a use case where one person may be running
-> 'tech/operator' for a event with a 2nd person remotely acting as a 'Stage manager' calling the
-> show/transitions … it would be more beneficial to watch the composited shot live and have just
-> the director's 'Dashboard' available to see the status of everyone's feeds and quickly see who
-> is live."
-> — [vdo.ninja#569](https://github.com/steveseguin/vdo.ninja/issues/569), 2020-12, open **[FACT]**
+### Encoders and platforms → the show control surface
 
-A parallel request asks for on-air indication and audible warning at the *contributor* end
-("tally lights — yellow border when visible in OBS, red when visible in OBS and OBS status is
-streaming", plus "audible alert when video becomes visible in OBS (for guests waiting to be
-interviewed)") — [vdo.ninja#654](https://github.com/steveseguin/vdo.ninja/issues/654), 2021
-**[FACT]**.
+Companion can drive OBS, vMix, ATEM, ProPresenter, lighting and audio
+[SEARCH-EXTRACT: https://bitfocus.io/companion , https://www.crazyamazingdesigns.com/knowledge-base/bitfocus-companion-streamdeck-church-production].
+It cannot, generally, drive the hardware encoder or read the platform's health. The
+module-request tracker is a list of exactly that gap left open for years: Wowza Clearcaster
+(2020), Haivision KB (2020), Cerevo LiveShell "simple start and stop" (2021), Teradek VidiU Go
+(2022), Matrox Maevex 6120 (2022), Resi (2022), TBS 2603se (2023), DataVideo NVS-33 (2023), and
+in 2026 a request for **stream up/down as a trigger** [PRIOR-SESSION: companion-module-requests
+#177, #194, #540, #790, #815, #880, #1080, #1143, #2075 — all open]. **Frequency: widespread**
+on criterion (b): the ecosystem concedes it by leaving nine such requests open.
 
-[LOCAL] This gap is directly addressed by two repositories already in this workspace:
-`tally-pi` (browser tally by QR code, ATEM-driven) and `Broadcast-intercom` (browser beltpacks via
-invite link, Companion control endpoint). Neither currently claims a *remote-contributor* mode.
-
-### Encoders → show control: the transmission chain is not on the button surface
-
-Everything else in a modern show is on a Stream Deck through Companion. Encoders are not. Eight
-separate module requests, all open, spanning 2020–2023, all asking for essentially one thing —
-start and stop:
-
-| Request | Device | Date | What they asked for |
-| --- | --- | --- | --- |
-| [#177](https://github.com/bitfocus/companion-module-requests/issues/177) | Wowza Clearcaster | 2020-03 | module request |
-| [#194](https://github.com/bitfocus/companion-module-requests/issues/194) | Haivision KB Encoder | 2020-04 | control |
-| [#540](https://github.com/bitfocus/companion-module-requests/issues/540) | Cerevo LiveShell | 2021-06 | "a simple start and stop is all I need" |
-| [#790](https://github.com/bitfocus/companion-module-requests/issues/790) | Teradek VidiU Go | 2022-04 | module request |
-| [#815](https://github.com/bitfocus/companion-module-requests/issues/815) | Matrox Maevex 6120 | 2022-05 | "Use Case: Start and Stop the streaming" |
-| [#880](https://github.com/bitfocus/companion-module-requests/issues/880) | Resi Encoder | 2022-08 | start/stop encoder, schedule an event |
-| [#1080](https://github.com/bitfocus/companion-module-requests/issues/1080) | TBS 2603se | 2023-03 | "start/stop my encoder stream from my streamdeck XL" |
-| [#1143](https://github.com/bitfocus/companion-module-requests/issues/1143) | DataVideo NVS-33 | 2023-05 | record + stream control, HTTP API PDF attached |
-
-**[FACT — all read this session]** Plus [#2075](https://github.com/bitfocus/companion-module-requests/issues/2075)
-(2026-05) asking to trigger actions on stream up/down for Shoutcast/Icecast — i.e. wanting the
-*stream state* as a trigger source, not just a button target.
-
-[INFERENCE] The consequence at showtime: "go live" is one action for the whole show except the
-part that actually goes live, which is a different person on a different screen. That is exactly
-where a missed start or a stray stop comes from.
+The 2026 request is the important one. "Stream up/down as a trigger" is the missing primitive
+for the entire alarm path: it would let the transmission chain announce its own state to the same
+button surface everyone else is already watching.
 
 ### Monitoring → the production's alarm path
 
-The stream's health lives in a web stats page, a Grafana board, a chat bot, or a second monitor —
-never in intercom, never on the multiviewer, never in the rundown. Evidenced by the fact that the
-entire monitoring category is user-built (see Time sinks §3) and that its output channel of last
-resort is *public chat* **[FACT]**.
+Encoder telemetry, CDN health and player analytics live in three consoles and are correlated by a
+human under time pressure [SEARCH-EXTRACT: obsbot.com/blog/live-streaming/streaming-monitoring].
+There is no shared, production-shaped "the stream is healthy" indicator that a TD, a producer and
+a client can all look at. **Frequency: widespread** on criterion (c): a practitioner-facing blog
+and a monitoring vendor describe the same fragmentation.
 
 ### Rundown → transmission
 
-[INFERENCE] A rundown says what happens; it does not say "start recording here", "the second
-destination joins at item 4", "the archive must be cut here". [`technical-director.md`] documents
-the rundown tool's own gaps (Excel import, print/PDF) but nothing about a transmission column
-**[SECOND-HAND]**. A targeted search of the rundown tool's issues for OBS/stream integration
-returned nothing this session — recorded as **unverified**, not as absence.
+The rundown says what happens. It does not say what the transmission chain must do at each point:
+when to start and stop each destination, when the vertical/social output is needed, when a
+segment must not be published, when to switch to the backup path for a sponsor read. The
+streaming engineer reads the rundown and translates it into their own head or their own notes.
+**Frequency: recurring** [INFERENCE, consistent with run-of-show templates being generic
+spreadsheets with no transmission column — https://rundownstudio.app/templates/].
 
 ### Client → engineer: account ownership
 
-[INFERENCE] The stream key belongs to an account somebody else owns. Nothing in the reachable
-evidence describes a handover mechanism for it — no scoped credential, no expiry, no delegation.
-The observable substitute is the engineer holding the client's key in a config file. Flagged as
-the most consequential unverified item in this dossier.
+The platform account belongs to the client; the responsibility for what it broadcasts belongs to
+the engineer. Key rotation, permission grants and event creation therefore sit on a boundary with
+no defined interface, which is why keys travel by chat message
+[SEARCH-EXTRACT: heystream.com, onestream.live]. **Frequency: recurring** [INFERENCE from the
+security guidance being written against this exact practice].
+
+### Captions / accessibility
+
+"Captioning usually fails at the handoff points" is the explicit framing in an accessibility
+trade explainer, which argues captioning should be treated as a live performance workflow rather
+than a text output [SEARCH-EXTRACT: https://translators-usa.com/real-time-captioning-services].
+The handoff in question — clean audio to the captioner, caption data back into the encoder as
+CEA-608 or CMAF ingest — crosses at least two departments and one vendor
+[SEARCH-EXTRACT: https://www.syncwords.com/products/automated-live-captions-using-srt-streaming].
+**Frequency: recurring.**
 
 ---
 
 ## Workflows that are needlessly complicated
 
-1. **Multi-destination requires either re-encoding or a mystery.** Users cannot tell whether
-   changing the per-destination bitrate away from "Get from OBS" costs them a second encode:
-   "I see if I change it from 'Get From OBS' I can adjust the bitrate.. but I have a feeling I
-   don't want to change it from this setting"
-   ([obs-multi-rtmp#344](https://github.com/sorayuki/obs-multi-rtmp/issues/344), 2023) **[FACT]**.
-   The same uncertainty in Restreamer is a feature request to *reuse* an encode rather than repeat
-   it, with a careful analysis of when passthrough is and is not offered
-   ([restreamer#873](https://github.com/datarhei/restreamer/issues/873), 2025-01) **[FACT]**.
-2. **Outputs cannot be started together.** A request from 2020, open, 16 comments: a provider
-   requires all bitrate variants to start simultaneously, and the plugin can only start them one
-   at a time ([obs-multi-rtmp#17](https://github.com/sorayuki/obs-multi-rtmp/issues/17)) **[FACT]**.
-3. **Bandwidth is allocated by whoever connects first.** "it seems that it is sending all the
-   bitrate (or most of it) to the main server … leaving almost nothing to stream to the other two
-   … I don't know how or if it is possible to 'split' or assign the total bitrate"
-   ([obs-multi-rtmp#88](https://github.com/sorayuki/obs-multi-rtmp/issues/88), 2021) **[FACT]**.
-4. **Monitoring requires standing up a stats server you do not otherwise need.** A user with only
-   USB cameras asks how to get OBS's own bitrate instead of running nginx purely to be measured
-   ([NOALBS#82](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/82),
-   2022, open) **[FACT]**.
-5. **Two ingest sources is a config-file research project.** A user wanting a hand-off between two
-   contributing streamers, with the fallback firing only when *both* are down, guessed at the JSON
-   structure and got it wrong
-   ([NOALBS#47](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/47),
-   2021; [#60](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/60))
-   **[FACT]**. The feature now exists as a `streamServers` array with `priority` and `dependsOn` —
-   still hand-edited JSON.
-6. **The auto-configuration wizard lies about its own state.** Un-ticking enhanced broadcasting
-   and re-running the tests leaves it enabled in the results
-   ([obs-studio#11264](https://github.com/obsproject/obs-studio/issues/11264), 2024-09, open)
-   **[FACT]**.
-7. **Bonding requires OS-level routing setup before the streaming tool will work at all**
-   ([BELABOX/srtla README](https://raw.githubusercontent.com/BELABOX/srtla/master/README.md))
-   **[FACT]**.
+1. **Simulcasting with different quality per platform.** Should be one program, N encodes, N
+   destinations. Is: a plugin whose per-destination quality question goes unanswered
+   [FETCHED: obs-multi-rtmp #448], a switcher that disables multi-bitrate the moment you add a
+   second destination [SEARCH-EXTRACT: vmix.com/help23], or a third-party cloud service inserted
+   into the delivery path.
+2. **Making failover real.** Should be: declare a backup, the system enforces parameter parity
+   and lets you test it. Is: manually mirror six settings across two encoders, then deliberately
+   pull the plug in rehearsal and watch [SEARCH-EXTRACT: docs.castr.com backup-ingest].
+3. **Getting an alarm when the stream dies.** Should be a property of the encoder. Is: a separate
+   Rust program polling a stats page, plus a phone on cellular, plus a chat bot
+   [FETCHED: NOALBS README, #178].
+4. **Putting the encoder on the button surface.** Should be a module. Is: nine open module
+   requests and a browser tab [PRIOR-SESSION: companion-module-requests].
+5. **Sending a stream key to a colleague.** Should be a scoped, revocable share. Is: a chat
+   message that security guidance explicitly tells you not to send
+   [SEARCH-EXTRACT: onestream.live, gitguardian].
+6. **Choosing SRT connection direction.** Should follow from the network topology automatically.
+   Is: a human reasoning about NAT, port-forwards and PAT, per link, per venue
+   [SEARCH-EXTRACT: doc.haivision.com, kiloview PDF].
+7. **Proving what happened.** Should be an exportable transport record. Is: log files, a screen
+   recording of a console if someone thought of it, and hobby-built stats exporters
+   [PRIOR-SESSION: SRT-Stats-Monitor, SRTExporter].
+
+---
 
 ## Software they use grudgingly, and why
 
-| Tool | Why grudgingly | Evidence |
-| --- | --- | --- |
-| **Zoom / Teams as a contribution path** | Wrong tool, right politics — used because the client lives there, and because its per-participant pinning is something purpose-built tools do not offer | [vdo.ninja#1218](https://github.com/steveseguin/vdo.ninja/issues/1218) **[FACT]** |
-| **Self-hosted relay on a personal VPS** | Chosen explicitly to avoid a subscription — "No need to pay restream or cloudflare!" — which means the engineer now personally operates production infrastructure | [Prism README](https://raw.githubusercontent.com/MorrowShore/Prism/master/README.md) **[FACT]** |
-| **A vendor's cloud relay** | The opposite trade: the free/self-hostable server component is declared "unsupported, no longer under development and not suitable for production deployment", with a sign-up link | [BELABOX/srtla README](https://raw.githubusercontent.com/BELABOX/srtla/master/README.md) **[FACT]** |
-| **Hand-edited JSON/INI configs** | The only interface offered by the safety-net tooling | NOALBS, Loopy, obs-websocket-http **[FACT]** |
-| **Twitch/YouTube "enhanced broadcasting" / platform-managed encoding** | Takes control of encoder settings and leaks state across services | [obs-studio#11079](https://github.com/obsproject/obs-studio/issues/11079), [#11264](https://github.com/obsproject/obs-studio/issues/11264), [#13127](https://github.com/obsproject/obs-studio/issues/13127) **[FACT]** |
-| **Discord as documentation** | Because there is no documentation | Loopy README; [obs-multi-rtmp#88](https://github.com/sorayuki/obs-multi-rtmp/issues/88) **[FACT]** |
+| Software | Why grudgingly |
+| --- | --- |
+| **Microsoft Teams as a contribution path** | Client-mandated; practitioner reports of roughly 480p from 4K sources and compressed audio through a switcher, versus Zoom looking professional on the same setup [SEARCH-EXTRACT: techcommunity.microsoft.com, learn.microsoft.com Q&A]. |
+| **Cloud multistreaming services (Restream, StreamYard, Castr, Livepush)** | They remove the metadata retyping, which is real relief, at the price of putting a third party in the delivery path and taking away encoder control [SEARCH-EXTRACT: vendor pages, above]. |
+| **obs-multi-rtmp** | Necessary and unmaintained-feeling: 213 open issues, the core per-destination-quality question unanswered, and a documented path by which it drags the main encoder down [FETCHED: #448, #458; obs-studio #13147]. |
+| **Platform consoles** | One login and one metadata form per platform, and each defines "backup" differently. |
+| **Webinar/hybrid-event platforms** | Widely described as clunky producer portals with a learning curve that causes friction when onboarding guest speakers [SEARCH-EXTRACT: https://webinarninja.com/blog/live-webinar-platforms/ , vendor-comparison content — weak source, but the complaint recurs across several]. |
+| **Excel** | Used for the IP plan, the destination list and the run of show because nothing better exists that all departments can open; conceded in the broadcast IP literature as a manual-maintenance burden [SEARCH-EXTRACT: thebroadcastbridge.com]. |
+| **NOALBS and friends** | Relied on precisely because no product ships the function, and distrusted because its failure mode is to park the show on a slate [FETCHED: #178, #119]. |
 
 ---
 
 ## What they would want
 
-Their words, not mine. Every item below is a request an identifiable user actually filed.
+Their own stated wishes, from the sources — not my product ideas.
 
-1. **Per-destination bitrate and rate control without a second encode.**
-   "I'd like to send the maximum bitrate for Twitch but adjust the plugin to send more for
-   YouTube" ([obs-multi-rtmp#344](https://github.com/sorayuki/obs-multi-rtmp/issues/344)); "Such as
-   'Rate control' (CBR or VBR) and 'Profile' … because each platform have it's own requirements"
-   ([#329](https://github.com/sorayuki/obs-multi-rtmp/issues/329)) **[FACT]**
-2. **Start all destinations with one action.**
-   "Can an option be set in the plugin to 'select all' to start? Or it could also be that ALL
-   outputs start when the start button is pushed in the main OBS controls"
-   ([obs-multi-rtmp#17](https://github.com/sorayuki/obs-multi-rtmp/issues/17)) **[FACT]**
-3. **Explicit bitrate allocation across destinations**, instead of first-come-first-served
-   ([obs-multi-rtmp#88](https://github.com/sorayuki/obs-multi-rtmp/issues/88)) **[FACT]**
-4. **Reuse one encode for several platforms** rather than transcoding per destination
-   ([restreamer#873](https://github.com/datarhei/restreamer/issues/873)) **[FACT]**
-5. **Choose your own stream key**, so the URL is memorable and documentable:
-   "is it possible to use your own custom streamkey? So that the URL looks like
-   `rtmp://mydomain.com/live/my_key`?" ([restreamer#961](https://github.com/datarhei/restreamer/issues/961))
-   **[FACT]**
-6. **Encoder start/stop on the show's button surface.** Eight open requests; the most direct is
-   "a simple start and stop is all I need"
-   ([companion-module-requests#540](https://github.com/bitfocus/companion-module-requests/issues/540))
-   **[FACT]**
-7. **Stream state as a trigger, not just a target** — fire actions when the stream goes up or down
-   ([companion-module-requests#2075](https://github.com/bitfocus/companion-module-requests/issues/2075),
-   2026) **[FACT]**
-8. **Automatic calculation of transport parameters.**
-   "Add a functionality for best parameter tweak calculation" ([srt#621](https://github.com/Haivision/srt/issues/621));
-   "Is there a mechanism in SRT to check loss continuously?" and set latency/overhead accordingly
-   ([srt#460](https://github.com/Haivision/srt/issues/460)) **[FACT]**
-9. **Guidance documents that agree with themselves** ([srt#3168](https://github.com/Haivision/srt/issues/3168),
-   [srt#656](https://github.com/Haivision/srt/issues/656)) **[FACT]**
-10. **A fallback that tolerates a transient monitoring outage.**
-    "Is there a way that NOALBS can ignore this behavior and not switch to the offline scene
-    immediately?" ([NOALBS#125](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/125))
-    **[FACT]**
-11. **Health measured at the switcher, not at a separate server** they had to erect for the purpose
-    ([NOALBS#82](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/82))
-    **[FACT]**
-12. **Multiple contribution sources with priority and hand-off**, so two contributors can swap
-    without the automation cutting to a card
-    ([NOALBS#47](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/47),
-    [#60](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/60)) **[FACT]**
-13. **Per-guest routing and a director dashboard showing who is live**
-    ([vdo.ninja#1218](https://github.com/steveseguin/vdo.ninja/issues/1218),
-    [#569](https://github.com/steveseguin/vdo.ninja/issues/569),
-    [#654](https://github.com/steveseguin/vdo.ninja/issues/654)) **[FACT]**
-14. **Bonding that can be told to ignore an interface.** "allow excluding an interface from RIST
-    bonding. RIST currently has no per-interface control; SRT connection priorities don't apply to
-    RIST, and SRTLA doesn't bond VPN-type interfaces, so there is no workaround"
-    ([moblin#418](https://github.com/eerimoq/moblin/issues/418)) **[FACT]**
-15. **Edit the control-surface configuration in a spreadsheet**, because clicking each item is
-    untenable ([companion#1339](https://github.com/bitfocus/companion/issues/1339)) **[FACT]**
+1. **"Stream up/down as a trigger."** A 2026 Companion module request, still open: make the
+   transmission chain's state available to the show-control surface
+   [PRIOR-SESSION: bitfocus/companion-module-requests #2075].
+2. **Encoder control on the button surface.** Nine separate module requests naming specific
+   encoders, one of them explicitly asking for nothing more than "simple start and stop"
+   [PRIOR-SESSION: companion-module-requests #177, #194, #540, #790, #815, #880, #1080, #1143].
+3. **Different settings per destination from one program.** Stated verbatim: "I want to broadcast
+   via two plattforms with different settings; YT 4k, TWITCH 1080p"
+   [FETCHED: obs-multi-rtmp #448, 2024-10-26, open].
+4. **Transmission problems must not damage local encoding.** Stated as a design principle by a
+   reporter whose recording was ruined by an upload stall: stream upload connectivity should be
+   isolated from encoder logic [FETCHED: obs-studio #13147, closed as not planned].
+5. **One place to orchestrate destinations.** "I would like to tell OBS just stream to this
+   address, then in restreamer I can orchestrate streams to YouTube, Periscope, etc. all in the
+   perfect transcoding options independently to every network"
+   [FETCHED: https://github.com/datarhei/restreamer/issues/76 , 2019 — old, but the same request
+   recurs in #278, #873, #961].
+6. **A parameter calculator instead of folklore.** Long-standing requests on the SRT tracker for
+   best-parameter calculation and a bandwidth-overhead table
+   [PRIOR-SESSION: Haivision/srt #621, #656].
+7. **On-air indication for remote guests.** Open since 2020–2021
+   [PRIOR-SESSION: vdo.ninja #569, #654].
+8. **Custom, controllable stream keys.** Repeatedly asked of self-hosted ingest software
+   [FETCHED: restreamer #961, #823].
+9. **Predictability over peak performance.** The industry-level version, from the trade press:
+   reliability depends on consistency more than on the lowest latency, and the discipline that
+   matters is planning for failure rather than tuning for speed
+   [SEARCH-EXTRACT: newscaststudio.com 2026 REMI roundtable].
 
 ---
 
 ## Implications for AV Planner Suite
 
-The suite already claims the adjacent territory: Cable Planner's own README describes planning
-"from camera to switcher to **encoder**" [LOCAL]. Today the encoder is where the drawing stops.
-Everything in this dossier says the interesting half of the problem starts there.
+Concrete, ordered by evidence strength. Each states what the evidence actually supports and what
+it does not.
 
-### 1. Model the delivery path as first-class signal flow, not as a note on the last node
+### 1. Model the delivery path as first-class signal flow
 
-[INFERENCE, grounded in the evidence above] Extend the Cable Planner node/edge model past the
-encoder: **encoder → uplink(s) → relay/ingest → destination(s)**. The edges need typed parameters
-the engineer already fights with: protocol (RTMP/RTMPS/SRT/SRTLA/RIST/NDI), caller/listener role,
-latency, passphrase-present flag, streamid, target bitrate, and — critically — a **path group**
-so an A/B pair is visible as redundancy rather than as two unrelated lines.
+Cable Planner already models SDI and device connections. The transmission chain — encoder,
+transport (SRT/RTMP/RIST/SRTLA), destination, backup destination — is signal flow that currently
+falls off the end of the diagram as a note on the last node. Making it a modelled path is the
+prerequisite for everything below, and it fits the existing domain model (`EquipmentItem`,
+`Cable`, `LocationFrame`) rather than fighting it.
 
-Why this specifically: [moblin#418](https://github.com/eerimoq/moblin/issues/418) shows a
-redundancy plan that was correct on paper and catastrophic in practice because the two paths were
-not equal. A planner that renders "two paths" without asking *which carrier, which route, which
-failure mode* reproduces the same illusion.
+*Evidence:* the whole of this dossier. *Risk:* none identified.
 
 ### 2. A destination register with real secret handling
 
-The repository already stores Rentman tokens in the OS credential store via `keytar`, and CLAUDE.md
-states the rule: external tokens "niemals loggen oder ins Projekt-File schreiben" [LOCAL]. **Apply
-exactly that rule to stream keys.** The destination is project data (platform, ingest URL, bitrate
-cap, key *reference*, owner, contact); the key itself is a keytar entry.
+A per-project register of destinations: platform, ingest URL, key, backup URL, backup key,
+required encoding parameters, and account owner. Keys must go through the OS credential store —
+the Cable Planner CLAUDE.md already mandates `keytar` for Rentman tokens and forbids writing
+external tokens into the project file, and stream keys are exactly the same class of secret.
 
-This addresses two findings at once: the duplication (one register, exported everywhere) and the
-leakage (the config you paste into a support thread no longer contains the key —
-[NOALBS#157](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/157)).
+*Evidence:* [FETCHED] restreamer #823/#961; [SEARCH-EXTRACT] gitguardian remediation playbooks,
+onestream.live and heystream.com both instructing that keys must not live in shared docs or chat.
+*What the evidence does not support:* that engineers want the tool to *hold* the live key rather
+than reference it. Offer both: a reference/placeholder mode and a stored-secret mode.
 
-Practical consequence for the print/PDF path: a redacted printable destination sheet is the
-artefact that can safely be handed to a client or pinned at the encoder position.
+### 3. Parameter-parity checking for redundancy
 
-### 3. Export configuration instead of making people retype it
+If a destination declares a backup, the plan should compare resolution, codec, bitrate,
+framerate, keyframe interval and audio sample rate between primary and backup and flag a
+mismatch. This is a cheap, deterministic check that directly targets a documented failure.
 
-The double-entry table has one shape: the same handful of facts, in five formats. The suite is
-well placed to be the authoring surface and emit the rest. Ranked by evidence strength:
+*Evidence:* [SEARCH-EXTRACT] YouTube backup-ingest requirements — mismatch breaks failover.
+*Strength:* high; it is a platform-documented rule, not an opinion.
 
-- **OBS**: scene collection / profile JSON, and stream-service settings
-- **Multi-destination plugin**: per-destination URL + key + bitrate
-- **Scene-switcher (`config.json`)**: scene names, thresholds, stream-server entries with
-  `priority`/`dependsOn` — the exact structure users guess at wrongly
-  ([NOALBS#47](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/47))
-- **Companion**: a generated page of buttons for the transmission chain
-- **Relay**: nginx-rtmp / Restreamer / Prism destination blocks
+### 4. Export configuration instead of making people retype it
 
-[INFERENCE] Even a one-way export is worth more than nothing here, because the alternative is a
-human retyping a GUID at 17:50.
+Emit the delivery configuration in the forms the downstream tools consume: an OBS profile /
+scene-collection fragment, a vMix streaming preset, a NOALBS JSON skeleton (with secrets left as
+references, never inlined), and a human-readable destination sheet for the run of show.
 
-### 4. A transport calculator, using the published formulas
+*Evidence:* [FETCHED] the NOALBS README's config surface; [PRIOR-SESSION] the OBS profile and
+scene-collection export defect history. *Caveat:* these formats change; treat exporters as
+best-effort and versioned, and never claim they are authoritative.
 
-The formulas for SRT receiver buffer, flow-control window and latency are public and were read in
-full this session; their problem is that they are inconsistent between two sections of the same
-document ([configuration-guidelines.md](https://raw.githubusercontent.com/Haivision/srt/master/docs/API/configuration-guidelines.md);
-[srt#3168](https://github.com/Haivision/srt/issues/3168)). A planner that takes **measured RTT,
-measured/assumed loss, target bitrate and MTU** and produces latency, `SRTO_FC`, `SRTO_RCVBUF` and
-the resulting bandwidth overhead — showing its working, and citing which formula it used — is a
-small, high-confidence feature that removes an hours-long research task per route.
+### 5. A transport calculator using published formulas
 
-This belongs in `src/renderer/lib/` alongside the existing length/power calculations, per the
-CLAUDE.md placement table [LOCAL].
+SRT latency from measured RTT, bandwidth overhead, and a bitrate-vs-uplink headroom check. Show
+the formula and its source next to the number, because the published guidance disagrees with
+itself and an unattributed number would be worse than none.
 
-### 5. Make redundancy checkable, not decorative
+*Evidence:* [SEARCH-EXTRACT] the 3–4× RTT rule versus fixed 1,500–2,500 ms practice; the German
+40% headroom rule; [PRIOR-SESSION] the SRT tracker's own open requests for such a calculator.
+*Placement:* `src/renderer/lib/` per the existing convention for calculations.
 
-[INFERENCE] Given a modelled path graph, the checks are mechanical and would have caught real
-failures in this dossier:
+### 6. Make the network ask a generated artefact
 
-- two "redundant" uplinks that terminate on the same relay, the same VPS provider, or the same
-  carrier
-- a destination with no second path at all
-- a monitoring source (stats endpoint) that lives on the same host as the thing it monitors —
-  precisely the [NOALBS#125](https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/125)
-  false-offline failure
-- an ISO recording whose only copy is on the machine doing the encoding
-  ([obs-studio#12087](https://github.com/obsproject/obs-studio/issues/12087))
+The venue-IT document — required upload, ports, per-encoder path, static addresses — is currently
+hand-written per event and reads as unreasonable to the recipient. Generate it from the modelled
+delivery path, and let the plan record the answer (what was granted, what was refused, what the
+workaround was) so the next show at that venue starts from knowledge.
 
-### 6. Connect the suite's own tally and intercom work to remote contributors
+*Evidence:* [SEARCH-EXTRACT] help.webcasts.com onsite encoding requirements; videosdk.live and
+dacast on port 1935; trivisionstudios on dedicated upload. *This is the "what we did last time at
+this venue" note, made into a real artefact.*
 
-`tally-pi` already serves a browser tally page by QR code; `Broadcast-intercom` already issues
-browser beltpacks by invite link and exposes a Companion control endpoint [LOCAL]. The evidenced
-gap is precisely that on-air state and talkback do not cross to remote participants
-([vdo.ninja#569](https://github.com/steveseguin/vdo.ninja/issues/569),
-[#654](https://github.com/steveseguin/vdo.ninja/issues/654)). A remote-contributor mode — the same
-invite-link mechanism, reachable over WAN — is a small extension of something that already exists,
-aimed at a documented hole.
+### 7. Connect the suite's own tally and intercom work to remote contributors
 
-### 7. Offline-first is not a nice-to-have for this role
+The repositories in this account already include browser-based tally and browser-based intercom
+beltpacks. Remote guests are the population with a documented, five-year-old unmet need for
+exactly this. Extending the existing tally/intercom surface to a URL a remote contributor can
+open is a smaller step than it looks.
 
-[INFERENCE] The streaming engineer plans in places with a captive portal and configures encoders
-on a phone hotspot. The suite's existing offline-first posture is a genuine fit; a cloud-only
-planner would be unusable at exactly the moment the plan needs changing.
+*Evidence:* [PRIOR-SESSION] vdo.ninja #569 and #654, both open since 2020–2021; local repos
+`tally-pi` and `Broadcast-intercom`.
 
-### 8. What *not* to build on this dossier
+### 8. Treat "stream state" as a show-control signal
 
-Two tempting features rest on unverified ground and should be confirmed with forum access first:
+If the suite ever emits or consumes show-control events, transmission state belongs in that
+vocabulary. The community has already asked for it in the dominant control surface.
 
-- **Platform metadata management** (titles, descriptions, schedules pushed to each platform's API).
-  Plausible, obviously duplicated, and completely unevidenced in this session.
-- **Anything that assumes a paper transmission sheet exists.** I inferred it; I did not see it.
+*Evidence:* [PRIOR-SESSION] companion-module-requests #2075 (2026, open).
+
+### 9. Offline-first is not optional for this role
+
+The streaming engineer works in venues where the network is the *subject* of the work and is
+frequently hostile, restricted or absent until load-in. A planning tool that requires
+connectivity to open the plan is unusable exactly when it is needed. The Cable Planner
+architecture is already offline-first; this role is the strongest justification for keeping it
+that way.
+
+### 10. What *not* to build on this dossier
+
+- **Do not build a live monitoring dashboard.** The evidence says monitoring is fragmented and
+  painful; it does not say a planning tool is the right place to fix it, and doing it badly would
+  make the suite responsible for a false "all clear".
+- **Do not build multistreaming.** That market is served, and entering the delivery path is a
+  liability the suite should not take on.
+- **Do not model bonded-cellular link behaviour.** The one practitioner account available says
+  real-world bonding performance is not predictable from location
+  [SEARCH-EXTRACT: medium.com/@joelouis761], and no reachable source supports a planning model.
+- **Do not assume the destination sheet exists in the form I inferred.** That specific artefact
+  is [INFERENCE], not attested. Confirm with two practitioners before designing a UI around it.
 
 ---
 
 ## Confidence summary
 
-| Finding | Grade | Basis |
+| Finding | Frequency | Basis |
 | --- | --- | --- |
-| Destination/key config is duplicated across 4–6 systems per show | recurring | 4 independent projects, 6 issues read |
-| Transport parameter tuning is unguided and the docs contradict themselves | recurring | verified directly against the source document |
-| Monitoring and fallback are entirely user-built | widespread | 5+ independent projects exist solely for this |
-| Streams fail silently; detection is out-of-band | recurring | 4 issues, 2021–2024 |
-| Bonded redundancy can route the show into a dead link | recurring | 2 issues, one with measurements, 2024 + 2026 |
-| The safety net fires falsely | recurring | 4 NOALBS issues, 2022–2024 |
-| Encoders are absent from the show's control surface | recurring | 8 open module requests, 2020–2023 |
-| Credentials live in operational config and reach public threads | recurring | 4 sources incl. two pasted configs |
-| Remote-contributor routing/tally is a hand-built loop per event | recurring | 4 vdo.ninja issues, 2020–2025 |
-| Paper / Excel / WhatsApp specifics for this role | **unverified** | forum layer unreachable |
-| Event metadata duplication across platforms | **unverified** | no reachable source |
-| German-market practice | **unverified** | all German sources blocked |
+| Reconnect/dynamic-bitrate failures leave streams dead without alarm | widespread | 6+ dated OBS issues 2020–2026, several open; two read in full this session |
+| No product ships stream-death alarm or automatic fallback | widespread | independent projects exist solely for it; README read in full |
+| Automatic fallback tools fail toward the offline scene | recurring | 4 NOALBS issues, 2022–2024, two read in full |
+| Per-destination quality is unsolved in the common tools | widespread | vMix documents the limitation; OBS plugin issue open, unanswered |
+| Backup ingest requires manual parameter parity, unverified by tooling | widespread | platform documentation states the rule |
+| Transmission faults damage local recordings | recurring | 2 OBS issues; one closed as not planned |
+| Encoder/platform absent from the show-control surface | widespread | 9 open Companion module requests, 2020–2026 |
+| Stream keys travel through chat and shared docs | recurring | security guidance written against the practice; a real leaked config in a public issue |
+| Excel is the medium for IP plans and run of show | recurring | broadcast IP literature concedes it; template market confirms format |
+| Comms is the weak link in REMI and is solved ad hoc | recurring | trade-press account of a phone-call workaround; roundtable quote |
+| Teams as contribution path degrades quality | recurring | multiple practitioner threads on Microsoft's own forums |
+| Remote guests have no on-air indication | recurring | 2 open feature requests since 2020–2021 |
+| The per-show "destination sheet" as a discrete artefact | **unverified** | [INFERENCE] only — confirm before building |
+| German-market paperwork practice | **unverified** | German sources reachable were technique, not practice |
+| First-person practitioner venting (Reddit, pro forums) | **absent** | host unreachable / not indexed |
 
 ---
 
 ## Sources
 
-Every URL below was opened and read in this session unless marked otherwise. Grouped by kind.
+Grouped by directness. **[FETCHED]** pages were opened and read in this session. **[SEARCH-EXTRACT]**
+URLs were named by the search tool, which returned page content, but the host could not be opened
+directly through this session's egress proxy. **[PRIOR-SESSION]** URLs were read in the
+2026-08-28 pass of this dossier.
 
-**Protocol and transport documentation (read in full)**
+### [FETCHED] — GitHub issues and READMEs read in this session
 
-- https://raw.githubusercontent.com/Haivision/srt/master/docs/API/configuration-guidelines.md
-- https://raw.githubusercontent.com/Haivision/srt/master/docs/features/live-streaming.md
+- https://github.com/obsproject/obs-studio/issues/13147 — encoder overload from upload stall damages the local recording (2026-02-20, closed as not planned)
+- https://github.com/obsproject/obs-studio/issues/11877 — instability drops the stream key, not just the connection (2025-02-18)
+- https://github.com/obsproject/obs-studio/issues/2496 — Dynamic Bitrate breaks Automatically Reconnect (2020-03-13, closed)
+- https://github.com/obsproject/obs-studio/issues/4600 — random audio dropouts while streaming and recording (2021-04-26, still open, ~100 comments)
+- https://github.com/obsproject/obs-studio/issues/4250 — SRT "Stream Key" field discarded, must be hand-built into streamid (2021, fixed 2022-11)
+- https://github.com/obsproject/obs-studio/issues/2990 — SRT streamid not set or truncated at "?" (2020-05-27)
+- https://github.com/sorayuki/obs-multi-rtmp/issues/448 — different settings per platform, unanswered (2024-10-26, open)
+- https://github.com/sorayuki/obs-multi-rtmp/issues/458 — Twitch ingest drops at ~25 s, RTMP error 10054, 32–42% frame drops (2024-12-26, open)
+- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178 — stats unreachable, permanent offline scene, config posted (2024-10-23, open)
+- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/119 — sticky offline scene (2022-09-14)
+- https://raw.githubusercontent.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/v2/README.md — full configuration surface
+- https://github.com/datarhei/restreamer/issues/823 — "Help with Stream Key" (2024-09-26, open)
+- https://github.com/datarhei/restreamer/issues/961 — custom stream key (2026-01-07, open)
+- https://github.com/datarhei/restreamer/issues/690 — two outputs configured, one silently missing (2024-02-12, open)
+- https://github.com/datarhei/restreamer/issues/76 — one address in, orchestrated fan-out with per-network transcoding (2019, closed)
+- https://github.com/BELABOX/belaUI/issues — issue list (rendered only partially)
 
-**Issue trackers — transport and bonding**
+### [SEARCH-EXTRACT] — trade press and practitioner-facing publications
 
-- https://github.com/Haivision/srt/issues/460 — determine latency/oheadbw from loss (2018)
-- https://github.com/Haivision/srt/issues/621 — request: best-parameter calculation (2019)
-- https://github.com/Haivision/srt/issues/656 — deployment guide bandwidth-overhead table (2019, open)
-- https://github.com/Haivision/srt/issues/1210 — improve description of latency options (2020)
-- https://github.com/Haivision/srt/issues/2016 — negotiated link latency unknown (2021, open)
-- https://github.com/Haivision/srt/issues/2157 — main/backup switching bandwidth peak (2021)
-- https://github.com/Haivision/srt/issues/2600 — latency semantics questions (2023)
-- https://github.com/Haivision/srt/issues/2749 — passphrase/streamid URI escaping (2023, open)
-- https://github.com/Haivision/srt/issues/2968 — improve live-mode bandwidth measurement (2024, open)
-- https://github.com/Haivision/srt/issues/3168 — inconsistency in receiver-buffer guidelines (2025, open)
-- https://github.com/Haivision/srt/issues/3280 — receiving a live stream with srt-live-transmit (2026)
-- https://github.com/eerimoq/moblin/issues/418 — RIST bonding sends traffic to dead link (2026-07, open)
-- https://github.com/eerimoq/moblin/issues/89 — SRTLA bonding excludes cellular, IPv6/DNS (2024-12)
+- https://www.newscaststudio.com/2026/08/21/industry-insights-remi-moves-from-experiment-to-operating-model/ — REMI roundtable; Horne and Rayner quotes
+- https://www.newscaststudio.com/2026/04/09/nab-show-preview-remote-production-grows-up-as-a-permanent-operating-model/
+- https://rtsintercoms.com/news/2022/intercom-solutions-from-rts-play-key-role-in-pushing-ip-enabled-remote-broadcast-production-the-next-level-%E2%80%93-the-indie-engineer/ — three operators, two Bluetooth channels, graphics op on a phone call
+- https://www.thebroadcastbridge.com/content/entry/6303/understanding-ip-broadcast-production-networks-basic-principles-of-ip — spreadsheets as the traditional IP record
+- https://www.churchproduction.com/magazine/encoding-101-how-streaming-really-works/ — "it just works… until it doesn't" (2026-06-03)
+- https://www.controlbooth.com/threads/help-with-cellular-bonding.47366/ — venue-independent streaming, bonding limits, Instagram workaround
+- https://medium.com/@joelouis761/packet-level-intelligence-the-hidden-variable-determining-cellular-bonding-reliability-361b7e6814c1 — "50 states in 50 days" bonding inconsistency (single account)
+- https://medium.com/innovation-labs-blog/examining-srt-streaming-over-4g-networks-925e71c45cdf
+- https://blackdragoncap.com/perspectives/5-live-broadcast-disasters-and-what-they-teach-about-media-tech-in-2025/ — 2025 Oscars/World Cup stream failures (business blog; weak)
+- https://yostream.io/blog/why-live-streams-fail/ — "lessons from 50 failed streams" (secondary)
 
-**Issue trackers — switcher, destinations, keys**
+### [SEARCH-EXTRACT] — platform, vendor and protocol documentation
 
-- https://github.com/obsproject/obs-studio/issues/11079 — stream keys bleed between services; settings lost (2024)
-- https://github.com/obsproject/obs-studio/issues/4250 — SRT stream key vs streamid (2021)
-- https://github.com/obsproject/obs-studio/issues/11016 — stream stops with no indication (2024)
-- https://github.com/obsproject/obs-studio/issues/5572 — no audio after reconnect; VOD split (2021, 65 comments)
-- https://github.com/obsproject/obs-studio/issues/6557 — reconnect audio bug, second reporter (2022)
-- https://github.com/obsproject/obs-studio/issues/6813 — audio not sent after reconnection (2022)
-- https://github.com/obsproject/obs-studio/issues/6497 — auto-reconnect vs dynamic bitrate on bonded LTE (2022)
-- https://github.com/obsproject/obs-studio/issues/4596 — SRT reconnect while recording (2021, open, 26 comments)
-- https://github.com/obsproject/obs-studio/issues/11062 — SRT freezes after reconnect, stale cached video (2024, open)
-- https://github.com/obsproject/obs-studio/issues/13469 — SRT glitches/artifacts (2026-05, open)
-- https://github.com/obsproject/obs-studio/issues/12087 — network congestion corrupts the recording (2025)
-- https://github.com/obsproject/obs-studio/issues/13772 — CBR not honoured on AMD encoder (2026-08, open)
-- https://github.com/obsproject/obs-studio/issues/11264 — enhanced broadcasting stays enabled in wizard (2024, open)
-- https://github.com/obsproject/obs-studio/issues/13127 — enhanced broadcasting + stream encoder broken on AMD (2026, open)
-- https://github.com/obsproject/obs-studio/issues/12958 — RTSP source does not reconnect (2025, open)
-- https://github.com/obsproject/obs-studio/issues/6366 — random RTMP disconnects (2022)
-- https://github.com/obsproject/obs-studio/issues/7381 — immediate disconnect without reconnect window (2022)
-- https://github.com/obsproject/obs-studio/issues/8966 — clear-text credentials report (2023)
-- https://github.com/obsproject/obs-studio/issues/8953 — scene-collection import changes live scene (2023)
-- https://github.com/obsproject/obs-studio/issues/8635 — scene collection import silently does nothing (2023)
-- https://github.com/obsproject/obs-studio/issues/6398 — crash importing a Windows scene collection on Linux (2022)
-- https://github.com/obsproject/obs-studio/issues/6298 — profile export broken (2022)
-- https://github.com/obsproject/obs-studio/issues/5599 — macOS profile export opens import dialog (2021)
-- https://github.com/obsproject/obs-studio/issues/4600 — random audio dropouts while streaming (2021, open, 100 comments)
-- https://github.com/sorayuki/obs-multi-rtmp/issues/344 — per-destination bitrate uncertainty (2023, open)
-- https://github.com/sorayuki/obs-multi-rtmp/issues/329 — per-destination rate control and profile (2023)
-- https://github.com/sorayuki/obs-multi-rtmp/issues/88 — bitrate allocation across destinations (2021, open)
-- https://github.com/sorayuki/obs-multi-rtmp/issues/17 — start all outputs at once (2020, open, 16 comments)
-- https://github.com/sorayuki/obs-multi-rtmp/issues/305 — same encoder, different bitrate (2023)
-- https://github.com/datarhei/restreamer/issues/823 — "Help with Stream Key" (2024, open)
-- https://github.com/datarhei/restreamer/issues/961 — custom stream key (2026, open)
-- https://github.com/datarhei/restreamer/issues/873 — reuse an encode across platforms (2025, open)
-- https://github.com/datarhei/restreamer/issues/278 — multiple RTMP destinations / key generation (2021)
+- https://www.vmix.com/help23/StreamingMultipleDestinations.html and https://www.vmix.com/help23/StreamingMultiBitrate.html — multi-bitrate disabled with multiple destinations
+- https://stream.twitch.tv/encoding/ and https://streamersize.com/blog/twitch-vs-youtube-bitrate-comparison/ — per-platform bitrate ceilings
+- https://support.google.com/youtube/answer/2853702 (and /3006768) — encoder settings and live errors
+- https://docs.castr.com/en/articles/5023371-backup-ingest-how-to-use-benefits-and-limitations — backup ingest parity requirement and rehearsal test
+- https://doc.haivision.com/SRT/1.5.3/Haivision/srt-connection-modes , https://streamrus.github.io/onpremise-srt-server-docs/en/srt-basics.html , https://www.kiloview.com/downloads/User%20Manual/SRT%20related%20manuals/SRT%20%20Rendezvous%20Mode.pdf — caller/listener/rendezvous and NAT
+- https://vajracast.com/srt-latency-tuning/ — 3–4× RTT versus fixed practical latency
+- https://www.videosdk.live/developer-hub/rtmp/port-rtmp and https://www.dacast.com/support/knowledgebase/firewall-ports-for-rtmp-streaming/ — port 1935 blocking and fallback
+- https://help.webcasts.com/books/live-events/page/onsite-encoding-requirements/export/html — onsite encoding requirements document
+- https://trivisionstudios.com/conference-live-streaming-services-in-dc-a-planning-guide/ — dedicated upload planning
+- https://docs.vdo.ninja/advanced-settings/other-parameters and https://docs.vdo.ninja/common-errors-and-known-issues/echo-or-feedback-issues — mix-minus and echo
+- https://bitfocus.io/companion and https://www.crazyamazingdesigns.com/knowledge-base/bitfocus-companion-streamdeck-church-production — what Companion controls
+- https://www.syncwords.com/products/automated-live-captions-using-srt-streaming — CEA-608 into SRT
+- https://www.obsbot.com/blog/live-streaming/streaming-monitoring and https://touchstream.media/blog/live-stream-monitoring/ — second-device monitoring; fragmented consoles
+- https://callaba.io/video-on-demand — live-to-VOD reprocessing
 
-**Issue trackers — monitoring and automatic fallback**
+### [SEARCH-EXTRACT] — security and credential handling
 
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/178 — stats unreachable, permanent offline scene; full config posted (2024, open)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/157 — config posted with ingest auth credentials (2023, open)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/125 — transient blank stats page causes instant offline switch (2022)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/119 — sticky offline scene (2022, open, 18 comments)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/120 — Kiloview bonded encoder leaves channel at 0 bit/s (2022, open)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/175 — unwanted switching to BRB (2024)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/164 — triggers not taking effect (2024)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/82 — use OBS bitrate instead of nginx stats (2022, open)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/47 — stats for multiple ingest streams (2021)
-- https://github.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/issues/60 — second RTMP source (2021)
+- https://www.gitguardian.com/remediation/twitch-stream-key and https://www.gitguardian.com/remediation/stream-key
+- https://onestream.live/blog/stream-leak-prevent-stream-hack/ — "stream keys live in one place, and that place is not your group chat"
+- https://heystream.com/blog/twitch-stream-key-rtmp-setup — wrong destination as an expensive operator error; test-stream advice
+- https://www.dexerto.com/entertainment/twitch-resets-stream-keys-for-everyone-but-says-passwords-are-safe-after-leak-1670117/
 
-**Issue trackers — remote contribution and control surface**
+### [SEARCH-EXTRACT] — German-language sources
 
-- https://github.com/steveseguin/vdo.ninja/issues/1218 — "THE PAIN": corporate hybrid event routing (2025-12, open)
-- https://github.com/steveseguin/vdo.ninja/issues/569 — tally status in the director view (2020, open)
-- https://github.com/steveseguin/vdo.ninja/issues/654 — on-air indication and audible alert for guests (2021, open)
-- https://github.com/steveseguin/vdo.ninja/issues/898 — per-participant isolated audio tracks into a DAW (2021, open)
-- https://github.com/steveseguin/vdo.ninja/issues/276 — complex audio channel routing (2020, open)
-- https://github.com/steveseguin/vdo.ninja/issues/838 — solo-hear for the director (2021, open)
-- https://github.com/steveseguin/vdo.ninja/issues/665 — director changing a guest's broadcast settings remotely (2021, open)
-- https://github.com/bitfocus/companion-module-requests/issues/177 — Wowza Clearcaster (2020, open)
-- https://github.com/bitfocus/companion-module-requests/issues/194 — Haivision KB Encoder (2020, open)
-- https://github.com/bitfocus/companion-module-requests/issues/540 — Cerevo LiveShell, "simple start and stop" (2021, open)
-- https://github.com/bitfocus/companion-module-requests/issues/790 — Teradek VidiU Go (2022, open)
-- https://github.com/bitfocus/companion-module-requests/issues/815 — Matrox Maevex 6120 (2022, open)
-- https://github.com/bitfocus/companion-module-requests/issues/880 — Resi encoder (2022, open)
-- https://github.com/bitfocus/companion-module-requests/issues/1080 — TBS 2603se (2023, open)
-- https://github.com/bitfocus/companion-module-requests/issues/1143 — DataVideo NVS-33 (2023, open)
-- https://github.com/bitfocus/companion-module-requests/issues/2075 — stream up/down as a trigger (2026, open)
-- https://github.com/bitfocus/companion-module-requests/issues/777 — PTZ + StreamYard church setup (2022, open)
-- https://github.com/bitfocus/companion/issues/1339 — edit button config in Excel (2020)
-- https://github.com/bitfocus/companion/issues/2909 — bulk connection handling on config import (2024, open)
-- https://github.com/bitfocus/companion/issues/3654 — "ignore all" on config import (2025, open)
+- https://www.film-tv-video.de/term-word/remote-production/ — definition of remote production
+- https://www.film-tv-video.de/equipment/2022/08/31/liveu-stellt-rackmount-remi-encoder-lu810-und-lu610s-vor/ — LU810/LU610S bonding
+- https://www.film-tv-video.de/productions/2022/01/26/chancen-und-herausforderungen-bei-remote-produktionen/ — Sony/MoovIT/Vizrt panel
+- https://www.production-partner.de/basics/streaming-plattformen-verstehen-und-nutzen/ — multi-platform distribution means multiple encodes or platform-side fan-out
+- https://www.production-partner.de/basics/tipps-fuer-ein-gelungenes-streaming/ — LTE modem as backup alongside a second line
+- https://www.production-partner.de/story/tividoo-events-streaming-als-gesamtkonzept/ — two enterprise SRT hardware encoders in parallel
+- https://www.uxstream.net/livestream-dienstleister/ — cheap providers, bluescreens and dropped lines; triple-secured internet as the professional differentiator
+- https://www.livecom-gruppe.de/live-event-streaming-technische-anforderungen-und-loesungen/
+- https://contentflow.live/wie-muss-ich-meinen-encoder-richtig-einstellen/ — 40% bandwidth headroom, 1–2 s keyframe interval
+- https://help.movingimage.com/docs/de/livestreaming-encoding-settings — start encoders 15 minutes early, test all sources simultaneously
+- https://www.lazi-akademie.de/wiki/messe-event/event-design/live-streaming-events/
 
-**READMEs and project documentation (read in full)**
+### [SEARCH-EXTRACT] — role definition, job posts, event operations
 
-- https://raw.githubusercontent.com/BELABOX/srtla/master/README.md
-- https://raw.githubusercontent.com/OpenIRL/srtla-receiver/main/README.md
-- https://raw.githubusercontent.com/irlserver/srtla_send/main/README.md
-- https://raw.githubusercontent.com/loopy750/SRT-Stats-Monitor/main/README.md
-- https://raw.githubusercontent.com/roflb0y/SRTExporter/main/README.md
-- https://raw.githubusercontent.com/IRLToolkit/obs-websocket-http/master/README.md
-- https://raw.githubusercontent.com/MorrowShore/Prism/master/README.md
-- https://raw.githubusercontent.com/NOALBS/nginx-obs-automatic-low-bitrate-switching/v2/README.md
-- https://github.com/BELABOX/belaUI — repository metadata only (no README; issue search returned nothing)
-- https://github.com/NOALBS/belabot — repository metadata only
-- https://github.com/keenan-smith/BelaboxBitrateOverlay — repository metadata only
+- https://careers.paramount.com/job/New-York-Sr-Live-Event-Technology-Engineer-NY-10036/1374027700/
+- https://www.metacareers.com/profile/job_details/1017266434469763/
+- https://www.showbizjobs.com/jobs/nfl-seasonal-video-streaming-engineer-in-inglewood/jid-233wy7
+- https://www.homerunent.com/blog/2026/7/7/event-operations-guide-managing-production-on-event-day — group chats fail on event day
+- https://www.phaedrasolutions.com/blog/how-to-use-whatsapp-for-event-planning-without-hassle
+- https://rundownstudio.app/templates/ — run-of-show templates in Excel/Sheets/Numbers
+- https://www.switcherstudio.com/blog/the-ultimate-livestreaming-checklist-to-ensure-smooth-streaming , https://ecamm.com/blog/live-streaming-checklist/
+- https://techcommunity.microsoft.com/discussions/microsoftteams/ms-teams-video-quality-is-terrible/1354190/replies/2085955 and https://learn.microsoft.com/en-us/answers/questions/4418410/help-in-teams-what-is-needed-to-output-video-at-fh — Teams contribution quality
+- https://translators-usa.com/real-time-captioning-services — "captioning usually fails at the handoff points"
+- https://weconnect.one/blogs/best-sim-for-liveu-encoder-in-europe-carrier-neutral-broadcasting-sim-compared/ — broadcast SIM management (vendor marketing)
+- https://restream.io/integrations/multistreaming/go-live-on-facebook-and-youtube-at-the-same-time/ , https://livepush.io/products/multistreaming/index.html , https://streamyard.com/blog/how-to-multistream-to-youtube-twitch-tiktok-facebook-and-more , https://www.dacast.com/blog/simulcast-streaming/ — the multistreaming category and what it sells relief from
 
-**Corpus cross-references (second-hand in this session)**
+### [PRIOR-SESSION] — read in the 2026-08-28 pass, not re-opened here
+
+Transport and bonding: Haivision/srt issues #460, #621, #656, #1210, #2016, #2157, #2600, #2749,
+#2968, #3168, #3280; eerimoq/moblin #418, #89; BELABOX/srtla, OpenIRL/srtla-receiver and
+irlserver/srtla_send READMEs.
+
+Switcher, destinations and keys: obsproject/obs-studio #11079, #11016, #5572, #6557, #6813,
+#6497, #4596, #11062, #13469, #12087, #13772, #11264, #13127, #12958, #6366, #7381, #8966, #8953,
+#8635, #6398, #6298, #5599, #11864, #13228, #13064, #11118, #10584, #13506;
+sorayuki/obs-multi-rtmp #344, #329, #88, #17, #305; datarhei/restreamer #278, #873.
+
+Monitoring and fallback: NOALBS issues #157, #125, #120, #175, #164, #82, #47, #60;
+loopy750/SRT-Stats-Monitor; roflb0y/SRTExporter; IRLToolkit/obs-websocket-http.
+
+Remote contribution and control surface: steveseguin/vdo.ninja #1218, #569, #654, #898, #276,
+#838, #665; bitfocus/companion-module-requests #177, #194, #540, #790, #815, #880, #1080, #1143,
+#2075, #777; bitfocus/companion #1339, #2909, #3654.
+
+### Corpus cross-references
 
 - [`../METHOD.md`](../METHOD.md)
 - [`../workflow-chain.md`](../workflow-chain.md)
 - [`./technical-director.md`](./technical-director.md)
 - [`./camera-operator.md`](./camera-operator.md)
-- [`../landscape/camera-control-rcp.md`](../landscape/camera-control-rcp.md)
+- [`./video-engineer-shader.md`](./video-engineer-shader.md)
 - [`../landscape/tally.md`](../landscape/tally.md)
 
-**Local repositories (context, not independent demand)**
+### Local repositories (context, not independent demand)
 
-- `/home/user/cable-planner` — README, CLAUDE.md (keytar credential rule, `lib/` placement rule)
+- `/home/user/cable-planner` — README and CLAUDE.md (keytar credential rule, `lib/` placement, offline-first, `healProjectPositions` as the migration layer)
 - `/home/user/av-planner-suite` — README
-- `/home/user/tally-pi` — README (browser tally, ATEM, Companion)
-- `/home/user/Broadcast-intercom` — README (browser beltpacks, Companion control endpoint)
+- `/home/user/tally-pi` — browser tally, ATEM, Companion
+- `/home/user/Broadcast-intercom` — browser beltpacks, Companion control endpoint
 
-**Blocked and therefore absent** (recorded so the gap is visible): reddit.com
-(r/VIDEOENGINEERING, r/livesound, r/broadcastengineering), prosoundweb.com, controlbooth.com,
-blue-room.org.uk, forum.blackmagicdesign.com, vmix.com and its forum, videohelp.com,
-obsproject.com (forum and docs), help.twitch.tv, support.google.com, haivision.com,
-srtalliance.org, liveu.tv, teradek.com, tvbeurope.com, thebroadcastbridge.com,
-newscaststudio.com, en.wikipedia.org, stackoverflow.com, news.ycombinator.com,
-film-tv-video.de, production-partner.de, and all other German-language sources.
+### Still blocked, and therefore still missing
+
+Direct fetch: reddit.com (also excluded from the search index available here), prosoundweb.com,
+controlbooth.com, blue-room.org.uk, forum.blackmagicdesign.com, forums.vmix.com,
+obsproject.com (forum and docs), videohelp.com, help.twitch.tv, haivision.com, srtalliance.org,
+liveu.tv, teradek.com, resi.io, tvbeurope.com, thebroadcastbridge.com, newscaststudio.com,
+churchproduction.com, film-tv-video.de, production-partner.de, en.wikipedia.org,
+stackoverflow.com. Where those hosts appear above, the content reached me as a search extract,
+not as a page I opened. The first-person practitioner layer — "here is my spreadsheet, here is
+what went wrong last Tuesday" — remains the single largest gap in this dossier.

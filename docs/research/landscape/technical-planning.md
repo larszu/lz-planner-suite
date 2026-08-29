@@ -1,766 +1,781 @@
 # Technical Planning: Cable / Signal Flow / Patch / Rack
 
-> Research date: **2026-08-28**. Claims labelled per `docs/research/METHOD.md`:
-> **FACT** (read on a cited page or in cited source code), **INFERENCE** (reasoning),
+> Research date: **2026-08-28/29**. Claims labelled per `docs/research/METHOD.md`:
+> **FACT** (read on a cited page or in cited source code), **SNIPPET** (read in a search-engine
+> summary of the cited page, page not directly opened), **INFERENCE** (reasoning),
 > **UNKNOWN / unverified**.
+>
+> This pass **replaces** an earlier one that ran with zero web search and a GitHub-only egress
+> allowlist. That version contained no verified price at all. This one does — but read the
+> evidence-tier caveat first, because the constraint has changed shape rather than disappeared.
 
-## Source-access caveat (read this before trusting anything below)
+## Source-access caveat (read this before trusting any number below)
 
-This pass ran in the same locked-down environment as `landscape/tally.md`, with the same two
-limits:
+The environment for this pass had an **asymmetric** network:
 
-1. **WebSearch was exhausted before this dossier started** (200/200 calls used by earlier
-   segments). Zero searches were available.
-2. **The egress proxy allowed only a handful of hosts.** Verified reachable: `github.com`,
-   `raw.githubusercontent.com`, `pypi.org`, and `git clone` over HTTPS. Every commercial
-   vendor host tested returned `EGRESS_BLOCKED`:
-   `www.wirecad.com`, `www.d-tools.com`, `www.xtenav.com`, `www.stardraw.com`,
-   `www.avixa.org`, `university.vectorworks.net`. Also blocked: `en.wikipedia.org`,
-   `netbox.readthedocs.io`. `www.npmjs.com` returned HTTP 403.
+- **WebSearch worked**, and was used for 26 distinct queries in English and German.
+- **Direct page fetches were blocked for every commercial vendor domain tested.** Confirmed
+  `EGRESS_BLOCKED` or `CONNECT tunnel failed, response 403`: `www.wirecad.com`, `www.d-tools.com`,
+  `xtenav.com`, `www.vectorworks.net`, `forum.vectorworks.net`, `www.stardraw.com`,
+  `docs.netbox.dev`, `netboxlabs.com`, `www.racktables.org`, `opendcim.org`,
+  `www.blackmagicdesign.com`, `en.wikipedia.org`, `www.capterra.com`, `www.g2.com`,
+  `www.reddit.com`, `www.avnetwork.com`, `blog.cadsoftwaredirect.com`, `www.trustradius.com`,
+  `www.getapp.com`, `www.softwareadvice.com`.
+- **`github.com` and `raw.githubusercontent.com` were reachable.** Ten pages were opened there
+  directly.
 
-What made this segment survive that: the **documentation-and-source-of-truth half** of it is
-open source, and `git clone` worked. Nine repositories were cloned and read. Every statement
-below about a data model, a schema, a file format or a wire protocol is taken from schema
-DDL, type definitions, parser code or vendor-published specification text — not from memory.
+This produces **three evidence tiers**, and the dossier marks every claim with which one it is on:
 
-Consequences, stated plainly:
+| Tier | What it means | How far to trust it |
+| --- | --- | --- |
+| **FACT** | I opened the page/file and read it. Ten sources, all GitHub. | Quote it. |
+| **SNIPPET** | A search engine read the vendor's own page and summarised it back to me, and I am citing that vendor page. | Directionally reliable for *what exists*. **Treat every price as "approximately right, re-verify before quoting."** |
+| **INFERENCE / UNKNOWN** | My reasoning, or an honest gap. | Do not quote as fact. |
 
-- **There is not one verified vendor price in this dossier.** Not one. No pricing page was
-  reachable. Every price band below is explicitly marked **INFERENCE** or **UNKNOWN**, and the
-  price column of the product table says so per row. Do not quote any number from this
-  document to anyone.
-- **The commercial AV/CAD half of the segment could not be researched from its own
-  documentation.** Vectorworks ConnectCAD, D-Tools System Integrator, XTEN-AV, Stardraw
-  Design 7 and WireCAD have no verified entry here. What I can report about them is a
-  *negative* finding that is itself informative, below.
-- **A negative finding worth recording (FACT).** These products have essentially zero
-  open-source footprint. GitHub code search for `ConnectCAD Vectorworks` returned
-  **0 results**; `WireCAD signal flow` returned **1 result**, in an unrelated
-  domain-abuse evidence dump. Vectorworks' own three public GitHub repositories
-  (`developer-scripting`, `developer-worksheets`, `developer-sdk`) contain **no reference to
-  ConnectCAD at all** (code search scoped `org:Vectorworks` → 0 hits). **INFERENCE:** this is
-  a closed segment with no interchange culture and no third-party developer ecosystem — which
-  is consistent with the brief's premise that practitioners fall back to Excel and Visio, and
-  it is the single most strategically relevant thing I can say about the commercial tier.
+**Consequence for prices, stated plainly.** Every price in this document is **SNIPPET tier
+except the open-source ones**. They are good enough to establish the *price band* of the segment
+— which is the strategically useful thing — and not good enough to put in a competitive
+comparison slide. The **WireCAD** prices in particular came back **mutually inconsistent** across
+three queries and are marked UNKNOWN rather than guessed. To harden the pricing section you would
+need to open, in order of value: `wirecad.com/index.php?route=product/category&path=71_17`,
+`d-tools.com/system-integrator-pricing`, `d-tools.com/cloud-pricing`, `xtenav.com/pricing/`,
+`vectorworks.net/en-US/spotlight/buy`, `stardraw.com/sd7/purchase`.
 
-One find deserves flagging up front: **Rackula** (`RackulaLives/Rackula`, MIT, first commit
-2025-12-25, 1,674 stars) is an actively developed open-source rack designer that, in the last
-few months, has started building **exactly** the port-direction-plus-signal-type model that
-AV needs and that no established tool has. It is treated as the most important deep dive here.
+**What is genuinely new in this pass** and was entirely absent from the previous one: an
+**AV-native micro-SaaS and open-source tier** that did not meaningfully exist a few years ago —
+EasySchematic, WireFlow, Patchify, H2R Gear, PatchMyGear, kumihimo — building exactly the
+port-typed, validation-first signal-flow model that the CAD tier never built. This is the most
+strategically important finding in the document and it is the section to read if you read only
+one.
 
 ---
 
 ## Segment summary
 
-This category answers four questions that a broadcast or AV engineer asks in a specific order,
-and the tools in it are usually good at only one or two of them:
+This category answers four questions that a broadcast or AV engineer asks in a fixed order, and
+almost every tool in it is good at only one or two of them:
 
 | # | Question | Artefact produced |
 | --- | --- | --- |
-| 1 | **What connects to what?** | Signal-flow / block diagram |
+| 1 | **What connects to what?** | Signal-flow / block / schematic diagram |
 | 2 | **Through which physical port, on which panel, in which rack?** | Patch schedule, rack elevation |
-| 3 | **What do I have to buy, build and label?** | BOM, cable schedule, label set |
+| 3 | **What do I have to buy, build, label and pack?** | BOM, cable schedule, label set, pack list |
 | 4 | **Is it wrong?** | Validation / design-rule check |
 
-The segment splits into four tiers that barely talk to each other (**INFERENCE**, but the
-data models below support it):
+### The six tiers
 
-1. **AV/CAD design suites** — Vectorworks Spotlight + ConnectCAD, D-Tools System Integrator,
-   Stardraw Design 7, WireCAD, XTEN-AV. Drawing-first. Sold to systems integrators who must
-   produce a signed drawing set and a priced proposal. Nothing verified about them here.
-2. **IT/DCIM sources of truth** — NetBox, Nautobot, RackTables, openDCIM, Device42. Database-
-   first, drawing-second. They have, by a wide margin, the **best cable and patch data models
-   in existence** — and no AV signal semantics whatsoever.
-3. **Generic diagramming** — Visio, Lucidchart, draw.io/diagrams.net. What people actually
-   use when tiers 1 and 2 are too expensive or too rigid. Pixels, not data.
-4. **Harness/wiring documentation** — WireViz. Pin-level, BOM-generating, text-defined. Comes
-   from the electronics/harness world, not AV, and is currently dormant.
+The segment splits into six tiers that barely interoperate (**INFERENCE**, but supported by the
+data models and price bands below):
 
-Underneath all four sits **the spreadsheet**: the patch sheet, the cable schedule, the I/O
-list. The brief asks whether AV people fall back to Excel. Nothing in this pass let me survey
-practitioners, so I cannot answer that from evidence — but see *What NOBODY solves well*,
-where the structural reason for the fallback is visible in the data models themselves.
+1. **AV/CAD design suites** — Vectorworks Spotlight + ConnectCAD, WireCAD, Stardraw Design 7.
+   Drawing-first, DWG-native, sold to integrators who must hand over a signed drawing set.
+   Price band roughly **USD 1.5k–3.5k / user / year**.
+2. **Estimator-first business suites** — D-Tools System Integrator, D-Tools Cloud, XTEN-AV.
+   The drawing is a by-product of the *proposal*; the BOM is the centre of the data model.
+   Price band roughly **USD 1.2k–1.8k / user / year**, plus implementation fees at the SI end.
+3. **CAD parsers / report generators** — tvCAD, Cable Scheduler (cableschedules.com). You keep
+   drawing in AutoCAD; the tool reads the DWG and emits the cable schedule. A distinctly
+   **broadcast** tier, with named broadcaster users.
+4. **IT/DCIM sources of truth** — NetBox, Nautobot, RackTables, openDCIM, Sunbird, Device42.
+   Database-first, drawing-second. They have, by a wide margin, the **best cable and patch
+   data model in existence** — and essentially no AV signal semantics.
+5. **AV-native micro-SaaS and open source (new)** — EasySchematic, WireFlow, Patchify,
+   H2R Gear, PatchMyGear, Rackula, kumihimo. Browser-first, port-typed, cheap or free.
+   Price band **EUR/USD 0–15 / month**, i.e. **two orders of magnitude** below tier 1.
+6. **Generic diagramming** — Visio, Lucidchart, draw.io/diagrams.net, yEd. Pixels, not data.
 
-**Who buys it.** (**INFERENCE**, from the shape and licensing of each product)
+Underneath all six sits **the spreadsheet**: the patch sheet, the cable schedule, the I/O list.
 
-- **Systems integrators** buy tier 1, because the deliverable is contractual: a drawing set,
-  a BOM and a price, all consistent with each other.
-- **Facility and broadcast engineers** adopt tier 2, because the deliverable is a queryable
-  source of truth that survives staff turnover.
-- **Freelancers, rental houses and small OB** live in tiers 3 and 4 plus spreadsheets,
-  because tiers 1 and 2 cost either money or a server.
+### Does anyone actually fall back to Excel and Visio? Yes — and it is documented
 
-**Typical price band. UNKNOWN — deliberately not estimated.** No pricing page was reachable
-and I will not reconstruct prices from memory. What *is* **FACT** is the licensing of the open
-tier: NetBox is Apache 2.0, Nautobot Apache 2.0, RackTables GPL, openDCIM GPLv3, Rackula MIT,
-WireViz GPLv3-family (see `LICENSE` in repo), draw.io Apache 2.0 — i.e. **zero licence cost
-for the entire tier-2 and tier-4 half of this segment**, with cost shifting to hosting and
-staff time. To verify the commercial band you would need to open the pricing pages of
-d-tools.com, xtenav.com, wirecad.com, stardraw.com and vectorworks.net, all of which were
-blocked.
+The brief asks this directly. Three independent pieces of evidence, none of them mine:
+
+- **SNIPPET** — A US production organisation's public FAQ describes its own tool evaluation: it
+  "tried VidCAD and Visio, but Visio lacked the desired features while VidCAD was very
+  complicated," and settled on WireCAD for its "fairly easy learning curve" and "ease in building
+  equipment blocks" ([willowproduction.org FAQ](https://www.willowproduction.org/faq/what-cad-software-do-you-use-for-creating-and-maintaining-system-schematic-diagrams/)).
+  This is the segment's actual decision process in one paragraph: the specialist tool is either
+  too hard or too expensive, and the generic tool is not expressive enough.
+- **SNIPPET** — A user on Vectorworks' own community board reported having bought ConnectCAD ten
+  months earlier, being unable to use it effectively, and **drawing in Draw.io instead**
+  ([forum.vectorworks.net ConnectCAD board](https://forum.vectorworks.net/forum/138-connectcad/)).
+  The fallback is not hypothetical and it happens *after* purchase.
+- **SNIPPET** — D-Tools' own marketing runs a resource titled *"When Should Integrators Ditch
+  Excel Spreadsheets?"* and cites an integrator that misbid a project by USD 100,000 through a
+  spreadsheet formula error ([d-tools.com resource centre](https://www.d-tools.com/resource-center/8-signs-integrators-need-to-ditch-spreadsheet)).
+  A vendor spending marketing budget arguing against Excel is strong evidence that Excel is the
+  incumbent it is losing to.
+
+The German-language market shows the same pattern with a different generic tool: the trade
+magazine *Production Partner* publishes a tutorial on building signal-flow plans in **yEd**, and
+states plainly that yEd's icon library is well stocked for computing and networking but that
+**specialised event-technology elements are not included and there is no custom symbol editor**
+([production-partner.de, Signallaufplan mit yEd](https://www.production-partner.de/basics/signallaufplan-mit-yed/), SNIPPET).
+That is a working professional publication teaching people to use a free graph editor because the
+domain tool is out of reach — and naming precisely the gap that keeps it painful.
+
+**INFERENCE:** the fallback is not caused by ignorance of the specialist tools. It is caused by
+a price/learning-curve cliff between tier 6 (free, no domain knowledge) and tiers 1–2 (USD
+1,500–3,500 a year, weeks of training) with **nothing in between** — which is exactly the gap
+tier 5 has appeared to fill in the last two or three years.
+
+### Who buys what (INFERENCE, from product shape and licensing)
+
+- **Systems integrators** buy tiers 1–2, because the deliverable is contractual: a drawing set,
+  a BOM and a price that must agree with each other.
+- **Broadcasters and facility engineers** buy tier 3 or adopt tier 4, because the deliverable is
+  a queryable source of truth that survives staff turnover and a truck refit.
+- **Freelancers, rental houses, small OB, houses of worship, theatres** live in tiers 5–6 plus
+  spreadsheets, because tiers 1–3 cost either real money or a server and a sysadmin.
 
 ---
 
 ## Product table
 
-The **Verified?** column is not decoration — it separates what I read from what I merely know
-the name of. Rows marked *name only* are listed because the brief named them and omitting them
-would misrepresent the segment's shape; every attribute in such a row is **UNKNOWN**.
+Price column: `[S]` = SNIPPET tier (search summary of the cited vendor page, seen 2026-08-28/29,
+re-verify before quoting); `[F]` = FACT (page opened); *as advertised* vs *requires sales contact*
+noted per row.
 
-| Product | Vendor | Platform | Price model | Offline? | API? | Best at | Verified? |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **NetBox** | NetBox Labs / community | Django + PostgreSQL, self-host or cloud | Apache 2.0 core, free; cloud tier price UNKNOWN | Yes — self-hosted; server + DB required | Yes: REST + GraphQL (`dcim/api/`, `dcim/graphql/` both present) | Cable path tracing *through* patch panels; breakout/trunk cable profiles | **Cloned & read** (v4.6.9) |
-| **Nautobot** | Network to Code | Django + PostgreSQL, self-host | Apache 2.0, free | Yes — self-hosted | Yes (REST/GraphQL, inherited lineage from NetBox) | NetBox's model plus a plugin/job framework | Repo metadata only (1,588 stars) |
-| **RackTables** | RackTables community | PHP + MySQL/MariaDB | GPL, free | Yes — self-hosted | UNKNOWN | **Patch-cable stock** and connector-compatibility rules — unique in this set | **Cloned & read** (schema) |
-| **openDCIM** | Scott Milliken / community | PHP + MySQL | GPLv3, free | Yes — self-hosted | UNKNOWN | Data-hall infrastructure — **but see below: project is being retired** | **Cloned & read** |
-| **Rackula** | Gareth Evans (@ggfevans) | SvelteKit/TypeScript; Docker, LXC, bare metal | MIT, free | Yes — self-host Docker; browser-local layouts | Partial: "API-backed layout sync" (README) | Rack-elevation UX **and an emerging AV port-direction + signal-type model** | **Cloned & read** (v26.8.0) |
-| **WireViz** | WireViz project | Python CLI (+ `wireviz-web` wrapper) | Free, open source | Yes — fully local, no network | CLI + importable Python; REST via `wireviz-web` | Pin-level harness drawings **with automatic BOM** from one YAML file | **Cloned & read** (v0.4.1) |
-| **draw.io / diagrams.net** | JGraph | Web + Electron desktop | Apache 2.0, free | Yes — `drawio-desktop` is a full offline Electron app | Limited (embed/integration APIs) | Getting a diagram out today with no data model at all | **Repo verified**; rack stencils enumerated |
-| **NetBox devicetype-library** | community | YAML files (data, not an app) | Apache-licensed data, free | Yes — plain files | Consumed by NetBox import tooling | 6,021 device definitions with port lists — the segment's de-facto equipment library | **Cloned & counted** |
-| **Vectorworks Spotlight + ConnectCAD** | Vectorworks (Nemetschek) | macOS/Windows desktop CAD | UNKNOWN — requires sales contact | UNKNOWN (desktop CAD, likely yes — INFERENCE) | Vectorworks SDK/Python exists; **ConnectCAD API UNKNOWN** | Entertainment-industry CAD with an AV signal-flow module | **Name only** — vendor host blocked |
-| **D-Tools System Integrator / D-Tools Cloud** | D-Tools | Windows desktop (SI) + cloud | UNKNOWN — requires sales contact | UNKNOWN | UNKNOWN | Integrator workflow: proposal → drawings → BOM | **Name only** — host blocked |
-| **XTEN-AV (X-DRAW)** | XTEN-AV | Cloud/browser | UNKNOWN — requires sales contact | **Cloud-first; offline UNKNOWN** | UNKNOWN | Browser-based AV drawing | **Name only** — host blocked |
-| **WireCAD** | WireCAD | Windows desktop | UNKNOWN | UNKNOWN | UNKNOWN | Cable-schedule-centric AV/broadcast documentation | **Name only** — host blocked |
-| **Stardraw Design 7** | Stardraw | Windows desktop | UNKNOWN | UNKNOWN | UNKNOWN | AV schematic drawing with symbol libraries | **Name only** — host blocked |
-| **Visio / Lucidchart** | Microsoft / Lucid | Desktop / cloud | UNKNOWN | Visio desktop yes; Lucidchart cloud-first | Both have APIs (UNKNOWN detail) | The incumbent fallback | **Name only** |
-| **Excel / Google Sheets patch sheet** | — | Anything | Effectively free | Yes | — | The actual, universal baseline this segment competes with | **Not a product** — baseline |
-
-Two further open projects surfaced in discovery and are recorded for completeness but were
-**not cloned**, so nothing about them is verified beyond repository metadata:
-`Kobii-git/rackpad` (358 stars; self-described racks/ports/cables/IPAM/topology) and
-`opsmill/infrahub` (508 stars; graph-based infrastructure data platform with version control).
+| Product | Vendor | Platform | Price model | Offline? | API? | Best at |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Vectorworks Spotlight + ConnectCAD** | Vectorworks Inc. (Nemetschek, DE parent) | Win / macOS desktop | Subscription. Spotlight ~USD 1,530/yr; ConnectCAD add-on ~USD 183/mo (~1,830/12 mo), **bundle-only with Spotlight/Designer**. DE reseller: Spotlight+ConnectCAD from €195/mo net (€2,340/yr net) `[S]`, as advertised | Yes — desktop, local files | Vectorworks SDK + Python/VectorScript; no published ConnectCAD-specific API found | Schematic + rack elevation + 2D/3D floor plan in one document, with circuit reports |
+| **WireCAD 10** (XLT / PRO / CMS) | Holbrook Enterprises dba WireCAD (US) | Windows desktop | Perpetual + mandatory first-year "Assurance", **or** subscription. Renewal indexed at 60% of list `[S]`. **Actual figures inconsistent across sources — UNKNOWN**, as advertised on store | Yes — desktop; PRO/CMS can use SQL Server | Database is VistaDB or SQL Server / SQL Azure — direct DB access is the de-facto API `[S]` | Cable numbering, auto cable schedules, DWG-native, patchbay layouts, equipment blocks |
+| **D-Tools System Integrator (SI)** | D-Tools Inc. (US) | Windows desktop + SQL Server; cloud-hosted option | From ~USD 150/user/mo + professional-services implementation (~USD 200/h) `[S]`, requires sales contact | Partially — on-prem SQL deployment | Integrates AutoCAD + Visio; manufacturer product library `[S]` | Keeping BOM, proposal, drawing and procurement in one dataset |
+| **D-Tools Cloud** | D-Tools Inc. | Browser | Tiered: Solo ~USD 99/mo, Team ~249, Company ~499, Enterprise ~999; ~10% off annual `[S]`, as advertised | No | Unverified | Fast quote-to-proposal with a lightweight drawing attached |
+| **XTEN-AV (X-DRAW / x.doc)** | XTEN-AV (US/IN) | Browser + mobile apps | Basic USD 104.25/user/mo billed annually (USD 139 monthly); Business 111.75 (149); Enterprise 126.75; X-PRO add-ons +11.25 `[S]`, as advertised | No — cloud-first | "On-demand API integrations" on Enterprise tier only `[S]` | AI-assisted auto rack elevations and drawing-to-proposal speed |
+| **Stardraw Design 7.4** | Stardraw.com Ltd (**UK**) | Windows desktop | Perpetual + mandatory first-year subscription, split ~50/50; configurable bundles; additional licence figure ~USD 275 seen `[S]` — **package prices ambiguous, UNKNOWN**, as advertised | Yes | Unverified | Symbol breadth — 130,000+ symbols from 1,600+ manufacturers `[S]`; **first vendor to license J-STD-710 symbols** |
+| **tvCAD** | tvCAD / CAD bloke (**AU**) | Windows, on top of AutoCAD | UNKNOWN, requires sales contact | Yes — local AutoCAD | Parses DWG; reports to Excel `[S]` | Letting broadcast engineers keep drawing in AutoCAD while the schedule generates itself |
+| **Cable Scheduler** | cableschedules.com (**AU**) | Windows desktop, not cloud | UNKNOWN, requires sales contact | Yes — explicitly "not cloud-based or outside your firewall" `[S]` | DWG parser | Scale: claims schedules for ~60,000 cables in minutes; named users incl. Foxtel, Fox Sports, ABC TV Australia, NEP `[S]` |
+| **NetBox** | NetBox Labs / community | Self-hosted (Django/Postgres) or NetBox Cloud | Apache 2.0 open source; cloud tiers priced separately `[F]` licence | Yes — self-hosted | Full REST + GraphQL, first-class `[F]` | The best cable/patch/port data model in the segment. Cable profiles, front/rear port mapping, end-to-end path tracing |
+| **RackTables** | community | Self-hosted PHP | GPL, free | Yes | Limited | Knowing which *physical* cable you own and where it is `[S]` |
+| **openDCIM** | community | Self-hosted PHP | GPLv3, free | Yes | Limited | "Antiquated but with a quite sane data model" `[S]` |
+| **Sunbird DCIM** | Sunbird Software (US) | Self-hosted or SaaS | Perpetual or SaaS, **quote only** `[S]`, requires sales contact | Yes | Yes | Port-level connectivity, every hop in data and power circuits, pre-install cable length measurement `[S]` |
+| **EasySchematic** | duremovich (community) | Browser + PWA desktop | **Free, AGPL-3.0** `[F]`, as advertised | Yes — PWA offline; cloud features need hosted API `[F]` | Public device-template API, no auth `[F]` | The most complete AV-native free tool: 73 signal types, patch bays, rack builder, vector PDF, DXF |
+| **WireFlow** | wireflow.live | Browser | Free tier (3 diagrams); Pro USD 5/mo founder rate, list USD 14.99/mo `[S]`, as advertised | No | Unverified | Connection-aware validation as you draw, plus LED-wall cabinet/power planning |
+| **Patchify** | patchify.app | Browser + Windows app | 30-day full trial; paid plans, **price not published in any source reached — UNKNOWN** | Windows app "works offline" `[S]` | Unverified | Broadcast-flavoured device library (Blackmagic, Sony, Ross, Grass Valley), auto patch lists, cable labels |
+| **H2R Gear** | h2rgear.com | Browser | Free tools `[S]` | No | Unverified | Patch list ⇄ diagram round-trip, CSV export, crew-readable output |
+| **PatchMyGear** | patchmygear.com | Browser | Free, no sign-up `[S]` | Local save/load of plans `[S]` | Public device library, community submissions `[S]` | Studio/patchbay-centric planning and a re-cable checklist |
+| **Rackula** | RackulaLives (community) | Browser; Docker/LXC self-host | **Free, MIT** `[F]` | Yes — self-hostable `[F]` | Optional persistent-storage API `[F]` | Rack elevations with real hardware images, pulled from NetBox devicetype-library |
+| **kumihimo** | Love-Rox / SASAGAWA Kiyoshi (**JP**) | CLI / library / VS Code ext. | **Free, MIT** `[F]` | Yes | It *is* an API — TS library `[F]` | Text-defined, port-aware, validating signal flow. Diff-able in git |
+| **WireViz** | community | CLI (Python) | **GPL-3.0, free** `[F]` | Yes | YAML in, files out `[F]` | Pin-level harness documentation with automatic BOM |
+| **Middle Atlantic RackTools / Configurator** | Legrand AV | Windows / browser | **Free** `[S]` | Desktop yes | No | Vendor-accurate rack elevations, quotes and POs — for Middle Atlantic parts |
+| **Microsoft Visio (Plan 2)** | Microsoft | Browser + Windows | ~USD 15/user/mo `[S]`, as advertised | Desktop yes | Yes (Graph / VBA) | Being installed everywhere already |
+| **Lucidchart** | Lucid Software | Browser | Individual ~USD 9/user/mo annual; Team ~10 `[S]`, as advertised | No | Yes | Collaboration and shareable links |
+| **draw.io / diagrams.net** | JGraph | Browser + desktop | Apache 2.0, free | Yes — desktop app | Embeddable; XML file format | Free, offline, has a rack shape library (APC, Cisco, Dell, HP…) `[S]` |
+| **yEd** | yWorks (**DE**) | Desktop + browser | Free (gratis, not open source) | Yes | — | Auto-layout of messy graphs; the documented German AV fallback `[S]` |
 
 ---
 
 ## Deep dives
 
-### NetBox — the best cable data model in the segment, and it cannot say "SDI"
+### 1. Vectorworks Spotlight + ConnectCAD — the incumbent in the European event market
 
-**What it does.** NetBox (Apache 2.0, v4.6.9 per `netbox/netbox/release.yaml`; last commit on
-`main` 2026-08-28; 21,407 stars) is the network-industry source of truth for racks, devices,
-ports, cables and addressing. It is a database with a web UI, not a drawing tool — though it
-renders both **rack elevations** and **cable traces** as SVG (`netbox/dcim/svg/racks.py`,
-`netbox/dcim/svg/cables.py`). (**FACT**, all read in the cloned tree.)
+**What it does.** ConnectCAD is an add-on module to Vectorworks Spotlight or Designer for AV,
+broadcast and network system design. Vectorworks' own capability page describes schematic
+diagrams, 2D **and 3D** rack layouts with custom panel building, integrated 2D/3D placement of
+racks, consoles and devices within floor plans, and **riser diagrams annotated with conduit sizes
+and pathways** for handoff to electrical contractors (SNIPPET, `vectorworks.net/en-GB/connectcad/capabilities`).
 
-**Data model.** This is the part worth stealing.
+**Data model.** Not verifiable at this evidence tier — no schema documentation was reachable.
+What *is* visible from the reports it generates is the shape of the model: **circuit reports,
+device inventories and cable schedules** (SNIPPET, `app-help.vectorworks.net/2026/.../Creating_ConnectCAD_reports.htm`),
+which implies first-class circuit and device objects rather than annotated geometry. The template
+ships three sheet layers — Schematics, Rack Elevations, Rack 3D Layouts — with viewports bound to
+the matching design layer (SNIPPET, `app-help.vectorworks.net/2025/.../Presenting_to_clients.htm`).
 
-- `Cable` (`netbox/dcim/models/cables.py:76`) carries `type`, `status`, `profile`, `tenant`,
-  `label`, `color`, `length` + `length_unit`, a denormalised `_abs_length` in metres "for
-  database ordering", and a `bundle` FK. (**FACT**)
-- `CableTermination` and `CablePath` separate *the cable* from *the path it participates in*.
-  `CablePath` (line 709) stores an ordered `path` JSON list of `(type, ID)` node lists, plus
-  `is_active`, `is_complete` and `is_split` flags and a flattened `_nodes` GIN-indexed field
-  for filtering. Its docstring gives the canonical example verbatim: (**FACT**)
+**Validation.** "Built-in verification tools to automatically identify errors such as missing
+connections or incompatible equipment" (SNIPPET, vendor capability page). This is a real DRC, and
+it is the feature the whole tier-1 price is arguably justified by.
 
-  ```
-                   A                              B                              C
-      Interface 1 --- Front Port 1 | Rear Port 1 --- Rear Port 2 | Front Port 3 --- Interface 2
-                      Front Port 2                                 Front Port 4
-  ```
+**Strengths.** It is the only tool in the segment where the *same objects* appear in a schematic,
+a rack elevation, a 3D model and a venue floor plan. For anyone who must also do rigging, staging
+and lighting in the same file — the European event-technology reality — that consolidation is
+decisive, and it is why Vectorworks is the German-market default answer to "Signalflussplan
+software" (SNIPPET, vectorworks.de/vectorworks/spotlight).
 
-  That is **patch-panel-transparent path tracing**: three physical cables, one logical path,
-  and the panels in the middle are traversed rather than treated as endpoints. `is_split` is
-  the honest admission that a path can diverge and stop being a single answer.
-- `FrontPort` / `RearPort` (`device_components.py:1241`, `:1289`) model a patch panel properly:
-  each has a `positions` count, a front port maps to a `rear_port` **plus a position**, both
-  must belong to the same device, and validation refuses a `positions` value lower than the
-  number of mapped ports. This is how one 24-port rear LC cassette fronts 48 duplex positions.
-  (**FACT**)
-- **Cable profiles** — new in 4.6 — enumerate multi-core geometry directly
-  (`CableProfileChoices`, `choices.py:1793`): singles `1C1P`…`1C16P`; trunks `2C1P`…`8C4P`
-  including `2C4P_SHUFFLE` and `4C4P_SHUFFLE`; breakouts `1C2P:2C1P`, `1C4P:4C1P`,
-  `1C6P:6C1P`, `1C8P:8C1P` and `2C4P:8C1P_SHUFFLE`. (**FACT**) That vocabulary describes a
-  Socapex tail, an eight-way BNC breakout and a fibre shuffle equally well — it is *already*
-  the AV multicore problem, solved generically.
-- **Cable bundles** — also new in 4.6 (release notes, issue #20151): "A new CableBundle model
-  allows individual cables to be grouped together to represent physical cable runs that are
-  managed as a unit; e.g. a bundle of 48 CAT6 cables between two patch panels." The notes add
-  an explicit caveat: the feature is "*not* suitable for modeling individual fiber strands
-  within a single cable." (**FACT**, quoted from `docs/release-notes/version-4.6.md:340`)
+**Limits.**
+- **Cannot be bought alone.** ConnectCAD and Braceworks are add-ons purchasable only bundled with
+  a Spotlight or Design Suite subscription (SNIPPET, multiple sources incl. vectorworks.de).
+- **Price.** ~USD 1,530/yr Spotlight, ConnectCAD ~USD 1,830/12 mo on top; German reseller list
+  €2,340/yr net for Spotlight+ConnectCAD, €3,420/yr net with Braceworks too (SNIPPET,
+  German reseller pages — a reseller, not the vendor, so treat as indicative).
+- **Learning curve.** Named as steep in several sources, and the Vectorworks community board
+  itself carries a user who bought it, could not get productive in ten months, and used Draw.io
+  instead (SNIPPET). **This is the single most quotable weakness in tier 1.**
 
-**Integrations.** REST and GraphQL are both first-class. `pynetbox` 7.8.0 on PyPI is the
-official client and states support for NetBox 4.6 (**FACT**, read on pypi.org).
+**Caution on one source class:** several of the pricing pages that surface for ConnectCAD are
+published by **XTEN-AV, a direct competitor** (`xtenav.com/vectorworks-connectcad-pricing/`).
+Numbers from that source are marked accordingly and should be re-verified from vectorworks.net.
 
-**Notable strengths.** Path tracing through panels; breakout/trunk vocabulary; SVG elevations
-and traces generated from data rather than drawn; a genuine API; enormous community.
+### 2. WireCAD 10 — the segment's most-recommended specialist, and its data model is a database
 
-**Notable limits — and this is the crux of the whole dossier.** NetBox's `CableTypeChoices`
-(`choices.py:1869`) enumerates CAT3–CAT8, MRJ21 trunk, DAC active/passive, coaxial including
-RG-6/8/11/59/62/213 and LMR-100/200/400, multimode OM1–OM5, singlemode OS1/OS2, AOC, power and
-USB. **There is no SDI, no HDMI, no XLR, no audio cable type of any kind.** (**FACT** — the
-full choice list was read.) A grep of `dcim/choices.py` for `SDI|XLR|HDMI` returns only
-`TYPE_BNC` inside `PortTypeChoices` — BNC exists as a *connector on a patch panel*, with no
-notion of what travels through it.
+**What it does.** DWG/DXF documentation with a real database behind it: draw and manage cable and
+connection information, auto-generate functional block diagrams, auto-assign cable numbers,
+auto-populate rack layouts, print cable labels, BOMs and other reports, against a community
+database of **100,000+ equipment definitions** (SNIPPET, `wirecad.com`).
 
-The practical consequence is visible in the community library, below.
+**Data model — the notable part (SNIPPET, `wirecad.com/help90/...` and wiki).**
+WireCAD "produces DWG-compatible drawings accompanied by either **VistaDB or SQL Server**
+databases containing all pertinent project data," works with SQL Azure, and **creates a new
+database catalog per project**, requiring SQL Server 2012+ (Express acceptable). That is
+architecturally the same insight as NetBox's: *the drawing is a view; the database is the
+project*. It also means the integration surface is ODBC/SQL rather than a REST API — cruder, but
+completely open to anyone who can write a query.
 
-### The NetBox devicetype-library — where the AV gap is measurable
+**Cable numbering.** The Cable Number Format dialog lets you concatenate any field associated
+with the cable number into a custom scheme, and WireCAD error-checks the project database to
+hand you the next number in sequence (SNIPPET, `wirecad.com/help90/cable_number_formatting.htm`).
+This is a **schema-driven numbering system, not a text template** — worth stealing.
 
-This is a data set, not an application, but it is the segment's de-facto equipment library and
-Rackula consumes it for device images. Numbers, all counted in the cloned tree (**FACT**):
+**Practitioner verdict.** The Willow Creek FAQ (SNIPPET) is the most useful independent review
+found: chosen over VidCAD and Visio for "fairly easy learning curve, reasonable price, easy to use
+interface, online tutorials, great support," with the standout feature being **the ease of
+building equipment blocks**, and it "keeps things organized, creates cable labels, does rack
+elevations and even patchbay layouts."
 
-- **6,021** device-type YAML files across **314** manufacturer directories.
-- Only **12 files in the entire library mention "sdi"** (case-insensitive grep).
-- The `Blackmagicdesign` directory contains **7** files, all ATEM Constellation variants.
-- The `YAMAHA` directory contains **27** files — all `SWX` **network switches**, not audio.
-- Absent entirely (no directory): Ross, Grass Valley, Evertz, Lawo, Riedel, Sony, Panasonic,
-  Extron, Crestron, Biamp, QSC, Shure, AJA, Barco, Christie, tvONE, Analog Way.
+**Limits.** Windows-only. Editions XLT (single user) / PRO (multi-user, SQL Server) / CMS (fibre
+/ cable-management scale). **Pricing could not be pinned down**: three queries returned mutually
+inconsistent fragments (a "$7,500" associated with CMS, a "$440.00/month" associated with a CMS
+subscription, and a "$2,400 / $440 / $220" triple attributed to the store category page). I am
+recording that as **UNKNOWN** rather than picking one. Licensing structure *is* consistent across
+sources: perpetual licences ship with the first year of Assurance, renewals indexed at 60% of
+list, with an "Assurance Price Lock" against year-on-year increases (SNIPPET).
 
-And here is how the one real broadcast device is forced to fit
-(`device-types/Blackmagicdesign/atem-constellation-1-m-e-4k.yaml`, **FACT**, verbatim extract):
+### 3. The estimator-first tier — D-Tools SI, D-Tools Cloud, XTEN-AV
 
-```yaml
-rear-ports:
-  - name: REF-IN
-    type: bnc
-  - name: SDI-INPUT-1
-    type: bnc
-  ...
-  - name: SDI-OUTPUT-1
-    type: bnc
-  ...
-  - name: ANALOG-AUDIO-IN-1
-    type: other
+These are not really drawing tools. They are **quote-to-cash systems with a drawing module**, and
+that inverted priority explains both their strength and their irrelevance to a working engineer.
+
+**D-Tools SI (SNIPPET, d-tools.com pages).** End-to-end for low-voltage integrators: estimating,
+system design and documentation, procurement, project management, installation and service, all
+driven by "an extensive, integrated product library" with real-time dealer-specific pricing.
+Design happens through **AutoCAD and Visio integration** that keeps the engineering drawings
+synchronised with the BOM. Deployment is desktop + SQL Server with a hosted option.
+Price from ~USD 150/user/month **plus** professional-services implementation (~USD 200/h) — the
+implementation fee is the tell that this is an ERP-class purchase, not a tool purchase.
+
+**D-Tools Cloud (SNIPPET).** The lighter sibling: Solo ~99 / Team ~249 / Company ~499 /
+Enterprise ~999 USD per month, ~10% off annual.
+
+**XTEN-AV (SNIPPET, xtenav.com/pricing and knowledgebase.xtenav.com).** Cloud-native competitor.
+Basic USD 104.25/user/mo billed annually (139 monthly), Business 111.75 (149), Enterprise 126.75
+for 25+ users, X-PRO office/field add-ons +11.25 each. Products are X-DRAW (drawing), x.doc
+(proposals), XAVIA (AI agent). Automated rack elevations, 2D/3D review, floor plans, signal-flow
+and cable-wiring diagrams. **API access is gated to the Enterprise tier** ("on-demand API
+integrations").
+
+**The common limit.** Both are cloud-tethered and both centre the *commercial* object (line item,
+price, margin) rather than the *physical* object (port, cable, panel position). **INFERENCE:**
+this is why an engineer on a truck refit still ends up in Excel even at a company that owns
+D-Tools — the system knows what was sold, not what is plugged in where.
+
+**A source-hygiene warning.** XTEN-AV publishes a large volume of SEO content reviewing its own
+competitors ("Top 5 free rack diagram software", "Vectorworks ConnectCAD Pricing", "AutoCAD
+Pricing: Hidden Costs Draining AV Budgets"). Several of these rank above the vendors' own pages.
+Any competitive claim sourced to an `xtenav.com/blog/` URL should be treated as marketing.
+
+### 4. EasySchematic — the most complete free AV-native tool found, and the closest analogue to cable-planner
+
+**FACT** — the following is read directly from `github.com/duremovich/EasySchematic`.
+
+**What it does.** Browser-based AV signal-flow design: "draw your signal flow, and the paperwork
+comes with it — devices, racks, patch bays, and print sheets all exist in one file, eliminating
+drift between separate spreadsheets."
+
+**Data model.** This is the part that matters:
+- **73 colour-coded signal types**, each customisable, covering SDI, HDMI, NDI, Dante, AVB,
+  AES/AES67/AES50, MADI, DMX, Art-Net, sACN, HDBaseT, SRT, **ST 2110**, Genlock, Word Clock,
+  Timecode, **Tally**, GPIO, RS-422/485, Ultranet, StageConnect, SoundGrid, BLU link, Cresnet,
+  fibre, and Power (L1/L2/L3/N/G).
+- **Typed ports with directionality**, validated live: green for a valid connection, red for
+  incompatible, with **adapters auto-inserted between incompatible ports**.
+- **Expansion slots** for card-frame chassis, with **device swap that remaps connections and
+  auto-installs required cards**.
+- **Bundles** — grouping multiple connections down a shared trunk.
+- **Virtual patch bays** routed through without drawing them on the schematic, with
+  **multi-panel hops carrying per-segment cable IDs and letter suffixes**, and 100 %-scale
+  designation strips for physical label holders.
+- Real-world per-device data: dimensions, weight, power draw, hostname/IP, cost.
+
+**Integrations and formats.** Vector **PDF** (Letter through **A0**, preserving mounting holes
+and occupancy), **DXF** for CAD, PNG (4×), SVG, JSON; **CSV cable-schedule import**. Device
+library of **3,800+ templates** from a community database, fetched live with offline fallback,
+exposed through a **public API with no auth**.
+
+**Reports.** Pack list cross-referenced against an owned-gear inventory, cable schedule with
+estimated lengths, patch-panel and network schedules, power analysis — through a WYSIWYG report
+editor with grouping, sorting and custom headers/footers.
+
+**Stack.** React 19 + TypeScript, `@xyflow/react` v12, Zustand v5, Tailwind v4, Vite 8,
+Cloudflare Workers + D1. **AGPL-3.0.** 120 stars, 762 commits, 146 open issues.
+
+**Limits.** Self-hosting still calls out to `api.easyschematic.live` for cloud saves, device
+submissions and sharing. It is explicitly "a tool for designing audiovisual systems — not a
+general diagramming app."
+
+**Why this is the headline finding.** Its stack is *nearly identical* to cable-planner's
+(React + TypeScript + Zustand + ReactFlow/xyflow), its feature list overlaps cable-planner's
+heavily, it is free and AGPL, and it independently arrived at several of the same design
+decisions — typed ports, adapter insertion, pack lists, per-segment cable IDs through patch hops.
+It is simultaneously the strongest validation that cable-planner's model is the right one and the
+most direct competitive threat in the corpus.
+
+### 5. NetBox — still the best cable data model anywhere, and 4.5 made it better
+
+**FACT** — read directly from the NetBox docs in the GitHub repo.
+
+**The Cable model** carries: Status (Active / Planned / Decommissioning), **Profile** (new in
+v4.5), Type, Label, Color, and Length with a unit designation. Cables may connect **eight** kinds
+of endpoint: interfaces, console ports, console server ports, pass-through ports, circuit
+terminations, power ports, power outlets and power feeds. Termination rules are explicit:
+single-position cables allow one termination per end, multi-position cables are unlimited, and
+both ends must have matching termination counts except at pass-through ports or circuit
+terminations.
+
+**Cable Profiles (v4.5)** are the interesting addition. A profile "indicates the number of
+discrete parallel channels or lanes carried by the cable among its endpoints" — a 1-to-4 breakout
+has four lanes, common at one end and split at the other. Built-in profiles cover single, trunk,
+breakout and shuffle; the docs name Straight (single position), Straight (multi-position),
+Shuffle (2×2 MPO8) and Shuffle (4×4 MPO8). With a profile assigned, NetBox can **trace a specific
+connection within a cable rather than the cable as a whole** (SNIPPET for the tracing sentence,
+netboxlabs.com/blog; FACT for the profile list, repo docs). Assignment is optional and
+unprofiled cables trace as before.
+
+**Pass-through ports.** FrontPort carries Device, Module, Name, Label, Type, **Positions** ("the
+number of rear port positions to which this front port maps"), **Rear Ports**, Color, and
+Mark Connected. NetBox follows a path across a cable to the far end, and **if that lands on a
+pass-through port whose peer has another cable, it keeps going** until it reaches a
+non-pass-through or unconnected termination. In 4.5 the old `rear_port`/`rear_port_position`
+fields were replaced by a dedicated **PortMapping** model supporting any number of
+front-position → rear-position assignments (SNIPPET, netboxlabs docs).
+
+**API.** REST and GraphQL, with profiles fully integrated. Note a breaking change worth knowing:
+**`/api/dcim/cable-terminations/` is read-only as of 4.5**; terminations are managed through
+`/api/dcim/cables/` so connector and position assignments stay consistent with the profile
+(SNIPPET, v4.5 release notes).
+
+**The devicetype-library** (FACT, opened): community YAML device definitions, one file per make
+and model, organised by manufacturer, declaring console ports, console server ports, power ports,
+power outlets, interfaces, **front and rear ports**, module bays and device bays. 1.6k stars,
+1.4k forks, 5,868 commits, **CC0-1.0 — public domain**. Rackula consumes it for hardware images.
+
+**The gap, unchanged.** None of this knows what SDI *is*. A BNC on a router and a BNC on a
+tie-line panel are the same object to NetBox; there is no concept of a video standard, a genlock
+reference, a mix-minus, or an embedded audio channel. The model is perfect and the vocabulary is
+missing. **INFERENCE:** an AV tool that adopted NetBox's *structural* model (pass-through
+mapping, path tracing, cable profiles) and layered AV *semantics* on top would have the best
+data model in this segment by a distance. Nobody has done it.
+
+### 6. The text-defined tier — kumihimo and WireViz
+
+Two projects treat the diagram as a *build artefact of a text file*, which makes the whole
+document diff-able, reviewable and CI-checkable.
+
+**kumihimo** (FACT, `github.com/Love-Rox/kumihimo`; MIT © SASAGAWA Kiyoshi; TypeScript; created
+2026-07-30, 95 commits, topics include `av`, `broadcast`, `signal-flow`, `dsl`). A DSL for AV
+signal flow — Japanese *系統図*. The README's own example:
+
+```
+device cam "SONY FX3" as camera { out SDI : sdi }
+device sw "ATEM Mini" as switcher { in 1..8 : sdi out PGM : sdi }
+device rec "HyperDeck" as recorder { in SDI : sdi }
+
+cam.SDI -> sw.1 : sdi 30m "V-01" [color=blue]
+sw.PGM -> rec.SDI : sdi 2m "V-10"
 ```
 
-Read that carefully. `SDI-INPUT-1` and `SDI-OUTPUT-1` are **the same type** — `rear-port` of
-type `bnc`. The only thing distinguishing an input from an output is **the English word inside
-the name string**. Analog audio degrades to `type: other`. A machine cannot validate that you
-have not patched an output to an output; it cannot compute signal direction; it cannot tell
-audio from video. This single file is the most economical proof available that the segment's
-best data model does not fit AV.
+Note what is encoded in two lines: port identity, signal type, **cable length**, **cable label**,
+and a display colour. **38 built-in signal types.** Validation covers type mismatches ("SDI
+output cannot feed an HDMI input"), direction, **over-booked inputs**, **impedance warnings**
+("balanced to unbalanced: level drop") and adapter detection requiring an explicit `via`.
+The README's stated design principle is the best sentence in this dossier:
 
-### Rackula — the newcomer building the missing layer
+> "The faults worth catching are the ones where **the cable plugs in perfectly and nothing
+> works**."
 
-**What it does.** A drag-and-drop rack layout designer (MIT, `LICENSE` © 2026 Gareth Evans;
-version `26.8.0` CalVer; first commit 2025-12-25; 1,674 stars). SvelteKit/TypeScript,
-self-hostable via Docker, Proxmox LXC or bare metal. README-stated features (**FACT**): device
-images sourced from the NetBox devicetype-library "not grey boxes"; export to PNG, PDF or SVG;
-share via URL or QR code; mobile-friendly for field use; **"Bayed rack grouping for AV installs
-and multi-cabinet deployments"**; optional API-backed layout sync; optional local or OIDC auth.
-Its stated audiences include "**AV Technicians** — Bayed rack support for audio installs, map
-out amp racks, patch bays, and processor chains."
+Outputs: themed SVG, **editable draw.io files**, **cable schedules as TSV**, and wireless
+path/channel documentation. Ships React/Vue/Astro integrations and a VS Code extension.
 
-**Physical model.** The README is unusually rigorous about rack geometry (**FACT**): racks are
-modelled in whole U per **EIA-310**; "If something sits at U5, it is really at U5, not floating
-part of a unit above it." Sub-U gear does not bolt to rails on its own — it "rides inside a 1U
-carrier (a bracket, tray, or shelf)… The carrier registers to the rails, and the small devices
-register to the carrier." `RackWidth` is typed `10 | 19 | 21 | 23`.
+**WireViz** (FACT, `github.com/wireviz/WireViz`; GPL-3.0; 5.2k stars, 311 forks, 160 open
+issues). YAML in; SVG/PNG wiring diagrams, GraphViz files, **BOM as tab-separated text**, and an
+HTML page with diagram and BOM embedded. Supports IEC 60757 colour abbreviations, DIN 47100,
+25-pair and TIA/EIA colour schemes, automatic wire-gauge conversion, and auto-routing for simple
+connections. It is **pin-level** — a genuinely finer granularity than anything else here. Its own
+README still warns: "This is very much a work in progress. Source code, API, syntax and
+functionality may change wildly at any time."
 
-**Data model — the important part.** In `src/lib/types/index.ts` (**FACT**, verbatim):
+**INFERENCE:** kumihimo is essentially "WireViz for AV" and is one contributor and about eighteen
+months from being genuinely useful. Its low star count (1) means the idea is unproven in the
+market, not that it is wrong. The **draw.io export** is the shrewdest decision in it: it meets
+practitioners inside the tool they already fell back to.
 
-```ts
-/**
- * Port signal direction (spike #1927; used for AV signal routing)
- */
-export type PortDirection = "input" | "output" | "bidirectional";
+### 7. Notable others, briefly
 
-/**
- * Signal type carried by a port, independent of the physical connector.
- * The connector (InterfaceType) describes the plug; the signal type describes
- * what flows through it (e.g. an XLR can carry mic, line, or AES3).
- */
-export type SignalType =
-  | "analog-audio-mic"    | "analog-audio-line"  | "analog-audio-speaker"
-  | "digital-audio-aes3"  | "digital-audio-dante" | "digital-audio-avb"
-  | "digital-video-hdmi"  | "digital-video-sdi"
-  | "clock-word"          | "control-midi";
-```
+**Rackula** (FACT, `github.com/RackulaLives/Rackula`; MIT; 1.7k stars, 1,929 commits;
+Svelte + TypeScript; Docker/LXC/bare-metal self-host, optional OIDC). Drag-and-drop rack layout
+with **real hardware images sourced from NetBox's devicetype-library**, EIA-310 modelling
+(1U = 1.75 in), sub-1U devices via carrier brackets, bayed multi-cabinet grouping, PNG/PDF/SVG
+export, URL and QR sharing. The README describes rack elevations only — **but the issue tracker
+shows connectivity being actively built**: issue #3117 concerns port indicators not rendering for
+container-child devices, and #3122 concerns cleaning up **"strand connections"** referencing
+removed devices, both referencing connectivity milestones M005/M006 (FACT, opened issues page).
+So the previous pass's read stands and has advanced: **the most-starred open-source rack tool is
+growing a port-and-connection model.**
 
-That comment is the correct modelling insight for this entire segment, stated in one sentence:
-**the connector and the signal are orthogonal**. NetBox conflates them; GDTF partially separates
-them; Rackula separates them cleanly. `InterfaceTemplate` then carries optional `direction` and
-`signal_type` alongside the NetBox-compatible `type`, explicitly as "Rackula extensions".
+**The CAD-parser tier — tvCAD and Cable Scheduler** (SNIPPET). Both are Australian, both keep the
+engineer in AutoCAD and parse the DWG afterwards. Cable Scheduler names Foxtel, Fox Sports,
+ABC TV Australia, Telstra Broadcast, Techtel, NEP, MediaHub and Magna as users, claims one-click
+schedules, equipment lists and cable searches, and positions itself explicitly against
+"ConnectCAD, VidCAD, D-Tools and Star Draw"; it is a Windows application and explicitly **not**
+cloud-based or outside the firewall. tvCAD uses "ACNE-style CAD blocks with additional features
+like connector types and cable types" and reports to Excel. **INFERENCE:** this tier exists
+because large broadcasters will not abandon AutoCAD, and it is the clearest proof that
+**the report generator, not the editor, is where the value is felt.**
 
-**Connections and validation.** `src/lib/stores/connection.svelte.ts` implements port-to-port
-connections referencing `PlacedPort.id`, undoable through a recorded-command pattern. Its
-header comment records a migration worth learning from (**FACT**, verbatim):
+**Middle Atlantic RackTools / Configurator** (SNIPPET). Free vendor tool producing rack elevation,
+plan, side and rear drawings plus purchase orders and quotes, drag-and-drop, exporting complete
+drawings to AutoCAD at 1:1 since v3.5. **INFERENCE:** free vendor configurators are how a large
+share of rack elevations actually get drawn, and they lock the drawing to one manufacturer's
+catalogue.
 
-> "This supersedes the deprecated Cable model, which used fragile device-id + interface-name
-> references; Cable was retired in #3091, and a prior-release layout's `cables` migrates to
-> Connection on read"
-
-`validateConnection()` returns separate `errors` and `warnings` — errors block, warnings do
-not. Errors: connecting a port to itself; a port that already has a connection; a duplicate
-connection between the same two ports in either direction. Category/type mismatch is a
-**warning only**, with the stated rationale that "a mismatched connection is still allowed,
-e.g. bridging a network port to a console port for out-of-band access." (**FACT**) That
-errors/warnings split is a mature DRC design: refuse the impossible, flag the improbable.
-
-**Notable limits.** It is a **rack layout** tool that has begun growing signal awareness, not a
-signal-flow tool. I found **no BOM generation, no patch-sheet export, no label printing and no
-cable-schedule report** anywhere in `src/` (searched for `bom`, `bill of material`,
-`label print`, `patch sheet`; the only hits were an archive-guardrails test and share/archive
-utilities). Port-ID stability across save/load is explicitly noted as unfinished — the
-connection store's own comment says "Serialization with stable port IDs across save/load is out
-of scope here — see #3090." (**FACT**) It is young: nine months old, 160 open issues.
-
-### WireViz — the right idea, pin-level and BOM-complete, but dormant
-
-**What it does.** A Python CLI that turns one YAML file into a wiring-harness drawing (via
-Graphviz) plus a bill of materials. 5,232 stars — by far the most-starred thing in this
-segment's open tier.
-
-**Data model** (`docs/syntax.md`, **FACT**). Five top-level sections: `connectors`, `cables`,
-`connections`, `additional_bom_items`, `metadata`, `options`, `tweak`.
-
-- **Connectors** carry `type`, `subtype`, `color`, `image`, `notes`; procurement fields `pn`,
-  `manufacturer`, `mpn`, `supplier`, `spn` and `additional_components`; and pinout via
-  `pincount` / `pins` / `pinlabels` / `pincolors`, plus `loops` (pairs of pins shorted
-  together) and `hide_disconnected_pins`.
-- **Cables** carry `category: bundle`, `gauge` (accepts `mm2` or `AWG`, with `show_equiv` to
-  auto-convert and display the other), `length` with a unit, `shield` (addressable as wire ID
-  `s`), `wirecount`, `colors`, `color_code` and `wirelabels`.
-- **Connections** are *connection sets* — alternating lists of connectors and cables, allowing
-  many parallel connections to be declared at once with pin ranges (`1-4`), pin labels, wire
-  colours, and auto-generated connectors. Arrows (`--`, `<--`, `-->`, `<-->`) express pin-to-pin
-  mating; double arrows (`==`, `<==>`) express whole-connector mating.
-
-**BOM.** `src/wireviz/wv_bom.py` defines the columns exactly (**FACT**):
-`BOM_COLUMNS_ALWAYS = ("id", "description", "qty", "unit", "designators")` and
-`BOM_COLUMNS_OPTIONAL = ("pn", "manufacturer", "mpn", "supplier", "spn")`. Entries are grouped
-by a key derived from description, unit and the procurement fields — so two otherwise identical
-cables with different part numbers stay separate line items. One sharp, honest limit is
-documented in the syntax reference: "Units are not converted during BOM generation; different
-units result in separate BOM entries." (**FACT**) Mix metres and feet and your BOM silently
-splits.
-
-**Outputs.** `wv_cli.py` maps `h→html`, `p→png`, `s→svg`, `t→tsv`. Notably, **CSV and PDF are
-present but commented out** in the source (`# "c": "csv"`, `# "P": "pdf"`). (**FACT**)
-
-**Notable limits.** No racks, no rack units, no physical placement, no patch panels, no
-direction, no signal type. It documents a harness, not a facility. And it appears **dormant**:
-latest changelog entry is **0.4.1, dated 2024-07-13**; the last commit on `master` is
-**2025-01-16**; there are **195 open issues** and no git tags in the default clone. (**FACT**)
-Depending on WireViz today would be a bet on a project that has not shipped in over two years.
-
-### RackTables — the only tool that knows what cable you actually have
-
-811 stars, GPL, PHP + MySQL, last commit 2026-06-26. Its schema (read from the `CREATE TABLE`
-statements in `wwwroot/inc/install.php`) contains something no other product here has
-(**FACT**):
-
-```sql
-CREATE TABLE `PatchCableHeap` (
-  `id` ..., `pctype_id` ..., `end1_conn_id` ..., `end2_conn_id` ...,
-  `amount` smallint(5) unsigned NOT NULL DEFAULT '0',
-  `length` decimal(5,2) unsigned NOT NULL DEFAULT '1.00',
-  `description` char(255) DEFAULT NULL, ...
-```
-
-A **heap of patch cables**: cable type, the connector on each end, how many you have, and how
-long they are — with foreign keys into `PatchCableConnectorCompat` so that a stocked cable's
-end connectors must be valid for its type. Alongside it, `PatchCableOIFCompat` maps a cable
-type to a `PortOuterInterface`, i.e. **which cable types can legally plug into which port
-type**. Together these give two capabilities absent everywhere else: *inventory-aware planning*
-("you planned 30 patch leads, you own 12") and *connector-level design-rule checking* derived
-from a compatibility table rather than hard-coded.
-
-**Notable limits.** PHP/MySQL of an older generation; no verified API; documentation and UI
-conventions that assume a data-centre vocabulary. **UNKNOWN:** whether the compatibility tables
-ship populated with anything beyond IT connectors — I read the schema, not the seed data.
-
-### openDCIM — a cautionary tale, dated
-
-Included because the brief named this tier and because its status is a hard, dated fact. The
-repository README's **first line** is now (**FACT**, verbatim):
-
-> "# Maintainer needed
->
-> After working on openDCIM for nearly 20 years, I feel that I've contributed more than enough
-> and am looking towards retirement and more relaxing hobbies. If any contributors would like
-> to take over the project, reach out to me… I will be packaging up a final release - 26.01 -
-> in the coming weeks and also retiring the opendcim.org domain name upon expiration of that
-> registration."
-
-364 stars, GPLv3, originally developed at Vanderbilt University by Scott Milliken. Commits
-continue (last: 2026-08-14) but the project is explicitly winding down and its domain will
-lapse. **INFERENCE:** the open DCIM tier is consolidating onto NetBox; a 20-year-old GPL
-incumbent shutting down while NetBox ships quarterly feature releases is what consolidation
-looks like.
-
-### The commercial AV/CAD tier — what I could not verify, and what to check
-
-Stated explicitly so this dossier is not mistaken for coverage. For **Vectorworks Spotlight +
-ConnectCAD, D-Tools System Integrator / D-Tools Cloud, XTEN-AV, WireCAD and Stardraw Design 7**
-I have **no verified information whatsoever**: no price, no feature list, no file format, no
-API, no data model, no offline behaviour. All vendor hosts were blocked.
-
-To close this gap in a session with working web access, fetch in this order:
-
-1. Pricing pages (`d-tools.com`, `xtenav.com`, `wirecad.com`, `stardraw.com`,
-   `vectorworks.net`) — record price **and** whether it is advertised or quote-only.
-2. Vectorworks ConnectCAD documentation on `university.vectorworks.net` — specifically its
-   **record/field schema** for devices, ports and circuits, since that determines whether a
-   `.vwx` can round-trip port-level data at all.
-3. Any published import/export format: does ConnectCAD or WireCAD read or write CSV, XML, DXF?
-   This is the single most decision-relevant unknown for interoperability.
-4. Practitioner discussion on r/VIDEOENGINEERING, ControlBooth and Blue Room for the
-   Excel-fallback question, which no vendor page will answer.
+**The stage-plot / patch-sheet apps** (SNIPPET): StagePlot Guru (iPad, USD 4.99 pro upgrade),
+StageRider, Stage Viewer, AudioPatch (festival master patch generating per-act input lists and
+FOH/monitor splits, tie-line patching), Stageplot Pro (input list auto-generated as gear is
+placed). These are the audio half of the same problem and they are **much** cheaper and much more
+used than tier 1. AudioPatch's festival model — one master patch, N derived per-act views — is a
+pattern nothing in the video/broadcast tools has.
 
 ---
 
 ## Standards & protocols
 
-### GDTF and MVR — DIN SPEC 15800 / 15801 (the most relevant standard in this segment)
+### AV documentation standards (the most under-exploited assets in this segment)
 
-Read in full from `mvrdevelopment/spec` (**FACT** throughout). **GDTF** (General Device Type
-Format) is standardised as **DIN SPEC 15800:2022-02**; **MVR** (My Virtual Rig) as **DIN SPEC
-15801:2023-12**. These are *German* DIN specifications, which matters for a German-market
-product.
+| Standard | What it is | Status |
+| --- | --- | --- |
+| **ANSI/CTA/CEDIA/InfoComm J-STD-710** (2015) | *Audio, Video and Control Architectural Drawing Symbols.* A standardised set of architectural floor-plan and reflected-ceiling-plan symbols for AV, control, environmental control and communication networks — **84 symbols** for equipment, devices, sensors, control interfaces and cabling, with usage guidance. | **The standard document itself is free from AVIXA**; the *digitised symbol files* are sold separately (member discount). Stardraw licensed and implemented them into Design 7.2 in March 2016 — the only vendor adoption found. (SNIPPET) |
+| **ANSI/AVIXA F501.01:2015** | *Cable Labeling for Audiovisual Systems.* Requirements for AV cable labelling to aid operation, support, maintenance and troubleshooting. | Published. (SNIPPET) |
+| **ANSI/AVIXA F502.01:2018** | *Rack Building for Audiovisual Systems.* Rack mounting, cable management for power and signal, thermal management, finishing. | Published. (SNIPPET) |
+| **ANSI/AVIXA F502.02:2020 (R2023)** | *Rack Design for Audiovisual Systems.* Minimum rack planning and design requirements, required process inputs and outputs. | Published. (SNIPPET) |
 
-This is the one open standard in the entertainment industry that models **ports and cabling at
-pin level**, and almost nobody outside lighting seems to know it.
+**Correction to the brief:** the seed list attributes cable labelling to F502.01. It is
+**F501.01**; F502.01 and F502.02 are rack building and rack design respectively.
 
-**GDTF `WiringObject` geometry** (`gdtf-spec.md`, Table 50) describes an electrically
-connectable interface on a device, with these attributes:
+**INFERENCE, and it is the strongest product opportunity in this section:** there is a free,
+ANSI-accredited symbol standard for AV drawings, an ANSI/AVIXA standard for how cables must be
+labelled, and two for how racks must be designed and built — and in ten years of the standard's
+existence I found **exactly one** vendor adoption announcement (Stardraw, 2016). A planner that
+emitted J-STD-710-conformant symbols and F501.01-conformant labels would be able to make a
+compliance claim no competitor is making, at near-zero implementation cost.
 
-| Attribute | Meaning |
+### Interchange formats
+
+| Format | Role in this segment | Notes |
+| --- | --- | --- |
+| **DWG / DXF** | The lingua franca of tier 1 and tier 3. | WireCAD is DWG-native with a SQL database beside it; tvCAD and Cable Scheduler parse DWG; Middle Atlantic RackTools exports to AutoCAD at 1:1; EasySchematic and `ng-diagram-av-schematic` both export DXF. **DXF is the minimum viable interchange for this segment.** |
+| **GDTF — DIN SPEC 15800** | *General Device Type Format.* Unified data-exchange definition for controllable devices, standardised as DIN SPEC 15800 (DIN recognition 2020). | Lighting-first, but the *device-description* idea generalises. Spec at `github.com/mvrdevelopment/spec`. |
+| **MVR — DIN SPEC 15801:2023-12** | *My Virtual Rig.* Open standard for exchanging scene geometry and complete show setups as planning status between consoles, CAD and pre-visualisation. Current version supports lighting devices, media servers and rigging items (trusses, hoists). | Built on GDTF. The one genuinely working, DIN-standardised, cross-vendor planning interchange in the entertainment industry — and it does **not** cover AV signal flow. |
+| **CSV / TSV** | The real interchange layer. | EasySchematic imports CSV cable schedules; kumihimo emits TSV cable schedules; tvCAD reports to Excel; H2R Gear exports patch lists and cable schedules to CSV. **INFERENCE: CSV in/out is not a fallback in this segment, it is the actual integration standard.** |
+| **draw.io XML** | Editable-diagram interchange. | kumihimo exports it deliberately; `product_library` on GitHub publishes draw.io libraries of broadcast equipment. |
+| **YAML** | Text-defined harness/system source. | WireViz (harness), kumihimo (DSL, own syntax), NetBox devicetype-library (device definitions, CC0). |
+| **GraphML** | Graph interchange. | yEd's native format; already exported by cable-planner. |
+
+### Wire protocols relevant as documentation sources
+
+| Protocol | Why it matters here |
 | --- | --- |
-| `Name` | "also the name of the interface to the outside" |
-| `ConnectorType` | from Annex D, or custom (e.g. "Loose End") |
-| `ComponentType` | `Input`, `Output`, `PowerSource`, `Consumer`, `Fuse`, `NetworkProvider`, `NetworkInput`, `NetworkOutput`, `NetworkInOut` |
-| `SignalType` | predefined `Power`, `DMX512`, `Protocol`, `AES`, `AnalogVideo`, `AnalogAudio`; custom strings allowed |
-| `PinCount` | pins available on the connector |
-| `ElectricalPayLoad` / `VoltageRangeMin/Max` / `FrequencyRangeMin/Max` / `CosPhi` | consumer power data, in watts / volts / hertz |
-| `MaxPayLoad` (VA) / `Voltage` | power-source capacity |
-| `FuseCurrent` (A) / `FuseRating` (`B`,`C`,`D`,`K`,`Z`) | protection device |
-| `SignalLayer` | "all wiring geometry that use the same Signal Layers are connected"; `0` = connected to all |
-| `Orientation` | `Left`, `Right`, `Top`, `Bottom` — where the pins sit |
-| `WireGroup` | grouping name |
-
-Plus a child `<PinPatch>` node (Table 51) with `ToWiringObject`, `FromPin`, `ToPin` — i.e.
-**internal pin-to-pin routing inside a device**. So GDTF can express "pin 2 of the input XLR
-goes to pin 3 of the output XLR" *inside* the device, which is exactly what a patch panel, a
-breakout or a phase-reversed cable needs.
-
-**MVR `<Connection>`** (Table 61) then joins devices at that level: attributes `own` and
-`other` are node links to `WiringObject` geometries, `toObject` is the UUID of the other scene
-object. The spec states: "This nodes defines an connection of two scene object. The connection
-can be an electrical or data connection." A real example from the spec:
-
-```xml
-<Connections>
-  <Connection own="Input" toObject="8BF13DD7-CBF4-415B-99E4-625FE4D2DAF6" other="Output1"/>
-  <Connection own="1"     toObject="8BF13DD7-CBF4-415B-99E4-625FE4D2DAF6" other="IN"/>
-</Connections>
-```
-
-**Annex D — predefined connector types** is a ready-made, standardised connector vocabulary
-covering AV and European power, including: `BNC`, `XLR3`, `XLR4`, `XLR5`, `RJ45`, `RJ11`,
-`HDMI`, `DisplayPort`, `DVI`, `SVIDEO`, `RCA`, `SCART`, `STJ`/`MSTJ` (stereo and mini jack),
-`TL-ST` (TosLink), `NL4` (Speakon), fibre `LCDUP`/`SCDUP`/`SC`/`ST`, `EDAC20`–`EDAC120`,
-`DB9`–`DB50`, `HD15`, `Socapex-7/9/16`, `HAN-4`, `HAN-16`, and the European power set:
-`CEE 7/7` ("Schutzkontakt"), `IEC 60320-C7/C8` ("Eurostecker"), `IEC 60320-C13/14`,
-`16A-CEE`, `32A-CEE`, `63A-CEE`, `125A-CEE` plus 2-pole and 110 V variants, `Powerlock`
-(120/400/660/800 A), `Camlock`, `NAC3FCA`/`NAC3FCB`/`PowerconTRUE1`/`powerCONTRUE1TOP`,
-`Stagepin`, `L6-20`, `L15-30`, `Wieland`, `Edison`, `DIN 56905` ("Eberl").
-
-**The gap, verified.** A grep of `gdtf-spec.md` for `SDI|MADI|Dante|AES67|NDI` returns
-**zero matches**. (**FACT**) GDTF's `SignalType` can say `AnalogVideo` and `AES`; it cannot say
-3G/12G-SDI, MADI, Dante, AES67 or NDI without a custom string. The connector list has `BNC` but
-no SMPTE hybrid fibre camera connector. **The entertainment industry's DIN-standardised device
-format cannot natively describe a broadcast video signal.**
-
-**MVR-xchange** is the live-sync side of the standard: a discovery-and-transfer protocol with a
-**TCP mode** and a **WebSocket mode**, mDNS service discovery, and messages including
-`MVR_JOIN`. (**FACT**, `mvr-spec.md`)
-
-### Blackmagic Videohub control protocol
-
-Verified from source and captured protocol dumps in `gfto/videohubctrl` (MIT). (**FACT**)
-
-- Transport: **plain TCP, default port 9990**, line-oriented text, blocks separated by blank
-  lines, `ACK` / `NAK` responses.
-- Block headers, from `cmd.c`: `PROTOCOL PREAMBLE`, `VIDEOHUB DEVICE`, `INPUT LABELS`,
-  `OUTPUT LABELS`, `VIDEO OUTPUT ROUTING`, `MONITORING OUTPUT LABELS`, plus serial-port,
-  processing-unit, frame and alarm blocks.
-- A real capture (`test/input-00.txt`):
-
-  ```
-  PROTOCOL PREAMBLE:
-  Version: 2.4
-
-  VIDEOHUB DEVICE:
-  Device present: true
-  Model name: Blackmagic Micro Videohub
-  Friendly name: My Videohub
-  Unique ID: 7c2e0d021714
-  Video inputs: 16
-  Video processing units: 4
-  Video outputs: 16
-  Video monitoring outputs: 4
-  Serial ports: 8
-
-  INPUT LABELS:
-  0 Windows 1
-  ...
-  VIDEO OUTPUT ROUTING:
-  0 2
-  1 1
-  ```
-
-  Ports are **zero-indexed**; labels are `index name`; routing lines are `destination source`.
-
-**Why this belongs in a planning dossier.** The router holds **the operator's own names for
-every port** and the current crosspoint state. That makes a Videohub a live, authoritative
-source of patch documentation — and a target to *write* planned labels back into. The tool's
-`--backup` flag, which "Show[s] the command line that will restore the device to the current
-configuration," is effectively a round-trip documentation feature. (**FACT**)
-
-### Ember+
-
-`Lawo/ember-plus` (C++, 140 stars) is Lawo's openly published control protocol, described in
-its own repository as "Ember+ control protocol - Slick and free for all!". Third-party
-provider/consumer libraries exist in .NET (`Lawo/ember-plus-sharp`, Sveriges Radio's NuGet
-provider/consumer libraries) and JavaScript (`DeutscheSoft/ember-plus`). (**FACT**, repository
-metadata and descriptions.) **UNKNOWN:** I did not read the specification, so I make no claim
-about its data model or its suitability as a documentation source. The brief's premise — that
-VSM/Lawo systems are worth reading *as* documentation of what is patched — is plausible
-(**INFERENCE**) but unverified here.
-
-### Other formats
-
-- **WireViz YAML → Graphviz DOT → SVG/PNG/HTML/TSV.** Text-defined, diffable, version-
-  controllable. (**FACT**)
-- **NetBox devicetype-library YAML** — the de-facto equipment-definition format, consumed by
-  NetBox and by Rackula. Keys seen: `manufacturer`, `model`, `slug`, `part_number`, `u_height`,
-  `is_full_depth`, `airflow`, `weight`/`weight_unit`, `console-ports`, `power-ports`,
-  `interfaces`, `rear-ports`. (**FACT**)
-- **GraphML** — a generic XML graph interchange format. Relevant because cable-planner already
-  has a `graphml:*` IPC domain and a GraphML import path. (**FACT**, read in the local repo.)
-- **DXF / DWG / `.vwx` / Visio `.vsdx`** — the drawing-exchange formats of tier 1 and tier 3.
-  **UNKNOWN** in every respect here; no vendor documentation was reachable.
-- **AVIXA standards** (drawing symbols, cable labelling) — `avixa.org` was blocked.
-  **UNVERIFIED**; I decline to characterise standards I could not open.
+| **Blackmagic Videohub Ethernet Protocol** | Text-based protocol on **TCP port 9990**. On connect the server sends a complete state dump, then pushes updates on every change. Blocks are all-caps headers followed by a colon, multi-line, terminated by a blank line; lines end with newline. Blocks cover device information, **labels**, routing, lock status and hardware status. Published by the vendor as *Videohub Developer Information*. (SNIPPET; primary PDF at documents.blackmagicdesign.com) — **the label block makes a router a readable source of truth for port naming.** |
+| **Ember+** | Used by Lawo VSM to control Riedel MediorNet video routing over IP. (SNIPPET, docs.lawo.com) |
+| **TSL (v5)** | Tally and label transfer, e.g. VSM to internal multiviewers. (SNIPPET, docs.lawo.com) |
+| **AMWA NMOS IS-04 / IS-05** | IS-04 registration and discovery, IS-05 connection management, for SMPTE ST 2110 systems. **INFERENCE:** in a 2110 plant, IS-04 *is* the live device-and-port inventory and IS-05 *is* the live patch state — the closest thing to an automatic as-built that exists, and no planning tool in this segment consumes it. |
+| **Broadcast controllers as documentation** | VSM and RRCS hold the authoritative crosspoint, label and panel configuration of a facility. The seed brief's framing is right: these are documentation sources being used as control systems. Extracting from them is unexplored territory. |
 
 ---
 
 ## What this segment does WELL
 
-Patterns worth stealing, each anchored to something verified above.
+Patterns worth stealing, each attached to who does it:
 
-1. **Separate the cable from the path.** NetBox's `Cable` / `CableTermination` / `CablePath`
-   split is the single best idea in the segment. Three cables and two patch panels compose into
-   one traceable path, and the panels are traversed, not treated as endpoints. Any tool that
-   stores "device A port 1 → device B port 2" as a flat edge cannot answer "what is actually
-   reaching this input?" once a patch bay is in the middle.
-2. **Model panels with positions, not just ports.** `FrontPort.rear_port` + `positions`, with
-   validation that positions cannot be fewer than mappings, is how you represent a real
-   cassette or a 48-way normalled bay.
-3. **Give multicore an explicit vocabulary.** NetBox's cable *profiles* — `1C8P`, `2C4P shuffle`,
-   `1C8P:8C1P breakout` — turn "it's a snake" into a checkable structure.
-4. **Separate the connector from the signal.** Rackula's comment says it best: "an XLR can
-   carry mic, line, or AES3." Connector type and signal type are orthogonal axes and conflating
-   them is what makes NetBox unable to describe AV.
-5. **Split validation into errors and warnings.** Rackula refuses self-connections, double-
-   booked ports and duplicates, but only *warns* on a category mismatch because the operator
-   sometimes means it. DRC that blocks legitimate work gets switched off.
-6. **Derive the BOM from the design, never maintain it separately.** WireViz generates the BOM
-   from the same YAML that draws the harness, grouping by part number so procurement-distinct
-   items stay distinct.
-7. **Make the source text diffable.** WireViz's YAML puts a harness under version control.
-   A binary CAD file cannot be reviewed in a pull request.
-8. **Render from data, don't draw by hand.** NetBox emits rack elevations *and* cable traces as
-   SVG from the database. The drawing can never drift from the truth because it is a projection
-   of it.
-9. **Track the stock, not just the design.** RackTables' `PatchCableHeap` plus the
-   type↔connector↔port compatibility tables let the plan be checked against what is physically
-   owned, and let connector legality be data rather than code.
-10. **Be honest about geometry.** Rackula's insistence on whole-U EIA-310 placement and 1U
-    carriers for sub-U gear avoids a class of quietly wrong drawings.
-11. **Read the live system.** A Videohub answers on TCP 9990 with every port label and every
-    crosspoint. Documentation that can be diffed against reality beats documentation that
-    cannot.
+1. **The drawing is a view; the database is the project.** WireCAD (VistaDB/SQL Server per
+   project) and NetBox (Postgres + REST/GraphQL) both got here from opposite directions. Anything
+   that stores the design *as geometry* eventually loses to something that stores it as records.
+2. **Port-level typing with live validation.** EasySchematic (73 signal types, green/red feedback,
+   auto-inserted adapters), kumihimo (38 types plus impedance and over-booked-input checks),
+   WireFlow ("HDMI cannot land on SDI, Dante stays on network ports"). The whole new tier
+   converged on this independently. It is the segment's settled answer to "what is a connection?"
+3. **The pass-through port abstraction.** NetBox's FrontPort/RearPort + PortMapping, and its rule
+   of continuing to trace *through* pass-throughs until reaching a real endpoint, is the correct
+   model of a patch panel and nothing in the AV tier implements it properly.
+4. **Cable profiles / lanes.** NetBox 4.5 modelling breakout and shuffle cables as lanes, so a
+   trace can follow one channel rather than the whole cable. Directly applicable to MPO fibre,
+   MADI, and every 4K quad-link SDI installation.
+5. **Schema-driven cable numbering.** WireCAD concatenating any field associated with the cable
+   into a numbering scheme, then error-checking the database for the next free number. Not a
+   string template — a constraint.
+6. **Report generation as the actual product.** tvCAD and Cable Scheduler exist *purely* as
+   report generators over someone else's drawing, and have broadcaster customers. EasySchematic
+   ships a WYSIWYG report editor with grouping, sorting and custom headers. The engineer's
+   perceived value is the paperwork, not the canvas.
+7. **Print fidelity as a first-class feature.** EasySchematic's vector PDF preserving mounting
+   holes and rack occupancy, Letter through **A0**, and **100 %-scale designation strips sized to
+   fit physical patch-panel label holders**. That last detail is the difference between a tool an
+   engineer likes and one they depend on.
+8. **Community device libraries with a public API.** NetBox devicetype-library (CC0, YAML,
+   1.4k forks), EasySchematic (3,800+ templates over an unauthenticated public API, submissions
+   from a right-click on the canvas), PatchMyGear (public library, user submissions). Library
+   breadth is the moat in tier 1 — Stardraw advertises 130,000+ symbols from 1,600+ manufacturers
+   — and the open tier is reaching it by crowdsourcing.
+9. **Free-tier-to-paid at a sane price point.** WireFlow: free tier of three editable diagrams,
+   five custom devices, full preset library, PNG export and one read-only share link; Pro at
+   USD 5–14.99/month. Compare tier 1 at USD 1,500–3,500/year.
+10. **Text-defined, diff-able designs.** kumihimo and WireViz. A signal flow that lives in git,
+    reviews in a pull request, and validates in CI is a category nobody in AV has properly built.
 
 ---
 
 ## What NOBODY in this segment solves well
 
-The white space, in descending order of how confident I am.
+The white space, ordered by how confident I am that the gap is real:
 
-1. **No tool has both a real cable data model and AV signal semantics.** This is the headline
-   and it is *verified*, not asserted. NetBox has the best path model in existence and its
-   cable-type enum contains no SDI, HDMI, XLR or audio type at all. GDTF has pin-level wiring
-   objects and a `SignalType` that cannot say SDI, MADI, Dante, AES67 or NDI (zero grep hits).
-   The community device library resorts to encoding signal direction in an English name string
-   (`SDI-INPUT-1` vs `SDI-OUTPUT-1`, both `type: bnc`). **Rackula alone is building the missing
-   layer, is nine months old, and does not yet have BOM, patch sheets or labels.**
-2. **Port direction is unmodelled almost everywhere.** NetBox interfaces are directionless by
-   design — reasonable for Ethernet, wrong for SDI, where an output-to-output patch is simply
-   an error. Without direction there is no meaningful DRC for video and no automatic left/right
-   layout of a signal-flow canvas.
-3. **The BOM/drawing/patch-sheet triangle is never closed by one tool.** WireViz generates a
-   BOM but has no racks, no panels and no placement. NetBox has racks, panels and paths but I
-   found no BOM generation. Rackula has racks and connections but no BOM, no patch sheet and no
-   labels. The commercial tier claims to close it — **UNVERIFIED**, and closing it is precisely
-   what those licences are sold on.
-4. **Label printing is nobody's job.** Cable labelling is the most repetitive, most error-prone
-   task in the entire workflow, and not one product examined here prints a label. The open-source
-   answer is a *generic* printer driver — `pklaus/brother_ql` (708 stars, Brother QL raster
-   protocol) and its web wrapper (318 stars) — with no connection to any design tool. The
-   integration between "the design knows this cable is CAM-3 SDI OUT → MV IN 4" and "the printer
-   makes that label" does not exist in open form. (**FACT** that the printer libraries exist and
-   are standalone; **INFERENCE** that no design tool drives them.)
-5. **Inventory-awareness is nearly extinct.** RackTables' patch-cable heap is the only stock
-   model found in the whole segment, in the oldest and least fashionable product. Everywhere
-   else, planning proceeds as though cable is infinite.
-6. **Length is decorative.** NetBox stores `length` + `length_unit` and normalises to metres
-   for sorting; WireViz stores a length but explicitly refuses to convert units in the BOM, so
-   metres and feet split into separate line items. Nothing found computes a required length from
-   geometry, adds service loops, or reconciles planned against stocked lengths.
-7. **Unit and mixed-unit handling is a real, documented bug class.** See the WireViz caveat
-   above — it is written in the vendor's own syntax reference.
-8. **Offline-first is a self-hosting story, not a laptop story.** NetBox, Nautobot, RackTables
-   and openDCIM are all "offline" only in the sense that you can run a PostgreSQL/MySQL server
-   yourself. None of them is a thing an engineer opens on a laptop in a truck with no network.
-   The genuinely offline tools in this segment are a CLI (WireViz) and a general-purpose diagram
-   editor (drawio-desktop). **This is the largest unclaimed position in the segment.**
-9. **The AV equipment library does not exist.** 6,021 device definitions, 12 mentioning SDI,
-   zero directories for Ross, Grass Valley, Evertz, Lawo, Riedel, Sony, Panasonic, Extron,
-   Crestron, Biamp, QSC, Shure, AJA or Barco. Whoever builds a good broadcast/AV device library
-   with correct port lists, directions and signal types owns a moat, because that library is
-   slow, boring work that no single vendor is incentivised to do.
-10. **Generic diagram tools bring IT stencils only.** draw.io ships rack stencils for APC, HP,
-    F5, IBM, Dell, Oracle and HPE Aruba (`src/main/webapp/stencils/rack/`) — **not one AV
-    vendor**. (**FACT**) So the fallback tool actively pushes AV users toward drawing grey boxes.
-11. **No interchange between tiers.** GDTF/MVR is a DIN standard with a real connection model,
-    and the IT tier has never heard of it; the AV/CAD tier publishes no formats at all
-    (0 GitHub hits for ConnectCAD, 1 irrelevant hit for WireCAD). There is no path by which a
-    rack designed in one tool becomes a patch sheet in another.
-12. **Two-way sync with the live system is absent.** A Videohub will tell you its labels and
-    crosspoints over TCP 9990, and nothing in this segment reads them to diff plan against
-    reality, or writes a planned label set back.
+1. **AV semantics on top of a proper physical model.** NetBox has flawless structure and no idea
+   what SDI is. The AV tools know what SDI is and model patch panels as pictures. **No product
+   found does both.** This is the largest single gap in the segment.
+2. **The design ⇄ reality loop.** Every tool models the *plan*. Nothing found ingests the
+   *installed state* — not from a Videohub label dump on TCP 9990, not from NMOS IS-04/IS-05,
+   not from a switch's LLDP table — and diffs it against the design. As-built drift is the single
+   most-cited failure of documentation in this trade and it is completely unaddressed.
+3. **Signal flow that survives the patch panel.** Multi-hop patching with per-segment cable IDs
+   is implemented by exactly one product found (EasySchematic), and by nobody in tier 1's
+   verifiable feature lists. The moment a signal crosses two panels and a tie-line, every other
+   tool degrades to a drawing.
+4. **Label output that reaches a label printer.** Brady and DYMO ship their own label software
+   (Markware, DYMO ID) with their own templates (SNIPPET). AV design tools generate "cable labels"
+   as report rows. **No verified end-to-end path was found** from a design tool's cable schedule
+   into a Brady/DYMO printer with correct wrap geometry and F501.01-conformant content. Given
+   that F501.01 is an ANSI/AVIXA standard, this is a conspicuous hole.
+5. **J-STD-710 symbol conformance.** Free ANSI-accredited standard, 84 symbols, one vendor
+   adoption in a decade.
+6. **A price point between free and USD 1,500/year.** Tier 5 has started filling this in the last
+   two or three years, but with no offline-first desktop option except EasySchematic's PWA — and
+   an OB truck in a stadium car park has no internet.
+7. **Rental/inventory ⇄ design.** EasySchematic cross-references its pack list against an
+   owned-gear inventory; that is the only instance found. Nothing connects a cable schedule to
+   *the cables you actually own and their test status*.
+8. **Multi-user, offline-tolerant collaboration.** The tools are either single-user desktop
+   (tier 1, tier 3) or cloud-only multi-user (tier 2, most of tier 5). Two engineers on a truck
+   with no uplink editing the same patch is unsolved.
+9. **Standards-aware validation.** DRC in this segment means "missing connection" or "incompatible
+   equipment" (ConnectCAD) or "wrong connector type" (the new tier). Nothing validates against
+   F502.01/F502.02 rack rules — thermal, cable management, mounting — or against a signal
+   standard's real constraints (cable length limits per SDI rate, genlock distribution,
+   PoE budget, fibre loss budget).
+10. **Interchange between planning tools.** MVR/GDTF solved this for lighting under DIN SPEC.
+    There is **no equivalent for AV signal flow**. Every tool in this dossier is a data island
+    whose only exits are DXF, PDF and CSV.
 
 ---
 
 ## Relevance to AV Planner Suite
 
-**Primary: `cable-planner`.** This is that repo's home segment, and the research maps onto code
-that already exists there.
+**Primary: `cable-planner`.** This segment is that app's direct market. Cross-referencing the
+findings against `docs/research/repos/INVENTORY.md`:
 
-- **The existing NetBox import is the right bet, and this dossier explains why.**
-  `cable-planner` already ships `src/main/ipc/netboxIpc.ts`, `services/netboxApiClient.ts`,
-  `lib/netboxMapping.ts` and a `NetboxImportDialog`. The findings above validate the direction:
-  NetBox genuinely has the best cable/path model available.
-- **The hardest modelling problem in the segment is already solved in this repo — keep it.**
-  `netboxMapping.ts` documents the exact gap this dossier verifies independently, and its fix:
-  NetBox models interfaces as directionless, so directionless components are imported as a
-  mirrored in/out pair sharing one `netboxId`, while genuinely directional things (power,
-  console, front/rear port) get a single port. `frontport → in`, `rearport → out`. That is the
-  correct compensation for finding #2 above, and it is a real differentiator.
-- **The additive-import philosophy is worth defending in writing.** The same file states it:
-  NetBox is the truth about *cabling*, cable-planner is the truth about *presentation*
-  (positions, colours, waypoints, labels, multicore bundles), so re-import must never overwrite
-  layout work. That is exactly the right split — and it is the reason a rendering-from-data tool
-  like NetBox cannot replace cable-planner.
-- **Steal NetBox's cable profiles.** The `1C8P`, `2C4P shuffle`, `1C8P:8C1P breakout`
-  vocabulary is a ready-made, battle-tested schema for multicore/breakout that maps directly
-  onto Socapex tails, BNC fan-outs and fibre shuffles. New optional fields belong in
-  `healProjectPositions` per the repo's migration convention.
-- **Adopt Rackula's connector/signal separation before the data model hardens.** Its
-  `SignalType` list (`digital-video-sdi`, `digital-audio-aes3`, `digital-audio-dante`,
-  `digital-audio-avb`, `clock-word`, …) orthogonal to connector type is the correct axis split,
-  and it is MIT so the *design* can be studied freely. Equally: heed its migration lesson —
-  connections must reference **stable port IDs**, never `device-id + interface-name`, which they
-  retired as "fragile" in their issue #3091.
-- **Consider GDTF/MVR as the interoperability play.** MVR is **DIN SPEC 15801** — a German
-  standard — with a `<Connection>` node linking `WiringObject` geometries between scene objects,
-  and GDTF Annex D already enumerates BNC, XLR3/4/5, HDMI, Speakon, Socapex, CEE 16/32/63/125 A,
-  Schuko and powerCON. For a German-market product, exporting MVR is a credible bridge to
-  Vectorworks and every lighting console. Two caveats: GDTF cannot say "SDI" natively (custom
-  `SignalType` string required), and I have **not** verified which applications import MVR
-  `<Connection>` nodes in practice — check that before committing.
-- **Two clear white-space features to own:** (a) **label printing** driven by the design — the
-  segment has zero, and `pklaus/brother_ql` is a proven, standalone driver to build on;
-  (b) **true offline-first on a laptop** — every DCIM competitor needs a server, and an Electron
-  app that works in a truck with no network is a category-level differentiator, not a detail.
-- **The `videohub:*` IPC domain can become a plan-vs-reality diff.** The protocol is verified
-  above (TCP 9990, `INPUT LABELS`, `OUTPUT LABELS`, `VIDEO OUTPUT ROUTING`). Reading labels and
-  crosspoints from the live router and diffing them against the plan is a feature nothing in
-  this segment offers.
-- **The equipment library is the moat.** Rackula gets device images free from the NetBox
-  devicetype-library; that library has 7 Blackmagic entries and no Ross, GV, Evertz, Lawo,
-  Riedel, Sony or Panasonic. A curated broadcast/AV library with correct port lists, directions
-  and signal types is slow work with a long payoff.
+**Where cable-planner is already competitive or ahead**
 
-**Secondary:**
+| Capability | Segment state | cable-planner |
+| --- | --- | --- |
+| Typed ports + signal standards | Only tier 5 has it | Has it (`Port`, `SignalStandard`, `CableSpec`) |
+| Connector/compatibility DRC | ConnectCAD (verified), tier 5 | Has it, with `ok/warn/error` severity levels — **finer than any competitor's binary valid/invalid** |
+| Cable numbering schemes | WireCAD's is the best in the segment | Has schemes; worth comparing against WireCAD's field-concatenation + database next-number model |
+| Offline-first desktop | Tier 1 and 3 only — tier 5 is cloud-bound except EasySchematic's PWA | **Genuine differentiator.** Local files, opt-in integrations |
+| Live-device integration | Essentially nobody | ATEM, Videohub (routing + labels), NetBox import, Rentman, Green-GO — **no competitor found has anything comparable** |
+| Inventory ⇄ design | Only EasySchematic's pack list | Full inventory model: units, cases, storage nodes, conditions, service records, cable test results |
+| Export breadth | DXF is the segment minimum | PDF (raster + vector), DXF, GraphML, CSV, barcode/QR, pack list, asset register |
+| Collaboration | Cloud-only or single-user | CRDT + signaling relay + mobile share — offline-tolerant multi-user, which **nobody in the segment has** |
 
-- **`multicam-planner`** — camera-to-CCU-to-router chains are exactly the "path through
-  intermediate panels" problem `CablePath` solves; the same port/direction model should be
-  shared rather than reinvented.
-- **`light-planner`** — the direct beneficiary of GDTF/MVR. GDTF's `WiringObject` already carries
-  `ElectricalPayLoad`, `Voltage`, `CosPhi`, `FuseCurrent` and `FuseRating` (B/C/D/K/Z), which is
-  a complete power-calculation model, and Annex D's CEE/Schuko/powerCON/Socapex entries are the
-  European power vocabulary. This is the strongest standards fit anywhere in the suite.
-- **`shell` / suite** — the connector-and-signal type vocabulary, the equipment library and the
-  label-printing service are cross-cutting and belong at suite level, not inside one planner.
-- **`broadcast-intercom`** — intercom panels, matrix ports and four-wire tie-lines are the same
-  port-level graph; Ember+ is the likely control-plane touchpoint (**unverified**).
+**Concrete gaps this research exposes, in priority order**
 
-**Not relevant:** `tally-pi`, `sony-camera-bridge`, `pi-media-station` — runtime devices, not
-planning tools. They matter only as *equipment entries* in the library.
+1. **Pass-through port modelling (NetBox FrontPort/RearPort + PortMapping) and trace-through
+   patch panels with per-segment cable IDs.** Gap #3 above. Highest value, well-specified by an
+   open-source model you can read.
+2. **Cable profiles / lanes** (NetBox 4.5) — breakout and shuffle cables, quad-link SDI, MPO
+   fibre, MADI. Trace one lane, not the whole cable.
+3. **J-STD-710 symbols and F501.01-conformant labels.** Free standard, near-zero cost, a
+   compliance claim only one competitor in a decade has made.
+4. **Label printing that actually reaches Brady/DYMO hardware**, with correct wrap geometry and
+   100 %-scale designation strips (steal the EasySchematic detail).
+5. **The as-built diff.** cable-planner *already talks to Videohub and ATEM.* Reading the
+   Videohub port-9990 label and routing blocks and diffing them against the plan would close gap
+   #2 — the largest unsolved problem in the segment — using an integration that already exists.
+   **This is the highest-leverage item in this dossier.**
+6. **CSV cable-schedule import**, not just export. EasySchematic has it; it is how a design gets
+   rescued out of the spreadsheet it currently lives in, and it is the cheapest possible migration
+   path off Excel.
+7. **A text/DSL representation** for git-reviewable designs (kumihimo, WireViz). Speculative, but
+   uniquely suited to a project already storing JSON project files.
+
+**Competitive watch list, in order of threat:** EasySchematic (nearly the same stack, free, AGPL,
+overlapping feature set, active), Rackula (1.7k stars, growing a connection model), WireFlow
+(USD 5/mo, validation-first, LED-wall planning), Patchify (broadcast device library, offline
+Windows app).
+
+**Secondary: shell/suite.** MVR/GDTF (DIN SPEC 15800/15801) is the segment's only working
+cross-vendor interchange and light-planner already exports MVR. The suite-level lesson is that
+**`@avplan/inventory-core`'s frozen `avplan-inventory` wire format is the right instinct** — this
+entire segment fails at interchange, and a stable documented format is a differentiator, not
+plumbing.
+
+**Secondary: `light-planner`.** Confirms MVR/GDTF as the correct target and that the current
+version covers lighting devices, media servers and rigging items.
+
+**Tertiary: `tally-pi`, `broadcast-intercom`, `sony-camera-bridge`.** Relevant only as *sources
+of truth* for the as-built diff (item 5) — TSL tally/label data, intercom port configuration,
+camera-channel assignments are all documentation the plan could be validated against.
+
+**Not relevant:** `multicam-planner`, `pi-media-station`.
 
 ---
 
 ## Sources
 
-Every URL opened or repository cloned in this pass. Repositories were cloned with
-`git clone --depth 1` on 2026-08-28 and read locally; line references point into those trees.
+### Pages opened directly (FACT tier)
 
-**Cloned and read (primary source code / schemas / specifications):**
+1. https://github.com/wireviz/WireViz
+2. https://raw.githubusercontent.com/netbox-community/netbox/main/docs/models/dcim/cable.md
+3. https://raw.githubusercontent.com/netbox-community/netbox/main/docs/models/dcim/frontport.md
+4. https://github.com/netbox-community/devicetype-library
+5. https://github.com/duremovich/EasySchematic
+6. https://github.com/RackulaLives/Rackula
+7. https://github.com/RackulaLives/Rackula/issues
+8. https://github.com/Love-Rox/kumihimo
+9. https://github.com/topics/rack-diagram
+10. https://github.com/topics/signal-flow
 
-- https://github.com/netbox-community/netbox — NetBox v4.6.9; `netbox/dcim/models/cables.py`,
-  `netbox/dcim/models/device_components.py`, `netbox/dcim/choices.py`, `netbox/dcim/svg/`,
-  `docs/release-notes/version-4.6.md`
-- https://github.com/netbox-community/devicetype-library — 6,021 device-type YAML files;
-  `device-types/Blackmagicdesign/atem-constellation-1-m-e-4k.yaml`
-- https://github.com/RackulaLives/Rackula — Rackula v26.8.0; `README.md`,
-  `src/lib/types/index.ts`, `src/lib/stores/connection.svelte.ts`, `LICENSE`, `package.json`
-- https://github.com/wireviz/WireViz — WireViz; `docs/syntax.md`, `docs/CHANGELOG.md`,
-  `src/wireviz/wv_bom.py`, `src/wireviz/wv_cli.py`
-- https://github.com/RackTables/racktables — RackTables; schema DDL in `wwwroot/inc/install.php`
-- https://github.com/opendcim/openDCIM — openDCIM; `README.md` (retirement notice)
-- https://github.com/mvrdevelopment/spec — GDTF (DIN SPEC 15800) and MVR (DIN SPEC 15801)
-  specifications; `gdtf-spec.md` (Tables 50, 51, Annex D), `mvr-spec.md` (Table 61,
-  MVR-xchange), `README.md`
-- https://github.com/gfto/videohubctrl — Blackmagic Videohub protocol; `README`, `cmd.c`,
-  `test/input-00.txt`
+GitHub API (repository search, via MCP): `Love-Rox/kumihimo`, `Love-Rox/kumihimo-homepage`.
 
-**Opened via WebFetch (successful):**
+### Pages cited via search-engine summary (SNIPPET tier — not directly opened)
 
-- https://github.com/netbox-community/netbox — NetBox overview and licence
-- https://pypi.org/project/pynetbox/ — pynetbox 7.8.0, NetBox 4.6 support
+**Vectorworks / ConnectCAD**
+- https://www.vectorworks.net/en-GB/connectcad/capabilities
+- https://www.vectorworks.net/en-US/spotlight/buy
+- https://app-help.vectorworks.net/2026/eng/VW2026_Guide/ConnectCAD/Creating_ConnectCAD_reports.htm
+- https://app-help.vectorworks.net/2025/eng/VW2025_Guide/ConnectCAD/Presenting_to_clients.htm
+- https://www.vectorworks.de/vectorworks/spotlight
+- https://www.vectorworks.de/vectorworks/connectcad
+- https://forum.vectorworks.net/forum/138-connectcad/
+- https://www.moehlis.com/vectorworks-abonnement-kaufen/ (German reseller, EUR pricing)
+- https://koelncad.de/vectorworks-mieten/ (German reseller)
+- https://xtenav.com/vectorworks-connectcad-pricing/ (**competitor-published**, treat with caution)
 
-**Consulted via GitHub API search (repository metadata and code search only, not cloned):**
+**WireCAD**
+- https://www.wirecad.com/
+- https://www.wirecad.com/index.php?route=product/category&path=71_17
+- https://www.wirecad.com/index.php?route=product/product&product_id=151 (10 PRO 1-yr subscription)
+- https://www.wirecad.com/index.php?route=product/product&product_id=146 (10 PRO)
+- https://www.wirecad.com/index.php?route=product/product&product_id=160 (10 XLT)
+- https://www.wirecad.com/index.php?route=product/product&product_id=148 (10 CMS)
+- https://www.wirecad.com/help90/cable_number_formatting.htm
+- https://www.wirecad.com/help90/qs_sql_server_setup_basics.htm
+- https://www.wirecad.com/wiki/index.php?title=Setup_SQL_Server
+- https://www.wirecad.com/help100/qs_licensing_faq.htm
+- https://www.wirecad.com/help100/hmcontent.htm (v10 user manual)
+- https://www.av-iq.com/avcat/ctl1642/index.cfm?manufacturer=wirecad&product=wirecad-10-pro
 
-- https://github.com/nautobot/nautobot
-- https://github.com/jgraph/drawio — rack stencil inventory
-  (`src/main/webapp/stencils/rack/{apc,hp,f5,ibm,dell,oracle,general}.xml`,
-  `stencils/rack/hpe_aruba/`, `shapes/rack/mxRack.js`, `plugins/rackF5.js`)
-- https://github.com/jgraph/drawio-desktop
-- https://github.com/Lawo/ember-plus, https://github.com/Lawo/ember-plus-sharp
-- https://github.com/pklaus/brother_ql, https://github.com/pklaus/brother_ql_web
-- https://github.com/Kobii-git/rackpad, https://github.com/opsmill/infrahub
-- https://github.com/Vectorworks/developer-scripting,
-  https://github.com/Vectorworks/developer-worksheets,
-  https://github.com/Vectorworks/developer-sdk — searched for ConnectCAD, 0 results
-- https://github.com/netbox-community/Device-Type-Library-Import
-- https://github.com/wireviz/wireviz-web
+**D-Tools**
+- https://www.d-tools.com/system-integrator-pricing
+- https://www.d-tools.com/cloud-pricing
+- https://www.d-tools.com/system-integrator-features
+- https://www.d-tools.com/resource-center/8-signs-integrators-need-to-ditch-spreadsheet
+- https://softwarefinder.com/field-service/d-tools-system-integrator-si
 
-**Local repository read (for the relevance section):**
+**XTEN-AV**
+- https://xtenav.com/pricing/
+- https://knowledgebase.xtenav.com/en-us/article/what-is-the-pricing-for-a-single-user-software-subscription-5qyxuf/
+- https://knowledgebase.xtenav.com/en-us/article/what-are-the-different-levels-of-pricing-1v6ryk5/
+- https://xtenav.com/x-draw/
 
-- `/home/user/cable-planner/src/renderer/lib/netboxMapping.ts`,
-  `/home/user/cable-planner/src/main/ipc/`, `/home/user/cable-planner/CLAUDE.md`
+**Stardraw**
+- https://stardraw.com/sd7/overview
+- https://stardraw.com/sd7/purchase
+- https://stardraw.com/sd7/features/libraries
+- http://blob.stardraw.com/www/products/stardrawdesign7_2/help/J-STD-710_Symbols.htm
 
-**Attempted and BLOCKED by the egress proxy (no content retrieved):**
+**Broadcast CAD-parser tier**
+- https://www.cableschedules.com/
+- https://www.cableschedules.com/about/
+- https://www.tvcad.tv/
+- https://www.willowproduction.org/faq/what-cad-software-do-you-use-for-creating-and-maintaining-system-schematic-diagrams/
 
-- https://www.wirecad.com/pricing
-- https://www.d-tools.com/pricing/
-- https://www.xtenav.com/pricing
-- https://www.stardraw.com/products/design/
-- https://www.avixa.org/standards
-- https://university.vectorworks.net/
-- https://netbox.readthedocs.io/en/stable/
-- https://en.wikipedia.org/wiki/Patch_panel
-- https://www.npmjs.com/package/reactflow (HTTP 403)
+**NetBox / DCIM**
+- https://netboxlabs.com/blog/understanding-cable-profiles-in-netbox-4-5/
+- https://netboxlabs.com/docs/netbox/release-notes/version-4.5
+- https://netboxlabs.com/docs/netbox/models/dcim/frontport/
+- https://github.com/netbox-community/netbox/discussions/21104
+- https://netboxlabs.com/blog/open-source-dcim-tools/
+- http://www.racktables.org/
+- https://www.sunbirddcim.com/product/data-center-connectivity
+- https://www.sunbirddcim.com/pricing
+
+**AV-native micro-SaaS tier**
+- https://wireflow.live/
+- https://wireflow.live/av-diagram-software
+- https://patchify.app/
+- https://patchmygear.com/
+- https://h2rgear.com/tools/patch-list/
+- https://h2rgear.com/tools/av-diagram-maker/
+- https://docs.h2rgear.com/updates/changelog
+- https://audiopatch.net/
+- https://stageplotpro.app/
+- https://soundgirls.org/list-of-apps-and-software-for-designing-stage-plots/
+
+**Standards**
+- https://www.avixa.org/standards/audio-video-and-control-architectural-drawing-symbols (J-STD-710, free)
+- https://www.avixa.org/standards/cable-labeling-for-audiovisual-systems (F501.01)
+- https://www.avixa.org/standards/rack-building-for-audiovisual-systems (F502.01)
+- https://www.avixa.org/standards/current-standards
+- https://www.avixa.org/about-avixa/who-we-are/press-room/2016/03/14/stardraw.com-adopts-standard-av-symbols-for-design-and-documentation-software
+- https://webstore.ansi.org/standards/ansi/ansistd7102015
+- https://github.com/mvrdevelopment/spec (GDTF DIN SPEC 15800 / MVR DIN SPEC 15801)
+- https://github.com/mvrdevelopment/spec/blob/main/mvr-spec.md
+- https://gdtf-share.com/help/
+- https://www.vectorworks.net/en-US/newsroom/din-spec-15801-mvr
+
+**Protocols**
+- https://documents.blackmagicdesign.com/DeveloperManuals/VideohubDeveloperInformation.pdf
+- https://docs.lawo.com/vsm-ip-broadcast-control-system/vsm-interface-driver-and-application-details/driver-supported-protocol-driver/blackmagic-videohub-ethernet
+- https://docs.lawo.com/vsm-ip-broadcast-control-system/vsmstudio-user-manual/vsmstudio-signal-paths
+- https://docs.lawo.com/vsm-ip-broadcast-control-system/vsm-interface-driver-and-application-details/driver-supported-protocol-driver/driver-rrcs-riedel
+- https://lawo.com/products/vsm/
+- https://www.smpte.org/standards/st2110
+- https://www.thebroadcastbridge.com/content/entry/21347/broadcast-standards-the-nmos-standards-deep-dive
+
+**Generic diagramming and German-market practitioner sources**
+- https://www.production-partner.de/basics/signallaufplan-mit-yed/
+- https://www.drawio.com/blog/rack-diagrams
+- https://drawio-app.com/blog/how-to-build-rack-diagrams-in-draw-io/
+- https://www.drawio.com/docs/diagram-types/network-diagrams/
+- https://www.prosoundweb.com/new-version-of-middle-atlantic-racktools-software-v3-5-offers-enhanced-capabilities/
+- http://www.middleatlantic.com/config.aspx
+- https://www.dymo.com/pro-av-vertical.html
+
+### Not opened — re-run these to harden the dossier
+
+Every domain in the SNIPPET list above was **blocked at the egress proxy**. The highest-value
+re-runs, in order:
+
+1. `wirecad.com/index.php?route=product/category&path=71_17` — the only way to resolve the
+   WireCAD price contradiction.
+2. `d-tools.com/system-integrator-pricing` and `/cloud-pricing` — confirm tiers and the
+   implementation fee.
+3. `xtenav.com/pricing/` — confirm the per-user figures from the vendor rather than a summary.
+4. `vectorworks.net/en-US/spotlight/buy` and `vectorworks.de/vectorworks/kaufen` — vendor-direct
+   USD and EUR, replacing reseller figures.
+5. `stardraw.com/sd7/purchase` — the package prices are ambiguous in every summary obtained.
+6. `patchify.app` pricing — no price was published in any reachable source.
+7. `avixa.org/standards/audio-video-and-control-architectural-drawing-symbols` — download
+   J-STD-710 itself and confirm the licensing terms for the 84 symbols.
+8. `documents.blackmagicdesign.com/DeveloperManuals/VideohubDeveloperInformation.pdf` — the
+   verbatim block grammar, needed to implement the as-built diff.
+9. `forum.vectorworks.net/forum/138-connectcad/` and r/VIDEOENGINEERING — practitioner sentiment
+   is the thinnest evidence in this dossier; the Excel-fallback thesis rests on three sources,
+   one of which is vendor marketing.
