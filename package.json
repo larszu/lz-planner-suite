@@ -19,6 +19,8 @@
     "test": "npm run test --workspaces --if-present",
     "dev:cable": "npm run dev --workspace cable-planner",
     "dev:multicam": "npm run dev --workspace multicam-planner",
-    "dev:light": "npm run dev --workspace light-planner"
+    "dev:light": "npm run dev --workspace light-planner",
+    "drift": "node scripts/planner-drift.mjs --upstream ..",
+    "drift:check": "node scripts/planner-drift.mjs --upstream .. --check"
   }
 }
