@@ -1,1022 +1,776 @@
 # Asset Tracking / Barcode / QR / RFID / Maintenance / Cases
 
-> Research date: **2026-08-29** (task brief dated 2026-08-28). Claims labelled per
-> [`docs/research/METHOD.md`](../METHOD.md):
-> **FACT** (read in a source I actually opened, URL cited), **INFERENCE** (my reasoning from
-> those sources), **UNKNOWN / unverified** (could not be checked in this environment).
+> Research date: **2026-08-29** (task brief dated 2026-08-28; all prices labelled with the
+> date seen). Claims are labelled per [`docs/research/METHOD.md`](../METHOD.md):
+> **FACT** — read in a source, URL cited; **INFERENCE** — my reasoning from those sources;
+> **UNKNOWN / unverified** — could not be checked, with a note on what would settle it.
 
 ---
 
-## Source-access caveat — READ THIS FIRST, it bounds everything below
+## Source-access caveat — read this first, it bounds every claim below
 
-This pass ran under the same research blackout the `crew-scheduling` and `event-rental-management`
-dossiers describe, and one new constraint on top:
+Two different network channels were available in this session, and they have very different
+evidentiary weight. The distinction matters enough that every claim below is tagged with which
+channel it came from.
 
-1. **The session web-search budget was already exhausted** (200 of 200 `WebSearch` calls) before
-   this segment began. No search engine was available at any point.
-2. **The egress proxy blocks essentially every commercial vendor domain.** Verified by direct
-   probe (HTTP `000` = CONNECT refused, checked 2026-08-29):
-   `snipeitapp.com`, `cheqroom.com`, `sortly.com`, `assetpanda.com`, `ezofficeinventory.com`,
-   `hirehop.com`, `rentman.io`, `docs.rentman.io`, `current-rms.com`, `flexrentalsolutions.com`,
-   `shelf.nu`, `gs1.org`, `ref.gs1.org`, `kitcheck.com`, `shure.com`, `blackbox.global`,
-   `geartrack.io`, `inventree.org`, `docs.inventree.org`, `homebox.software`, `odoo.com`,
-   `erpnext.com`, `en.wikipedia.org`, `iso.org`, `readthedocs.io`, `*.github.io`.
-   `github.com` HTML and the GitHub search API are also blocked
-   (`sessions are bound to their configured repositories`).
-
-**What *was* reachable, and therefore what this dossier is built from:**
-
-| Channel | Status | What it gave |
+| Channel | Status | Evidentiary weight |
 | --- | --- | --- |
-| `raw.githubusercontent.com` | **fully open, any public repo** | source code, in-repo docs, licences, schemas |
-| `git clone https://github.com/...` | **works through the git proxy** | full repository trees (partial/sparse clones used) |
-| `registry.npmjs.org` (incl. search API) | open | package metadata + READMEs of vendor API clients |
-| `pypi.org` | open | package metadata, full `simple` index for name discovery |
-| `hub.docker.com` | open (unused in the end) | — |
+| **`WebSearch`** | working, ~30 queries run (EN + DE) | Returns a *synthesised summary* of vendor pages with quoted fragments. I did **not** open those pages myself. Good enough to establish that a vendor claims something; **not** good enough to treat a number as audited. |
+| **`WebFetch` on `github.com` / `raw.githubusercontent.com`** | working | Genuine primary source. I read actual `composer.json`, directory trees and Atom release feeds. |
+| **`WebFetch` on every other domain** | **blocked by the egress proxy** | `cheqroom.com`, `sortly.com`, `snipe-it.readme.io`, `hirehop.com`, `rentman.io`, `docs.rentman.io`, `current-rms.com`, `flexrentalsolutions.com`, `shelf.nu`, `docs.inventree.org`, `impinj.com`, `content-files.shure.com`, `help.protonic-software.com`, `gs1.org`, `capterra.com`, `getapp.com`, `en.wikipedia.org` all refused. Verified individually. |
 
-**Consequence, stated plainly.** This dossier is unusually strong on *primary technical
-sources* — I read the actual database schemas, scanner queue implementations, label renderers,
-barcode-parsing engines and API type definitions of six open-source products and two commercial
-ones — and unusually weak on *commercial marketing facts*, above all **pricing**.
+**What this means in practice, stated plainly:**
 
-- **There is not a single verified price in this dossier.** Every vendor pricing page was
-  unreachable. Rather than repeat numbers from memory (which METHOD.md forbids and which would be
-  worse than useless in a commercial comparison), every price line says **UNKNOWN** and names the
-  exact page that must be opened to fix it.
-- Where a commercial product's behaviour could be established from an API client, an official SDK
-  or a third-party integration synced to the vendor's OpenAPI spec, it is marked
-  **FACT (via API client)** and the client's own vintage is given, because an SDK can lag the
-  product.
-- Several seed products (**GearTrack, InventoryBase, Kit Check, Wireless Workbench asset
-  features, Blackbox, Yellowfish/Rentcorp RFID**) produced **no reachable primary source at all**.
-  They appear in the product table as **UNKNOWN** rows rather than being quietly dropped or
-  quietly invented.
+1. **Every price in this dossier is second-hand.** It comes from a search engine's extraction of
+   a vendor or aggregator page, not from a page I opened. Prices are therefore marked
+   **FACT (search-extracted)** rather than **FACT (page read)**, and where two sources disagree
+   I print **both numbers and the disagreement** instead of picking one. Do not put any of these
+   figures into a customer-facing comparison without re-opening the cited URL.
+2. **Where a vendor's marketing claim and its own help-centre article conflict** (this happens
+   with "works offline"), I say so. That conflict is itself one of the most useful findings in
+   the segment.
+3. **The open-source products are documented far better than the commercial ones here**, because
+   GitHub was reachable. That is an artefact of the network, not of the products' importance.
+4. Two seed products produced **no usable primary source**: **Yellowfish / Rentcorp RFID** (no
+   such AV-rental vendor surfaced in any search) and **Blackbox** (`blackbox.global` unreachable;
+   searches returned an unrelated GPS tracker vendor and an unrelated UK AV-production company).
+   They appear as **UNKNOWN** rows rather than being invented or silently dropped.
+5. One seed product, **InventoryBase**, turns out to be **not in this segment at all** — it is
+   UK residential-lettings property-inspection software. Documented below as a correction.
 
 ---
 
 ## Segment summary
 
-**What the category is for.** This segment answers four questions about physical objects that a
-planning tool, an ERP and a spreadsheet all fail to answer reliably:
+**What the category is for.** This software answers four questions about physical objects that
+neither a planning tool, nor an ERP, nor a spreadsheet answers reliably:
 
-1. **Which physical thing is this?** — identity: an asset tag, a serial number, a barcode, a QR
-   code, an RFID tag. Not "a Sony FX9", but *this* FX9, body number 4 of 7.
-2. **Where is it and who has it?** — location, custody, check-out state, and the audit trail of
-   how it got there.
-3. **What is inside what?** — containment: this lens is in that case, that case is on that truck,
-   that truck is at that venue. The **case as a container of assets** is the defining data-model
-   problem of the AV/event flavour of this segment, and the thing generic IT asset management
-   gets most obviously wrong.
-4. **Is it fit to go out again?** — damage reports, maintenance/repair logs, calibration and
-   warranty dates, and the "do not rent" flag.
+1. **Which one is this?** — identity of a *unit*, not a *model*. Not "an SDI cable" but
+   "cable #A-4471, bought 2023, failed a continuity check in June".
+2. **Where is it and who has it?** — custody: on a job, in a case, in a truck, on a shelf, at a
+   sub-hire partner, or lost.
+3. **Is it fit to go out?** — condition, damage history, and — in the German market especially —
+   whether its statutory electrical inspection is still valid.
+4. **Is the case complete?** — a case is a container whose contents are themselves tracked
+   assets, and "the case went out" must mean "these 41 things went out".
 
-**Who buys it.** Three quite different buyer types share one software category, which is why the
-products feel mismatched to AV people:
+**Who buys it.** Three quite different buyer groups that the vendors serve with the same code:
 
-- **IT / corporate ITAM** — the biggest and richest buyer. Buys Snipe-IT, EZOfficeInventory,
-  Asset Panda. Optimises for depreciation, licence compliance and employee hand-over. Cares
-  nothing about cases, sub-hire or a load-out at 04:00.
-- **Media / education / creative equipment rooms** — Cheqroom's core market, Shelf.nu's stated
-  market. Optimises for self-service booking and check-out of camera/audio kit by many casual
-  users.
-- **Rental / event / broadcast warehouses** — Rentman, Current RMS, HireHop, Flex. Here asset
-  tracking is a *module inside an ERP*, not a product: the identity layer feeds availability,
-  pricing and invoicing. This is the buyer the AV Planner Suite shares.
+- **Rental / production houses** (AV, event, broadcast, lighting). Buy the *rental suite*
+  (Rentman, Flex, Current RMS, HireHop, easyjob) and get scanning as one module of it. Asset
+  tracking is inseparable from availability, quoting and sub-hire.
+- **In-house media / broadcast / education teams** who own gear but do not rent it out. Buy a
+  *checkout* product (Cheqroom, Shelf, Reftab, Scanlily). No invoicing, no availability pricing —
+  just custody and condition.
+- **IT/facilities departments** who buy horizontal ITAM (Snipe-IT, Asset Panda,
+  EZOfficeInventory, Timly, itemit, AssetTiger). Cheapest per asset, weakest on cases, kits and
+  the rental calendar.
 
-**Typical price band. UNKNOWN — see the caveat above.** The only price-shaped facts I could
-verify are structural, not numeric:
+**Typical price band** (all figures search-extracted, seen 2026-08-29, details and conflicts in
+the product table):
 
-- **Shelf.nu**: AGPL-3.0, self-hostable; the hosted product has Stripe-backed tiers
-  (`TierId = free | tier_1 | tier_2 | custom`) whose limits are enumerated in the schema
-  (`canImportAssets`, `canExportAssets`, `maxCustomFields`, `maxOrganizations`,
-  `canHideShelfBranding`, `isEnterprise`), and **barcodes are a paid add-on on top of QR**, while
-  self-hosters can set `ENABLE_PREMIUM_FEATURES=false` and get everything.
-  (FACT — `packages/database/prisma/schema.prisma`, `apps/docs/app-configuration.md`,
-  `apps/docs/asset-import.md`.)
-- **Snipe-IT**: AGPL-3.0 for the software; a hosted/paid offering exists (the README points at
-  `snipeitapp.com`), price **UNKNOWN**. (FACT for the licence — `LICENSE`.)
-- **InvenTree**: MIT, no paid tier evidenced in-repo. **Homebox**, **Part-DB**: AGPL-3.0.
-- **Cheqroom, Sortly, Asset Panda, EZOfficeInventory, Rentman, Current RMS, HireHop, Flex**:
-  subscription, **numbers UNKNOWN**.
-
-**INFERENCE on the shape of the market.** The open-source half of this segment is unusually
-strong and unusually current — Shelf.nu, Snipe-IT, InvenTree, Part-DB and Homebox all had commits
-within the last eight days of the research date (FACT, from the clones). The commercial half sells
-the same core data model plus a mobile app plus support. That means the *technology* here is not
-the moat; **the mobile scanning experience and the domain fit of the data model are**.
+- **Free / open source, self-hosted:** €0 licence — Snipe-IT (AGPLv3), Shelf (AGPL-3.0),
+  InvenTree (MIT), Homebox. You pay in ops.
+- **Entry SaaS:** roughly **$20–80 / month** for a small estate — AssetTiger (free ≤250 assets,
+  then ~$20/mo), itemit (~£21/mo), Snipe-IT managed hosting ($39.99/mo), HireHop (£46/mo first
+  user).
+- **Mid-market SaaS:** roughly **$50–300 / month** — Sortly, EZO, Asset Panda, Booqable,
+  Current RMS, Rentman (modular, from a $39/mo platform fee).
+- **Premium per-seat:** **Cheqroom**, reportedly $184–367 *per admin seat per month billed
+  annually* — an order of magnitude above the ITAM tools, justified by the checkout workflow.
+- **German/DACH enterprise:** **Timly from €185/mo**, larger tiers **from €495/mo**.
+- **Rental-suite + RFID:** sales-contact only. Flex sells RFID as a paid add-on module on top of
+  the core subscription; no list price is published.
+- **Hardware is a separate budget line nobody includes in the SaaS price:** RFID tags, on-metal
+  tags, label stock, and Android scanners (Zebra TC22/TC27 class).
 
 ---
 
 ## Product table
 
-Offline column = "can a warehouse worker keep scanning when the wifi drops, and is the work
-preserved?" — not "can you self-host it".
+Legend — **Offline?**: what the *scanning* workflow does with no connectivity.
+**API?**: public, documented, machine-readable interface.
 
 | Product | Vendor | Platform | Price model | Offline? | API? | Best at |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Shelf.nu** | Shelf Asset Management (EU) | Web (self-host or hosted) + iOS/Android "companion" app | AGPL-3.0 OSS; hosted tiers via Stripe; **barcodes are a paid add-on**; prices UNKNOWN | **Yes, genuinely** — companion app has a persisted, retrying scan queue with a failed-queue that blocks audit completion | REST + SCIM 2.0 endpoints in-repo; mobile OAuth handoff | QR-native asset tracking with real kits, bookings, custody and the only credible offline audit scanner I could verify anywhere in the segment |
-| **Snipe-IT** | Grokability, Inc. (US) | Web (self-host) + paid hosting | AGPL-3.0; hosted price UNKNOWN | **No** | JSON REST, OpenAPI 3.1; `checkinbytag`, `bytag/{tag}/checkout`, `POST /hardware/audit/bulk` | Label printing: Avery/Hema sheets + Brother/Dymo/Zebra/Generic tape definitions, server-rendered PDF; audit-due/overdue reporting |
-| **InvenTree** | InvenTree Developers | Web (self-host) + companion mobile app | MIT, free | **No** (no offline support documented anywhere in `docs/`) | REST; `POST /api/barcode/`, `/api/barcode/link/`, `/api/barcode/unlink/`; barcode plugin mixin | The best *barcode architecture* in the segment: internal/external/custom codes, priority-ordered plugin resolution, built-in supplier-barcode parsers |
-| **Part-DB** | jbtronics et al. (DE) | Web (self-host, Symfony/PHP) | AGPL-3.0 | **No** | REST + an in-repo MCP server | Scanner *ergonomics*: global scan-anywhere via an `<SOH>` prefix, EIGP114 DataMatrix with non-printable characters, GTIN/EAN + arbitrary user barcodes on a lot |
-| **Homebox** | sysadminsmedia | Web (self-host, Go + Nuxt) | AGPL-3.0 | UNKNOWN (no offline code found; not exhaustively searched) | REST, OpenAPI 3.0 + Swagger 2.0 shipped in `docs/public/api/` | Pragmatic label pipeline: built-in label maker **plus** a documented external HTTP label-service hook |
-| **Cheqroom** | Cheqroom (BE) | Cloud + iOS/Android | Subscription, **UNKNOWN** | UNKNOWN | REST `api.cheqroom.com/api/v2_5`; official JS wrapper `cheqroom-core` (**last commit 2020-03-03**) | Equipment-room check-out: items, kits, orders, reservations, custody take/release/**transfer**, depreciation, per-item `allowReserve/allowCheckout/allowCustody` flags |
-| **Rentman** | Rentman B.V. (NL) | Cloud + "Rentman 4" mobile app | Subscription per module/user, **UNKNOWN** | UNKNOWN (app-side; the *API* has no scan endpoint at all) | REST, OpenAPI v1.7.0–v1.13.0; 63 resources; **50,000 req/day, 10 req/s, 20 concurrent, 1,500 items/page** | The only data model I verified that is **case-aware at the field level**: `quantity_in_cases`, `current_quantity_excl_cases`, `packed_per`, `empty_weight`, plus `/subrentals` for sub-hire and `/repairs` for maintenance |
-| **Current RMS / OnRent** | Klipboard (UK) | Cloud | Subscription, **UNKNOWN** | UNKNOWN | REST at `api.current-rms.com/doc` (documented by a third-party Node client) | UNKNOWN in detail — scanning behaviour could not be verified |
-| **HireHop** | HireHop Ltd (UK) | Cloud | **UNKNOWN** | **UNKNOWN** | **UNKNOWN** — no npm/PyPI client, no reachable docs | UNKNOWN |
-| **Flex Rental Solutions** | Flex (US) | Cloud + mobile | **UNKNOWN** | **UNKNOWN** (the sibling `event-rental-management` dossier records an offline claim, itself unverified) | **UNKNOWN** | UNKNOWN |
-| **EZOfficeInventory** | EZO (US) | Cloud + mobile | Subscription, **UNKNOWN** | UNKNOWN | REST asserted by vendor marketing, **not verified here** | UNKNOWN |
-| **Asset Panda** | Asset Panda LLC (US) | Cloud + mobile | Subscription, sales-contact, **UNKNOWN** | UNKNOWN | A *public* API exists — evidenced by the vendor's own `assetpanda/pioneer` repo publishing `assetpanda-mcp-kb` | UNKNOWN |
-| **Sortly** | Sortly Inc (US) | Cloud + mobile | Self-serve subscription tiers, **UNKNOWN** | UNKNOWN | REST; documented rate limiting; items are a **tree** (`parent_id`, `folder`/`item` types, `include_subtree` on clone) | Nested container-in-container inventory — the closest mainstream model to "case inside truck" |
-| **Odoo Inventory + Barcode** | Odoo S.A. (BE) | Web + PWA | Community free / Enterprise paid; **Barcode app is Enterprise**; price UNKNOWN | UNKNOWN (PWA offline claimed by vendor, not verified) | XML-RPC / JSON-RPC | A complete, readable **GS1 nomenclature engine**: AI pattern rules, FNC1 separator handling, GS1 date parsing, UPC↔EAN conversion |
-| **ERPNext** | Frappe (IN) | Web | GPL-3.0 | UNKNOWN | REST | A rich `Serial No` doctype: `serial_no`, `asset`, `asset_status`, `location`, `employee`, `warranty_expiry_date`, `amc_expiry_date`, `maintenance_status`, `warehouse`, `batch_no` |
-| **NetBox** | NetBox Labs | Web (self-host) + cloud | Apache-2.0 core; cloud price UNKNOWN | **No** | REST + GraphQL | `Device.asset_tag` (unique) + `Device.serial`, and `InventoryItem` — a **tree (MPTT) of serialised sub-components inside a device**. Already integrated by `cable-planner` (`netbox:*` IPC) |
-| **Kit Check / Bluesight** | Bluesight (US) | Cloud + RFID readers | **UNKNOWN** | UNKNOWN | UNKNOWN | Adjacent vertical (hospital medication kits, RFID tray scanning). Named in the brief; **no reachable source** |
-| **GearTrack** | UNKNOWN | UNKNOWN | **UNKNOWN** | UNKNOWN | UNKNOWN | **UNKNOWN — no primary source reachable.** npm/PyPI searches returned only unrelated packages |
-| **InventoryBase** | UNKNOWN | UNKNOWN | **UNKNOWN** | UNKNOWN | UNKNOWN | **UNKNOWN — no primary source reachable** (note: the name is also used by a UK property-inspection product, so even the identity is ambiguous) |
-| **Wireless Workbench (asset features)** | Shure | Desktop (Win/macOS) | Free with hardware | UNKNOWN | UNKNOWN | **UNKNOWN — `shure.com` unreachable.** See the `audio` dossier for what could be verified about WWB generally |
-| **Blackbox** | UNKNOWN | UNKNOWN | **UNKNOWN** | UNKNOWN | UNKNOWN | **UNKNOWN — no primary source reachable**; the name is heavily overloaded |
-| **Yellowfish / Rentcorp RFID** | UNKNOWN | UNKNOWN | **UNKNOWN** | UNKNOWN | UNKNOWN | **UNKNOWN — no primary source reachable.** RFID in AV rental is discussed only at the standards level below |
-
-**To fix the UNKNOWN price cells**, in priority order, open:
-`cheqroom.com/pricing`, `rentman.io/pricing`, `sortly.com/pricing`, `ezofficeinventory.com/pricing`,
-`snipeitapp.com/pricing`, `current-rms.com/pricing`, `hirehop.com/pricing`,
-`assetpanda.com` (sales contact), `flexrentalsolutions.com` (sales contact) — and record the
-date-seen and whether the number is advertised or requires a sales call.
+| **Cheqroom** | Cheqroom (BE/US) | Web + iOS/Android | Per **admin seat**, billed annually; unlimited non-admin users & items. Core $184 / Business $275 / Enterprise $367 (per admin/mo, annual — *see conflict note*) | **Claimed yes** — check-in/out without internet, syncs on reconnect (marketing claim, scope unverified) | REST `api.cheqroom.com/api/v2_5`; outbound **webhooks only**, HMAC-SHA256 signed | The checkout loop: reserve → kit → scan out → flag damage → work order. Best damage→maintenance automation in the segment |
+| **Rentman** | Rentman (NL) | Web + iOS/Android + Zebra Android | Modular: platform fee ~$39/mo + per-user modules (Inventory from $19/user/mo, Crew from $14/user/mo) + add-ons (Equipment Tracking €9/user/mo, History Logs €12/user/mo). **Warehouse staff are free basic users** | **Unverified** — no vendor statement found either way; support docs describe live sync only | Documented REST API (`api.rentman.net`), OpenAPI spec, `POST /equipment/{id}/serialnumbers` | Cases/containers as sealed, self-tracking units; sub-hire on the same packing slip; per-serial periodic inspections |
+| **Flex (Flex Rental Solutions)** | Flex Rental Solutions (US) | Web + mobile + FlexScan Pro handheld | Subscription (sales contact). **RFID is a paid add-on module** on top of core | Unverified | Yes (unverified detail) | Deepest **containers & packages** model; dual-identifier doctrine (barcode *and* RFID on the same unit) |
+| **Current RMS** | Current RMS / Kerridge CS (UK) | Web + iOS/Android | Per user/month. $79/user/mo *(one source)* vs Basic $62 first user + $27 additional *(another)* — conflict | Unverified | Yes (public API; docs not opened) | Availability-aware rental asset tracking. **Explicitly barcode/QR only — no RFID** |
+| **HireHop** | HireHop (UK) | Web + browser scanning app | £46/mo first user, £23/mo each additional (+VAT). Limited free single-user tier | Unverified | Yes (unverified detail) | Widest identifier support in one product: barcode, QR, **RFID, NFC**, serial, manual count. "Spot Check" warehouse audits |
+| **easyjob** | protonic software GmbH (DE) | Windows + Scanner App (Win/Android/iOS, HTML-based) | UNKNOWN — no price found | Bidirectional real-time described; offline behaviour UNKNOWN | UNKNOWN | The German-market incumbent. Barcodes on **articles, devices, projects, jobs, addresses and users** — the broadest barcodable-object model found |
+| **Snipe-IT** | Grokability (US) | Self-hosted web (PHP/Laravel) | **AGPLv3, free self-hosted.** Managed: Basic $39.99/mo, Small Business $99.99/mo; dedicated $5k–7.5k/yr | No mobile app of its own; browser-based scanning needs the server | **Yes — full JSON REST `/api/v1/`**, incl. `POST /hardware/{id}/checkout` and `/checkin` | Best free label engine (Avery/Hema sheets; Brother/Dymo/Zebra tapes) and the most honest open licence |
+| **Shelf (shelf.nu)** | Shelf (NL) | Hosted `app.shelf.nu` + Docker self-host | **AGPL-3.0**, self-host free (needs external Supabase). Hosted pricing UNKNOWN | Unverified | Unverified | Modern OSS: QR asset tags, **bookings/reservations**, custody, kits, custom fields. The OSS product closest to AV checkout needs |
+| **InvenTree** | InvenTree (community) | Self-hosted Django + React, companion mobile app | **MIT**, free | Unverified (mobile app exists) | **Yes** — REST API; `POST /api/barcode/` scan endpoint; **barcode plugin mixin** | The best *extensible* barcode architecture: plugins decode arbitrary barcode data; internal JSON or short formats |
+| **Homebox** | sysadminsmedia (community) | Self-hosted Go + SQLite | Free, OSS | Unverified | Unverified | Tiny footprint (runs on a Pi). QR per item **and per location**; bulk label sheets pre-formatted for Avery 5260; CSV/TSV import-export |
+| **Sortly** | Sortly (US) | Web + iOS/Android | Free (100 items, 1 user); Advanced $49/mo (or $24/mo annual); Ultra $149/mo (or $74/mo annual); Premium $299; Enterprise custom | **Yes, mobile only — not on web.** Explicitly "only updates inventory levels on your device" | Yes (higher tiers) | Photo-first visual inventory. QR label generation from Advanced, barcode labels from Ultra. **No RFID label creation** |
+| **EZOfficeInventory / EZO** | EZO (US) | Web + iOS/Android | Essential $48/mo, Advanced $58/mo, Premium $65/mo — starting prices for **100 tracked items**, unlimited users under fair use *(one source instead reads these as per-user — conflict)* | **Narrow** — help docs describe offline as *adding work logs to work orders*, auto-synced on reconnect. Not offline checkout | Yes | Bulk scanning of barcode, QR **and RFID** from a phone; sibling product EZRentOut for rental |
+| **Asset Panda** | Asset Panda (US) | Web + iOS/Android | Starter ~$50/mo (5 users, 1,000 assets); Business+ ~$60/mo/user (10 users, 5,000 assets); Enterprise custom. Third-party: real contracts from ~$3,000/yr + $2,000–15,000 implementation | **Offline mode exists but is tier-gated** — added in "Asset Panda Pro" (launched 2025-09-11); reported as Enterprise-only | Yes | Extreme configurability of the asset record |
+| **Timly** | Timly (CH/DE) | Web + mobile | **From €185/mo**; larger tiers **from €495/mo** (defect capture, consumables, GPS, multi-tenant land in the higher tier) | Unverified | Unverified | The DACH-market QR inventory tool; German-language, GDPR-native, sold into Veranstaltungstechnik |
+| **itemit** | itemit (UK) | Web + iOS/Android | From ~£21/mo (£20.75 quoted elsewhere); ~£399/yr budget guide. No per-user charge. Asset tags from £149.99 | Unverified | Unverified | QR + barcode + **RFID + GPS trackers** in one cheap product; "QR Quick Audit" |
+| **AssetTiger** | MyAssetTag (US) | Web + mobile | **Free up to 250 assets**; paid from $20/mo, **never per user** | Unverified | REST API | Cheapest credible entry point; 80+ report types, depreciation, warranty |
+| **Reftab** | Reftab (US) | Web + mobile | Free tier; paid by asset volume | Unverified | Yes | Loan management for schools and equipment-lending teams; automated return reminders |
+| **Scanlily** | Scanlily (US) | Web + phone camera (no app needed) | Free / Pro / Business, tiered by **number of items without a Scanlily QR label**; Enterprise 10,000+ custom. Exact figures UNKNOWN | Unverified | "System integrations" at Enterprise | Positions explicitly as the cheap Cheqroom alternative for film/video/broadcast. QR codes are **plain URLs** — scan with any camera, no app install |
+| **Booqable** | Booqable (NL) | Web + mobile | 3 editions $29–$149/mo *(another source: "starts at $35")* **plus 1–3% transaction fees** | Unverified | Yes | Rental commerce (webshop) with barcode check-in/out attached |
+| **Geartracking** | Geartracking B.V. — **a Rentman subsidiary** | Hardware, not software | Per-item hardware pricing | n/a | n/a | Pre-tested RFID/QR tags and printers **specified for AV rental**; on-metal tags for flight cases, heat-shrink hardtags for cables |
+| **Kit Check / Bluesight** | Bluesight (US, healthcare) | RFID scan-station | Sales contact | n/a | UNKNOWN | **Out of segment but the benchmark:** an entire tray of up to ~198 RFID-tagged items read in seconds. The "seal the case, verify contents instantly" ideal |
+| **Wireless Workbench 7** | Shure | Windows/macOS desktop, free | Free | Fully offline (desktop app) | No REST API; file-based | RF device inventory as part of a *show file*; exports inventory as CSV/PDF and "show packs". **Not an asset-tracking system** — no custody, no barcodes |
+| **GearTrack** | Ambiguous — two vendors share the name: Rec Solutions (`recsolutions.com/geartrack`) and GEARTRACK (`geartrack.pro`) | Web | UNKNOWN | Unverified | Unverified | Rec Solutions' variant logs **number of uses and actual time used** per item for maintenance — an unusual and useful maintenance trigger |
+| **InventoryBase** | InventoryBase (UK) | Web + mobile | UNKNOWN | **Yes** — works without internet | Yes (CRM/finance integrations) | **CORRECTION: not in this segment.** Residential-lettings property inspection/inventory reports, not equipment asset tracking. Listed only to close the seed-list loop |
+| **Yellowfish / Rentcorp RFID** | — | — | — | — | — | **UNKNOWN — no primary source found.** No AV-rental RFID vendor under either name surfaced in any search. Would need a direct URL from whoever supplied the seed name |
+| **Blackbox** | — | — | — | — | — | **UNKNOWN — unreachable.** `blackbox.global` blocked; searches returned an unrelated GPS-tracker vendor and an unrelated UK AV-production firm. Needs a verified URL |
 
 ---
 
 ## Deep dives
 
-### 1. Shelf.nu — the reference implementation, and the only verified offline scanner
+### 1. Cheqroom — the checkout loop, priced as a premium product
 
-**What it does.** Open-source (AGPL-3.0) asset management: assets, categories, tags, custom
-fields, locations, custody, bookings, kits, QR labels, barcodes, audits, reminders. React
-Router 7 / React 19 / TypeScript / PostgreSQL via Supabase / Prisma 6, deployed on Fly.io, with a
-community-maintained Docker path. There is a **React Native (Expo) companion app**, live in the
-App Store and Google Play at **1.4.0**, with **1.5.0 cut but not yet submitted** at the time of
-reading. (FACT — `README.md`, `COMPANION-RELEASE-STATUS.md`.)
+**What it does.** Cheqroom is not a rental ERP and deliberately not an ITAM tool. It owns one
+loop: reserve → build a kit → scan out → use → flag condition → scan in → repair → back in
+rotation. It is sold into film/TV production, broadcast, sports and university media
+departments.
 
-**Data model** (FACT — `packages/database/prisma/schema.prisma`, 2,614 lines, ~90 models/enums).
-The parts that matter for this segment:
+**Data model** (FACT, search-extracted). Item-centric with three structures above the item:
 
-- **Identity is split three ways, deliberately.**
-  - `Qr` — Shelf's *own* code. Carries `version` and `errorCorrection` (`L|M|Q|H`) "based on spec
-    from Denso Wave", can be minted **unclaimed** and attached to a `PrintBatch`, and can point at
-    an `Asset`, a `Kit`, a `User` or nothing yet.
-  - `Barcode` — third-party/1D codes, `@@unique([organizationId, value])`, with
-    `BarcodeType = Code128 | Code39 | DataMatrix | ExternalQR | EAN13` and a comment stating the
-    names match **zxing format names exactly**.
-  - `Asset.preferredBarcodeId` — a per-asset override for which code to display, guarded by a
-    deferrable constraint trigger so the chosen barcode must belong to that asset *and* that org.
-- **`Kit` is a real container, not a template.** It has its own `qrCodes`, `barcodes`, `status`
-  (`AVAILABLE | IN_CUSTODY | CHECKED_OUT`), `location`, `image`, and a **`KitCustody`** row whose
-  `inheritedCustody` children cascade-delete when kit custody is released — so assigning a case to
-  a person assigns everything in it, and releasing the case releases only the inherited custody,
-  leaving operator-assigned custody untouched. `AssetKit` is the pivot, with `quantity`, and a
-  trigger `enforce_individual_asset_single_kit` capping individual assets at one kit while
-  quantity-tracked assets may sit in several.
-- **Placement is a pivot, not a foreign key.** `AssetLocation` carries `quantity` and an
-  `assetKitId` discriminator: a NULL means a manual placement, non-NULL means "this asset is here
-  *because the kit is here*", read-only in the manual editors and cascade-deleted when the asset
-  leaves the kit. Partial unique indexes in raw SQL enforce one manual row per (asset, location)
-  and one kit-driven row per `AssetKit`.
-- **Two asset kinds.** `AssetType = INDIVIDUAL | QUANTITY_TRACKED`, immutable after creation, with
-  `ConsumptionType = ONE_WAY | TWO_WAY` and a `ConsumptionLog` whose
-  `ConsumptionCategory = CHECKOUT | RETURN | RESTOCK | ADJUSTMENT | LOSS | CONSUME | DAMAGE`.
-  **`DAMAGE` is a first-class, separately-reported category, distinct from `LOSS`.**
-- **Partial check-out and partial check-in are separate session tables.** `PartialBookingCheckout`
-  stores positionally-aligned `assetIds` / `quantities` / `bookingAssetIds` arrays per scan batch;
-  `PartialBookingCheckin` the same for returns. The schema comment on the checkout table is worth
-  quoting in full because it is exactly the kind of bug this segment breeds:
+- **Item** — unique QR code auto-generated per item *or per kit*; the built-in scanner also reads
+  pre-existing third-party barcodes, so you are not forced to re-label an inherited estate.
+- **Kit** — a bundle that checks out as a single unit, "every component tracked and any missing
+  piece flagged before it leaves". **Locked Kits** forbid partial checkout — the kit is
+  all-or-nothing. Returns are checked against the original kit configuration.
+- **Flag** — a visual status marker on an asset. The damage flag is the interesting one (below).
 
-  > *"Records sessions and the units they claimed — NOT whether an asset is out. The all-at-once
-  > checkout … writes NO row here, so **absence proves nothing** and must never be read as 'was not
-  > checked out'. Reading it that way is what let a single later scan mark every button-checked-out
-  > asset on a booking as 'never checked out'."*
+**The damage→maintenance automation is the best in the segment** (FACT, search-extracted). When a
+user flags an item **Damaged** from the field in the mobile app:
 
-- **Audits are modelled properly.** `AuditSession` (with `expectedAssetCount`, `foundAssetCount`,
-  `missingAssetCount`, `unexpectedAssetCount`), `AuditAssignment` (LEAD/PARTICIPANT),
-  `AuditAsset` (`PENDING | FOUND | MISSING | UNEXPECTED`), `AuditScan`, `AuditNote`, `AuditImage`.
-  `AuditScan` **snapshots `assetTitle` and `wasExpected` by value at scan time** so that deleting
-  an asset later cannot silently rewrite history.
-- `Scan` is a global append-only table recording public QR hits and companion scans, with
-  `latitude`/`longitude`/`userAgent` and a `rawQrId` string kept even if the QR row is deleted.
-- `AssetReminder` handles maintenance/calibration/warranty alerts (`alertDateTime`,
-  `activeSchedulerReference`, assigned `teamMembers`).
-- `ReportFound` — a public "I found this" form keyed to the QR, for assets and kits.
+1. Cheqroom **automatically removes the asset from rotation**, blocking any further booking.
+2. The user is **required** to supply what happened plus supporting images — the evidence is
+   mandatory, not optional.
+3. The flag **auto-generates a notification to the maintenance team and creates a repair ticket
+   with no manual data entry**; flagged items can be attached to a maintenance work order.
 
-**Offline scanning — the one implementation I could verify end to end.** (FACT —
-`apps/companion/hooks/use-scan-queue.ts`, 207 lines; `apps/companion/components/offline-banner.tsx`.)
+INFERENCE: this is the pattern most worth stealing. The critical design decision is that *the
+availability consequence is automatic and immediate* — a tech in a truck park with a cracked
+connector does one thing (flag), and the item is out of tomorrow's plan before anyone reads the
+report. Most competitors make damage a note that a human must act on.
 
-- Every audit scan is enqueued locally and drained by `processQueue()`.
-- `MAX_QUEUE_RETRIES = 3`, `RETRY_DELAYS = [2_000, 5_000, 15_000]` ms.
-- **Nothing is ever dropped.** On retry exhaustion the entry moves to a persisted `failedQueueRef`,
-  the scanned item is flagged `syncFailed`, a durability event is sent to Sentry, and — critically —
-  **audit completion is blocked while that queue is non-empty**. The code comment names the failure
-  it is defending against: *"an asset the worker saw as 'Found' is lost and later marked MISSING on
-  completion."*
-- State is persisted (`saveAuditScanState`) on **every** branch — success, requeue and failure —
-  with an explicit comment that persisting only on success loses scans if the app is killed during
-  backoff or if "a sub-2s scanning burst … perpetually resets the debounced saver".
-- Connectivity is detected with `@react-native-community/netinfo`; the offline banner is an
-  absolutely-positioned overlay so it never reflows the scanning UI.
-- Companion 1.5.0 adds: undo a mis-scan during an audit; scanner feedback for cross-workspace
-  jumps, repeat scans and kit scans while fulfilling; connecting the app to a **private/self-hosted
-  Shelf server**. (FACT — `COMPANION-RELEASE-STATUS.md`.)
+**Integrations.** REST API at `https://api.cheqroom.com/api/v2_5`; a JavaScript wrapper
+(`cheqroom-core` npm). Webhooks are **outbound only** — Cheqroom pushes to you, you cannot push
+to Cheqroom via webhook. POSTs carry an `X-CHEQROOM-Signature` header with an HMAC-SHA256 digest
+of the payload against a shared secret. Zapier connector exists.
 
-**Scanning UX in the web app.** A "scanner drawer" pattern with shared Jotai atoms
-(`scannedItemsAtom`, `addScannedItemAtom`, `removeMultipleScannedItemsAtom`, and a derived
-`scannedItemIdsAtom` that splits scanned items into `assetIds` / `kitIds`). A scanned item is
-typed `{ data?, error?, type?: "asset"|"kit", codeType?: "qr"|"barcode" }` — i.e. **scanning a kit
-and scanning an asset are the same gesture**, resolved afterwards. Drawers exist for: add to
-booking, add to kit, add to location, assign/release custody, check in/out.
-(FACT — `apps/docs/scanner-drawer-development.md`.)
+**Notable limits.**
 
-**Integrations.** Supabase Auth incl. SSO (Shibboleth, Google Workspace, Microsoft Entra docs
-in-repo), SCIM 2.0 provisioning (`app/routes/api+/scim+/v2+/`), Stripe, pg-boss for scheduled
-reminders, CSV import/export with dedicated barcode columns.
-
-**Notable strengths.** The offline queue; the kit-as-container model with inherited custody; the
-by-value audit snapshots; the honesty of the schema comments (this is a codebase that has clearly
-been burned by exactly the bugs this segment produces); QR codes that can be printed *before* they
-mean anything (`PrintBatch` + unclaimed `Qr`).
-
-**Notable limits.** (a) Offline is **audit-only** — the persisted queue lives in the audit flow;
-booking check-in/check-out do not obviously share it (INFERENCE from the file layout — I read the
-audit queue, not an equivalent booking queue). (b) Barcodes are a **paid add-on** on the hosted
-product, so the free/self-hosted default is QR-only. (c) The barcode type system is admitted to be
-sprawling: adding one symbology "requires changes in **15+ files**" (FACT —
-`apps/docs/barcode-types-development-guide.md`). (d) Supabase is a hard dependency for
-self-hosters. (e) No case-dimension/weight/volume data at all — a `Kit` has no `weight`, so it
-cannot feed a truck plan.
+- **Price model punishes warehouses** (INFERENCE from the pricing structure): billing is per
+  *admin seat* with minimum admin counts, while regular users and items are unlimited. That is
+  excellent for a media team with two managers and 200 borrowers, and hostile to a rental house
+  where a dozen warehouse leads all need to change data. A competitor's whole marketing angle is
+  "Cheqroom alternative without per-admin pricing".
+- **Price conflict, unresolved (FACT: the sources disagree).** One search extraction reads
+  "starts at $184/year for the Core plan, Business $275, Enterprise $367". Another reads
+  "$184 per admin per month, billed annually ($2,208 per year for one license), Business $275,
+  Enterprise $367 on the same basis". These differ by 12×. The second is internally consistent
+  (it does the multiplication) and matches the "per admin, per workspace, minimum admin counts"
+  language, so INFERENCE favours per-month. **To settle: open `https://www.cheqroom.com/pricing/`
+  directly.** Both figures seen 2026-08-29.
+- **Offline is a marketing claim I could not scope.** The feature pages say the app "works
+  offline for field teams with no signal" and that you can "perform check-ins/check-outs without
+  internet access, syncing data once reconnected". I could not open the help centre to learn
+  what happens to a *conflicting* checkout made by someone else while you were offline. UNKNOWN.
 
 ---
 
-### 2. Snipe-IT — the label printer with an asset database attached
+### 2. Rentman + Geartracking — cases as sealed, self-tracking units
 
-**What it does.** The best-known open-source asset manager (AGPL-3.0, Laravel 12, **v8.7.2** at
-read time). Aimed explicitly at IT operations: *"Knowing who has which laptop, when it was
-purchased in order to depreciate it correctly, handling software licenses, etc."*
-(FACT — `README.md`, `config/version.php`, `LICENSE`.)
+**What it does.** Rentman (NL) is the AV/event rental suite most visible in the European market.
+Asset tracking is one module among crew, quoting and planning; the pricing is modular to match.
 
-**Data model.** `Asset`, `AssetModel`, `Category`, `Manufacturer`, `Supplier`, `Location`,
-`Company`, `Department`, plus four *other* checkoutable kinds: `Accessory`, `Component`,
-`Consumable`, `License` — each with its own assignment/checkout table. Identity fields on
-`Asset` include `asset_tag`, `serial`, `byod`, `last_checkout`, `expected_checkin`,
-`last_audit_date`, `next_audit_date`, `checkout_counter`, `checkin_counter`, `requests_counter`.
-`Statuslabel` is a three-boolean matrix (`deployable`, `pending`, `archived`) resolved into five
-scopes — `deployable / pending / undeployable / archived / not_archived`.
-(FACT — `app/Models/Asset.php`, `app/Models/Statuslabel.php`.)
+**Data model** (FACT, search-extracted). Three levels of identity, and this three-level split is
+the segment's most transferable idea:
 
-**Maintenance** is a polymorphic `Maintenance` model (`item_id` + `item_type`, with a legacy
-`asset_id` mutator kept for API v1 callers) carrying `maintenance_type_id`, `supplier_id`,
-`is_warranty`, `start_date`, `expected_completion_date`, `asset_maintenance_time`, `cost`, `url`,
-`responsible_party_id`, `completed_at`, `completed_by`; `MaintenanceType` is user-definable with a
-`tag_color`. The API exposes `/maintenances/{id}/history`, `/notes` (GET + POST) and `/complete`.
-(FACT — `app/Models/Maintenance.php`, `app/Models/MaintenanceType.php`, `routes/api.php`.)
+1. **Equipment item** — the catalogue model. Has its own QR code.
+2. **Serial number** — the unit. Each serial number has **its own, different QR code**, and
+   consists of **two data elements: an Internal Reference and a Manufacturer Serial Number**,
+   with the Internal Reference as the default identifier. Rentman documents explicitly that
+   *"QR codes for equipment items and QR codes for serial numbers are different"*.
+3. **Container / physical combination** — the case.
 
-**Kits are templates, not containers.** `PredefinedKit` has `models()`, `licenses()`,
-`consumables()`, `accessories()` and `assets()`, with CRUD routes under `kits/{kit_id}/…`. It
-describes *what a standard issue looks like*, so it can be checked out in one action. It is **not**
-a physical case with its own tag, its own location or its own custody. (FACT —
-`app/Models/PredefinedKit.php`, `routes/api.php`.) **This is the single clearest example of the
-IT-vs-AV data-model mismatch in the whole segment.**
+INFERENCE, and it is important: the two-field serial (internal reference + manufacturer serial)
+is the right model and most tools get it wrong. The manufacturer's serial is the only stable link
+to a warranty claim, a firmware version or a recall; the internal reference is the only thing
+short enough to print on a cable tag. Tools that offer one field force a bad choice.
 
-**Labels — the genuinely strong part.** A full label engine in `app/Models/Labels/`:
+**Containers — the standout feature.** After a container is set up and **sealed** in Rentman:
 
-- **Sheets**: Avery (`L4736`, `L6009`, `L7162`, `L7163`, `_3490`, `_5267`, `_5520`, plus `_A`/`_B`
-  variants) and **Hema** (`_14130046`, `_38310012`).
-- **Tapes**: **Brother** (TZe 12/18/24 mm, TZe-241), **Dymo**, **Zebra**, **Generic**.
-- Abstract `Label` class exposing `getUnit()` (`pt|mm|cm|in`), `getRotation()`, width/height and
-  four margins; `DefaultLabel` composes a 1D barcode strip (`BARCODE1D_SIZE = 0.15`) and a 2D block
-  (`BARCODE2D_SIZE = 0.76`) alongside text fields.
-- Symbologies actually wired up: **`QRCODE`, `C128`, `PDF417`** (`Helper::barcodeDimensions()`),
-  selected per instance via the `label2_1d_type` / `label2_2d_type` settings; `label2_2d_type =
-  'none'` disables 2D entirely. Rendering is server-side PDF via `tecnickcom/tcpdf`,
-  `tecnickcom/tc-lib-barcode` and `bacon/bacon-qr-code`.
-  (FACT — `app/Helpers/Helper.php`, `app/Models/Setting.php`, `app/View/Label.php`, `composer.json`.)
+- You "scan the QR code of your transport case to see what's inside, **without needing to open
+  your sealed cases** and manually check their contents" — the pitch is explicitly about cases
+  full of adapters and small accessories.
+- On pack/load you "scan the QR code of the transport case to move its content from status to
+  status, **without needing to scan items individually**".
+- Rentman then "automatically tracks the contents (**both serialized and bulk**) during transport
+  and even between projects".
+- Sealing carries a social contract: "your crew will know that the contents of the case were not
+  changed since it was sealed."
 
-**Scanning.** `routes/api.php` has the tag-first endpoints you would build a scanner against:
-`POST /hardware/bytag/{any}/checkout`, `POST /hardware/bytag/{any}/checkin`,
-`POST /hardware/checkinbytag`, `POST /hardware/{asset}/audit`, and a **bulk audit**
-`POST /hardware/audit/bulk` taking an `ids` array with a per-row envelope response — declared
-*before* `{asset}/audit` so the path resolves correctly. There is also a due/overdue reporting
-route covering `audit|audits|checkins` × `due|overdue|due-or-overdue`. (FACT — `routes/api.php`.)
+FACT: the feature has been reworked — containers were migrated into "physical combinations" under
+newer equipment types, with a dedicated support article for users migrating. INFERENCE: that
+migration is evidence that modelling "case" correctly is genuinely hard, not that the idea failed.
 
-**But there is no first-party scanner.** The README states plainly: *"We're currently working on
-our own mobile app, but in the meantime, check out these third-party apps"* — and lists four
-independent apps (SnipeMate, Snipe-Scan, Snipe-IT Assets Management, AssetX). Snipe-IT's 47 npm
-dependencies contain **no** browser barcode/QR library (no zxing, no quagga, no html5-qrcode).
-(FACT — `README.md`, `package.json`.) **INFERENCE:** Snipe-IT is designed around *hardware
-keyboard-wedge scanners typing into form fields*, and camera scanning is delegated entirely to
-third parties. It is therefore **not offline** in any meaningful sense: it is a web app.
+**Sub-hire.** Sub-rentals are requested from the Shortages module or the project, and — the
+useful part — **sub-rented gear appears on the same digital packing slip as owned gear**, so crew
+see one list. Rentman accounts can send subrental requests **digitally to another Rentman
+account**. Crew also get "a notification when all of your **own** equipment is scanned", so they
+know the remainder must come from the sub-hire. INFERENCE: this is the only sub-hire UX I found
+that treats "gear I do not own" as a first-class part of the scanning workflow rather than a
+line item on an invoice.
 
-**Integrations.** A large third-party ecosystem the README itself catalogues: PowerShell
-(`SnipeitPS`), .NET (`SnipeSharp`), Perl, Python, Jamf/Kandji/Mosyle/UniFi/Rudder sync scripts,
-a Jira Service Desk plugin, Helm chart, Google Apps Scripts, and multiple MCP servers — one of
-which reports **183 tools across an OpenAPI 3.1 spec**, with hand-wrappers for
-"checkout/checkin, audits, by-tag/by-serial lookup, bulk checkout". (FACT — `README.md`;
-npm `the-real-snipeit-mcp`.)
+**Maintenance / inspections.** Equipment can be marked defective in either the Maintenance or the
+Warehouse module, and a repair created from it. **Periodic inspections are planned per serial
+number**, with a Maintenance-module list of every serial and when its inspection falls due —
+which is exactly the shape a German DGUV V3 regime needs.
 
-**Notable strengths.** Label output quality and printer coverage; the by-tag API surface; audit
-scheduling with due/overdue reporting; localisation via Crowdin; an unusually large integration
-ecosystem.
+**Hardware.** Rentman owns **Geartracking B.V.**, a subsidiary selling RFID/QR tags, scanners and
+printers with "100% compatibility with Rentman". This vertical integration is a real competitive
+moat: the tags are pre-tested for the failure modes of this industry specifically —
+**on-metal tags (RM7 sticker, RM8 hardtag) for aluminium frames and metal cases**, and
+**RM2/RM3 hardtags secured with heat-shrink tubing for cables and small items**. Software
+scanning runs on phones or on **Zebra TC22/TC27** Android handhelds (SE4710 standard or SE55
+advanced-range scan engines).
 
-**Notable limits.** Kits are templates; no containment hierarchy (no "case contains asset");
-no booking/availability-over-time model at all; no first-party mobile app; no offline; no
-sub-hire concept; maintenance has no damage-photo workflow.
+**Notable limits.**
 
----
-
-### 3. Rentman — the AV-native data model, with the scanning locked in the app
-
-**Why it is in this dossier.** Rentman is the AV/event rental ERP of the DACH+Benelux market and
-is already an integration target in `cable-planner` (`rentman:*` IPC domain, tokens in the OS
-credential store). Its *asset* layer is the closest thing the segment has to a purpose-built AV
-model. Everything below is **FACT (via API client)** from two independent third-party clients
-synced to Rentman's own OpenAPI spec — `@alternative-design-and-media/rentman-api-connector`
-(**"Synced to OAS v1.7.0 (deployment 2025-11-13)"**, published 2026-08-06) and
-`n8n-nodes-rentman` (**targets Rentman OpenAPI v1.8.1**, published 2026-06-02). Neither is
-official; both are current.
-
-**The case-aware equipment record.** `RentmanEquipmentItem` carries, among ~60 fields:
-
-```
-location_in_warehouse   packed_per            empty_weight
-current_quantity        current_quantity_excl_cases        quantity_in_cases
-quantity_reserved       quantity_expected     weight  volume  length  width  height
-power  current          is_combination        is_physical
-serial (bool)           bulk                  stock_management
-qrcodes                 qrcodes_of_serial_numbers          can_edit_content_during_planning
-```
-
-Three of those are decisive for AV and appear in no other product I read:
-
-- **`quantity_in_cases` and `current_quantity_excl_cases`** — the system knows the difference
-  between "we own 40 of these" and "12 of them are already packed in cases". *(FACT.)*
-- **`packed_per`** — how many fit in a case. *(FACT.)*
-- **`empty_weight`** alongside `weight` — a case's tare weight, so a packed case's weight is
-  computable. *(FACT.)*
-
-`is_combination` marks a set/kit; its contents live in `/equipmentsetscontent`
-(`parent_equipment`, `equipment`, `quantity`, `order`, `remark`) and — notably — **are writable**
-through the API. `qrcodes` and `qrcodes_of_serial_numbers` are marked **GENERATED FIELD**, i.e.
-read-only strings.
-
-**Serialisation.** `/serialnumbers` (`equipment`, `serial_number`, `remark`) is fully writable.
-`/equipmentassignedserials` links serials to serialised physical combinations, and
-`/actualcontent` records the actual serial content of a combination
-(`equipment`, `serial`, `quantity`, `combination_serial`) — i.e. *which specific bodies are in this
-specific packed set right now*. Both are **read-only**.
-
-**Maintenance and sub-hire.** `/repairs` = `{ equipment, start, end, status, remark }` — read-only
-through the API. `/subrentals` = `{ project, contact, status, remark, in, out }` with
-`/subrentalequipment` and `/subrentalequipmentgroup` — all **read-only**. Stock lives in
-`/stockmovements` (`equipment`, `quantity`, `date`, `type`, `remark`, `stocklocation`) and
-`/stocklocations`.
-
-**API characteristics.** JWT bearer token generated under *Configuration → Integrations*, and
-**only the most recently generated token is valid** — generating a new one invalidates the
-previous one. Cursor pagination via `next_page_url`; `+field`/`-field` sorting; relational and
-`isnull` filters; `ID Greater Than` for delta sync; field selection; `Expand` for inlining linked
-objects up to 3 levels (requires API ≥ v1.13.0). Limits: **50,000 requests/day, 10 requests/second,
-20 concurrent, max 1,500 items per page.** A documented parser quirk: percent-encoding the slash in
-a resource-path filter value (e.g. `/equipment/4362`) **breaks Rentman's parser**, so a
-preserve-slashes helper exists.
-
-**The decisive limit.** Across 63 documented resources there is **no scan, check-in, check-out or
-barcode endpoint of any kind** — I grepped the full operation table for `scan`, `check-in`,
-`check-out`, `barcode` and `qr` and got zero hits. `qrcodes` is a generated read-only field;
-`/repairs` and `/subrentals` are read-only; `/stockmovements` supports Delete/Get/Update but
-**not Create**.
-
-**INFERENCE, and it is a strong one:** Rentman's warehouse scanning lives entirely inside
-Rentman's own mobile app. A third party — including the AV Planner Suite — **cannot build a
-scanner against Rentman, cannot write a repair/damage record, and cannot post a stock movement.**
-You can read what Rentman knows; you cannot tell Rentman what the warehouse just did. Any
-suite-side scanning feature must therefore own its own scan ledger and reconcile, not delegate.
+- **RFID physics is not hidden from the user.** Rentman's own best-practice guidance concedes
+  that **metal racking and equipment reduce RFID read range by 30–50%**, and recommends
+  **"working in a clear space of around 3×3 metres"** with physical distance between the project
+  being scanned and other tagged gear. That is a *workflow constraint imposed by physics on the
+  building*, and it is the honest counterweight to the "18× faster" efficiency claim in the same
+  material.
+- **Offline: UNKNOWN.** Despite targeted searching, I found no Rentman statement that the mobile
+  app scans offline. The support articles describe live status updates and "the packing list
+  updating in real time" — INFERENCE: that phrasing implies a connected model, but absence of a
+  claim is not proof of absence. **To settle: `support.rentman.io` search for "offline".**
+- Add-on pricing stacks: Equipment Tracking (€9/user/mo) and History Logs (€12/user/mo) are
+  *separate* from the Inventory module. History Logs being a paid add-on means audit trail is a
+  paywalled feature.
 
 ---
 
-### 4. Cheqroom — the equipment-room model, seen through its own SDK
+### 3. Flex Rental Solutions — containers, packages, and the dual-identifier doctrine
 
-**Caveat on vintage.** Everything here is **FACT (via official SDK)** read from
-`CHECKROOM/checkroom_core_js`, Cheqroom's own JavaScript wrapper around
-`https://api.cheqroom.com/api/v2_5`. **Its last commit is 2020-03-03** (npm `cheqroom-core@1.1.5`,
-published 2018, last modified 2022). The live product has certainly moved on; treat the model as
-*the shape of the domain as Cheqroom framed it*, not as today's feature list.
+**What it does.** Flex is the heavyweight US rental ERP for AV/event/production, with the deepest
+inventory structure of the commercial products surveyed.
 
-**Domain objects** (one module each): `item`, `kit`, `order`, `reservation`, `transaction`,
-`conflict`, `availability`, `location`, `category`, `colorLabel`, `contact`, `group`, `template`,
-`field` (custom fields), `comment`, `attachment`, `orderTransfer`, `webhook`, `user`, `usersync`,
-`permissionHandler`.
+**Data model** (FACT, search-extracted). Flex is built on parent/child composition applied
+consistently at four different levels — the same mechanism reused, which is unusual discipline:
 
-**Identity is dual, like Shelf's.** `Base` carries a `barcodes: []` array with `addBarcode()` /
-`removeBarcode()`; `Item` and `Kit` each additionally carry `codes: []` — documented as *"the item
-qr codes"* — with `addCode()` / `removeCode()`. Helpers `getQRCodeUrl(code, size)` and
-`getBarcodeUrl(code, width, height)` render label images from a server-side utility API.
+- **Inventory tree** — parent inventory groups containing child inventory groups.
+- **Contents / Accessories** — items in a model's Contents tab "automatically add to the Quote
+  when the parent model is added", as a **child item to the parent**.
+- **Virtual Items** — place a virtual item on a quote and its Contents come along as children.
+  INFERENCE: this is a "kit that is not a physical thing" — the AV equivalent of a
+  bill-of-materials line that exists only on paper.
+- **Containers and Packages** — "you can **virtually build containers and packages in the same
+  way that they are built physically**". The dashboard's parent line is the job, the child lines
+  are units scanned to it.
 
-**Item fields:** `name`, `status`, `brand`, `model`, `warrantyDate`, `purchaseDate`,
-`purchasePrice`, `residualValue`, `codes`, `location`, `category`, `geo` (lat/lng), `address`,
-`order`, `kit`, `custody`, `cover`, `catalog`, and three permission flags —
-`allowReserve`, `allowCheckout`, `allowCustody`, each defaulting to `'available'`. So *"this item
-may be reserved but never taken into personal custody"* is a per-asset property. Methods include
-`getAvailabilities(from, to)`, `changeLocation()`, `changeCategory()`, `updateGeo()`,
-`getDepreciation(frequency)`, `expire()` / `undoExpire()` (retire and un-retire), and the custody
-triad **`takeCustody(customerId)` / `releaseCustody(locationId)` / `transferCustody(customerId)`**.
+**The dual-identifier doctrine is the single most quotable engineering opinion in this segment**
+(FACT, search-extracted): an RFID tag "**isn't a replacement for a barcode, it's a complementary
+identifier assigned to each serialized unit**, and in most cases **both a barcode and RFID tag
+are recommended**" — RFID for fast bulk scanning in the warehouse, "the barcode provides a
+reliable fallback".
 
-**Bulk creation is first-class:** `createMultiple(times, autoNumber, startFrom)` and
-`duplicate(times, location, autoNumber, startFrom)` plus `getLastNumber()` — i.e. "create 24 of
-these, auto-numbered from 0041". For an AV house buying a batch of identical radio mics, that is
-exactly the right primitive.
+INFERENCE: this is the correct architecture and it has a direct data-model consequence — a
+serialized unit needs **an array of identifiers of differing types**, not a single `barcode`
+string field. Any schema with one identifier column has already lost. Flex's own hardware
+reflects it: the **FlexScan Pro** is an all-in-one RFID *and* barcode device with **dedicated
+separate triggers for each mode** so switching is instant.
 
-**Notable strengths.** The permission triad on each asset; custody *transfer* as a first-class
-verb (person to person, without a round trip through the warehouse); orders vs reservations as
-separate objects with an explicit `conflict` model; `orderTransfer` with its own QR URL, i.e. a
-hand-over between locations that is itself scannable.
+**Commercial shape.** RFID is an **add-on module**; the core subscription covers barcode/QR
+scanning and inventory management, and RFID layers on top. There is an "RFID Proof of Concept
+Kit & Starter Package" containing a FlexScan Pro and **7 tag types** — INFERENCE: seven tag types
+in a starter kit is an admission that no single tag works across an AV inventory (cable, metal
+case, plastic housing, fabric, small item all need different tags), which corroborates Rentman's
+tag-selection guidance from an independent vendor.
 
-**Notable limits (as of the SDK vintage).** `Kit` is a flat bag of items with codes — no nesting,
-no case weight, no packing metadata. No maintenance/repair object at all: `expire()` is the only
-"this is out of service" mechanism, and there is no damage log, no service history, no cost. No
-sub-hire concept.
+Marketing claims up to **100 tags at once** and "up to 10 times faster than traditional barcode
+scanning". UNVERIFIED as measured performance; treat as vendor claim.
 
----
-
-### 5. InvenTree — the barcode architecture everyone else should copy
-
-**What it does.** MIT-licensed inventory/stock management for parts and manufacturing (Django +
-React, with a Flutter companion app). Not an AV product — but it has the most carefully designed
-*barcode subsystem* in this segment, and the design is domain-independent.
-(FACT — `docs/docs/barcodes/{index,internal,external,custom}.md`, `docs/docs/app/barcode.md`.)
-
-**Three tiers of barcode, resolved by priority.** A scan is `POST`ed to `/api/barcode/`; each
-plugin is offered the payload in a fixed order and **the first to return a result wins**:
-
-1. **Internal** — InvenTree's own codes, in one of two formats, selectable per instance:
-   - *JSON style*: `{"stockitem": 123}`, `{"part": 10}`, `{"stocklocation": 1}`.
-   - *Short alphanumeric*: `INV-SI123`, `INV-PA10`, `INV-SL1` — a configurable prefix, a two-char
-     model code, then the primary key.
-   The docs explain **exactly why the second exists**, and the reasoning is directly reusable:
-   `{` and `"` force QR *binary* encoding, and variable-length model names blow past QR version
-   boundaries — *"a part QR code with the shortest possible id requires 11 chars, while a stock
-   location QR code with the same id would already require 20 chars, which already requires QR
-   code version 2 and quickly version 3."* They then tabulate capacity by error-correction level
-   (v1/M ≈ 10^14 items alphanumeric; v1/H collapses to ~10^4).
-2. **External** — arbitrary third-party codes *linked* to a database object via
-   `/api/barcode/link/` and `/api/barcode/unlink/`. *"Instead of printing an internal barcode, the
-   existing barcode can be scanned and linked."*
-3. **Custom** — plugins. Four supplier parsers ship in the box: **DigiKey (DataMatrix), Mouser
-   (DataMatrix), LCSC (QR), TME (QR + DataMatrix)**.
-
-Barcodes may be linked to Part, Stock Item, Stock Location, Supplier Part, Purchase Order, Sales
-Order, Return Order and Build Order — **not just to "assets"**.
-
-**Scanning surfaces.** Web: webcam, connected scanner, or keyboard entry; a global quick-scan that
-navigates straight to the matched object; a dedicated multi-scan action page; and **barcode input
-inside ordinary form fields** — any field pointing at a barcode-capable model shows a barcode icon
-and accepts a scan (off by default, per-user opt-in). App: camera, or **keyboard-wedge mode**,
-with the explicit requirement that *"the scanner must be configured to append an enter (`\n`)
-character"*. Context-sensitive actions per screen: assign barcode, transfer stock location, scan
-items into location, scan received parts against a purchase order (needing **both** PO number and
-supplier SKU in the barcode).
-
-**Formats the app is documented to read:** 1D — Code-39, Code-93, Code-128, ITF; 2D — QR Code,
-Data Matrix, Aztec.
-
-**Barcode history** can be enabled to retain recent scans "for debugging or auditing purposes",
-viewable in the Admin Center.
-
-**Serial numbers.** A shorthand grammar for bulk assignment that is worth stealing verbatim:
-`1,3,5` (list), `1-5` (range), `~` (next), `4+` (fill from), `2+2` (start + length), mixable —
-`1 3-5 9+2` → `[1,3,4,5,9,10,11]`. **Stocktake** records periodic snapshots (date, part, number of
-stock *items*, total *quantity*, and a value **range** derived from purchase price or part pricing).
-
-**Notable limits.** **No offline support of any kind** — the string "offline" appears exactly once
-in the entire documentation tree, in a 0.5.0 release note about background workers, unrelated to
-scanning (FACT — grep over `docs/`). No custody/person model, no bookings, no cases. Barcode
-scanning in form fields is **off by default**, which is a curious choice for a scanning-first tool.
+**Notable limits.** No published price — `sales@flexrentalsolutions.com` for RFID. Offline
+behaviour UNKNOWN. INFERENCE: as a browser-first ERP, offline warehouse scanning is unlikely to
+be a strength, but I have no source either way.
 
 ---
 
-### 6. Part-DB — the scanner ergonomics prize (and the segment's German entry)
+### 4. Snipe-IT — the free label engine, and why its architecture is worth copying
 
-AGPL-3.0, Symfony/PHP, German-origin project (`jbtronics`), aimed at electronic components — but
-its scanner page is the best-designed input path I read anywhere in this segment.
-(FACT — `docs/usage/scanner.md`, `docs/usage/labels.md`, `README.md`, `LICENSE`.)
+**What it does.** AGPLv3 IT asset management. Not built for AV, has no case model and no
+availability calendar — but it is the most *inspectable* product in the segment, and its label
+subsystem is a small piece of excellent design.
 
-- **One scan page, three inputs**: type by hand, use an external scanner, or use the device camera.
-- **An "Info" toggle**: with it on, a scan *explains* the barcode; with it off, the scan *navigates*
-  straight to the matched object. Two modes, one control — a genuinely good idea for a warehouse
-  where you sometimes want to inspect and usually want to move.
-- **Matching cascade**: Part-DB's own generated code (internal ID) → the part's IPN → a
-  user-supplied **GTIN/EAN** stored in part properties → a **user barcode on a part lot**, set
-  under "Advanced", explicitly so that *"arbitrary existing barcodes that already exist on the part
-  lots (for example, from the manufacturer)"* can be reused → distributor barcodes (DigiKey,
-  Mouser) parsed for the distributor part number.
-- **Barcode-driven object creation**: if nothing matches, Part-DB can query an information provider
-  and open a pre-filled creation form.
-- **Non-printable character handling**: scanner fields try to insert the special characters that
-  scanners emit as `Alt + key` combinations, *"required for EIGP114 datamatrix codes"*.
-- **Scan-from-anywhere**: configure the scanner to emit `<SOH>` (0x01) before the payload and
-  Part-DB captures the barcode from any screen and redirects — unless an input field is focused, in
-  which case it types normally. **This is the single cheapest high-value trick in the dossier.**
-- Labels are Twig templates with `barcode_svg(content, type)` (e.g. `QRCODE`, `CODE128`) and a
-  `vendorBarcode` field on lots.
+**Verified primary facts (I read these files directly):**
+
+- `composer.json`: **PHP `^8.2`**, **Laravel `^12.0`**. Barcode/label stack:
+  `bacon/bacon-qr-code ^2.0` (QR), **`tecnickcom/tc-lib-barcode ^1.15`** (1D/2D symbologies),
+  `tecnickcom/tcpdf ^6.5` + `tecnickcom/tc-lib-pdf-font ^2.6` (PDF label rendering),
+  `intervention/image ^2.5`.
+- `app/Models/Labels/` contains `Label.php`, `DefaultLabel.php`, `Field.php`, `FieldOption.php`,
+  `Sheet.php`, `RectangleSheet.php`, plus two directories:
+  - **`Sheets/`** → `Avery`, `Hema`
+  - **`Tapes/`** → `Brother`, `Dymo`, `Generic`, `Zebra`
+- Release cadence (from the Atom feed, dates verbatim): **v8.7.2 — 2026-08-19**,
+  v8.7.1 — 2026-08-17, **v8.7.0 — 2026-08-11** (major; requires PHP ≥ 8.2). Actively developed
+  as of ten days before this research date.
+
+**Why the label architecture matters** (INFERENCE from the directory structure): Snipe-IT does not
+treat "a label" as a print stylesheet. It treats it as **a class hierarchy split along the real
+physical axis — continuous *tape* (Brother/Dymo/Zebra printers) versus die-cut *sheet* (Avery,
+Hema)** — with `Field`/`FieldOption` making the *content* of the label data-driven and separate
+from its *geometry*. Adding a new label size is subclassing, not editing a template. Anyone
+building label printing should copy this split; the tape/sheet distinction is the one that bites
+you later, because tapes have one fixed dimension and unbounded length while sheets have a rigid
+grid and margins.
+
+**Barcodes and workflow** (FACT, search-extracted): QR and 1D barcode formats; labels generated
+by multi-selecting assets in a list view and choosing "Generate Labels", with size specifications
+in Admin → Settings → Labels; a scanned QR opens the asset detail page on the phone. v8.7.0 added
+**"Quickscan check-in by serial"**, accepting *either an asset tag or a serial number* — INFERENCE:
+a small but telling fix, because in the field people scan whatever sticker is nearest, and a
+system that only accepts one identifier class creates dead-end scans.
+
+**API** (FACT, search-extracted): full JSON REST under `/api/v1/`, including
+`POST /api/v1/hardware/{id}/checkout` (params `assigned_user`, `assigned_asset`,
+`assigned_location`, `checkout_at`, `expected_checkin`, `note`) and
+`POST /api/v1/hardware/{id}/checkin`. Note `assigned_asset` — **an asset can be checked out to
+another asset**, which is the closest thing Snipe-IT has to a container model.
+
+**Notable limits.** No first-party mobile app — scanning happens in the phone browser against
+your server, so **no server, no scanning**; this is the least offline-capable design in the
+survey. Bulk audit exists but GitHub issues show long-standing requests around it (updating
+location from the audit scan, scanning a *location* barcode to set the audit context, bulk import
+of audit data). No case/kit contents, no rental calendar, no sub-hire.
+
+**Pricing** (FACT, search-extracted, seen 2026-08-29): self-hosted is genuinely free with
+unlimited assets and users; managed hosting Basic **$39.99/mo**, Small Business **$99.99/mo**,
+dedicated servers **$5,000/yr** (medium) and **$7,500/yr** (large).
+
+---
+
+### 5. Shelf (shelf.nu) and InvenTree — two open-source architectures worth studying
+
+**Shelf** (FACT, read directly from the GitHub repo): **AGPL-3.0**. Stack is **React Router 7 +
+React 19, PostgreSQL via Supabase, Prisma 6, Tailwind CSS 3, Vite 7 + Turborepo**. Releases are
+frequent — **shelf@2.1.4 on 2026-08-20**, 2.1.3 on 2026-08-19, 2.1.2 on 2026-08-17, 2.1.0 on
+2026-08-04 (Atom feed, verbatim). Features named in the repo: **QR asset tags** (generate and
+print), **bookings and reservations** to prevent double-booking, **custody tracking**,
+**built-in barcode scanning with bulk actions**, **kits for bundled assets**, custom fields,
+categories, and audit trails. Roles are Owner / Admin / Base / Self Service.
+
+INFERENCE: Shelf is the open-source product closest to AV needs, because it is the only OSS one
+with **bookings** — an asset system without a calendar cannot answer "is this free next Tuesday",
+which is the question a production actually asks. Self-hosting requires an **external Supabase
+instance**, which is a real dependency: it is not a single-binary deploy, and the vendor states
+that the "vast majority" of its 3,000+ teams use the hosted version.
+
+**InventTree** (FACT, read directly from the GitHub repo): **MIT** licence — the most permissive
+in the segment. Django + Django REST Framework server, React/Mantine client, plugin system, REST
+API, and a companion mobile app on both stores.
+
+Its **barcode architecture is the best abstraction found anywhere in this segment** (FACT,
+search-extracted from the docs): barcode data is POSTed to a single **`/api/barcode/` endpoint**,
+supplied to **all loaded barcode plugins**, and **the first plugin to successfully interpret the
+data returns the response**. Internal codes come in two formats — a **JSON barcode** ("human
+readable") and a **short barcode** (compact). It also ingests **ECIA barcodes** from electronics
+suppliers for purchase-order receiving.
+
+INFERENCE, and this is the design lesson: a chain-of-responsibility over pluggable decoders is
+exactly right for AV, where a warehouse contains your own QR codes, a previous owner's Code 128
+asset tags, manufacturer serial barcodes, GS1-128 shipping labels and rental-partner stickers all
+at once. Everyone else hard-codes "our format or nothing"; InvenTree lets the scan try every
+interpreter and take the first hit. The reported scanner configuration (`qrcode` and `code128`)
+suggests the mobile app's *camera* decode set is narrower than the plugin architecture allows —
+UNVERIFIED, worth checking against current source.
 
 ---
 
 ## Standards & protocols
 
-This is the part of the segment where a great deal exists on paper and almost none of it is used
-in AV.
+**Symbologies (the marks themselves).** All FACT, search-extracted:
 
-### Identity: GS1 Application Identifiers
+| Standard | What it is | Relevance here |
+| --- | --- | --- |
+| **ISO/IEC 18004** | QR Code — finder patterns, alignment, format/version info, Reed-Solomon ECC | Default choice in every modern product. Readable by an unmodified phone camera, which is why Scanlily and Homebox use plain-URL QR and need no app |
+| **ISO/IEC 16022** | Data Matrix — L-shaped finder, clock track, ECC 200 | Better than QR at very small sizes; the right choice for cable tails and connector shells |
+| **ISO/IEC 15417** | Code 128 — 107 characters in subsets A/B/C, mandatory check character | The 1D workhorse; what inherited/legacy estates are already labelled with |
+| **ISO/IEC 15415** | Print-quality grading for 2D symbols | Matters if labels are printed in-house on cheap stock and must still scan after a tour |
+| **GS1-128 / GS1 DataMatrix** | GS1 data carriers with application identifiers | The interoperable option if identifiers are ever to cross company boundaries |
 
-**FACT** — read from the GS1 Barcode Syntax Dictionary
-(`gs1/gs1-syntax-dictionary`, `gs1-syntax-dictionary.txt`, 344 lines):
+**Identity keys (what goes *in* the mark).** FACT, search-extracted from GS1 material:
 
-| AI | Name | Syntax | Why it matters here |
-| --- | --- | --- | --- |
-| `01` | GTIN | `N14,csum` | product-model identity |
-| `21` | SERIAL | `X..20` | requires `01`/`03`/`8006` — a serial is meaningless without a GTIN |
-| `250` | SECONDARY SERIAL | `X..30` | requires `01+21` |
-| **`8003`** | **GRAI — Global Returnable Asset Identifier** | `N1,zero N13,csum [X..16]` | **the standard identifier for a returnable transport item, i.e. a flight case** |
-| **`8004`** | **GIAI — Global Individual Asset Identifier** | `X..30` | **the standard identifier for an individual fixed asset, i.e. a camera body** |
-| `8006` | ITIP | `N14,csum N4,pieceoftotal` | "piece m of n" — components of a set |
-| `10` / `11` / `17` | BATCH/LOT, PROD DATE, EXPIRY | | consumables (gaffer, batteries, pyro) |
-| `253` | GDTI | `N13,csum [X..17]` | document identity (delivery notes) |
-| `400` | ORDER NUMBER | `X..30` | ties a scan to a job |
+- **GIAI — Global Individual Asset Identifier.** For an individual asset "owned and managed by one
+  organisation, such as tools, laptops, or equipment that require individual identification
+  through their lifecycle". **This is the correct GS1 key for a serialized piece of AV kit.**
+- **GRAI — Global Returnable Asset Identifier.** For returnable containers in transit — kegs,
+  gas bottles, totes, pallets. INFERENCE: **a flight case is a GRAI.** A case is precisely a
+  returnable container that goes out full and comes back to be refilled. Nobody in AV uses this.
+- **SGTIN** — serialized GTIN, for individual items in a product line.
+- **SSCC** — serial shipping container code; in EPCIS it is the canonical **parent ID** of an
+  aggregation.
 
-**GRAI and GIAI are, on paper, exactly the right identifiers for AV rental**: GIAI for the asset,
-GRAI for the reusable case it travels in. **INFERENCE (high confidence):** essentially nobody in AV
-uses them. Not one of the products I read — Shelf, Snipe-IT, InvenTree, Part-DB, Homebox, Cheqroom,
-Rentman — has a GRAI or GIAI field, or any GS1 AI parsing on the *asset* side. Odoo has a GS1
-engine, but it is aimed at goods received from suppliers, not at owned rental assets.
+**Event interchange — EPCIS 2.0 (GS1).** FACT, search-extracted. EPCIS captures the
+"what, when, where, why and how" of objects. Its event types are **ObjectEvent,
+AggregationEvent, TransformationEvent, AssociationEvent, TransactionEvent**. Aggregation captures
+"when an object is combined with other objects"; **DisaggregationEvent is its inverse**; the
+crucial field is the **parent ID — the container** (an SSCC).
 
-Also verified: the dictionary encodes **`dlpkey`** (GS1 Digital Link primary keys) and
-mutually-exclusive/requisite AI associations, so the same data can be expressed as a bracketed
-element string, raw scan data, HRI text, or a **GS1 Digital Link URI** — a plain HTTPS URL in a QR
-code. That last representation is what Shelf's `BarcodeType.ExternalQR` and Homebox's label `URL`
-parameter are informally reinventing.
+INFERENCE, and this is the biggest structural finding in the dossier: **EPCIS already is,
+precisely and formally, the interchange format for "these 41 things are in this case, and the
+case just moved".** AggregationEvent = sealing a case. DisaggregationEvent = unpacking it.
+ObjectEvent = scanning an item to a job. The AV rental industry has independently reinvented all
+of this — Rentman's Containers, Flex's Containers and Packages — in mutually incompatible
+proprietary models, and **no AV product I found mentions EPCIS at all**. Every case manifest in
+this industry therefore dies at the company boundary.
 
-### Event capture: EPCIS 2.0 and the Core Business Vocabulary
+**RFID air interface.** FACT, search-extracted:
 
-**FACT** — `gs1/EPCIS` README and `JSON-Schema/schemas/bizStep-JSON-Schema.json`. EPCIS 2.0 and
-CBV 2.0 are ratified GS1 standards (public review closed 2021-11-11; normative artefacts at
-`ref.gs1.org/standards/epcis`, which is unreachable from here). EPCIS models *what happened to
-which object, when, where and why*, with JSON/JSON-LD and REST bindings.
+- **RAIN RFID = EPC Class-1 Gen-2 = ISO/IEC 18000-63**, passive UHF, ~860–960 MHz.
+- **Europe (ETSI): 865–868 MHz**, limited channels, ~2 W EIRP depending on country. **US:
+  902–928 MHz.** INFERENCE: a tag or reader bought in the US is not necessarily legal or
+  performant in the EU — a genuine trap for a German company buying from US-centric vendors.
+  Geartracking's own product listing is explicitly "RFID, 865–868 MHz".
+- Gen2 anti-collision supports claimed read rates **up to 1,000 tags/second**.
+- Real-world silicon in this industry: **Impinj M750** chips, in HID Global's Sentry Cable Tag
+  and Sentry Duo Tag, "purpose-built for AV equipment like cables, flight cases, and speakers"
+  (from the Rentex deployment).
 
-The CBV `bizStep` enumeration — read verbatim from the JSON Schema — contains **42 values**,
-including:
+**NFC / HF.** HireHop lists NFC alongside RFID as a supported identifier. INFERENCE: NFC (13.56 MHz,
+NDEF payloads) is the phone-native option — no special reader — but it is single-tag, touch-range,
+so it solves "identify this one box" not "inventory this truck".
 
-```
-accepting  arriving  assembling  collecting  commissioning  consigning
-cycle_counting  decommissioning  departing  disassembling  holding
-inspecting  installing  loading  packing  picking  receiving  removing
-repairing  replacing  reserving  shipping  staging_outbound  stock_taking
-storing  transporting  unloading  unpacking  ...
-```
-
-Read that list as an AV person: `packing`, `staging_outbound`, `loading`, `transporting`,
-`unloading`, `installing`, `inspecting`, `repairing`, `unpacking`, `cycle_counting`,
-`stock_taking`, `reserving`. **The vocabulary for a rental load-out already exists as a ratified
-international standard, and the AV industry does not use it.** (FACT for the vocabulary;
-INFERENCE for the non-use, but no product I read references EPCIS or CBV anywhere.)
-
-### Symbologies and what actually reads them
-
-- **ZXing** is the de facto reference implementation, and its format names have become an informal
-  interchange vocabulary — Shelf's schema comment says its `BarcodeType` enum matches "zxing format
-  names exactly" (FACT).
-- The **Barcode Detection API** (WICG shape-detection spec) is the browser-native scanning path; the
-  `barcode-detector` ponyfill (v3.2.2, published 2026-08-16) backs it with **ZXing-C++ compiled to
-  WebAssembly** and enumerates the practical format universe (FACT — npm README): linear —
-  `codabar, code_39 (+standard/extended), code_32, pzn, code_93, code_128, databar` (omni,
-  stacked, expanded, limited), `dx_film_edge, ean_8, ean_13, itf, upc_a, upc_e`; matrix —
-  `aztec (+rune), data_matrix, maxi_code, pdf417 (+compact/micro), qr_code (models 1/2, micro,
-  rMQR)`; plus grouped selectors `linear_codes`, `matrix_codes`, `gs1_codes`, `retail_codes`,
-  `industrial_codes`, `any`.
-- **Practical subset actually used by this segment** (FACT, from the products): Code 128 and
-  Code 39 for 1D; QR and DataMatrix for 2D; PDF417 only in Snipe-IT's label renderer; EAN-13 for
-  retail-sourced goods.
-- **QR versions and error correction are a real design constraint, not a detail.** Shelf stores
-  `version` and `errorCorrection (L|M|Q|H)` per QR row; InvenTree's docs quantify the trade-off
-  (see the deep dive). For a case label that will be scuffed, `Q` or `H` is the right call and it
-  costs capacity — which is precisely why short alphanumeric payloads beat JSON payloads.
-
-### Wire-level and label-level
-
-- **Keyboard wedge** is the universal integration protocol of this segment: the scanner types the
-  code plus a terminating Enter into whatever field has focus. InvenTree documents the `\n`
-  requirement explicitly; Part-DB documents the `<SOH>` (0x01) prefix convention for
-  scan-from-anywhere and Alt-key encoding of non-printables. (FACT.)
-- **EIGP 114** — the ECIA labelling standard for DataMatrix on component packaging, referenced by
-  name in Part-DB's scanner docs; built on ISO/IEC 15434 / ANSI MH10.8.2 message syntax
-  (the ISO/ANSI lineage is **INFERENCE/domain knowledge — unverified here**, `iso.org` unreachable).
-- **Label hardware formats** in evidence: Avery and Hema die-cut sheets; **Brother TZe** tape
-  (12/18/24 mm), **Dymo**, **Zebra** and generic continuous tape (FACT — Snipe-IT
-  `app/Models/Labels/{Sheets,Tapes}`). Zebra's ZPL is the industry print language
-  (**unverified here**; a community Snipe-IT tool listed in the README targets a *Zebra ZD410*).
-- **Homebox's external label service** is an interesting minimal contract: an HTTP `GET` with
-  `TitleText`, `DescriptionText`, `URL`, `QrSize`, `Width`, `Height`, `Dpi`, `Margin`,
-  `ComponentPadding`, `DynamicLength`, `AdditionalInformation`; `User-Agent:
-  Homebox-LabelMaker/1.0`, `Accept: image/*`; response must be `image/*` within a 30 s default
-  timeout and under the upload size cap. (FACT — `external-label-service.mdx`.) That is a
-  ten-parameter, printer-agnostic label protocol anyone could implement.
-- **GS1 nomenclature parsing in practice** — Odoo's `barcodes_gs1_nomenclature` module is a
-  complete, readable reference: `FNC1_CHAR = '\x1D'`, a configurable FNC1 separator regex
-  (`(Alt029|#|\x1D)`) because scanners emit the group separator differently, GS1 `yymmdd` date
-  decoding with GS1 General Specifications §7.12 century determination, and per-AI pattern rules;
-  the base module additionally handles UPC-A ↔ EAN-13 conversion in both directions and check-digit
-  validation. (FACT — `addons/barcodes/models/barcode_nomenclature.py`,
-  `addons/barcodes_gs1_nomenclature/models/barcode_nomenclature.py`.)
-
-### RFID
-
-**Largely UNKNOWN in this pass.** `gs1.org` and `ref.gs1.org` were unreachable, and no RFID vendor
-named in the brief (Yellowfish, Rentcorp, Kit Check) had a reachable primary source. What can be
-said honestly:
-
-- The GS1 AI layer above (**GIAI/GRAI**) is the same identity layer EPC RFID tags encode, so an
-  RFID rollout and a barcode rollout should share one identifier scheme. (INFERENCE from the
-  Syntax Dictionary, which is identifier-carrier-agnostic.)
-- **Not one** of the six open-source products I read has any RFID support — no EPC field, no reader
-  integration, no bulk-read model. (FACT, by absence, across all six schemas/doc trees.)
-- The specific claim that "UHF RFID lets you read a whole case without opening it" is the entire
-  commercial premise of RFID in AV rental. **I could not verify a single deployment, price or
-  read-rate figure.** To check: GS1 EPC Tag Data Standard and ISO/IEC 18000-63 at `ref.gs1.org`;
-  vendor case studies at the vendors' own sites.
+**File-level interchange — the honest state of it.** CSV and TSV import/export is universal and is
+effectively *the* interchange format of this segment (Homebox exports a bill of materials as TSV;
+Snipe-IT, AssetTiger, Sortly all do CSV). Shure Wireless Workbench uses proprietary **show files**
+and **show packs** and exports inventory to **CSV or PDF**. There is **no** equipment-identity
+interchange format in AV comparable to what MVR/GDTF did for lighting fixtures. UNKNOWN whether
+any such effort exists; nothing surfaced in searching.
 
 ---
 
-## What this segment does WELL
+## What this segment does WELL — the patterns worth stealing
 
-Patterns worth stealing, each traced to where I read it.
+1. **The case is a first-class container that tracks its own contents.** Rentman: seal a case,
+   then scan *the case* to move all its contents between statuses without touching individual
+   items, "both serialized and bulk", persisting across projects. Flex: build containers virtually
+   "in the same way that they are built physically". This is the single most valuable idea in the
+   segment and it is exactly the AV problem — a case of 40 adapters cannot be scanned item by item
+   at 6am on a load-in.
 
-1. **Split identity from identifier — and allow several identifiers per thing.**
-   Shelf has `Qr` *and* `Barcode` as separate tables plus a `preferredBarcodeId` display override;
-   Cheqroom has `codes[]` *and* `barcodes[]`; InvenTree has internal *and* external *and* plugin
-   barcodes; Part-DB matches internal ID, then IPN, then GTIN/EAN, then a user barcode, then a
-   distributor code. **Nobody good assumes one code per asset.** The manufacturer's serial label,
-   the previous rental house's sticker and your own QR all coexist and all resolve.
+2. **Sealing as a social contract, not just a data state.** "By sealing the Container, your crew
+   will know that the contents of the case were not changed since it was sealed." The state
+   carries a *trust claim* that lets the next person skip a check. INFERENCE: this converts a data
+   field into a labour saving, which is the only reason warehouse staff ever adopt a feature.
 
-2. **Print codes before they mean anything.** Shelf's `PrintBatch` + unclaimed `Qr` lets you print
-   a roll of labels, stick them on gear, and *then* claim each one by scanning it. This inverts the
-   painful order (create record → print label → find the asset again).
+3. **Damage flagging with an automatic availability consequence.** Cheqroom: flag damaged → asset
+   auto-removed from rotation → evidence (description + photos) mandatory → repair ticket
+   auto-created. The human does one action; the system does the four consequences.
 
-3. **A scan is a gesture, not a type.** Shelf's `ScanListItem` carries
-   `type?: "asset" | "kit"` and `codeType?: "qr" | "barcode"` — the worker scans whatever is in
-   front of them and the system works out whether it was a case or an item. Same in InvenTree's
-   global quick-scan.
+4. **Multiple identifiers per unit, by design.** Flex's doctrine that RFID complements rather than
+   replaces the barcode, with both on the same serialized unit and a scanner with separate
+   triggers for each. HireHop supporting barcode, QR, RFID, NFC, serial *and* manual count in one
+   product. Snipe-IT's Quickscan accepting an asset tag *or* a serial.
 
-4. **The container is a first-class object with its own tag, status, location and custody.**
-   Shelf's `Kit` has QR codes, a `KitStatus`, a `Location` and a `KitCustody` whose inherited
-   custody cascades to members. Scanning one case label moves twenty items.
+5. **Pluggable barcode decoding.** InvenTree's `/api/barcode/` fan-out to all plugins, first
+   successful interpretation wins. The right answer for a warehouse full of other people's labels.
 
-5. **Distinguish kit-driven state from manual state.** Shelf's `AssetLocation.assetKitId`
-   discriminator (NULL = manual, non-NULL = "here because the kit is here", read-only in the manual
-   editor) is the cleanest solution I saw to "who owns this fact". Same pattern on
-   `Custody.kitCustodyId`.
+6. **Two-field serial identity.** Rentman's Internal Reference *plus* Manufacturer Serial Number.
+   Short printable ID and stable external ID are different jobs and need different fields.
 
-6. **Partial check-out and check-in are the normal case, not an exception.** Shelf models each scan
-   batch as a session row with positionally-aligned asset/quantity/slice arrays. Gear comes back in
-   three vans over two days; a boolean `returned` flag cannot express that.
+7. **Label geometry as a class hierarchy split tape-vs-sheet.** Snipe-IT's `Labels/Sheets/{Avery,
+   Hema}` and `Labels/Tapes/{Brother,Dymo,Generic,Zebra}` with data-driven `Field`/`FieldOption`.
 
-7. **Never drop a scan.** Shelf's failed-queue + `syncFailed` flag + *blocked audit completion* is
-   the correct answer to the offline problem. The wrong answer — a fire-and-forget POST — produces
-   the exact failure its code comments describe: an item the worker saw and counted is later
-   reported MISSING.
+8. **Free seats for the people who only scan.** Rentman makes warehouse staff, technicians and
+   freelancers **free basic users**, charging only for "power users" who plan and quote. INFERENCE:
+   this is the correct commercial shape for this workflow, and its absence elsewhere (Cheqroom's
+   per-admin billing) is a visible market irritation that competitors advertise against.
 
-8. **Snapshot history by value.** `AuditScan.assetTitle` and `AuditScan.wasExpected` are stored at
-   scan time so deleting an asset cannot retroactively rewrite last month's audit.
+9. **Audit / spot-check as a named, logged, first-class workflow.** HireHop's "Spot Check" for
+   warehouse-wide audits, logged in Asset Status reports with who performed it and when;
+   Snipe-IT's bulk audit; itemit's "QR Quick Audit".
 
-9. **Separate `DAMAGE` from `LOSS`.** Shelf's `ConsumptionCategory` does; the schema comment says
-   why — *"items returned but unusable — distinct from LOSS for reporting"*. Most systems collapse
-   both into "missing".
+10. **Blocking rules at the point of scan.** HireHop prevents equipment with test failures or
+    damage from being sent out, prevents an asset being sent to two jobs at once, and stops
+    over-sending. INFERENCE: enforcement at the scan is worth more than any report, because it is
+    the last moment before the mistake leaves the building.
 
-10. **Make the identifier short.** InvenTree's `INV-SI123` versus `{"stockitem": 123}` is a
-    measured, documented decision about QR version and error-correction budget. On a scuffed case
-    label at 22:00 in a loading bay, this is the difference between a scan and a retype.
+11. **Vertically integrated, application-specific tag hardware.** Geartracking (Rentman's own
+    subsidiary) selling tags pre-tested for cables, aluminium frames and metal cases. The software
+    vendor owning the tag failure modes is a genuine moat.
 
-11. **Scan-from-anywhere with an `<SOH>` prefix** (Part-DB). No modal, no "open the scanner page" —
-    the code arrives and the app navigates, unless a field is focused.
-
-12. **Two modes on one control**: Part-DB's "Info" toggle — inspect vs navigate.
-
-13. **A serial-number mini-grammar.** InvenTree's `1 3-5 9+2` and `~+2` beats twenty text fields.
-
-14. **Bulk creation with auto-numbering.** Cheqroom's `createMultiple(times, autoNumber, startFrom)`
-    + `getLastNumber()`.
-
-15. **Custody transfer as a verb.** Cheqroom's `transferCustody(customerId)` — gear changes hands
-    between two freelancers without a fictional trip through the warehouse.
-
-16. **Per-asset permission flags.** Cheqroom's `allowReserve` / `allowCheckout` / `allowCustody`;
-    Shelf's `availableToBook`. "This item exists, is tracked, but may never leave" is a real state.
-
-17. **Barcode input inside ordinary form fields** (InvenTree): any field pointing at a scannable
-    model grows a barcode icon. No separate scanning mode to learn.
-
-18. **Publish a label-service contract instead of supporting every printer** (Homebox): ten query
-    parameters, `image/*` back, 30 s timeout.
-
-19. **Scheduled audits with due/overdue reporting.** Snipe-IT's `last_audit_date` /
-    `next_audit_date` plus a reporting route over `audit|audits|checkins` ×
-    `due|overdue|due-or-overdue`, and a bulk audit endpoint that returns a per-row envelope.
-
-20. **Containment as a tree, not a foreign key.** NetBox's `InventoryItem` is an MPTT tree of
-    serialised sub-components inside a device; Sortly's items are a `parent_id` tree with
-    folder/item types and `include_subtree` on clone. Cases nest.
+12. **Per-serial periodic inspection scheduling** (Rentman): a Maintenance list of every serial
+    number with its next inspection due date — the shape DGUV V3 / PAT regimes require.
 
 ---
 
-## What NOBODY in this segment solves well
+## What NOBODY in this segment solves well — the white space
 
-The white space, in rough order of how badly it hurts an AV rental operation.
+1. **Offline is shallow, tier-gated, and dishonestly marketed.** This is the clearest gap. The
+   evidence:
+   - **EZOfficeInventory**: the help article scopes offline to *adding work logs to work orders*,
+     auto-synced on reconnect. That is not offline check-out.
+   - **Sortly**: offline is **mobile-only, not on the web app**, and explicitly "only updates
+     inventory levels on your device"; disabling sync freezes your view of inventory at that
+     moment.
+   - **Asset Panda**: offline mode exists but arrived only with "Asset Panda Pro" (2025-09-11) and
+     is reported as **gated to the Enterprise tier** — i.e. sold as a premium feature rather than
+     assumed as a baseline.
+   - **Cheqroom**: claims offline check-in/out on marketing pages; the conflict-resolution
+     semantics are undocumented as far as I could reach.
+   - **Snipe-IT**: browser-based scanning against a server — structurally cannot work offline.
+   - **Rentman**: no offline claim found at all.
 
-1. **Offline is a footnote everywhere except one audit screen.**
-   Of everything I could verify: **Shelf's companion app has a real offline scan queue — for
-   audits.** InvenTree has none (the word "offline" appears once in its entire doc tree,
-   unrelated). Snipe-IT has none and no first-party app at all. Part-DB, Homebox: none found.
-   Rentman, Cheqroom, Current RMS, Flex, EZO, Sortly, Asset Panda: **UNKNOWN**, and their vendor
-   pages were unreachable, so their marketing claims are untested here.
-   The realistic warehouse case — a steel-shelved hall with one access point, forty cases going
-   out, and check-out (not audit) being the task — is served by **one** verified implementation, and
-   only for the wrong workflow.
+   INFERENCE: no product in this survey presents a genuinely **offline-first** model — a local
+   authoritative store, an explicit durable operation queue, and a defined conflict-resolution
+   policy when two people scanned the same unit to two jobs while both were disconnected. The
+   third-party offline-first scanning tools that do exist (Cleverence, Stockria) are generic
+   warehouse apps with no AV domain model. **A loading dock is a Faraday cage with a metal roof;
+   this is not an edge case, it is Tuesday.**
 
-2. **The case is a container in exactly one product, and even there it has no physics.**
-   Shelf's `Kit` is a proper container but has **no weight, no dimensions, no volume, no tare
-   weight and no packing rules**. Rentman has the physics (`empty_weight`, `packed_per`,
-   `quantity_in_cases`, `volume`, `length/width/height`) but **exposes no scanning API**, so nobody
-   can build against it. Snipe-IT's kit is a checkout template. Cheqroom's kit is a flat bag.
-   **Nobody ships "this case, with these twenty items, weighing 41 kg packed, going on truck 2".**
+2. **No interchange format for case contents — despite one existing.** EPCIS 2.0's
+   Aggregation/Disaggregation events *are* the standard for "what is in this container and when
+   did it change", and the AV industry uses none of it. Every vendor's case model is proprietary,
+   so a manifest cannot cross a company boundary — which is exactly what happens on every
+   multi-vendor show. Nothing exports "case A-12 contains these 41 serials" in any form another
+   system can read.
 
-3. **Nesting stops at one level.** Item → case works. Case → road box → truck → venue → room does
-   not. Only NetBox (`InventoryItem` MPTT) and Sortly (`parent_id` tree) model arbitrary depth, and
-   neither is an AV product. In real load-outs, containment is three or four deep and the middle
-   levels are exactly what goes missing.
+3. **The plan and the warehouse are different universes.** A cable on a signal-flow drawing, a
+   line on a packing list, and a serialized unit with a barcode are three unrelated objects in
+   three unrelated tools. Nobody closes the loop from *designed* → *packed* → *scanned* →
+   *verified on site*. INFERENCE: this is the largest structural gap and the one most relevant to
+   this repository.
 
-4. **Damage is a text field.** Shelf has a `DAMAGE` consumption category and asset notes; Snipe-IT
-   has a maintenance record with a cost and a URL; Rentman has a read-only `/repairs` row with
-   `status` and `remark`. **Nobody I read has a structured damage report**: photo at check-in, the
-   specific part affected, severity, who signed for it, whether it is chargeable to the client,
-   whether the item may still go out. Shelf's `AuditImage` is the closest — and it is scoped to
-   audits, not returns.
+4. **Cable-level tracking is economically unsolved.** The tag, the labour to fit it and the
+   failure rate of a tag on a coiled, trodden-on, gaffer-taped cable often exceed the cable's
+   value. Geartracking's answer is heat-shrink hardtags; Metalcraft/HID's is a purpose-built
+   Sentry Cable Tag. Both are hardware answers to what is partly a modelling problem: the industry
+   has no accepted middle ground between "track every cable individually" and "track a bag of 20
+   cables as one quantity with no identity". UNKNOWN whether any vendor models a *bulk lot with a
+   count and a shared tag*.
 
-5. **Sub-hire is invisible to the scanner.** Rentman models `/subrentals` properly — and makes it
-   **read-only** through the API, with no scan endpoint. Nobody else models sub-hire at all: not
-   Shelf, not Snipe-IT, not Cheqroom, not InvenTree. So the single highest-risk gear on a show —
-   somebody else's, on your insurance, due back on a specific date — is tracked in email.
+5. **Sub-hire gear has no identity.** Rentman is the best case found — sub-rentals on the same
+   packing slip, digital requests between Rentman accounts — but the sub-hired unit still has no
+   durable record in your system. You cannot answer "did *that* specific hired-in monitor come
+   back damaged, and is it the same one we had last month". Cross-company identity is the whole
+   point of GS1 keys, and the industry does not use them.
 
-6. **Serial numbers are a string, not an identity.** Shelf has no dedicated serial field beyond
-   custom fields and `sequentialId`. Snipe-IT has `Asset.serial`, one per asset. Rentman and ERPNext
-   do it properly (`/serialnumbers`, `Serial No` doctype). **Nobody links a serial to a firmware
-   version, a calibration record, or a "this specific body has the flaky SDI-2" note** that follows
-   the body rather than the model.
+6. **Damage evidence is decoupled from technical context.** Photo plus free text plus a flag. No
+   product ties a fault to *where in the signal chain the failure showed* — which port, which run,
+   which patch. INFERENCE: an intermittent SDI fault is diagnosable from the signal path and
+   nearly undiagnosable from a photo of a connector.
 
-7. **The check-out scan and the plan are different universes.** Every product here scans against a
-   *booking* or an *order*. None scans against a **technical plan**: a signal-flow drawing, a rack
-   elevation, a camera plan. The warehouse cannot verify "the plan says two 50 m SDI drums on
-   camera 3; you scanned one". This is the same finding the `synthesis` documents record for the
-   suite as a whole — the market is all runtime and no design time — arriving here from the
-   warehouse door.
+7. **RFID's physics is pushed onto the user.** Metal cuts read range by 30–50%; you need a clear
+   3×3 m scanning zone; you need seven tag types for one inventory. Nobody has solved *reading
+   through a stacked wall of metal road cases*, which is the actual physical situation on a dock.
+   The Kit Check benchmark — a sealed tray of ~198 items read in seconds — works because the
+   contents are small, non-metallic and inside a controlled scanning box. The AV equivalent does
+   not exist. INFERENCE: an **RFID-equipped case with an internal antenna that inventories its own
+   contents** is an obvious unbuilt product.
 
-8. **No GS1 identity anywhere.** GRAI (AI 8003) and GIAI (AI 8004) exist precisely for returnable
-   and individual assets. Not one product uses them. The consequence is concrete: when gear moves
-   between two rental houses, or a sub-hired case arrives, **the two systems cannot recognise the
-   same physical object**, so it is retyped. GS1 also defines the compressed Digital Link URI form,
-   which would make a scanned label meaningful to a system that has never heard of your database.
+8. **Statutory inspection regimes are a bolt-on, not a model.** German **DGUV V3** requires
+   audit-proof per-device inspection records; the ecosystem answering this is largely *separate*
+   DGUV-specific tools (ElektroPrüfManager, Wartungsplaner) plus test-instrument exports that must
+   be "imported into device management systems". Rentman's per-serial periodic inspections are the
+   closest integrated answer found. INFERENCE: a German AV company today runs asset tracking in one
+   system and DGUV compliance in another, and reconciles by barcode.
 
-9. **No EPCIS-style event log.** Every product has an activity feed; none has an interchangeable
-   event record. CBV's `packing / loading / transporting / unloading / installing / inspecting /
-   repairing / unpacking` vocabulary is ratified and unused. Two companies working the same show
-   cannot merge their scan histories.
+9. **Pricing punishes the actual usage shape.** A rental warehouse has few planners and many
+   occasional scanners. Per-admin-seat (Cheqroom) and per-user (Current RMS, HireHop) billing both
+   tax exactly the people who need write access at 6am. Only Rentman's free-basic-user model fits,
+   and it charges for the audit trail as a separate add-on.
 
-10. **Scanning speed is nobody's published metric.** I found no product documenting scans per
-    minute, decode latency, or continuous/burst scanning behaviour. The only performance-shaped
-    evidence in the whole corpus is indirect: Shelf's comment about "a sub-2s scanning burst"
-    perpetually resetting a debounced saver — which tells you real users scan faster than once every
-    two seconds, and that the software was not initially built for it. Camera-based scanning of a
-    45-case load-out is a fundamentally different problem from scanning one laptop, and nobody
-    publishes numbers for it.
-
-11. **Barcode support is monetised at exactly the wrong boundary.** Shelf's hosted product puts
-    QR in the free tier and **barcodes behind a paid add-on**. But barcodes are what you need to
-    read the *manufacturer's existing label* — i.e. the cheapest possible on-boarding path for a
-    warehouse with 3,000 items already labelled by Sony and Sennheiser. The paywall sits across the
-    migration path.
-
-12. **Labels assume an office.** Avery sheets, Brother TZe tapes, Dymo. Nobody models the label
-    stock an AV house actually needs: solvent-resistant, gaffer-tape-survivable, readable at an
-    angle in a dark truck, with a large human-readable asset number *and* a small dense 2D code.
-    Snipe-IT gets closest by supporting Zebra tape, and even there the layout is a fixed
-    `DefaultLabel` composition.
-
-13. **Multi-tenant reality is ignored.** A freelance engineer works for four rental houses in a
-    month and carries their own gear. Every product here is single-workspace-per-org (Shelf's
-    `maxOrganizations` defaults to **1** on paid tiers). There is no model for "my kit, on your
-    show, tracked in your system, returning to my van".
+10. **No open QR payload convention.** Every vendor encodes its own scheme — Rentman's separate
+    item and serial QR codes, InvenTree's JSON-or-short internal formats, Scanlily's plain URLs,
+    Snipe-IT's asset-detail URL. A generic phone camera scanning a competitor's tag gets nothing
+    useful. GS1 Digital Link exists to solve exactly this and is absent from this market.
 
 ---
 
 ## Relevance to AV Planner Suite
 
-**Primary: `cable-planner`. Secondary: `shell/suite`, `multicam-planner`, `light-planner`.
-Not relevant: `broadcast-intercom`, `tally-pi`, `sony-camera-bridge`, `pi-media-station`.**
+**Primary — `cable-planner`.** This is where the segment lands hardest, for four reasons:
 
-### Why `cable-planner` is the natural home
+- `EquipmentItem` already exists as a domain type (`src/renderer/types/`). The gap between it and a
+  *serialized unit* is the gap this whole segment fills. The Rentman two-field pattern
+  (**Internal Reference + Manufacturer Serial Number**) and Flex's **array-of-identifiers**
+  doctrine should shape that schema before it ossifies — one `barcode: string` field is the
+  mistake to avoid. New optional fields belong in `healProjectPositions` per the project's
+  migration convention.
+- **`LocationFrame` is conceptually adjacent to a case.** The container/aggregation model —
+  seal a case, scan the case, contents follow, unseal to disaggregate — maps onto a planner that
+  already understands spatial grouping. A "case = container of equipment items" type would let
+  cable-planner emit a **packlist** that a warehouse can actually scan against, which is the
+  missing link between a plan and a load-out.
+- **Offline-first is already the house architecture.** The suite is Electron, explicitly
+  offline-first, with atomic writes and CRDT convergence checks in the toolchain
+  (`npm run test:crdt`). That is precisely the capability the entire commercial segment lacks. A
+  planner that can queue scans durably on a laptop in a truck and converge later is doing
+  something Sortly, EZO and Asset Panda demonstrably cannot.
+- **DGUV V3.** German market, event technology, per-device audit-proof inspection records, and a
+  German-language product. Attaching an inspection date and protocol reference to a serialized
+  item is a small feature with disproportionate local value, and the incumbents treat it as a
+  bolt-on.
 
-Three things already in the repo line up with this segment almost exactly (per `CLAUDE.md`):
+**Secondary — `shell` / suite.** Asset identity is inherently cross-app: the same serialized
+camera appears in `multicam-planner`, the same fixture in `light-planner`, the same cable in
+`cable-planner`. A **shared asset-identity package** in `packages/` — identifier types, QR/barcode
+payload conventions, a case/container model, a scan-event log — is the natural suite-level
+concern, and is the thing no competitor can offer because none of them own the planning tools too.
+The interchange target should be **EPCIS-shaped events** (Object / Aggregation / Disaggregation
+with a parent container ID), even if only used internally at first, because it is the one
+standard that already models exactly this and costs nothing to align with early.
 
-1. **`rentman:*` and `netbox:*` IPC domains already exist.** The Rentman findings above are
-   directly actionable: `/equipment` (with `quantity_in_cases`, `packed_per`, `empty_weight`,
-   `is_combination`), `/equipmentsetscontent` (**writable** — kit contents can be pushed),
-   `/serialnumbers` (**writable**), `/repairs` and `/subrentals` (**read-only**),
-   `/stockmovements` (**no create**). And the hard limit: **there is no scan/check-in/check-out
-   endpoint**, so the suite must own its own scan ledger and reconcile against Rentman, never
-   delegate to it. Rate budget to design against: 50,000/day, 10/s, 20 concurrent, 1,500/page,
-   token invalidated on regeneration.
-   NetBox contributes the containment pattern: `Device.asset_tag` + `Device.serial`, and
-   `InventoryItem` as an **MPTT tree of serialised sub-components** — which is the shape
-   `cable-planner` needs for case-in-case.
+**Secondary — `multicam-planner`, `light-planner`.** Same equipment-identity and case needs, one
+level less cable-specific. Lighting in particular already has fixture-level interchange culture
+(GDTF/MVR), so the identity question there is about mapping a *planned fixture* to a *tagged unit*.
 
-2. **`mobileShareServer` already ships a LAN view to phones (read/check-only).** This is a
-   scanner in everything but name. The `barcode-detector` ponyfill (ZXing-C++ via WASM, ~all
-   relevant symbologies) runs in a browser with no app-store dependency, and the phone is already
-   on the LAN talking to the Electron main process. **A warehouse-scan mode in the existing mobile
-   share view is a smaller change than any competitor's mobile app, and it is offline by
-   construction** — the "server" is the laptop in the truck, not a cloud.
+**Low relevance — `broadcast-intercom`, `tally-pi`, `sony-camera-bridge`, `pi-media-station`.**
+These are live-operations tools working with devices addressed by network identity, not physical
+custody. The one genuine touchpoint (INFERENCE): a device's **serial number is the join key**
+between the unit that was scanned out of the warehouse and the unit answering on the network — a
+tally or camera bridge that can report the serial of the box it is talking to closes the
+plan↔warehouse↔runtime loop that nobody in this segment closes. Worth noting; not worth building
+against yet.
 
-3. **The suite is offline-first Electron with atomic writes and a schema-migration hook
-   (`healProjectPositions`).** The segment's hardest problem — durable local scan state that
-   survives an app kill — is a solved problem in this codebase's existing persistence layer, where
-   for every competitor it is a bolt-on.
-
-### The specific white space the suite is positioned to take
-
-**Scanning against the plan, not against an order.** Every product in this segment verifies
-physical reality against a *commercial* document (a booking, an order, a project). `cable-planner`
-holds something none of them do: the **technical** document — the signal flow, the rack elevation,
-the cable list with lengths and connector types. The unclaimed capability is:
-
-> Scan a case at the loading bay and be told, *"this is the FOH rack for Studio 2; the plan wants
-> two 50 m SDI drums and you have scanned one; the ATEM in this rack is serial 4, and serial 4 has
-> an open damage note on SDI-2."*
-
-Nobody sells that, because nobody else has the plan.
-
-### Concrete, evidence-backed recommendations
-
-| # | Recommendation | Source of the pattern |
-| --- | --- | --- |
-| 1 | **Dual identity from day one**: an internal short code *and* a list of foreign codes per item. Never assume one code per asset. | Shelf `Qr`+`Barcode`; Cheqroom `codes[]`+`barcodes[]`; InvenTree internal/external; Part-DB's 5-step match cascade |
-| 2 | **Short alphanumeric payload, not JSON.** Something like `CP-A0041` — fixed prefix, model letter, sequence. Keeps QR at v1 with `Q`/`H` error correction, which is what a scuffed case label needs. | InvenTree `INV-SI123` and its documented version/ECL analysis |
-| 3 | **Model the case as a container object with its own code, status, location and custody — and give it physics** (`empty_weight`, packed weight, dimensions, `packed_per`). This is the combination *nobody* ships. | Shelf `Kit`/`KitCustody`/`AssetKit` for the structure; Rentman `empty_weight`/`packed_per`/`quantity_in_cases` for the physics |
-| 4 | **Kit-driven vs manual discriminator on placement and custody.** A nullable `assetKitId` on the placement row, read-only when set. | Shelf `AssetLocation.assetKitId`, `Custody.kitCustodyId` |
-| 5 | **Nest containers arbitrarily** (item → case → road box → truck → venue → room). Use a tree, not a foreign key. | NetBox `InventoryItem` MPTT; Sortly `parent_id` + `include_subtree` |
-| 6 | **Durable scan queue with a failed queue that blocks completion.** Persist on *every* branch, retry `[2s, 5s, 15s]`, never drop, surface the failure. Copy this design; it is the best thing in the segment. | Shelf `use-scan-queue.ts` |
-| 7 | **Snapshot audit/scan rows by value** (`assetTitle`, `wasExpected`) so history cannot be rewritten by a later delete. | Shelf `AuditScan` |
-| 8 | **Partial check-out / check-in as session rows**, with the explicit warning that absence of a session row proves nothing. | Shelf `PartialBookingCheckout` and its schema comment |
-| 9 | **Separate `DAMAGE` from `LOSS`**, and go further than the segment: structured damage report with photo, affected component, severity, chargeable flag, and a blocks-dispatch flag. This is open white space. | Shelf `ConsumptionCategory`; nobody does the structured version |
-| 10 | **`<SOH>`-prefix scan-from-anywhere plus an Info/Navigate toggle.** Cheapest high-value scanner ergonomics in the dossier. | Part-DB `docs/usage/scanner.md` |
-| 11 | **Serial-number shorthand grammar** for bulk entry (`1 3-5 9+2`, `~+2`) and **bulk create with auto-numbering** (`createMultiple(times, autoNumber, startFrom)`). | InvenTree; Cheqroom |
-| 12 | **Print-first labels**: mint unclaimed codes in a print batch, claim by scanning. | Shelf `PrintBatch` + unclaimed `Qr` |
-| 13 | **Adopt GS1 GIAI (AI 8004) for assets and GRAI (AI 8003) for cases**, even if only as an optional field. Costs almost nothing, and it is the only path to recognising *someone else's* asset — sub-hire, cross-hire, a case returned to the wrong house. First mover advantage is real here because the field is empty. | GS1 Barcode Syntax Dictionary |
-| 14 | **Log scans in an EPCIS-shaped event record** using CBV `bizStep` values (`packing`, `loading`, `unloading`, `inspecting`, `repairing`, `unpacking`, `stock_taking`). Even used purely internally, it gives a stable vocabulary; used externally it makes two companies' logs mergeable. | GS1 CBV `bizStep` enum |
-| 15 | **Publish a label-service contract** rather than supporting printers directly: `GET` with title/description/URL/QR-size/dimensions/DPI, return `image/*`. Ship one built-in renderer and let houses with a Zebra/Brother fleet plug in their own. | Homebox `external-label-service.mdx` |
-| 16 | **Do not paywall barcodes.** Reading the manufacturer's existing label is the migration path; a paywall across it is a paywall across adoption. | Shelf's barcodes add-on, as a counter-example |
-| 17 | **Treat Rentman as read-mostly.** Pull equipment, sets, serials, repairs, subrentals; push serials and set contents where writable; **never assume you can post a scan or a repair.** Own the scan ledger locally and reconcile. | Rentman OAS coverage, verified above |
-
-### For the other repos
-
-- **`shell` / suite**: the asset identity layer belongs at suite level, not inside one planner —
-  `multicam-planner` (camera bodies, lens serials) and `light-planner` (fixture serials, lamp hours,
-  gel stock) need the same `Asset` / `Kit` / `Serial` / `Damage` objects. Building it inside
-  `cable-planner` and lifting it later is the expensive order.
-- **`multicam-planner`**: camera bodies are the canonical serial-tracked asset — firmware version,
-  shutter/hours, "this body has the flaky SDI-2". The segment's weakest point (§6 above) is this
-  repo's natural strength.
-- **`light-planner`**: fixtures are serial-tracked and case-packed; lamp hours are a maintenance
-  counter that *no* product in this segment models (they all model dates, not usage counters).
-- **`broadcast-intercom`, `tally-pi`, `sony-camera-bridge`, `pi-media-station`**: no relevance
-  beyond appearing as assets in someone else's inventory.
+**Explicitly not worth pursuing:** competing with rental ERPs on invoicing, availability pricing
+or sub-hire finance. Those are Rentman's and Flex's core, defended by decades of accounting
+edge-cases. The defensible position is the part they are structurally bad at — **the plan-to-case
+link, and working offline.**
 
 ---
 
 ## Sources
 
-Every URL below was actually opened or cloned during this pass. Nothing was cited from memory.
+**Pages I opened directly (primary; full content read):**
 
-### Opened directly — source code, schemas and in-repo documentation
-
-**Shelf.nu** (cloned `https://github.com/Shelf-nu/shelf.nu`, HEAD 2026-08-28)
-- https://raw.githubusercontent.com/Shelf-nu/shelf.nu/main/README.md
-- https://raw.githubusercontent.com/Shelf-nu/shelf.nu/main/LICENSE
-- https://raw.githubusercontent.com/Shelf-nu/shelf.nu/main/package.json
-- `packages/database/prisma/schema.prisma` (2,614 lines — Asset, AssetType, ConsumptionCategory, Qr, Barcode, BarcodeType, PrintBatch, Scan, ReportFound, Kit, KitCustody, AssetKit, AssetLocation, AssetReminder, PartialBookingCheckin/Checkout, MobileAuthCode, AuditSession/Assignment/Asset/Scan/Note/Image, Tier/TierLimit/CustomTierLimit)
-- `COMPANION-RELEASE-STATUS.md`
-- `apps/companion/hooks/use-scan-queue.ts`
-- `apps/companion/components/offline-banner.tsx`
-- `apps/companion/.maestro/flows/**` (file listing: audits, bookings, assets scan flows)
-- `apps/docs/barcode-types-development-guide.md`
-- `apps/docs/scanner-drawer-development.md`
-- `apps/docs/app-configuration.md`
-- `apps/docs/asset-import.md`
-- `apps/docs/index.md`
-
-**Snipe-IT** (cloned `https://github.com/grokability/snipe-it`, HEAD 2026-08-29)
 - https://raw.githubusercontent.com/grokability/snipe-it/master/README.md
-- https://raw.githubusercontent.com/grokability/snipe-it/master/LICENSE
-- https://raw.githubusercontent.com/grokability/snipe-it/master/package.json
 - https://raw.githubusercontent.com/grokability/snipe-it/master/composer.json
-- `config/version.php` (v8.7.2)
-- `app/Models/Asset.php`, `app/Models/Maintenance.php`, `app/Models/MaintenanceType.php`, `app/Models/Statuslabel.php`, `app/Models/PredefinedKit.php`, `app/Models/Setting.php`
-- `app/Models/Labels/Label.php`, `app/Models/Labels/DefaultLabel.php`, `app/Models/Labels/Sheets/**`, `app/Models/Labels/Tapes/**`
-- `app/Helpers/Helper.php` (`barcodeDimensions`)
-- `app/View/Label.php`, `app/Http/Controllers/QrCodeController.php`
-- `routes/api.php`
+- https://github.com/grokability/snipe-it/releases
+- https://github.com/grokability/snipe-it/releases.atom
+- https://github.com/grokability/snipe-it/tree/master/app/Models/Labels
+- https://github.com/grokability/snipe-it/tree/master/app/Models/Labels/Sheets
+- https://github.com/grokability/snipe-it/tree/master/app/Models/Labels/Tapes
+- https://github.com/Shelf-nu/shelf.nu
+- https://github.com/Shelf-nu/shelf.nu/releases.atom
+- https://github.com/inventree/InvenTree
 
-**InvenTree** (cloned `https://github.com/inventree/InvenTree`, HEAD 2026-08-29)
-- https://raw.githubusercontent.com/inventree/InvenTree/master/README.md
-- https://raw.githubusercontent.com/inventree/InvenTree/master/LICENSE
-- `docs/mkdocs.yml`
-- `docs/docs/barcodes/index.md`, `internal.md`, `external.md`, `custom.md`
-- `docs/docs/app/barcode.md`
-- `docs/docs/part/trackable.md`, `docs/docs/part/stocktake.md`
+**Pages cited by search-result extraction (I did NOT open these; the egress proxy blocked them).
+Every price and most feature claims above trace to this list and must be re-verified here:**
 
-**Homebox** (cloned `https://github.com/sysadminsmedia/homebox`, HEAD 2026-08-21)
-- https://raw.githubusercontent.com/sysadminsmedia/homebox/main/LICENSE
-- `docs/src/content/docs/en/advanced/external-label-service.mdx`
-- `backend/internal/data/ent/schema/maintenance_entry.go`
-- repository file listing (`backend/pkgs/labelmaker`, `v1_ctrl_labelmaker.go`, `v1_ctrl_qrcode.go`, `frontend/components/Item/BarcodeModal.vue`, `docs/public/api/openapi-3.0.{json,yaml}`)
+Cheqroom — https://www.cheqroom.com/pricing/ ·
+https://www.cheqroom.com/features/equipment-checkout-software/ ·
+https://www.cheqroom.com/features/mobile-app/ · https://www.cheqroom.com/features/process-maintenance/ ·
+https://www.cheqroom.com/features/asset-tracking-software/ · https://www.cheqroom.com/solutions/production/ ·
+https://www.cheqroom.com/equipment-checkout/ ·
+https://knowledge.cheqroom.com/helpcenter/how-do-i-perform-maintenance-and-repair-in-cheqroom ·
+https://knowledge.cheqroom.com/helpcenter/how-to-create-and-manage-check-outs-and-check-ins ·
+https://help.cheqroom.com/en/articles/721001-using-webhooks-to-notify-other-software ·
+https://help.cheqroom.com/en/collections/1365030-api-integrations ·
+http://checkroom.github.io/checkroom_core_js/ · https://frontdeskreview.com/software/asset-tracking/cheqroom/ ·
+https://www.capterra.com/p/140824/CHEQROOM/pricing/ · https://www.itefy.com/compare/cheqroom-alternative
 
-**Part-DB** (cloned `https://github.com/Part-DB/Part-DB-server`, HEAD 2026-08-28)
-- https://raw.githubusercontent.com/Part-DB/Part-DB-server/master/README.md
-- https://raw.githubusercontent.com/Part-DB/Part-DB-server/master/LICENSE
-- `docs/usage/scanner.md`
-- `docs/usage/labels.md`
+Rentman / Geartracking — https://rentman.io/pricing · https://rentman.io/pricing/crew ·
+https://rentman.io/product-updates/containers · https://rentman.io/solutions/rental-equipment-tracking-software ·
+https://rentman.io/solutions/inventory-management · https://rentman.io/solutions/equipment-tracking-software ·
+https://rentman.io/product-updates/tell-subrentals-apart-from-your-own-equipment-on-digital-packing-slips ·
+https://rentman.io/blog/7-tips-to-successfully-set-up-your-qr-codes-barcodes ·
+https://rentman.io/blog/benefits-of-rfid-asset-tracking · https://rentman.io/blog/rfid-101-key-takeaways-from-our-latest-expert-session ·
+https://rentman.io/de/blog/dguv-v3-prufung ·
+https://support.rentman.io/hc/en-us/articles/360013101260-Set-up-QR-Codes-and-Barcodes ·
+https://support.rentman.io/hc/en-us/articles/360013086279-Manage-Serial-Numbers ·
+https://support.rentman.io/hc/en-us/articles/360017649020-Are-QR-codes-for-equipment-items-and-QR-codes-for-serial-numbers-different ·
+https://support.rentman.io/hc/en-us/articles/27788966430994-Tracking-equipment ·
+https://support.rentman.io/hc/en-us/articles/360013478180-Scanner-Options-in-Rentman ·
+https://support.rentman.io/hc/en-us/articles/360015609959-Zebra-Scanners ·
+https://support.rentman.io/hc/en-us/articles/36515689863186-Using-RFID-in-the-Warehouse-Workflow-and-Best-Practices ·
+https://support.rentman.io/hc/en-us/articles/360016429760-Managing-Periodic-Inspections ·
+https://support.rentman.io/hc/en-us/articles/360016429680-Handling-Defective-Equipment ·
+https://support.rentman.io/hc/en-us/articles/360013845340-Subrent-from-Other-Rentman-Users ·
+https://support.rentman.io/hc/en-us/articles/20641324000018-I-Worked-with-Containers-How-Do-I-Get-the-Same-Functionality-with-the-New-Equipment-Types ·
+https://support.rentman.io/hc/en-us/articles/26707946497042-Rentman-API-Changelog ·
+https://support.rentman.io/hc/en-us/articles/360013767839-The-Rentman-API · https://api.rentman.net/ ·
+https://geartracking.com/ · https://geartracking.com/pages/about-us · https://geartracking.com/products/sample-pack-rfid-qr
 
-**Cheqroom** (cloned `https://github.com/CHECKROOM/checkroom_core_js`, HEAD 2020-03-03)
-- `src/core/base.js`, `item.js`, `kit.js`, `helper.js`, `permissionHandler.js`
-- module listing (`api, attachment, availability, category, colorLabel, comment, conflict, contact, document, field, group, location, order, orderTransfer, reservation, settings, template, transaction, user, usersync, webhook`)
-- `package.json`
+Flex Rental Solutions — https://www.flexrentalsolutions.com/flex-rfid-tracking-software/ ·
+https://www.flexrentalsolutions.com/flex-rfid-tracking-software/rfid-package/ ·
+https://helpcenter.flexrentalsolutions.com/hc/en-us/articles/360013969334-Using-RFID-Scanning-in-Flex ·
+https://helpcenter.flexrentalsolutions.com/hc/en-us/articles/12053032516503-Containers-and-Packages ·
+https://helpcenter.flexrentalsolutions.com/hc/en-us/articles/12053061513239-Virtual-Items ·
+https://helpcenter.flexrentalsolutions.com/hc/en-us/articles/4407098821271-Inventory-Dashboard ·
+https://helpcenter.flexrentalsolutions.com/hc/en-us/articles/360011449153-Flex4-The-Inventory-Tree ·
+https://www.manula.com/manuals/frs/flex-user-manual/1/en/topic/build-containers-and-packages
 
-**Rentman API** (cloned `https://github.com/Alternative-Design-And-Media/rentman-api-connector`, HEAD 2026-08-07)
-- https://raw.githubusercontent.com/Alternative-Design-And-Media/rentman-api-connector/main/llms.txt
-- `src/types.ts` (RentmanEquipmentItem, RentmanSerialNumber, RentmanRepair, RentmanStockMovement, RentmanStockLocation, RentmanSubrental, RentmanEquipmentSetContent, RentmanActualContent, RentmanEquipmentAssignedSerial)
-- https://raw.githubusercontent.com/huelsevoort/n8n-nodes-rentman/main/README.md (63-resource operation table, API limits)
+Snipe-IT / Shelf / InvenTree / Homebox — https://snipeitapp.com/product · https://snipeitapp.com/pricing ·
+https://snipe-it.readme.io/docs/barcodes · https://snipe-it.readme.io/docs/asset-labels ·
+https://snipe-it.readme.io/reference/api-overview · https://github.com/grokability/snipe-it/issues/4644 ·
+https://github.com/grokability/snipe-it/issues/5489 · https://github.com/grokability/snipe-it/discussions/13543 ·
+https://www.shelf.nu/solutions/open-source-asset-management · https://www.shelf.nu/solutions/asset-tracking ·
+https://www.shelf.nu/alternatives/snipe-it · https://docs.inventree.org/en/stable/barcodes/internal/ ·
+https://docs.inventree.org/en/latest/plugins/builtin/inventree_barcode/ ·
+https://docs.inventree.org/en/stable/app/barcode/ · https://inventree.org/blog/2023/10/29/barcodes ·
+https://sascha-brockel.de/en/homebox-home-inventory-with-qr-codes-maintenance-tracker/
 
-**Odoo**
-- https://raw.githubusercontent.com/odoo/odoo/master/addons/barcodes/models/barcode_nomenclature.py
-- https://raw.githubusercontent.com/odoo/odoo/master/addons/barcodes_gs1_nomenclature/models/barcode_nomenclature.py
+Other vendors — https://www.hirehop.com/en-features/ · https://www.hirehop.com/announcement/08-11-23/ ·
+https://www.hirehop.com/updates/ · https://hirehop.biz/pricing/ · https://www.capterra.com/p/155333/HireHop/pricing/ ·
+https://www.sortly.com/pricing/ · https://help.sortly.com/hc/en-us/articles/360060638832-Can-I-use-Sortly-in-offline-mode ·
+https://help.sortly.com/hc/en-us/articles/6660883031451-Sortly-Mobile-App ·
+https://ezo.io/ezofficeinventory/blog/offline-mobile-app/ · https://ezo.io/ezrentout/blog/guide-scanning-ezrentout-mobile-app/ ·
+https://ezo.io/ezofficeinventory/mobile-app/ · https://ezo.io/ezrentout/features/ ·
+https://costbench.com/software/it-asset-management/ezofficeinventory/ ·
+https://frontdeskreview.com/software/asset-tracking/ezofficeinventory/ ·
+https://www.capterra.com/p/142562/Asset-Panda/pricing/ · https://airpinpoint.com/compare/asset-panda-alternative ·
+https://checkthat.ai/brands/asset-panda/pricing · https://timly.com/en/asset-inventory-software/ ·
+https://trusted.de/timly-inventur · https://itemit.com/pricing/ · https://itemit.com/asset-tags/ ·
+https://www.assettiger.com/pricing · https://www.scanlily.com/en/pricing · https://www.scanlily.com/en/industries/media ·
+https://www.current-rms.com/features/inventory-management · https://www.capterra.com/p/142401/Current-RMS/ ·
+https://www.xpay.sh/saas-pricing/current-rms/ · https://booqable.com/barcode-scanning/ ·
+https://www.g2.com/products/booqable-rental-software/pricing · https://cloudrent.me/the-ultimate-software-for-sub-rental-or-cross-hire/ ·
+https://www.protonic-software.com/de/easytools/scanner/ · https://help.protonic-software.com/de/documentation/easyjob_barcoding_26 ·
+https://www.easyjobx.com/manuals/easyjob-scannerapp-de.pdf · https://www.easyjobx.com/manuals/easyjob-barcoding-de.pdf ·
+https://www.softguide.de/programm/epirent-vermietungssoftware-fuer-veranstaltungstechnik ·
+https://www.eventworx.biz/ · https://verleih-system.de/vermietungssoftware-fuer-veranstaltungstechnik/ ·
+https://inventorybase.co.uk/ · http://www.recsolutions.com/geartrack · https://geartrack.pro/
 
-**NetBox**
-- https://raw.githubusercontent.com/netbox-community/netbox/main/netbox/dcim/models/devices.py
-- https://raw.githubusercontent.com/netbox-community/netbox/main/netbox/dcim/models/device_components.py
+Standards, hardware and case studies — https://www.gs1.org/standards/id-keys/global-individual-asset-identifier-giai ·
+https://www.gs1.org/standards/id-keys/grai · https://www.gs1uk.org/knowledge-hub/standards/what-is-a-giai ·
+https://www.gs1.org/standards/epcis · https://openepcis.io/docs/epcis/ ·
+https://www.ibm.com/support/pages/about-epcis-aggregation-and-disaggregation-events ·
+https://ref.gs1.org/standards/gen2/ · https://therainalliance.org/wp-content/uploads/2024/04/RAIN-RFID_System_Design_Guidelines-V2-UPDATED-2.pdf ·
+https://www.rfidlabel.com/what-is-rain-rfid-demystifying-gs1-epc-gen2-and-iso-18000-63-global-standards/ ·
+https://cipam.com/en/rfid-frequencies-and-standards/ · https://onbarcode.com/qr_code/ ·
+https://www.accusoft.com/barcodes/data-matrix-barcodes/ ·
+https://www.impinj.com/library/customer-stories/rentex-taps-hid-global-for-av-rental-asset-tracking-with-rain-rfid ·
+https://wiot-group.com/think/en/articles/av-equipment-rental-is-sped-up-by-uhf-rfid/ ·
+https://www.rfid.com/case_studies/how-rentex-used-rfid-to-streamline-rental-asset-management/ ·
+https://www.idplate.com/blog/rfid-for-av-rental-companies-how-it-prevents-loss-and-speeds-up-turnaround/ ·
+https://bluesight.com/rfid-medication-management/ · https://www.rfidjournal.com/news/hospital-pharmacy-keeps-emergency-medication-kits-in-check/83880/ ·
+https://www.zebra.com/us/en/products/spec-sheets/mobile-computers/handheld/tc22-tc27.html ·
+https://content-files.shure.com/Pubs/WWB6/en-US/en-US/c_bcaebf77-bffb-4278-8fe1-f317895a62e7.html ·
+https://content-files.shure.com/Pubs/WWB/en-US/en-US/reports.html · https://www.shure.com/en-US/products/software/wwb ·
+https://www.esg-gesellschaft.de/pruefleistungen/digitale-pruefprotokolle · https://elektropruefung-software.de/ ·
+https://scanbot.io/blog/mobile-offline-barcode-scanner-app/ · https://stockria.com/features/offline-mode ·
+https://www.cleverence.com/articles/business-blogs/barcode-scanner-app-2026-4729/
 
-**ERPNext**
-- https://raw.githubusercontent.com/frappe/erpnext/develop/erpnext/stock/doctype/serial_no/serial_no.json
+**Open questions a follow-up pass should close (in priority order):**
 
-### Opened directly — standards
-
-- https://raw.githubusercontent.com/gs1/EPCIS/master/README.md
-- https://raw.githubusercontent.com/gs1/EPCIS/master/JSON-Schema/schemas/bizStep-JSON-Schema.json (42-value CBV `bizStep` enum)
-- https://github.com/gs1/EPCIS (cloned; CBV/JSON-LD/Ontology file listing)
-- https://raw.githubusercontent.com/gs1/gs1-syntax-dictionary/main/README.md
-- https://raw.githubusercontent.com/gs1/gs1-syntax-dictionary/main/gs1-syntax-dictionary.txt (AIs 01, 10, 11, 17, 21, 22, 250, 253, 254, 400, 7003, 8003 GRAI, 8004 GIAI, 8006 ITIP, 8018, 8200)
-
-### Opened directly — package registries (vendor API clients)
-
-- https://registry.npmjs.org/cheqroom-core (official Cheqroom JS wrapper; API base `https://api.cheqroom.com/api/v2_5`)
-- https://registry.npmjs.org/@alternative-design-and-media/rentman-api-connector
-- https://registry.npmjs.org/n8n-nodes-rentman
-- https://registry.npmjs.org/@apigrate/sortly (Sortly API connector; item tree, `include_subtree`, rate limiting)
-- https://registry.npmjs.org/current-rms (Node client; points at `https://api.current-rms.com/doc`)
-- https://registry.npmjs.org/barcode-detector (Barcode Detection API ponyfill, ZXing-C++ WASM, full format table)
-- https://registry.npmjs.org/assetpanda-mcp-kb (published from `github.com/assetpanda/pioneer` — evidence of an Asset Panda public API)
-- https://registry.npmjs.org/the-real-snipeit-mcp (183 tools over Snipe-IT's OpenAPI 3.1)
-- https://registry.npmjs.org/-/v1/search — queries run: `cheqroom`, `rentman`, `current-rms`, `hirehop`, `snipeit`, `asset panda`, `ezofficeinventory`, `sortly`, `ezoffice`, `geartrack`, `flex rental`, `wireless workbench`, `blackbox-av`, `kit check`, `asset tracking rfid`, `equipment rental barcode`
-- https://pypi.org/pypi/snipeit/json (Python client, archived per Snipe-IT README)
-- https://pypi.org/simple/ (full index, grepped for `hirehop`, `rentman`, `cheqroom`, `ezoffice`, `currentrms`, `current-rms`, `flexrental`, `assetpanda`, `sortly` — **all zero hits**)
-
-### Opened directly — discovery indexes
-
-- https://raw.githubusercontent.com/awesome-selfhosted/awesome-selfhosted/master/README.md (Inventory Management section: HomeBox, InvenTree, Open QuarterMaster, Part-DB, Shelf, Spoolman, Cannery, DVinyl, Inventaire)
-- https://raw.githubusercontent.com/awesome-foss/awesome-sysadmin/master/README.md (CMDB section: i-doit, iTop, NetBox)
-- `awesome-audiovisual/README.md` (local clone from an earlier pass — only asset-adjacent entry is Rentman)
-
-### Probed and BLOCKED (recorded so the gap is auditable)
-
-`snipeitapp.com`, `cheqroom.com`, `sortly.com`, `assetpanda.com`, `ezofficeinventory.com`,
-`hirehop.com`, `rentman.io`, `docs.rentman.io`, `current-rms.com`, `flexrentalsolutions.com`,
-`shelf.nu`, `gs1.org`, `ref.gs1.org`, `kitcheck.com`, `shure.com`, `blackbox.global`,
-`geartrack.io`, `inventree.org`, `docs.inventree.org`, `homebox.software`, `odoo.com`,
-`erpnext.com`, `en.wikipedia.org`, `iso.org`, `inventree.readthedocs.io`, `shelf-nu.github.io`,
-`github.com` (HTML), `api.github.com` (repo + search endpoints, session-scoped),
-`archive.org`, `gist.githubusercontent.com`, `raw.githack.com`, `sourceforge.net`.
-
-### Not found — no primary source reachable, recorded as UNKNOWN rather than guessed
-
-GearTrack; InventoryBase; Kit Check / Bluesight; Shure Wireless Workbench asset features;
-"Blackbox"; Yellowfish and Rentcorp RFID; HireHop's API; Flex Rental Solutions' API and offline
-behaviour; EZOfficeInventory's API; **every price in the segment**.
+1. **Cheqroom pricing unit** — per month or per year? Open `cheqroom.com/pricing` directly. A 12×
+   error in the headline price of the segment's premium product is not acceptable in a comparison.
+2. **Rentman offline scanning** — search `support.rentman.io` for "offline". Currently a total
+   blank, and it is the most decision-relevant unknown for this repository.
+3. **Cheqroom offline conflict semantics** — what happens when two disconnected users check out
+   the same unit.
+4. **Shelf hosted pricing** — `shelf.nu` pricing page never opened.
+5. **Scanlily's actual tier figures** — the item-count thresholds and prices.
+6. **easyjob pricing and offline behaviour** — the two PDF manuals on `easyjobx.com` are public
+   and would answer the barcode-format and serial-number questions definitively.
+7. **Yellowfish / Rentcorp** — needs a verified URL from whoever supplied the seed name; may not
+   exist under that name.
+8. **Whether any AV vendor implements EPCIS** — searched, found nothing, but absence of evidence
+   at this depth is weak evidence of absence.
