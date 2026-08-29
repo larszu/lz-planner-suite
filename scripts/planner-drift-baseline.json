@@ -12,14 +12,14 @@
     "upstreamSha": "f13a7e7fd4c7"
   },
   "multicam-planner": {
-    "only-upstream": 43,
+    "only-upstream": 0,
     "only-suite": 11,
-    "two-way": 21,
+    "two-way": 19,
     "upstream-ahead": 0,
-    "suite-ahead": 0,
+    "suite-ahead": 1,
     "expected-overlay": 3,
-    "drift": 75,
-    "total": 78,
+    "drift": 31,
+    "total": 34,
     "missingUpstream": false,
     "upstreamSha": "500832562ff6"
   },

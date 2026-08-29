@@ -9,7 +9,7 @@ Classification compares line multisets and is triage, not a merge. See the heade
 | App | drift | only-upstream | only-suite | two-way | upstream-ahead | suite-ahead | expected-overlay |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cable-planner | 40 | 6 | 6 | 26 | 0 | 2 | 5 |
-| multicam-planner | 75 | 43 | 11 | 21 | 0 | 0 | 3 |
+| multicam-planner | 31 | 0 | 11 | 19 | 0 | 1 | 3 |
 | light-planner | 27 | 3 | 8 | 16 | 0 | 0 | 3 |
 
 ## Files needing manual reconciliation (two-way)
@@ -49,25 +49,23 @@ Classification compares line multisets and is triage, not a merge. See the heade
 
 | File | lines only in suite | lines only upstream |
 | --- | --- | --- |
-| `components/Sidebar/Sidebar.tsx` | 321 | 681 |
-| `components/Preview/CameraPreview.tsx` | 158 | 481 |
-| `components/Layout/Header.tsx` | 107 | 132 |
-| `store/useStore.ts` | 35 | 193 |
-| `components/Venue3D/Venue3D.tsx` | 69 | 132 |
-| `types/index.ts` | 5 | 157 |
-| `components/Venue2D/Venue2D.tsx` | 45 | 72 |
+| `components/Sidebar/Sidebar.tsx` | 112 | 87 |
 | `components/Layout/StartupAssistant.tsx` | 63 | 43 |
-| `index.css` | 80 | 18 |
-| `App.tsx` | 34 | 60 |
+| `index.css` | 82 | 6 |
 | `inventory/InventoryDialog.tsx` | 43 | 35 |
 | `components/Export/ExportPanel.tsx` | 38 | 37 |
+| `components/Preview/CameraPreview.tsx` | 40 | 33 |
+| `components/Layout/Header.tsx` | 43 | 25 |
 | `components/Templates/TemplateSelector.tsx` | 37 | 26 |
-| `components/Sidebar/CustomCameraForm.tsx` | 24 | 19 |
-| `main.tsx` | 29 | 3 |
-| `__tests__/camera.test.ts` | 1 | 27 |
-| `utils/camera.ts` | 6 | 17 |
+| `App.tsx` | 31 | 27 |
+| `components/Sidebar/CustomCameraForm.tsx` | 25 | 20 |
+| `components/Venue3D/Venue3D.tsx` | 29 | 13 |
+| `components/Venue2D/Venue2D.tsx` | 22 | 13 |
+| `store/useStore.ts` | 27 | 1 |
 | `components/Sidebar/AiPlanAnalysis.tsx` | 12 | 10 |
 | `components/Sidebar/Calculator.tsx` | 5 | 3 |
+| `types/index.ts` | 3 | 3 |
+| `__tests__/inventoryContract.test.ts` | 2 | 2 |
 | `components/Sidebar/CalculationBreakdown.tsx` | 3 | 1 |
 | `data/cameras.ts` | 2 | 2 |
 

@@ -473,21 +473,21 @@ export default function Header({
             <div className="absolute right-0 top-full mt-2 min-w-[260px] rounded-lg border border-bc-border bg-bc-panel shadow-2xl overflow-hidden z-30">
               <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-b border-bc-border">Gesamtprojekt (.avplan)</div>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleExportAvplan(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors">
-                <FiBox size={13} /> .avplan exportieren <span className="ml-auto text-gray-500">↑</span>
+                <FiBox size={13} /> {t('header.avplanExport', 'Full project')} <span className="ml-auto text-gray-500">↑</span>
               </button>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleImportAvplan(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors border-t border-bc-border">
-                <FiBox size={13} /> .avplan importieren <span className="ml-auto text-gray-500">↓</span>
+                <FiBox size={13} /> {t('header.avplanImport', 'Combined project')} <span className="ml-auto text-gray-500">↓</span>
               </button>
               <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-t border-b border-bc-border">Raum (.venue.json)</div>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleExportVenue(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors">
-                <FiMapPin size={13} /> Venue exportieren <span className="ml-auto text-gray-500">↑</span>
+                <FiMapPin size={13} /> {t('header.venueExport', 'Venue')} <span className="ml-auto text-gray-500">↑</span>
               </button>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleImportVenue(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors border-t border-bc-border">
-                <FiMapPin size={13} /> Venue importieren <span className="ml-auto text-gray-500">↓</span>
+                <FiMapPin size={13} /> {t('header.venueImport', 'Venue')} <span className="ml-auto text-gray-500">↓</span>
               </button>
               <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-t border-b border-bc-border">Kabel-Planner</div>
               <button type="button" onClick={() => { setExchangeMenuOpen(false); handleExportCameras(); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors">
-                <FiCamera size={13} /> Kameras → Cable
+                <FiCamera size={13} /> {t('header.camerasExport', 'Cameras → Cable-Planner')}
               </button>
               {hasForeignLighting && (
                 <button type="button" onClick={() => { setExchangeMenuOpen(false); toggleShowForeign(); }} className={`flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors border-t border-bc-border ${showForeign ? 'text-bc-yellow' : 'text-gray-200 hover:bg-bc-border hover:text-white'}`}>

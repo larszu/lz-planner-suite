@@ -774,7 +774,7 @@ function CameraCard({
             ticks={focalTicks}
             format={formatFocal}
             unit="mm"
-            note={cam.extenderActive > 1 ? `eff. ${(cam.focalLength * cam.extenderActive).toFixed(0)} mm` : undefined}
+            note={cam.extenderActive > 1 ? format(t('sidebar.cam.focalEff', ' (eff. {e}mm)'), { e: (cam.focalLength * cam.extenderActive).toFixed(0) }) : undefined}
             onChange={(v) => updateCamera(cam.id, { focalLength: v })}
             onStep={(dir) => updateCamera(cam.id, { focalLength: stepAlong(cam.focalLength, dir, focalMin, focalMax, focalStepTicks) })}
             title="Brennweite — logarithmisch, rastet auf die Marken. Shift = frei."
@@ -790,7 +790,7 @@ function CameraCard({
             prefix="f/"
             formatTick={(v) => (v < 10 ? v.toFixed(1) : v.toFixed(0))}
             note={adapterInfo && adapterInfo.lightLossStops !== 0
-              ? `eff. T${(cam.aperture * Math.pow(2, adapterInfo.lightLossStops / 2)).toFixed(1)}`
+              ? format(t('sidebar.cam.apertureEff', ' (eff. T{e})'), { e: (cam.aperture * Math.pow(2, adapterInfo.lightLossStops / 2)).toFixed(1) })
               : undefined}
             onChange={(v) => updateCamera(cam.id, { aperture: v })}
             onStep={(dir) => updateCamera(cam.id, { aperture: stepStop(cam.aperture, dir, apertureMin, apertureMax) })}
