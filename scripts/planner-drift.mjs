@@ -33,6 +33,30 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const APPS = ['cable-planner', 'multicam-planner', 'light-planner']
 const BASELINE = join(ROOT, 'scripts', 'planner-drift-baseline.json')
 
+/**
+ * Deklarativer Overlay: Upstream-Pfade, die die Suite BEWUSST nicht hat, weil
+ * ein geteiltes Paket sie ersetzt. Das ist die geglueckte Konsolidierung, kein
+ * Drift — diese Dateien zurueckzukopieren waere ein Rueckschritt.
+ *
+ * Alle drei Apps beziehen Typen und Serialisierung aus @avplan/inventory-core
+ * (siehe inventory/store.ts bzw. renderer/store/inventoryStore.ts und die
+ * serializeInventory/parseInventory-Aufrufe in den InventoryDialogs).
+ */
+const REPLACED_BY_PACKAGE = {
+  'cable-planner': [
+    'renderer/types/inventory.ts',      // -> @avplan/inventory-core (Typen)
+    'renderer/lib/inventoryPortable.ts', // -> @avplan/inventory-core (Wire-Format)
+  ],
+  'multicam-planner': [
+    'inventory/types.ts',
+    'inventory/portable.ts',
+  ],
+  'light-planner': [
+    'inventory/types.ts',
+    'inventory/portable.ts',
+  ],
+}
+
 const args = process.argv.slice(2)
 const opt = (name, fallback) => {
   const i = args.indexOf(`--${name}`)
@@ -130,8 +154,14 @@ function analyseApp(app) {
   const upFiles = new Set(walk(upSrc))
   const findings = []
 
+  const replaced = new Set(REPLACED_BY_PACKAGE[app] ?? [])
+
   for (const f of upFiles) {
-    if (!suiteFiles.has(f)) { findings.push({ file: f, kind: 'only-upstream' }); continue }
+    if (!suiteFiles.has(f)) {
+      // Bewusst entfernt, weil ein geteiltes Paket die Datei ersetzt.
+      findings.push({ file: f, kind: replaced.has(f) ? 'expected-overlay' : 'only-upstream' })
+      continue
+    }
     const c = classify(join(suiteSrc, f), join(upSrc, f))
     if (c) findings.push({ file: f, ...c })
   }
@@ -180,6 +210,14 @@ for (const r of results) {
   lines.push('')
 }
 if (!anyTwoWay) lines.push('None.', '')
+
+// Maschinenlesbar fuer Skripte (Stufe 2 der Konsolidierung).
+if (has('json')) {
+  const byApp = {}
+  for (const r of results) byApp[r.app] = r.findings
+  console.log(JSON.stringify({ summary, findings: byApp }, null, 2))
+  process.exit(0)
+}
 
 const report = lines.join('\n')
 const reportPath = opt('report', null)

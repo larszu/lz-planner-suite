@@ -8,9 +8,9 @@ Classification compares line multisets and is triage, not a merge. See the heade
 
 | App | drift | only-upstream | only-suite | two-way | upstream-ahead | suite-ahead | expected-overlay |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| cable-planner | 53 | 9 | 6 | 26 | 10 | 2 | 3 |
-| multicam-planner | 79 | 45 | 11 | 21 | 2 | 0 | 1 |
-| light-planner | 29 | 5 | 8 | 16 | 0 | 0 | 1 |
+| cable-planner | 40 | 6 | 6 | 26 | 0 | 2 | 5 |
+| multicam-planner | 75 | 43 | 11 | 21 | 0 | 0 | 3 |
+| light-planner | 27 | 3 | 8 | 16 | 0 | 0 | 3 |
 
 ## Files needing manual reconciliation (two-way)
 

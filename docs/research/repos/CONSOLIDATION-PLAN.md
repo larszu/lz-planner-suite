@@ -60,15 +60,37 @@ disabled within a week:
 Both paths, plus the genuine-failure path, are verified: baseline unchanged passes; a manipulated
 upstream SHA reports and passes; a raised suite-side drift with an unchanged SHA exits 1.
 
-**Stage 2 — harvest the mechanical cases.** 63 findings need no judgement:
+**Stage 2 — harvest the genuinely mechanical cases (done).** The original plan assumed all 63
+`only-upstream` and `upstream-ahead` findings were mechanical. Working through them showed that is
+not true, in two ways worth recording.
 
-- `only-upstream` (59 files) — the suite simply lacks them. Includes the whole NetBox import
-  feature in cable-planner and 45 multicam files, ten of them tests.
-- `upstream-ahead` (12 files) — the suite's content is a strict subset; take upstream.
-- `suite-ahead` (2 files) — upstream's content is a strict subset; the suite's version wins and
-  should be pushed upstream.
+*First, six of them were not drift at all.* `inventory/types.ts`, `inventory/portable.ts`
+(multicam and light) and `renderer/types/inventory.ts`, `renderer/lib/inventoryPortable.ts`
+(cable) exist upstream and are absent from the suite **because `@avplan/inventory-core` replaced
+them** — all three apps import their inventory types and `serializeInventory`/`parseInventory`
+from the package. Copying them back would have undone the consolidation. They are now declared in
+`REPLACED_BY_PACKAGE` in the drift script and classified `expected-overlay`.
 
-**Stage 3 — reconcile the 63 two-way files by hand.** Ordered by size in `DRIFT-REPORT.md`. The
+*Second, the remaining `only-upstream` files cannot land on their own.* They are features, and
+their wiring lives in files that are two-way:
+
+- cable-planner's NetBox import needs registration in `main/index.ts`, `preload.cts`,
+  `projectStore.ts` and the settings tab — all diverged.
+- multicam's 43 files (rig control, shotlist) need the `Shot`, `Shotlist` and `RigTake` types,
+  which live in `types/index.ts` — two-way, with 157 upstream-only lines.
+- light-planner's `MenuBar.tsx` and `Toolbar.tsx` need wiring in `App.tsx` — two-way.
+
+Copying them in isolation would add dead code and a broken build. They move to stage 3.
+
+What *was* mechanical and is now done: the twelve `upstream-ahead` files, where the suite's
+content is a strict subset so taking upstream is lossless by definition, plus `types/netbox.ts`
+(a dependency of `bridge.ts`, pure types, no wiring). Verified before landing: every relative
+import in each copied file resolves in the suite, then `npm run build --workspaces` (exit 0),
+`npm run test --workspaces` (317 tests, exit 0) and `npm run lint --workspaces` (exit 0).
+
+Drift after stage 2: **161 → 142.**
+
+**Stage 3 — reconcile the two-way files, and the features that depend on them.** Ordered by size in `DRIFT-REPORT.md`. The
 heavy ones are `multicam/components/Sidebar/Sidebar.tsx` (358 suite-only lines against 718
 upstream-only) and `multicam/components/Preview/CameraPreview.tsx` (171 / 494). Each needs a real
 three-way merge, and each should end with the merged result pushed **upstream**, so the suite copy
