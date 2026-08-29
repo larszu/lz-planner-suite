@@ -4,13 +4,15 @@ Divergence between the suite's vendored `apps/*` copies and the standalone upstr
 Classification compares line multisets and is triage, not a merge. See the header of
 `scripts/planner-drift.mjs`.
 
-`expected-overlay` is the deliberate `@avplan/*` import rewrite and is not drift.
+`expected-overlay` is the deliberate `@avplan/*` replacement and `dead-upstream` is
 
-| App | drift | only-upstream | only-suite | two-way | upstream-ahead | suite-ahead | expected-overlay |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| cable-planner | 27 | 0 | 6 | 13 | 0 | 8 | 9 |
-| multicam-planner | 31 | 0 | 11 | 19 | 0 | 1 | 3 |
-| light-planner | 29 | 3 | 10 | 16 | 0 | 0 | 3 |
+code nothing imports upstream. Neither counts as drift.
+
+| App | drift | only-upstream | only-suite | two-way | upstream-ahead | suite-ahead | expected-overlay | dead-upstream |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cable-planner | 21 | 0 | 0 | 13 | 0 | 8 | 15 | 0 |
+| multicam-planner | 20 | 0 | 0 | 19 | 0 | 1 | 15 | 0 |
+| light-planner | 16 | 0 | 0 | 16 | 0 | 0 | 14 | 2 |
 
 ## Files needing manual reconciliation (two-way)
 

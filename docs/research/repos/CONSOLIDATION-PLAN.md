@@ -150,6 +150,34 @@ Two upstream test files import the modules that `@avplan/inventory-core` replace
 were rewritten to the package — every symbol they need is exported from it — so the wire-format
 contract is now checked at app level as well as in the package's own test.
 
+### Stage 3 close-out
+
+Three findings while finishing light-planner, each of which would have made things worse if the
+plan had been followed literally:
+
+- **`components/MenuBar.tsx` and `components/Toolbar.tsx` are dead code upstream.** Upstream's own
+  `App.tsx` imports `TopBar` and `ToolRail`; a search of the whole upstream tree finds no importer
+  for either file. Vendoring them would have imported dead code. They are declared `DEAD_UPSTREAM`.
+  The cleaner fix is to delete them upstream.
+- **`components/ErrorBoundary.tsx` is package-replaced**, like the inventory modules: both apps
+  import `ErrorBoundary` from `@avplan/ui`. Worth recording that the bulk copy in stage 3 had
+  already vendored multicam's local copy as dead code; it has been removed again.
+- **All 27 `only-suite` files are the intentional overlay** — Lexware and shell bridge in cable,
+  hooks plus the German dictionaries in multicam, onboarding plus the English dictionaries in
+  light. They are declared `SUITE_OVERLAY` so the drift figure counts only divergence that
+  actually needs work.
+
+| | start | after stage 3 |
+| --- | --- | --- |
+| drift total | 161 | **57** |
+| `only-upstream` | 59 | **0** |
+| `only-suite` | 27 | **0** |
+| suite-wide tests | 317 | **643** |
+
+What is left is 48 `two-way` files whose residual difference is line-level, and 9 `suite-ahead`
+files where the suite is the better version — those should be pushed **upstream**, which is the
+direction the whole exercise is meant to run in.
+
 **Stage 4 — make the overlay declarative.** Once the two sides differ only by shell integration
 (`shellSettings.ts`, `shellLexware.ts`, `shellHistory.ts`, `isEmbedded.ts`, `lexwareIpc.ts`,
 `lexwareService.ts`, the `@avplan/*` import rewrites), that difference can be expressed as a small
