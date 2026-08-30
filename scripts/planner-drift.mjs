@@ -167,7 +167,11 @@ function excessLines(a, b) {
   return out
 }
 
-const isImport = (l) => /^import\s|^export\s.*\sfrom\s/.test(l)
+// Auch die Schlusszeile eines MEHRZEILIGEN Imports zaehlt: `} from '…'`.
+// Ohne sie rutscht jede Datei, deren @avplan-Import ueber mehrere Zeilen
+// geht, aus `expected-overlay` in `two-way` und erscheint als Arbeit, die
+// keine ist — genau das ist bei tests/inventoryPortable.test.ts passiert.
+const isImport = (l) => /^import\s|^\s*\}\s*from\s|^export\s.*\sfrom\s/.test(l)
 
 /**
  * Beabsichtigter Overlay statt echter Drift: Die Suite schreibt Importe auf die
