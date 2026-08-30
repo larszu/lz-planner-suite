@@ -196,6 +196,32 @@ be detected by keyword, only by knowing which feature a block belongs to.
 What genuinely remains open is therefore the `two-way` residue and the orphaned i18n keys —
 not a batch of files waiting to go upstream.
 
+### A second blind spot in the classifier, same shape as the first
+
+Stage 3 corrected the classifier once already: it compared raw lines, so every German literal
+wrapped in `t('key', 'Text')` counted twice and a fully reconciled file still looked heavily
+diverged. A second instance of exactly that pattern surfaced later.
+
+`isImport` matched only lines beginning with `import`. The closing line of a **multi-line** import —
+`} from '@avplan/…'` — fell through, so any file whose package import spans several lines dropped
+out of `expected-overlay` and into `two-way`, where it sat in the reconciliation list as work that
+did not exist.
+
+It surfaced because a change turned one single-line import into a multi-line one and the drift
+*rose* by one. Fixing the predicate revealed five further files that had been miscounted all along
+— the entire inventory overlay (`InventoryDialog`, `storageTree`, `inventoryStore` and both
+inventory tests):
+
+| | before | after |
+| --- | --- | --- |
+| drift cable-planner | 22 | **17** |
+| drift multicam-planner | 20 | **19** |
+
+None of it was ever real divergence. The lesson is the same one twice: a classifier that overstates
+the work produces a list nobody reads, and the overstatement hides inside whatever text
+transformation the suite happens to apply. Both corrections were found by a number moving for a
+reason that did not make sense — which is an argument for watching the number, not just the list.
+
 **Stage 4 — make the overlay declarative.** Once the two sides differ only by shell integration
 (`shellSettings.ts`, `shellLexware.ts`, `shellHistory.ts`, `isEmbedded.ts`, `lexwareIpc.ts`,
 `lexwareService.ts`, the `@avplan/*` import rewrites), that difference can be expressed as a small
