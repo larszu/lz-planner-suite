@@ -121,3 +121,49 @@ unverändert weiter.
 
 Betroffen sind cable-planner, multicam-planner, light-planner und `@avplan/inventory-core` in der
 Suite. Nach der Konsolidierungsentscheidung entsteht die Änderung upstream und die Suite zieht nach.
+
+## Was die Umsetzung gelehrt hat
+
+Alle vier Inkremente sind gebaut (`cable-planner#605`, `#606`, `#607`, dazu die Contract-Änderung
+in `multicam-planner#77`, `light-planner#43` und `av-planner-suite#20`). Drei Dinge sind beim Bauen
+klarer geworden, als sie beim Entscheiden waren.
+
+### Die Versionserhöhung war eine Entscheidung, keine Formsache
+
+Sie steht oben ausführlich: Der Contract-Test verlangt sie zwar, aber mit dem Zusatz
+„Abwärtskompatibilität beachten" — also war zu prüfen, ob sie hier hilft oder schadet. `healItem`
+gab die Antwort. Wer eine solche Regel nur befolgt, statt sie am Code zu prüfen, trifft die
+richtige Entscheidung aus dem falschen Grund und die falsche beim nächsten Mal.
+
+### Zwei Fehler, die erst die Tests sichtbar gemacht haben
+
+**Der Namens-Fallback verglich die Kategorie mit.** Für eine typisierte Zeile ist das zu streng: Der
+Katalogname identifiziert das Modell allein, und Lagerpositionen tragen oft gar keine Kategorie.
+Jetzt sucht ein typisierter Bedarf über den Modellnamen allein — aber nur, wenn er **eindeutig**
+ist. Bei zwei gleichnamigen Positionen wäre jede Wahl geraten, also wird keine getroffen.
+
+**Ein Namenstreffer mit fremder Identität verschluckte den Bedarf.** Er zählte als Treffer, wurde
+wegen der fremden GUID nicht angefasst, und weil er als Treffer galt, entstand auch keine neue
+Position — der Bedarf verschwand spurlos. Der erste Test dazu hatte es nicht gemerkt, weil er nur
+prüfte, dass die fremde Position unverändert bleibt. Ein Test, der nur die eine Hälfte einer
+Wirkung prüft, bestätigt einen Fehler, statt ihn zu finden.
+
+### „Ein Vorschlag muss als Vorschlag erkennbar bleiben" ist eine Bauanweisung
+
+Beim Entscheiden klang der Satz nach einer Frage der Darstellung. Beim Bauen hatte er drei
+konkrete Folgen, von denen zwei nichts mit Farben zu tun haben:
+
+1. Die CSV trägt den Zustand im Klartext (`gedeckt` / `VORSCHLAG` / `nicht im Lager`) plus die
+   Begründung. Auf Papier gilt dieselbe Unterscheidung wie am Bildschirm — und Papier ist im Lager
+   der Normalfall.
+2. Ein Vorschlag bekommt **keinen Lagerort**. Ein Regalplatz liest sich wie eine Zusage, und ob es
+   diese Position überhaupt ist, steht noch gar nicht fest.
+3. Die Kommissionier-Liste enthält **keine** Vorschläge. Wer kommissioniert, soll nicht unterwegs
+   entscheiden müssen, ob eine Zuordnung stimmt.
+
+### Was offen bleibt
+
+Der Weg aus `unmatched` heraus ist heute ein Hinweis in der Tabelle („ohne Katalog-Typ"), keine
+Aktion. Ein Knopf, der einem Plan-Gerät den Katalog-Typ zuweist und die Bestätigung eines
+Vorschlags als `deviceTypeId` festschreibt, wäre der nächste Schritt — dann wandert die Deckung
+Zeile für Zeile von *Vorschlag* nach *Tatsache*, und zwar dauerhaft.
