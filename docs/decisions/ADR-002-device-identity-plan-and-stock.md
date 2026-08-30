@@ -98,9 +98,26 @@ Ein Vorschlag darf nie wie eine Deckung aussehen — dieselbe Regel wie die Prov
 
 `avplan-inventory` ist eingefroren, aber nicht unveränderlich: `tests/inventoryContract.test.ts`
 schreibt das Verfahren selbst vor — Version erhöhen, die identische Änderung in allen drei Repos
-nachziehen, die eingefrorenen Key-Listen anpassen. Das Feld ist **additiv und optional**, also
-laden v1-Dateien unverändert weiter; die Versionsnummer sagt einem Leser trotzdem, dass es das Feld
-jetzt gibt.
+nachziehen, die eingefrorenen Key-Listen anpassen.
+
+**Die Versionserhöhung ist hier keine Formsache, sondern die Wahl zwischen lautem und stillem
+Fehler.** Naheliegend wäre, sie wegzulassen: Das Feld ist additiv und optional, `parseInventory`
+reicht unbekannte Schlüssel durch, und alte Stände könnten die Datei einfach weiterlesen. Die
+Prüfung im Code zeigt, warum das falsch wäre — `inventoryStore.healItem` baut jeden Artikel
+**Feld für Feld** neu auf:
+
+```ts
+return { id: …, model: r.model, manufacturer: …, category: …, quantity: … }
+```
+
+Was es nicht kennt, fällt weg. Ein nicht aktualisierter Stand würde eine Datei mit `deviceTypeId`
+also anstandslos importieren und beim nächsten Export **stillschweigend ohne das Feld**
+zurückschreiben. Mit der Versionserhöhung greift dagegen `f.version > INVENTORY_FORMAT_VERSION` und
+der alte Stand **weigert sich** — genau die Regel aus ADR-001: ein Import, der ein Feld nicht
+erhalten kann, muss sich weigern, statt es zu verlieren.
+
+In der Richtung, auf die es ankommt, bleibt alles wie es war: Ein neuer Stand liest v1-Dateien
+unverändert weiter.
 
 Betroffen sind cable-planner, multicam-planner, light-planner und `@avplan/inventory-core` in der
 Suite. Nach der Konsolidierungsentscheidung entsteht die Änderung upstream und die Suite zieht nach.
