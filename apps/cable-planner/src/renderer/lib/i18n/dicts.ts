@@ -2148,6 +2148,17 @@ export const en: Dict = {
   'cable.aria.toDevice': 'Target device',
   'cable.aria.toPort': 'Target port',
 
+  // ADR-002 — Katalog-Typ am Geraet (IdentityBlock)
+  'eq.field.deviceType': 'Catalogue type',
+  'eq.field.deviceTypeClear': 'clear',
+  'eq.field.deviceTypeNone':
+    'No catalogue type — inventory coverage and the BOM can only guess this device from its name.',
+  'eq.field.deviceTypeFilter': 'Search the catalogue…',
+  'eq.field.deviceTypeUnset': '— none —',
+  'eq.field.deviceTypeCount': '{n} of {total} types',
+  'eq.field.deviceTypeScope':
+    'sets the identity only; ports, dimensions and power stay unchanged.',
+
   // ADR-002, Inkrement 4 — Geraete-Stueckliste + Kommissionier-Liste
   'export.section.devicebom': 'Device BOM',
   'export.desc.devicebom':
@@ -2165,6 +2176,9 @@ export const en: Dict = {
   'export.devicebom.noTypeTitle':
     'No catalogue type — the model name here is only the device name. Assigning a catalogue type turns the coverage into a fact.',
   'export.devicebom.short': '— {n} missing',
+  'export.devicebom.confirm': 'Confirm',
+  'export.devicebom.confirmTitle':
+    'Writes the catalogue identity permanently onto this inventory position. The coverage is then a fact and never has to be guessed from the name again.',
   'export.devicebom.csv': 'Device BOM as CSV',
   'export.devicebom.pick': 'Pick list (CSV)',
   'export.devicebom.pickTitle':
