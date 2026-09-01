@@ -86,8 +86,8 @@ Aufrufer entscheidet; die Bauer bleiben pur.
 | # | Inkrement | Warum hier |
 | --- | --- | --- |
 | 1 | `documentStamp` + fünf Installateur-CSVs + PDF-Titelblock + Übergabe-Dokument — erledigt in `cable-planner#612` | Die Ableitung und die Stellen, die heute etwas Falsches behaupten. Reine Ableitung, keine Persistenz |
-| 2 | Dokument-QR: `cableplanner://doc/<fingerprint>` und die Auflösung „welches Dokument, welcher Stand" im Viewer | Braucht Inkrement 1 als Datenquelle; der Record-Rückweg existiert bereits und wird erweitert, nicht ersetzt |
-| 3 | „Dieses Blatt ist veraltet" im Mobile-Viewer beim Scannen | Erst wenn 2 steht, gibt es etwas zu vergleichen |
+| 2 | Dokument-Code `cableplanner://doc/<id>?s=<stand>`, Register der Ableitungen, Standvergleich im Mobile-Viewer — erledigt in `cable-planner#613` | Braucht Inkrement 1 als Datenquelle; der Record-Rückweg existiert bereits und wird erweitert, nicht ersetzt |
+| 3 | Der Stand-Code auf den CSV-/Listen-Ausdrucken selbst (heute trägt nur das Plan-PDF einen QR; die Listen tragen die acht Zeichen als Text) | Erst wenn 2 steht, gibt es etwas zu drucken, das sich prüfen lässt |
 | 4 | `multicam-planner` / `light-planner`: Stand-Angabe auf deren Ausdrucke | Andere Apps, eigener Rhythmus — die Ableitung ist teilbar, die Dokumente sind es nicht |
 
 Inkrement 2 bewusst nicht zuerst: ein QR-Code auf einem Dokument, dessen Stand niemand berechnen
@@ -99,3 +99,23 @@ Dieselbe Regel, anderer Ort. ADR-003 sagt: zeige keinen Gerätezustand, den niem
 ADR-004 sagt: drucke keinen Planstand, den niemand geprüft hat. In beiden Fällen ist der Schaden
 nicht das Fehlen der Information, sondern die **falsche Gewissheit** — ein Wert, der aussieht, als
 wüsste ihn jemand.
+
+## Was die Umsetzung gelehrt hat
+
+**Der dritte Ausgang ist der wichtigste.** Der Standvergleich hat `current`, `stale` und `unknown`.
+Zwei hätten gereicht, um die Funktion zu schreiben — und wären falsch gewesen: `kabel-bom` lässt
+sich nicht reproduzieren, weil sein Inhalt am Reserve-Aufschlag hängt, den der Stempel nicht trägt.
+Mit zwei Ausgängen wäre jedes BOM-Blatt „veraltet" gewesen, dauerhaft und fälschlich. Die Auslassung
+im Register ist deshalb durch einen Test festgehalten, damit sie später nicht als Lücke „repariert"
+wird.
+
+**Ein neues Code-Format braucht einen Riegel im alten Parser.** `parseQrPayload` ist absichtlich
+tolerant: was es nicht erkennt, gibt es als Klartext-ID zurück. Eine Dokument-URI fiel damit in den
+Datensatz-Lookup und wurde als Kabelnummer gesucht — Ergebnis „unbekannter Code" statt „das ist ein
+Dokument-Code". Toleranz an einer Stelle wird zum Fehler, sobald daneben ein zweites Format
+entsteht.
+
+**Der Weg ohne Kamera ist der, der zählt.** Acht Hex-Zeichen aus der Fußnote, abgetippt, finden das
+Dokument und melden seinen Stand. Das funktioniert am Telefon, in der Halle, ohne App — also unter
+genau den Bedingungen, unter denen jemand überhaupt zum Papier gegriffen hat. Ein QR-Code auf dem
+Plan-PDF ist die bequeme Variante; die abtippbare ist die belastbare.
