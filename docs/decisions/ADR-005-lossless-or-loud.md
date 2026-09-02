@@ -99,6 +99,7 @@ Minuten geschrieben. Es wäre die ehrliche Beschreibung eines Zustands, den niem
 | 2 | `light-planner`: die Venue-Projektion überschreibt die eigenen vollwertigen Wände nicht mehr | Ebenfalls heute und ebenfalls verifiziert, aber es betrifft eine App und braucht eine Feldzusammenführung statt eines zusätzlichen Feldes |
 | 3 | Die 63 ungeprüften Audit-Hinweise nachprüfen, jeden einzeln im Code — **läuft**, siehe Protokoll unten | Sie sind Hinweise, keine Befunde. Sie ungeprüft abzuarbeiten hieße, Arbeit an erfundenen Fehlern zu leisten — genau das, wovor die Regel schützt |
 | 4 | Unbekannte `domains.*`-Slots und Wurzel-Keys bewahren (das `extra`-Muster für `.avplan`) | Braucht heute noch keine vierte App. Nach 1–3, weil hypothetischer Verlust nach echtem kommt |
+| 5 | Erfundene Werte an der Naht zwischen zwei Apps — `multicam#79`, `light#46` | **Fällt aus der Reihenfolge, weil es aus Inkrement 3 herausgewachsen ist.** Kein hypothetischer Fall: hier steht heute eine falsche Zahl in einer Datei, an der der Nachbar rechnet |
 
 Inkrement 4 bewusst zuletzt: es war die Ausgangshypothese dieses ADRs und stellte sich als der
 *harmloseste* der gefundenen Fälle heraus. Das ist selbst ein Ergebnis — siehe unten.
@@ -144,8 +145,9 @@ der nächsten Runde dieselbe Arbeit.
 | Der Videohub-Routing-Dump schreibt jeden Ausgang als entsperrt | **Bestätigt, behoben** in `cable-planner#621` — und der erste Befund dieser Runde, bei dem Information nicht verloren, sondern **erfunden** wird. `U` ist im Protokoll keine Leerstelle, sondern die Anweisung *zu entsperren*; der Dump ist zum Weiterverwenden gemacht (Zwischenablage, „Import routing"), und eine Sperre schützt typischerweise einen Live-Weg. Der Plan kennt keine Sperr-Absicht und hat sich eine ausgedacht, und zwar die gefährliche Richtung. |
 | Der Rentman-Importer baut für jeden Datensatz ein `raw`-Fach und liest es nie | **Hinweis hält nicht** — dritte Widerlegung, wieder über den Rückweg. `raw` wird an genau einer Stelle geschrieben und an keiner gelesen, erreicht aber nie die Persistenz, und der Export ist POST-only: der Quelldatensatz bleibt in Rentman. Grenze, kein Verlust. Bemerkenswert bleibt die **Umkehrung zum `.avsourcemap`-Fall**: dort ein Schlüssel, dessen Namen wir kennen und den wir nicht halten können; hier eine Tasche, die alles hält und nie geöffnet wird. Beide täuschen Sicherheit vor, aus entgegengesetzten Richtungen. |
 
-Zwischenstand nach dreizehn nachgeprüften Hinweisen: **neun bestätigt, vier widerlegt.** Von den
-neun sind sieben behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`) und zwei gemeldet,
+Zwischenstand nach fünfzehn nachgeprüften Hinweisen: **elf bestätigt, vier widerlegt.** Von den
+elf sind neun behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`, `multicam#79`,
+`light#46`) und zwei gemeldet,
 aber noch nicht bewahrt (`#616`, `#618`) — beide, weil die Bewahrung eine Entscheidung braucht, die
 diesem Audit nicht gehört. Knapp ein Drittel der geprüften Hinweise hielt der Nachlese nicht stand;
 das ist der Grund, warum die 63 nicht ungeprüft in die Befundtabelle durften.
@@ -166,6 +168,34 @@ verloren" verwechselt, weil er nie nach dem **Schreibpfad** gefragt hat.
 Angewandt auf die bisher gesehenen Pfade: NetBox lesend, GraphML lesend, Green-GO beidseitig,
 native Projektdateien beidseitig, `.avplan` beidseitig, `.avsourcemap` beidseitig. Die Suche nach
 echten Verlusten gehört in die zweite Gruppe.
+
+### Der Nachtrag, der aus Inkrement 3 herauswuchs: erfundene Werte an der Naht
+
+Der Videohub-Fund (`cable-planner#621`) war der erste Befund dieser Untersuchung, bei dem nicht
+Information *fehlte*, sondern welche **hergestellt** wurde. Die Suche nach weiteren Fällen dieser
+Art führte auf ein Paar — und das Paar ist die eigentliche Lehre.
+
+| Fall | Was geschah |
+| --- | --- |
+| `multicam-planner#79` | MultiCams Bühne ist eine flache 2D-Zone, aber `height` ist im Austauschtyp **Pflicht**. Der Export schrieb deshalb für jede Bühne `height: 0`. Ein 0,6 m hohes Podest aus dem Light-Planner kam nach einem Round-Trip als flacher Boden zurück. Der **Vertrag erzwang die Erfindung** — deshalb der Umweg über Aufheben statt über eine Änderung an `VENUE_EXCHANGE_VERSION` |
+| `light-planner#46` | Light modelliert keine Raumgröße und liess `widthM`/`heightM` weg — für sich genommen **richtig**. Aber MultiCams Import setzt für ein fehlendes Mass seinen Standard ein (20 × 12 m). Ein 30 × 18 m grosser Raum schrumpfte bei jedem Round-Trip durch light |
+
+Beide Seiten waren **einzeln vertretbar**: schweigen, wenn man nichts weiss; einen Standard setzen,
+wenn nichts dasteht. Regel 3 dieses ADRs verlangt sogar ausdrücklich das erste. Erst die Kombination
+lügt.
+
+> Ein Verlust entsteht nicht immer *in* einer App. Er kann in der Naht zwischen zweien entstehen,
+> in der beide sich korrekt verhalten.
+
+Daraus folgt auch, wer repariert: **der, der die Information hatte und weggeworfen hat** — nicht
+der, der einen Standard braucht. MultiCams `?? 20` für einen wirklich unbekannten Raum bleibt
+richtig, und light erfindet weiterhin keine Raumgröße, wenn es keine bekommen hat.
+
+Und es folgt etwas über die Methode: **ein Audit, das jede App für sich prüft, findet diese Klasse
+nie.** Der ursprüngliche Audit hat beide Hälften auch tatsächlich gemeldet — als zwei getrennte,
+harmlos klingende Zeilen in zwei verschiedenen Repos. Erst nebeneinander gelegt ergeben sie einen
+Fehler. Wer die nächste Runde plant, sollte die Hinweise deshalb **nach Datenpfad** gruppieren, nicht
+nach Datei.
 
 ### Was daraus als Nächstes zu bauen ist
 
@@ -231,8 +261,8 @@ nebenbei getroffen werden:
    unbekanntem Slot ab, statt sie stillschweigend zu beschneiden. Beides ist vertretbar, das
    heutige Verhalten — annehmen und wegwerfen — ist es nicht.
 
-**Was das über abgebrochene Audits lehrt.** Über alle dreizehn Nachlesen hält dasselbe Muster: von
-den neun bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
+**Was das über abgebrochene Audits lehrt.** Über alle fünfzehn Nachlesen hält dasselbe Muster: von
+den elf bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
 
 - Inventar-Import: das Abweisen war richtig, das Schweigen falsch — der Hinweis rügte das Abweisen.
 - Template-Rekonstruktion: nicht die Zahl 50 war der Schaden, sondern ein einziges Feld.
