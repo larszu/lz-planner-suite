@@ -129,6 +129,12 @@ any claim is quoted onward.
   genuinely valuable — a long-open issue with many reactions is strong evidence) plus search
   summaries of forum threads. **The review-site and Reddit half of the mandated user research
   could not be performed in this environment and should be redone somewhere with open egress.**
+  A second attempt on 2026-09-01 confirmed this rather than fixing it: direct HTTPS to reddit.com,
+  g2.com and capterra.com is refused by the gateway (403 on CONNECT), and a WebSearch-only sweep
+  across twelve segments returned `thin` search quality from every segment that completed, with
+  **zero verified findings**. The attempt and what a real section 15 would need are recorded in
+  [`synthesis/SECTION-15-USER-RESEARCH.md`](synthesis/SECTION-15-USER-RESEARCH.md). The limitation
+  is now measured, not merely presumed — which is a small gain, and it is the only one.
 
 ### Does this undermine the central finding?
 

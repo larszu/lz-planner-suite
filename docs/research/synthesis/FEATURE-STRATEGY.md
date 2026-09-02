@@ -248,5 +248,12 @@ offline-first architecture is a genuine advantage and should not be traded for c
   systematically under-represents closed commercial products whose users never file public issues
   — precisely the expensive, proprietary end of the market. Conclusions drawn from silence in
   those segments are weak and should be redone with open egress.
+  **Second attempt, 2026-09-01: still open.** Direct HTTPS to reddit.com, g2.com and capterra.com is
+  refused by the gateway (403 on CONNECT, verified). A WebSearch-only sweep across twelve segments
+  returned `thin` from all ten segments that completed, and its adversarial verification stage never
+  ran — so it produced **zero verified findings and moved no score**. The attempt, what it cost and
+  what a real section 15 would need is written up in
+  [`SECTION-15-USER-RESEARCH.md`](SECTION-15-USER-RESEARCH.md). The gap is unchanged, and it is now
+  measured rather than assumed.
 - Pricing across the market is unverified here, so no positioning claim about cost should be made
   from this corpus yet.
