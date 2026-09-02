@@ -145,9 +145,9 @@ der nächsten Runde dieselbe Arbeit.
 | Der Videohub-Routing-Dump schreibt jeden Ausgang als entsperrt | **Bestätigt, behoben** in `cable-planner#621` — und der erste Befund dieser Runde, bei dem Information nicht verloren, sondern **erfunden** wird. `U` ist im Protokoll keine Leerstelle, sondern die Anweisung *zu entsperren*; der Dump ist zum Weiterverwenden gemacht (Zwischenablage, „Import routing"), und eine Sperre schützt typischerweise einen Live-Weg. Der Plan kennt keine Sperr-Absicht und hat sich eine ausgedacht, und zwar die gefährliche Richtung. |
 | Der Rentman-Importer baut für jeden Datensatz ein `raw`-Fach und liest es nie | **Hinweis hält nicht** — dritte Widerlegung, wieder über den Rückweg. `raw` wird an genau einer Stelle geschrieben und an keiner gelesen, erreicht aber nie die Persistenz, und der Export ist POST-only: der Quelldatensatz bleibt in Rentman. Grenze, kein Verlust. Bemerkenswert bleibt die **Umkehrung zum `.avsourcemap`-Fall**: dort ein Schlüssel, dessen Namen wir kennen und den wir nicht halten können; hier eine Tasche, die alles hält und nie geöffnet wird. Beide täuschen Sicherheit vor, aus entgegengesetzten Richtungen. |
 
-Zwischenstand nach siebzehn nachgeprüften Hinweisen: **dreizehn bestätigt, vier widerlegt.** Von den
-dreizehn sind elf behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`, `multicam#79`,
-`light#46`, `multicam#80`, `light#47`) und zwei gemeldet,
+Zwischenstand nach achtzehn nachgeprüften Hinweisen: **vierzehn bestätigt, vier widerlegt.** Von den
+vierzehn sind zwölf behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`, `multicam#79`,
+`light#46`, `multicam#80`, `light#47`, `multicam#81`) und zwei gemeldet,
 aber noch nicht bewahrt (`#616`, `#618`) — beide, weil die Bewahrung eine Entscheidung braucht, die
 diesem Audit nicht gehört. Knapp ein Drittel der geprüften Hinweise hielt der Nachlese nicht stand;
 das ist der Grund, warum die 63 nicht ungeprüft in die Befundtabelle durften.
@@ -201,6 +201,27 @@ gemeinsamen Datenpfad. Beide lagen genau dort, wo die Regel sie vorhersagte.
 Eine aus zwei Fällen abgeleitete Regel hätte Zufall sein können. **Zwei Treffer bei zwei bewussten
 Anwendungen sind ein Beleg** — und der Grund, die restlichen Hinweise nach Datenpfad zu ordnen,
 bevor die nächste Runde beginnt.
+
+### Was der erste systematische Pfad-Durchgang ergab
+
+Das Rezept wurde als Nächstes nicht auf einen Hinweis, sondern auf einen ganzen **Datenpfad**
+angewandt: die Wände. Ergebnis (`multicam-planner#81`) — **drei verschiedene Fehler übereinander**,
+von denen nur einer die Klasse ist, für die das Rezept gedacht war:
+
+| | Fehler | Klasse |
+| --- | --- | --- |
+| 1 | `importVenueExchange` setzte `walls` im Ganzen neu und löschte damit bei jedem Venue-Import `pattern`, `patternImage`, `patternFit`, `patternRows` — die Wand-Muster des Nutzers | **Regel 2**, derselbe Fehler, den `light#45` für light behob und der in MultiCam noch stand |
+| 2 | Light kennt `cx`/`cy` (Krümmung) und `reflectance`, MultiCams Wand ist eine Strecke; beides fiel weg, lights Import setzt danach `reflectance ?? 0.5` | **Naht**, wie vorhergesagt. Eine fehlende Krümmung heisst nicht „unbekannt", sondern *gerade* |
+| 3 | `color` modelliert MultiCam **selbst** und schrieb es trotzdem nicht ins Austauschformat, das es auch kennt — blaue Wand, grau zurück | **Schlicht vergessen.** Keine Modellierungslücke, kein Vertragsproblem |
+
+Fehler 1 und 3 hat **kein Audit-Hinweis gemeldet.** Sie fielen auf, weil der Durchgang eine andere
+Frage stellt als die Hinweisliste:
+
+> Nicht „stimmt dieser Hinweis?", sondern **„was passiert mit diesem Feld auf dem ganzen Weg?"**
+
+Das ist der eigentliche Ertrag. Die 63 Hinweise waren nie die Landkarte — sie waren der Anlass,
+hinzusehen. Wer die Liste abarbeitet, ist fertig, wenn die Liste leer ist; wer die Pfade abgeht,
+ist fertig, wenn die Pfade abgegangen sind. Nur das Zweite ist eine Aussage über die Software.
 
 Das gemeinsame Muster aller vier, als Prüfrezept formuliert:
 
@@ -278,8 +299,8 @@ nebenbei getroffen werden:
    unbekanntem Slot ab, statt sie stillschweigend zu beschneiden. Beides ist vertretbar, das
    heutige Verhalten — annehmen und wegwerfen — ist es nicht.
 
-**Was das über abgebrochene Audits lehrt.** Über alle siebzehn Nachlesen hält dasselbe Muster: von
-den dreizehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
+**Was das über abgebrochene Audits lehrt.** Über alle achtzehn Nachlesen hält dasselbe Muster: von
+den vierzehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
 
 - Inventar-Import: das Abweisen war richtig, das Schweigen falsch — der Hinweis rügte das Abweisen.
 - Template-Rekonstruktion: nicht die Zahl 50 war der Schaden, sondern ein einziges Feld.
