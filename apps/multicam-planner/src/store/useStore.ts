@@ -9,6 +9,7 @@ import {
   fromVenueExchange,
   type VenueExchange,
   type ForeignStageFields,
+  type ForeignFloorPlanFields,
 } from '../utils/venueExchange';
 import type { AvPlan } from '../utils/avplan';
 import { alertDialog } from '@avplan/ui';
@@ -37,6 +38,7 @@ export function buildProjectFile(s: {
   backgroundPlan: BackgroundPlan | null;
   avForeign: { lighting?: unknown; cabling?: unknown };
   stageForeign: Record<string, ForeignStageFields>;
+  floorPlanForeign: ForeignFloorPlanFields;
 }): ProjectFile {
   return {
     formatVersion: 1,
@@ -56,6 +58,10 @@ export function buildProjectFile(s: {
     // ADR-005 — dito fuer die Buehnen-Felder, die MultiCam nicht modelliert.
     ...(Object.keys(s.stageForeign ?? {}).length > 0
       ? { stageForeign: s.stageForeign }
+      : {}),
+    // ADR-005 — dito fuer die Gebaeudeplan-Felder.
+    ...(Object.keys(s.floorPlanForeign ?? {}).length > 0
+      ? { floorPlanForeign: s.floorPlanForeign }
       : {}),
   };
 }
@@ -209,6 +215,7 @@ interface AppState {
    *  aber beim Export 1:1 wieder mitgibt — damit nichts verloren geht. */
   avForeign: { lighting?: unknown; cabling?: unknown };
   stageForeign: Record<string, ForeignStageFields>;
+  floorPlanForeign: ForeignFloorPlanFields;
   /** Importiert ein .avplan-Gesamtprojekt: laedt den cameras-Slot nativ,
    *  ueberlagert den geteilten Raum und bewahrt lighting/cabling verlustfrei. */
   importAvPlan: (avplan: AvPlan) => void;
@@ -1001,6 +1008,7 @@ export const useStore = create<AppState>((set, get) => ({
       // Wie avForeign: eine Datei ohne das Feld setzt zurueck, sonst leckten
       // die Buehnen-Hoehen des zuletzt geoeffneten Projekts ins naechste.
       stageForeign: project.stageForeign ?? {},
+      floorPlanForeign: project.floorPlanForeign ?? {},
     });
   },
 
@@ -1018,12 +1026,14 @@ export const useStore = create<AppState>((set, get) => ({
       walls: r.walls,
       backgroundPlan: r.backgroundPlan,
       stageForeign: r.stageForeign,
+      floorPlanForeign: r.floorPlanForeign,
       projectVersion: s.projectVersion + 1,
     }));
   },
 
   avForeign: {},
   stageForeign: {},
+  floorPlanForeign: {},
   importAvPlan: (avplan) => {
     const cameras = avplan.domains.cameras as ProjectFile | undefined;
     if (cameras) get().applyProjectFile(cameras);
