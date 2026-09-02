@@ -133,9 +133,46 @@ der nächsten Runde dieselbe Arbeit.
 | `rentmanTemplateCache.toTemplateFromEquipment` baut aus 36 benannten Keys neu und verwirft ~50 | **Bestätigt, aber die Zahl trägt nicht.** 97 Felder auf `EquipmentItem`, 36 kopiert, 58 nicht. Der grösste Teil davon *gehört* nicht in ein Template: `assetTag`, `serialNumber`, `qrId`, `installStatus`, `videohubRouting` sind Instanz-Eigenschaften, sie zu kopieren wäre der umgekehrte Fehler. Der echte Schaden ist **ein einziges Feld**: `deviceTypeId`. Behoben in `cable-planner#615`. |
 | `netboxMapping` baut den `EquipmentItem` aus benannten Properties, `custom_fields`, `tags`, `comments`, `status`, `tenant` erreichen den Plan nie | **Hinweis hält nicht.** Zwei Gründe. Erstens erreichen die genannten Datenblatt-Felder den Plan sehr wohl: `serial`, `asset_tag`, `description` und Hersteller/Modell wandern in einen quellenbenannten `notes`-Block, das Modell zusätzlich in `subtitle`. Zweitens — und das entscheidet — ist die NetBox-Anbindung **lesend**: der API-Client kennt kein POST, PATCH, PUT oder DELETE, die IPC-Fläche besteht aus Token-Verwaltung, Verbindungstest und Abruf. Es gibt keinen Rückweg, auf dem etwas verloren gehen könnte. NetBox bleibt das führende System; der Plan modelliert einen Ausschnitt. Das ist eine **Grenze, kein Verlust** — dieselbe Unterscheidung wie beim `.gg5`-Export in ADR-003. |
 
-Zwischenstand nach drei nachgeprüften Hinweisen: zwei bestätigt (beide **anders** als behauptet),
-einer widerlegt. Genau dieses Verhältnis ist der Grund, warum die 63 nicht ungeprüft in die
-Befundtabelle durften.
+| `graphml/semantics` verliert custom node/edge data beim Rebuild | **Hinweis hält nicht, aus demselben Grund wie NetBox.** GraphML ist rein lesend: die einzige IPC-Fläche ist `graphml:open-file`, einen Export gibt es nicht. Die Quelldatei bleibt, wo sie ist, und die importierten Elemente tragen `graphmlId` / `graphmlEdgeId` als Rückverweis. Grenze, kein Verlust. |
+| `exportGreengo` rebaut eine importierte `.gg5` aus benannten Properties | **Bestätigt — der schwerste Fall dieser Runde.** Anders als NetBox und GraphML hat Green-GO Importer *und* Exporter, also einen echten Round-Trip. `parseGg5File` liest `Settings`, `Users`, `Groups`; `exportGreengo` schreibt zusätzlich `Channels`, `SpecialChannels`, `ScriptSettings` und `UserSettings` aus **hartkodierten Defaults**. Importieren, eine Gruppe ändern, exportieren — und die Tastenbelegungen einer Intercom-Anlage kommen leer zurück. Der Modulkopf des Importers zählt „Devices, Rooms, Templates, …" sogar selbst auf. Gemeldet in `cable-planner#616`; die *Bewahrung* wartet auf eine Design-Entscheidung (siehe unten). |
+| `healProjectPositions` baut jede `sourceIdentity` aus einer festen Feldliste und löscht Rollen still | **Bestätigt, aber heute nicht nachweisbar auslösend.** `normaliseSourceIdentities` verwirft wortlos: eine Rolle ohne Namen, eine mit doppelter Id, und `clearDanglingIdentity` streicht danach die Verweise der Geräte darauf — eine Kamera verliert also ihre TSL-Adresse, ohne dass irgendwo etwas steht. Das ist Code aus ADR-001, und die Regel greift auf ihn genauso. Ausgelöst wird es aber nur von einem hand-editierten Projektfile, einem Merge-Konflikt in einer `.cp` oder einem Stand aus einer künftigen Version; die eigene Oberfläche erzeugt keine namenlose Rolle. Deshalb **nicht** vorgezogen: ADR-005 sortiert nach „real heute und billig", und dieser Fall ist real, aber nicht als heute auftretend belegt. Er braucht ohnehin etwas, das noch fehlt — einen Kanal für Lade-Hinweise, siehe unten. |
+
+Zwischenstand nach sechs nachgeprüften Hinweisen: **drei bestätigt, zwei widerlegt, einer bestätigt
+aber nicht als heute auftretend belegt.** Genau dieses Verhältnis ist der Grund, warum die 63 nicht
+ungeprüft in die Befundtabelle durften.
+
+### Die Triage-Regel, die sich daraus ergibt
+
+Beide Widerlegungen hatten dieselbe Ursache: der Audit hat „der Plan modelliert X nicht" mit „X ging
+verloren" verwechselt, weil er nie nach dem **Schreibpfad** gefragt hat.
+
+> **Erste Frage bei jedem verbleibenden Hinweis: gibt es überhaupt einen Rückweg?**
+> Ohne Exporter, ohne POST/PATCH, ohne Speichern in dasselbe Format kann nichts verloren gehen — das
+> führende System behält seine Daten, und der Plan modelliert einen Ausschnitt. Das ist eine Grenze
+> und gehört benannt, nicht repariert.
+
+Angewandt auf die bisher gesehenen Pfade: NetBox lesend, GraphML lesend, Green-GO beidseitig,
+native Projektdateien beidseitig, `.avplan` beidseitig, `.avsourcemap` beidseitig. Die Suche nach
+echten Verlusten gehört in die zweite Gruppe.
+
+### Was daraus als Nächstes zu bauen ist
+
+**Ein Kanal für Lade-Hinweise.** `healProjectPositions` ist eine reine Funktion ohne Weg zur
+Oberfläche; alles, was sie verwirft, verschwindet definitionsgemäß still. Solange dieser Kanal
+fehlt, kann Regel 3 auf dem Lade-Pfad gar nicht erfüllt werden. Er ist die Voraussetzung für den
+`sourceIdentity`-Fall und für jeden weiteren Fund in `healProjectPositions`.
+
+**Zwei Design-Entscheidungen, die dem Eigentümer gehören** und die hier ausdrücklich *nicht*
+nebenbei getroffen werden:
+
+1. Bleibt `exportGreengo` ein **Generator** (erzeugt eine frische Konfiguration aus dem Plan) oder
+   wird er ein **Editor**, der das importierte Rohdokument behält und nur Geändertes hineinmerged?
+   Das entscheidet, ob der `.gg5`-Round-Trip je verlustfrei werden kann.
+2. Welche der 57 übrigen Felder in der Template-Rekonstruktion sind **Modell**-Eigenschaften
+   (`rentPricePerDay`, `priceEUR`, `powerConsumptionWatts`, `heightMm`, `modes`, `shortName` …) und
+   welche **Instanz**-Eigenschaften (`assetTag`, `serialNumber`, `qrId`, `installStatus`,
+   `videohubRouting` …)? Die erste Gruppe läuft in Stücklisten weiter; eine falsche Zuordnung
+   propagiert still falsche Preise — also genau der Schaden, gegen den dieser ADR geschrieben ist.
 
 **Was das über abgebrochene Audits lehrt.** Beide bestätigten Hinweise trafen den richtigen Ort mit
 der falschen Begründung, und der widerlegte klang von allen dreien am plausibelsten. Ein Hinweis
