@@ -145,9 +145,9 @@ der nächsten Runde dieselbe Arbeit.
 | Der Videohub-Routing-Dump schreibt jeden Ausgang als entsperrt | **Bestätigt, behoben** in `cable-planner#621` — und der erste Befund dieser Runde, bei dem Information nicht verloren, sondern **erfunden** wird. `U` ist im Protokoll keine Leerstelle, sondern die Anweisung *zu entsperren*; der Dump ist zum Weiterverwenden gemacht (Zwischenablage, „Import routing"), und eine Sperre schützt typischerweise einen Live-Weg. Der Plan kennt keine Sperr-Absicht und hat sich eine ausgedacht, und zwar die gefährliche Richtung. |
 | Der Rentman-Importer baut für jeden Datensatz ein `raw`-Fach und liest es nie | **Hinweis hält nicht** — dritte Widerlegung, wieder über den Rückweg. `raw` wird an genau einer Stelle geschrieben und an keiner gelesen, erreicht aber nie die Persistenz, und der Export ist POST-only: der Quelldatensatz bleibt in Rentman. Grenze, kein Verlust. Bemerkenswert bleibt die **Umkehrung zum `.avsourcemap`-Fall**: dort ein Schlüssel, dessen Namen wir kennen und den wir nicht halten können; hier eine Tasche, die alles hält und nie geöffnet wird. Beide täuschen Sicherheit vor, aus entgegengesetzten Richtungen. |
 
-Zwischenstand nach sechzehn nachgeprüften Hinweisen: **zwölf bestätigt, vier widerlegt.** Von den
-zwölf sind zehn behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`, `multicam#79`,
-`light#46`, `multicam#80`) und zwei gemeldet,
+Zwischenstand nach siebzehn nachgeprüften Hinweisen: **dreizehn bestätigt, vier widerlegt.** Von den
+dreizehn sind elf behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`, `multicam#79`,
+`light#46`, `multicam#80`, `light#47`) und zwei gemeldet,
 aber noch nicht bewahrt (`#616`, `#618`) — beide, weil die Bewahrung eine Entscheidung braucht, die
 diesem Audit nicht gehört. Knapp ein Drittel der geprüften Hinweise hielt der Nachlese nicht stand;
 das ist der Grund, warum die 63 nicht ungeprüft in die Befundtabelle durften.
@@ -180,6 +180,7 @@ Art führte auf ein Paar — und das Paar ist die eigentliche Lehre.
 | `multicam-planner#79` | MultiCams Bühne ist eine flache 2D-Zone, aber `height` ist im Austauschtyp **Pflicht**. Der Export schrieb deshalb für jede Bühne `height: 0`. Ein 0,6 m hohes Podest aus dem Light-Planner kam nach einem Round-Trip als flacher Boden zurück. Der **Vertrag erzwang die Erfindung** — deshalb der Umweg über Aufheben statt über eine Änderung an `VENUE_EXCHANGE_VERSION` |
 | `light-planner#46` | Light modelliert keine Raumgröße und liess `widthM`/`heightM` weg — für sich genommen **richtig**. Aber MultiCams Import setzt für ein fehlendes Mass seinen Standard ein (20 × 12 m). Ein 30 × 18 m grosser Raum schrumpfte bei jedem Round-Trip durch light |
 | `multicam-planner#80` | MultiCams `BackgroundPlan` ist eine Bitmap mit Massstab und Versatz — kein Name, kein Sperr-Flag, keine Seitenzahl, keine Quellenangabe. `bgToFloorPlan` schrieb unbedingt `kind: 'image'`. Aus *Seite 3 von 5 eines gesperrten `EG_Grundriss.pdf`* wurde ein namenloses, entsperrtes Bild ohne Seitenbezug |
+| `light-planner#47` | Lights `Person` ist eine menschliche Figur; MultiCam kennt an derselben Stelle ein allgemeines Bühnen-Objekt — Schlagzeug, Rednerpult, Stuhl — mit `width`, `objectType`, `color`. Light liess die drei fallen, MultiCam setzt beim Import `objectType: 'person'` und `width: 0.5` ein: aus einem 1,4 m breiten Schlagzeug wurde eine 0,5 m breite Person. **Das Objekt war nicht weg — es war etwas anderes geworden.** Von allen vier Fällen der mit dem schärfsten Symptom: der Plan sieht vollständig aus und ist falsch |
 
 Beide Seiten waren **einzeln vertretbar**: schweigen, wenn man nichts weiss; einen Standard setzen,
 wenn nichts dasteht. Regel 3 dieses ADRs verlangt sogar ausdrücklich das erste. Erst die Kombination
@@ -193,10 +194,19 @@ der, der einen Standard braucht. MultiCams `?? 20` für einen wirklich unbekannt
 richtig, und light erfindet weiterhin keine Raumgröße, wenn es keine bekommen hat.
 
 **Die Regel hat sich sofort bewährt.** Die ersten beiden Fälle wurden gefunden, weil ein Hinweis
-zufällig darauf zeigte. Der dritte (`#80`) wurde **gezielt gesucht**: dieselbe Konstellation —
-light schreibt Felder, MultiCam modelliert sie nicht — auf dem nächsten gemeinsamen Datenpfad, dem
-Gebäudeplan. Er lag genau dort, wo die Regel ihn vorhersagte. Eine aus zwei Fällen abgeleitete Regel
-hätte Zufall sein können; dass sie beim ersten bewussten Anwenden trifft, ist der Beleg.
+zufällig darauf zeigte. Der dritte (`multicam#80`, Gebäudeplan) und der vierte (`light#47`,
+Bühnen-Objekte) wurden **gezielt gesucht**: dieselbe Konstellation auf dem jeweils nächsten
+gemeinsamen Datenpfad. Beide lagen genau dort, wo die Regel sie vorhersagte.
+
+Eine aus zwei Fällen abgeleitete Regel hätte Zufall sein können. **Zwei Treffer bei zwei bewussten
+Anwendungen sind ein Beleg** — und der Grund, die restlichen Hinweise nach Datenpfad zu ordnen,
+bevor die nächste Runde beginnt.
+
+Das gemeinsame Muster aller vier, als Prüfrezept formuliert:
+
+> Nimm ein Feld des Austauschformats. Frage: modelliert es eine der Apps **nicht**? Wenn ja: was
+> macht die andere beim Import, wenn es fehlt — nichts, oder einen Standardwert einsetzen? Steht
+> dort ein Standardwert, hast du einen Fall.
 
 Und es folgt etwas über die Methode: **ein Audit, das jede App für sich prüft, findet diese Klasse
 nie.** Der ursprüngliche Audit hat beide Hälften auch tatsächlich gemeldet — als zwei getrennte,
@@ -268,8 +278,8 @@ nebenbei getroffen werden:
    unbekanntem Slot ab, statt sie stillschweigend zu beschneiden. Beides ist vertretbar, das
    heutige Verhalten — annehmen und wegwerfen — ist es nicht.
 
-**Was das über abgebrochene Audits lehrt.** Über alle sechzehn Nachlesen hält dasselbe Muster: von
-den zwölf bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
+**Was das über abgebrochene Audits lehrt.** Über alle siebzehn Nachlesen hält dasselbe Muster: von
+den dreizehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
 
 - Inventar-Import: das Abweisen war richtig, das Schweigen falsch — der Hinweis rügte das Abweisen.
 - Template-Rekonstruktion: nicht die Zahl 50 war der Schaden, sondern ein einziges Feld.
