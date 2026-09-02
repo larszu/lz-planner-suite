@@ -170,7 +170,11 @@ export const dialogs: Record<string, string> = {
   'dlg.sch.exp.inventoryDesc': 'Quantities per type with power & weight – for ordering/prep.',
   'dlg.sch.exp.colors': 'Colour list (CSV)',
   'dlg.sch.exp.colorsDesc': 'Gel cuts per code – for colour ordering & prep.',
-  'dlg.sch.exp.mvrDesc': 'Rig with positions & patch – opens in Capture, grandMA3, WYSIWYG, Vectorworks, BlenderDMX.',
+  // ADR-005 — was "Rig", but the scene holds fixtures only; the truss IS
+  // the rig, so that wording promised what the file does not deliver.
+  'dlg.sch.exp.mvrDesc': 'Fixtures with positions & patch – opens in Capture, grandMA3, WYSIWYG, Vectorworks, BlenderDMX.',
+  'dlg.sch.exp.mvrNoTrusses': '{count} truss(es) not included',
+  'dlg.sch.exp.mvrNoTrussesHint': ' – MVR carries only the fixtures here.',
 
   // ── ScheduleDialog: chrome ──
   'dlg.sch.close': 'Close',

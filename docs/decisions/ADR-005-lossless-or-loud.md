@@ -97,7 +97,7 @@ Minuten geschrieben. Es wäre die ehrliche Beschreibung eines Zustands, den niem
 | --- | --- | --- |
 | 1 | Fremd-Domänen in `multicam-planner` und `light-planner` in die Projektdatei aufnehmen, mit Round-Trip-Test | Der einzige verifizierte Verlust *echter Nutzerdaten heute*. Ein Mechanismus, zwei Apps, und der Fix steht im `cable-planner` schon fertig da |
 | 2 | `light-planner`: die Venue-Projektion überschreibt die eigenen vollwertigen Wände nicht mehr | Ebenfalls heute und ebenfalls verifiziert, aber es betrifft eine App und braucht eine Feldzusammenführung statt eines zusätzlichen Feldes |
-| 3 | Die 63 ungeprüften Audit-Hinweise nachprüfen, jeden einzeln im Code — **läuft**, siehe Protokoll unten | Sie sind Hinweise, keine Befunde. Sie ungeprüft abzuarbeiten hieße, Arbeit an erfundenen Fehlern zu leisten — genau das, wovor die Regel schützt |
+| 3 | Die 63 ungeprüften Audit-Hinweise nachprüfen, jeden einzeln im Code — **abgeschlossen** nach 21 Nachlesen, siehe Protokoll unten | Sie sind Hinweise, keine Befunde. Sie ungeprüft abzuarbeiten hieße, Arbeit an erfundenen Fehlern zu leisten — genau das, wovor die Regel schützt |
 | 4 | Unbekannte `domains.*`-Slots und Wurzel-Keys bewahren (das `extra`-Muster für `.avplan`) | Braucht heute noch keine vierte App. Nach 1–3, weil hypothetischer Verlust nach echtem kommt |
 | 5 | Erfundene Werte an der Naht zwischen zwei Apps — `multicam#79`, `light#46` | **Fällt aus der Reihenfolge, weil es aus Inkrement 3 herausgewachsen ist.** Kein hypothetischer Fall: hier steht heute eine falsche Zahl in einer Datei, an der der Nachbar rechnet |
 
@@ -145,21 +145,21 @@ der nächsten Runde dieselbe Arbeit.
 | Der Videohub-Routing-Dump schreibt jeden Ausgang als entsperrt | **Bestätigt, behoben** in `cable-planner#621` — und der erste Befund dieser Runde, bei dem Information nicht verloren, sondern **erfunden** wird. `U` ist im Protokoll keine Leerstelle, sondern die Anweisung *zu entsperren*; der Dump ist zum Weiterverwenden gemacht (Zwischenablage, „Import routing"), und eine Sperre schützt typischerweise einen Live-Weg. Der Plan kennt keine Sperr-Absicht und hat sich eine ausgedacht, und zwar die gefährliche Richtung. |
 | Der Rentman-Importer baut für jeden Datensatz ein `raw`-Fach und liest es nie | **Hinweis hält nicht** — dritte Widerlegung, wieder über den Rückweg. `raw` wird an genau einer Stelle geschrieben und an keiner gelesen, erreicht aber nie die Persistenz, und der Export ist POST-only: der Quelldatensatz bleibt in Rentman. Grenze, kein Verlust. Bemerkenswert bleibt die **Umkehrung zum `.avsourcemap`-Fall**: dort ein Schlüssel, dessen Namen wir kennen und den wir nicht halten können; hier eine Tasche, die alles hält und nie geöffnet wird. Beide täuschen Sicherheit vor, aus entgegengesetzten Richtungen. |
 
-Zwischenstand nach zwanzig nachgeprüften Hinweisen: **sechzehn bestätigt, vier widerlegt.** Von den
-fünfzehn sind dreizehn behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`,
-`multicam#79`, `light#46`, `multicam#80`, `light#47`, `multicam#81`, `multicam#82`, `light#48`)
-und zwei gemeldet,
-aber noch nicht bewahrt (`#616`, `#618`) — beide, weil die Bewahrung eine Entscheidung braucht, die
-diesem Audit nicht gehört. Knapp ein Drittel der geprüften Hinweise hielt der Nachlese nicht stand;
-das ist der Grund, warum die 63 nicht ungeprüft in die Befundtabelle durften.
+Endstand nach **einundzwanzig** nachgeprüften Hinweisen: **siebzehn bestätigt, vier widerlegt.** Von
+den siebzehn sind fünfzehn behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`,
+`multicam#79`, `light#46`, `multicam#80`, `light#47`, `multicam#81`, `multicam#82`, `light#48`,
+`multicam#83`, `light#49`) und zwei gemeldet, aber noch nicht bewahrt (`#616`, `#618`) — beide, weil
+die Bewahrung eine Entscheidung braucht, die diesem Audit nicht gehört. Knapp ein Fünftel der
+geprüften Hinweise hielt der Nachlese nicht stand; das ist der Grund, warum die 63 nicht ungeprüft
+in die Befundtabelle durften.
 
 Alle vier Widerlegungen hatten dieselbe Ursache — der fehlende Rückweg. Die Triage-Regel unten hat
 sich damit vierfach bewährt und sollte am Anfang jeder weiteren Nachlese stehen.
 
 ### Die Triage-Regel, die sich daraus ergibt
 
-Beide Widerlegungen hatten dieselbe Ursache: der Audit hat „der Plan modelliert X nicht" mit „X ging
-verloren" verwechselt, weil er nie nach dem **Schreibpfad** gefragt hat.
+Alle vier Widerlegungen hatten dieselbe Ursache: der Audit hat „der Plan modelliert X nicht" mit
+„X ging verloren" verwechselt, weil er nie nach dem **Schreibpfad** gefragt hat.
 
 > **Erste Frage bei jedem verbleibenden Hinweis: gibt es überhaupt einen Rückweg?**
 > Ohne Exporter, ohne POST/PATCH, ohne Speichern in dasselbe Format kann nichts verloren gehen — das
@@ -296,6 +296,39 @@ gibt es im Test-Kontext nicht, und der alte Aufruf war nur nie aufgefallen, weil
 Ein Store darf nicht an einem DOM-Global hängen — `#617` hatte das schon richtig entschieden
 (Kanal, nicht Dialog). Gefangen hat es der *volle* Testlauf, nicht der auf die berührte Datei.
 
+### Abschluss von Inkrement 3 — und was ausdrücklich offen bleibt
+
+**Der MVR-Fall zeigt die Grenze der Triage-Regel.** Erste Frage: gibt es einen Rückweg? Nein — MVR
+ist ein reiner Ausgabeweg, es gibt keinen Importer, lights Traversen bleiben in der Projektdatei.
+Nach der Regel allein wäre der Fall erledigt. Er war es nicht: der Export-Dialog bewarb „Rig mit
+Positionen & Patch", und die Traverse **ist** das Rig (`light#49`).
+
+> „Kein Rückweg" beantwortet die Frage nach dem **Verlust**, nicht die nach der **Zusage**.
+> Eine Grenze berechtigt nicht zum Schweigen.
+
+**Jede der drei Methoden hat ihre eigene Blindstelle** — das gehört dazu, sonst liest sich die
+Methodik zu selbstsicher:
+
+| Methode | Findet | Übersieht |
+| --- | --- | --- |
+| Triage-Regel (Rückweg?) | falsche Verlust-Behauptungen | falsche **Zusagen** — genau der MVR-Fall |
+| Pfad-Durchgang | alles auf einem Datenpfad | was auf keinem liegt. Die beiden Regel-2-Fälle fielen nur an, weil sie zufällig auf dem Wand- und Personen-Pfad lagen |
+| Quer-Prüfung | dieselbe Konstruktion im Nachbarn | alles, wofür es noch keinen Fix als Anker gibt |
+
+**Bilanz.** Von den 63 Audit-Hinweisen wurden **21 nachgelesen.** Die restlichen rund 42 sind
+**nicht abgearbeitet — und sollen es auch nicht werden.**
+
+Das ist kein Aufgeben, sondern das Ergebnis: die schwersten Funde dieser Runde standen **gar nicht
+auf der Liste**. Der Regel-2-Fehler, der bei jedem Venue-Import die Wand-Muster des Nutzers löschte,
+und der ungelesene `repaired`-Zähler in MultiCam kamen beide aus dem Pfad-Durchgang und der
+Quer-Prüfung. Die Liste war der Anlass hinzusehen, nie die Landkarte.
+
+Wer weitermacht, arbeitet deshalb nicht die Restliste ab, sondern:
+
+1. geht **Datenpfade** ab — was passiert mit diesem Feld auf dem ganzen Weg?
+2. prüft **bestehende Fixes quer** — steht dieselbe Konstruktion im Nachbarn?
+3. fragt bei jedem Kandidaten nach **beidem**: gibt es einen Rückweg, und gibt es eine Zusage?
+
 ### Was daraus als Nächstes zu bauen ist
 
 **Ein Kanal für Lade-Hinweise — gebaut** in `cable-planner#617`. `healProjectPositions` war eine
@@ -360,8 +393,8 @@ nebenbei getroffen werden:
    unbekanntem Slot ab, statt sie stillschweigend zu beschneiden. Beides ist vertretbar, das
    heutige Verhalten — annehmen und wegwerfen — ist es nicht.
 
-**Was das über abgebrochene Audits lehrt.** Über alle zwanzig Nachlesen hält dasselbe Muster: von
-den sechzehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
+**Was das über abgebrochene Audits lehrt.** Über alle einundzwanzig Nachlesen hält dasselbe Muster:
+von den siebzehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
 
 - Inventar-Import: das Abweisen war richtig, das Schweigen falsch — der Hinweis rügte das Abweisen.
 - Template-Rekonstruktion: nicht die Zahl 50 war der Schaden, sondern ein einziges Feld.

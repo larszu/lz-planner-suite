@@ -377,7 +377,27 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       </div>
       <div className="export-row">
         <Icon name="cube3d" size={22} className="er-icon" />
-        <div className="er-text"><b>MVR (GDTF/MVR)</b><span>{t('dlg.sch.exp.mvrDesc', 'Rig mit Positionen & Patch – öffnet in Capture, grandMA3, WYSIWYG, Vectorworks, BlenderDMX.')}</span></div>
+        <div className="er-text">
+          <b>MVR (GDTF/MVR)</b>
+          <span>
+            {t('dlg.sch.exp.mvrDesc', 'Lampen mit Positionen & Patch – öffnet in Capture, grandMA3, WYSIWYG, Vectorworks, BlenderDMX.')}
+            {/* ADR-005, Regel 3 — die Szene enthaelt nur Fixtures. Vorher stand
+                hier „Rig", und die Traverse IST das Rig: der Nutzer bekam eine
+                Zusage, die die Datei nicht haelt. */}
+            {trusses.length > 0 && (
+              <>
+                {' '}
+                <b>
+                  {t('dlg.sch.exp.mvrNoTrusses', '{count} Traverse(n) sind nicht enthalten').replace(
+                    '{count}',
+                    String(trusses.length),
+                  )}
+                </b>
+                {t('dlg.sch.exp.mvrNoTrussesHint', ' – MVR bildet hier nur die Lampen ab.')}
+              </>
+            )}
+          </span>
+        </div>
         <button className="btn-secondary" onClick={exportMvr}>⬇ .mvr</button>
       </div>
     </div>
