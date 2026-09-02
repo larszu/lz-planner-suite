@@ -137,12 +137,21 @@ der nächsten Runde dieselbe Arbeit.
 | `exportGreengo` rebaut eine importierte `.gg5` aus benannten Properties | **Bestätigt — der schwerste Fall dieser Runde.** Anders als NetBox und GraphML hat Green-GO Importer *und* Exporter, also einen echten Round-Trip. `parseGg5File` liest `Settings`, `Users`, `Groups`; `exportGreengo` schreibt zusätzlich `Channels`, `SpecialChannels`, `ScriptSettings` und `UserSettings` aus **hartkodierten Defaults**. Importieren, eine Gruppe ändern, exportieren — und die Tastenbelegungen einer Intercom-Anlage kommen leer zurück. Der Modulkopf des Importers zählt „Devices, Rooms, Templates, …" sogar selbst auf. Gemeldet in `cable-planner#616`; die *Bewahrung* wartet auf eine Design-Entscheidung (siehe unten). |
 | `healProjectPositions` baut jede `sourceIdentity` aus einer festen Feldliste und löscht Rollen still | **Bestätigt, aber heute nicht nachweisbar auslösend.** `normaliseSourceIdentities` verwirft wortlos: eine Rolle ohne Namen, eine mit doppelter Id, und `clearDanglingIdentity` streicht danach die Verweise der Geräte darauf — eine Kamera verliert also ihre TSL-Adresse, ohne dass irgendwo etwas steht. Das ist Code aus ADR-001, und die Regel greift auf ihn genauso. Ausgelöst wird es aber nur von einem hand-editierten Projektfile, einem Merge-Konflikt in einer `.cp` oder einem Stand aus einer künftigen Version; die eigene Oberfläche erzeugt keine namenlose Rolle. Deshalb **nicht** vorgezogen: ADR-005 sortiert nach „real heute und billig", und dieser Fall ist real, aber nicht als heute auftretend belegt. Er braucht ohnehin etwas, das noch fehlt — einen Kanal für Lade-Hinweise, siehe unten. |
 | `buildSourceMap` stempelt jeden Wert als `planned`, `mergeSourceMap` liest `provenance` nie | **Bestätigt, gemeldet** in `cable-planner#618`. `.avsourcemap` ist beidseitig, also nach der Triage-Regel ein Kandidat — und der Verlust ist echt: ein von einer Runtime als `confirmed` gemeldeter Wert kommt als `planned` wieder heraus. Der Fund ist aber weniger die Zeile als der Grund, warum die vorhandene Schutzmaschinerie danebengreift: `collectExtra` hebt nur *unbekannte* Schlüssel ins `extra`-Fach, und `provenance` ist bekannt. **Ein Schlüssel, dessen Namen wir kennen und den wir trotzdem nicht halten können, ist schlimmer als ein unbekannter** — der Auffangmechanismus rettet, was er nicht versteht, und lässt fallen, was er benennen kann. Gemeldet statt verweigert: der Wert wird weiter übernommen, ein Test hält das fest. Die *Bewahrung* wäre ADR-003 Inkrement 2 (siehe unten). |
+| Kabel-Eimer legt N Rentman-Stammartikel auf eine Id, der Export bucht die volle Menge darauf | **Bestätigt, behoben** in `cable-planner#619` — aber nicht dort, wo der Hinweis zeigte. Rentman nimmt keinen Schaden (POST-only), und der Import-Dialog *sagt* die Zusammenfassung sogar („2 Einträge"). Der Fehler lag daneben: die übrigen Ids wurden beim Import weggeworfen, und der Export-Dialog baut seine Eimer aus dem Projektfile. Er **konnte** im Moment der Buchung strukturell nicht wissen, dass er auf einen von mehreren Artikeln bucht. Der Hinweis steht also dort, wo nichts passiert, und fehlte dort, wo gebucht wird. |
+| `healRentmanCableMap` baut jeden Eintrag aus zwei bekannten Schlüsseln neu — „kosmetisch, nur mit einem hypothetischen künftigen Feld" | **Bestätigt, und die Einstufung war der Fund.** Der Fix oben fügt genau dieses Feld hinzu. Damit wird aus der Kosmetik ein Verlust: **ein** altes Projektfile mit `lastSyncedQty` lässt `changed` greifen, und der Neuaufbau nimmt die Zusammenfassung beim nächsten Laden mit. Dieselbe Form steckte in `setMapping` und `sendBucket`, wo schon das erste Umzuordnen gereicht hätte. Lehre: ein „kosmetischer" Befund ist eine **Falle mit Zeitzünder** — er ist genau so lange harmlos, bis jemand das Feld hinzufügt, das ihn scharf macht. |
+| `toTemplateFromEquipment` verwirft „~50" Felder | **Bestätigt, behoben** in `cable-planner#620`; die Zahl trägt wieder nicht, die Struktur darunter schon. Drei Funktionen bauen ein Template aus einem `EquipmentItem` — 37, 23 und 15 Felder — und **die beiden kleineren sind echte Teilmengen der größten.** Keine weiss etwas, das der Cache nicht auch weiss; sie sind nicht anders gemeint, sondern ärmer. Weil `upsertCachedRentmanTemplate` *ersetzte*, gewann immer die ärmste Fassung, die zuletzt vorbeikam: „Als Template speichern" auf einem Rentman-Gerät löschte Rack-Höhe, Leistung, Gewicht und Tiefe — in einem projektübergreifenden Cache. Fortschreiben statt Ersetzen, dritte Anwendung derselben Regel. |
+| Der Synthese-Zweig in `healRentmanLibraryFromProject` nennt 15 Felder | **Bestätigt, behoben** im selben PR. Hier wird nichts zerstört, sondern zu arm *erzeugt*: die Vorlage entsteht neu (Fall #171 — fremder Rechner, geleerte Library), und wer danach eine zweite Kopie herauszieht, bekommt ein Gerät ohne Leistungsaufnahme, ohne Tiefe, ohne Katalog-Identität. Ergänzt wurden nur Felder, über die der Cache-Pfad in diesem Repo bereits entschieden hat — keine neue Klassifikation, sondern die drei Fassungen in Übereinstimmung gebracht. |
+| Der Videohub-Routing-Dump schreibt jeden Ausgang als entsperrt | **Bestätigt, behoben** in `cable-planner#621` — und der erste Befund dieser Runde, bei dem Information nicht verloren, sondern **erfunden** wird. `U` ist im Protokoll keine Leerstelle, sondern die Anweisung *zu entsperren*; der Dump ist zum Weiterverwenden gemacht (Zwischenablage, „Import routing"), und eine Sperre schützt typischerweise einen Live-Weg. Der Plan kennt keine Sperr-Absicht und hat sich eine ausgedacht, und zwar die gefährliche Richtung. |
+| Der Rentman-Importer baut für jeden Datensatz ein `raw`-Fach und liest es nie | **Hinweis hält nicht** — dritte Widerlegung, wieder über den Rückweg. `raw` wird an genau einer Stelle geschrieben und an keiner gelesen, erreicht aber nie die Persistenz, und der Export ist POST-only: der Quelldatensatz bleibt in Rentman. Grenze, kein Verlust. Bemerkenswert bleibt die **Umkehrung zum `.avsourcemap`-Fall**: dort ein Schlüssel, dessen Namen wir kennen und den wir nicht halten können; hier eine Tasche, die alles hält und nie geöffnet wird. Beide täuschen Sicherheit vor, aus entgegengesetzten Richtungen. |
 
-Zwischenstand nach sieben nachgeprüften Hinweisen: **fünf bestätigt, zwei widerlegt.** Von den fünf
-sind drei behoben (`#614`, `#615`, `#617`) und zwei gemeldet, aber noch nicht bewahrt (`#616`,
-`#618`) — beide, weil die Bewahrung eine Entscheidung braucht, die diesem Audit nicht gehört.
-Knapp ein Drittel der geprüften Hinweise hielt der Nachlese nicht stand; das ist der Grund, warum
-die 63 nicht ungeprüft in die Befundtabelle durften.
+Zwischenstand nach dreizehn nachgeprüften Hinweisen: **neun bestätigt, vier widerlegt.** Von den
+neun sind sieben behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`) und zwei gemeldet,
+aber noch nicht bewahrt (`#616`, `#618`) — beide, weil die Bewahrung eine Entscheidung braucht, die
+diesem Audit nicht gehört. Knapp ein Drittel der geprüften Hinweise hielt der Nachlese nicht stand;
+das ist der Grund, warum die 63 nicht ungeprüft in die Befundtabelle durften.
+
+Alle vier Widerlegungen hatten dieselbe Ursache — der fehlende Rückweg. Die Triage-Regel unten hat
+sich damit vierfach bewährt und sollte am Anfang jeder weiteren Nachlese stehen.
 
 ### Die Triage-Regel, die sich daraus ergibt
 
@@ -173,7 +182,33 @@ Heilungsschritte sind aber **nicht** blind anzuschliessen — erst ist je Schrit
 überhaupt etwas verwirft. Ein Kanal, der Meldungen über Nicht-Verluste trägt, ist so schädlich wie
 gar keiner: er gewöhnt den Nutzer daran, das Banner wegzuklicken.
 
-**Drei Design-Entscheidungen, die dem Eigentümer gehören** und die hier ausdrücklich *nicht*
+**Keine der drei Apps reicht eine unbekannte `.avplan`-Domäne durch.** Nachgelesen und nachgezählt:
+
+| App | `avForeign` |
+| --- | --- |
+| cable-planner | `{ venue?, cameras?, lighting? }` |
+| light-planner | `{ cameras?, cabling? }` |
+| multicam-planner | `{ lighting?, cabling? }` |
+
+Jede Fassung zählt genau die Slots auf, die sie kennt, und baut `domains` beim Export daraus neu.
+Eine `.avplan` mit einem vierten Slot — eine künftige Audio- oder Rigging-Domäne, eine App, die es
+noch nicht gibt — verliert ihn in **jeder** der drei Richtungen. Und `parseAvPlan` nimmt eine solche
+Datei überall an, statt sie abzulehnen: der Slot wird also weder bewahrt noch verweigert noch
+gemeldet — alle drei Auswege aus Regel 3 verfehlt.
+
+Eine frühere Fassung dieses Absatzes behauptete, cable-planner sei die einzige App ohne dieses
+Durchreichen und Inkrement 1 und 2 hätten es für die beiden anderen bereits gelöst. **Das war
+falsch.** Inkrement 1 (`multicam#78`) und Inkrement 2 (`light#44`) haben dafür gesorgt, dass die
+*bekannten* Fremd-Domänen ein natives Speichern überleben — nicht, dass eine *unbekannte* überlebt.
+Der Fehler ist derselbe, den dieses Protokoll den Audit-Hinweisen vorwirft: eine plausible
+Kausalkette, am Code nicht zu Ende geprüft.
+
+Damit ist das keine Nachzügler-Arbeit an einer App, sondern eine Lücke im geteilten Format. Und
+weil `AVPLAN_VERSION = 1` ein eingefrorener Draht-Vertrag ist, ist „unbekannte Slots müssen
+überleben" eine Zusage auf Vertragsebene — sie gehört entschieden, nicht in drei Repos nebenbei
+eingebaut. Siehe Design-Frage 4.
+
+**Vier Design-Entscheidungen, die dem Eigentümer gehören** und die hier ausdrücklich *nicht*
 nebenbei getroffen werden:
 
 1. Bleibt `exportGreengo` ein **Generator** (erzeugt eine frische Konfiguration aus dem Plan) oder
@@ -189,15 +224,37 @@ nebenbei getroffen werden:
    brauchen. Mit dem `.avsourcemap`-Fund liegt die zweite Stelle vor. Das ist die Voraussetzung
    dafür, dass aus der Meldung Bewahrung wird — aber es erweitert das Plan-Modell und gehört als
    solches entschieden, nicht als Nebenwirkung eines Verlust-Audits.
+4. Soll `.avplan` zusagen, **unbekannte Domänen-Slots verlustfrei durchzureichen**? Heute tut es
+   keine der drei Apps (siehe oben). Die Zusage wäre billig umzusetzen — ein opakes Fach je App —
+   aber sie bindet alle drei Implementierungen an eine Eigenschaft, die `AVPLAN_VERSION = 1` bisher
+   nicht verspricht. Die Alternative ist ehrlicher Widerspruch: `parseAvPlan` lehnt eine Datei mit
+   unbekanntem Slot ab, statt sie stillschweigend zu beschneiden. Beides ist vertretbar, das
+   heutige Verhalten — annehmen und wegwerfen — ist es nicht.
 
-**Was das über abgebrochene Audits lehrt.** Über alle sieben Nachlesen hält dasselbe Muster: von den
-fünf bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
-Beim Inventar-Import war das Abweisen richtig und das Schweigen falsch — der Hinweis rügte das
-Abweisen. Bei der Template-Rekonstruktion war nicht die Zahl 50 der Schaden, sondern ein einziges
-Feld. Bei `.avsourcemap` war die verlorene Provenienz nur der Anlass; der Fund war die Blindstelle
-im Auffangmechanismus. Und die beiden plausibelsten Hinweise der Runde waren die beiden falschen.
+**Was das über abgebrochene Audits lehrt.** Über alle dreizehn Nachlesen hält dasselbe Muster: von
+den neun bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
+
+- Inventar-Import: das Abweisen war richtig, das Schweigen falsch — der Hinweis rügte das Abweisen.
+- Template-Rekonstruktion: nicht die Zahl 50 war der Schaden, sondern ein einziges Feld.
+- `.avsourcemap`: die verlorene Provenienz war nur der Anlass; der Fund war die Blindstelle im
+  Auffangmechanismus.
+- Kabel-Eimer: der Hinweis zeigte auf den Import, der die Zusammenfassung sogar anzeigt; der Fehler
+  lag im Export, der sie nicht mehr wissen *konnte*.
+- Template-Cache: „~50 Felder" war wieder Rauschen; die Teilmengen-Beziehung der drei Fassungen war
+  das Argument.
+
+Und die plausibelsten Hinweise waren durchweg die falschen — alle vier Widerlegungen klangen
+überzeugender als die Treffer, weil sie eine saubere Kausalkette erzählten, die niemand am
+Rückweg geprüft hatte.
 
 > Ein Hinweis sagt zuverlässig, *wo* man nachsehen soll, und unzuverlässig, *was* dort falsch ist.
 
-Wer die Begründung mitübernimmt, baut den Fix für einen Fehler, den es nicht gibt — und bei drei von
-fünf Treffern hätte er dabei am eigentlichen Schaden vorbeigebaut.
+Wer die Begründung mitübernimmt, baut den Fix für einen Fehler, den es nicht gibt. In dieser Runde
+hätte er dabei mehrfach am eigentlichen Schaden vorbeigebaut — und im Fall des Videohub-Dumps sogar
+in die falsche Richtung: der naheliegende Fix (den beobachteten Sperrzustand einsetzen) hätte einen
+Verlust-Befund gegen einen Provenienz-Verstoss nach ADR-003 getauscht.
+
+**Ein Zusatz, der aus dieser Runde stammt:** eine als *kosmetisch* eingestufte Feststellung ist nicht
+erledigt, sondern **terminiert**. `healRentmanCableMap` war genau so lange harmlos, bis jemand das
+Feld hinzufügte, das sie scharf machte — und das war derselbe PR, der den Befund darüber behob. Wer
+eine solche Zeile abhakt, muss sie beim nächsten Schema-Zuwachs wiederfinden.

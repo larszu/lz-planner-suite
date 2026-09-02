@@ -719,7 +719,20 @@ const healRentmanCableMap = (
     const legacy = entry as { lastSentQty?: number; lastSyncedQty?: number }
     const sent = typeof legacy.lastSentQty === 'number' ? legacy.lastSentQty : legacy.lastSyncedQty
     if ('lastSyncedQty' in legacy) changed = true
+    // ADR-005 — Uebernehmen statt neu bauen. Diese Funktion listete frueher
+    // die beiden Schluessel auf, die sie kennt, und verwarf damit jeden
+    // dritten. Das war so lange folgenlos, wie es keinen dritten gab; mit
+    // `mergedEquipmentIds` gibt es einen, und ein alter Schluessel im File
+    // haette ihn beim naechsten Laden mitgenommen. Ein Migrationsschritt, der
+    // nur die Felder ueberleben laesst, die er beim Schreiben kannte, ist
+    // genau die Falle, gegen die dieser ADR geschrieben ist.
+    // Beide Mengen-Schluessel fallen hier raus und werden unten kontrolliert
+    // wieder gesetzt; alles andere bleibt unangetastet.
+    const { lastSyncedQty, lastSentQty, ...rest } = legacy as Record<string, unknown>
+    void lastSyncedQty
+    void lastSentQty
     healed[key] = {
+      ...(rest as (typeof healed)[string]),
       rentmanEquipmentId: entry.rentmanEquipmentId,
       ...(typeof sent === 'number' && Number.isFinite(sent) ? { lastSentQty: sent } : {}),
     }
@@ -804,6 +817,30 @@ const healRentmanLibraryFromProject = (
         rearPanelCrop: eq.rearPanelCrop,
         netboxPath: eq.netboxPath,
         notes: eq.notes,
+        // ADR-005 — Bis hierhin nannte dieser Zweig 15 Felder. Der
+        // Rentman-Template-Cache baut dasselbe aus 37, und diese 15 sind eine
+        // echte Teilmenge davon: der Synthese-Zweig weiss nichts, was der
+        // Cache nicht auch weiss. Er ist also nicht anders gemeint, sondern
+        // aermer — und wer danach eine zweite Kopie aus der Library zieht,
+        // bekommt ein Geraet ohne Leistungsaufnahme, ohne Tiefe und ohne
+        // Katalog-Identitaet.
+        //
+        // Ergaenzt werden hier die Modell-Eigenschaften: was ein Geraet WIEGT,
+        // WIE TIEF es ist und WAS es kann, haengt am Typ, nicht am Exemplar.
+        deviceTypeId: eq.deviceTypeId,
+        powerWatts: eq.powerWatts,
+        weightKg: eq.weightKg,
+        depthMm: eq.depthMm,
+        resolution: eq.resolution,
+        displaySizeInch: eq.displaySizeInch,
+        sdiCaps: eq.sdiCaps,
+        atemMvConfig: eq.atemMvConfig,
+        // Bewusst NICHT uebernommen: ipAddress, macAddress, username,
+        // password, gateway, vlans und die uebrige Netz-Identitaet. Die beiden
+        // anderen Rekonstruktionen tragen sie, aber eine Library-Vorlage mit
+        // fest eingebauter IP erzeugt beim zweiten Herausziehen einen
+        // Adresskonflikt. Ob das dort richtig ist, ist eine eigene Frage —
+        // sie hier nebenbei mitzuentscheiden waere falsch.
         rentmanId: rid,
         rentmanSource: projectRentmanId,
         rentmanProjectName: projectRentmanName,
