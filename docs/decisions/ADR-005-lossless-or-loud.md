@@ -145,7 +145,7 @@ der nächsten Runde dieselbe Arbeit.
 | Der Videohub-Routing-Dump schreibt jeden Ausgang als entsperrt | **Bestätigt, behoben** in `cable-planner#621` — und der erste Befund dieser Runde, bei dem Information nicht verloren, sondern **erfunden** wird. `U` ist im Protokoll keine Leerstelle, sondern die Anweisung *zu entsperren*; der Dump ist zum Weiterverwenden gemacht (Zwischenablage, „Import routing"), und eine Sperre schützt typischerweise einen Live-Weg. Der Plan kennt keine Sperr-Absicht und hat sich eine ausgedacht, und zwar die gefährliche Richtung. |
 | Der Rentman-Importer baut für jeden Datensatz ein `raw`-Fach und liest es nie | **Hinweis hält nicht** — dritte Widerlegung, wieder über den Rückweg. `raw` wird an genau einer Stelle geschrieben und an keiner gelesen, erreicht aber nie die Persistenz, und der Export ist POST-only: der Quelldatensatz bleibt in Rentman. Grenze, kein Verlust. Bemerkenswert bleibt die **Umkehrung zum `.avsourcemap`-Fall**: dort ein Schlüssel, dessen Namen wir kennen und den wir nicht halten können; hier eine Tasche, die alles hält und nie geöffnet wird. Beide täuschen Sicherheit vor, aus entgegengesetzten Richtungen. |
 
-Zwischenstand nach neunzehn nachgeprüften Hinweisen: **fünfzehn bestätigt, vier widerlegt.** Von den
+Zwischenstand nach zwanzig nachgeprüften Hinweisen: **sechzehn bestätigt, vier widerlegt.** Von den
 fünfzehn sind dreizehn behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`,
 `multicam#79`, `light#46`, `multicam#80`, `light#47`, `multicam#81`, `multicam#82`, `light#48`)
 und zwei gemeldet,
@@ -270,6 +270,32 @@ Drei wiederkehrende Formen, sortiert nach Häufigkeit:
 
 Nur Form 1 stand im Audit. Formen 2 und 3 kamen aus dem Pfad-Durchgang.
 
+### Die Quer-Prüfung: derselbe Fix, im Nachbarn nachgesehen
+
+Der Wand-Durchgang legte offen, dass `light#45` eine Regel-2-Stelle in light behoben hatte, ohne dass
+jemand dieselbe Konstruktion in MultiCam nachgesehen hätte — dort stand sie noch, in zwei Varianten.
+Daraus die dritte Methode dieser Untersuchung:
+
+> **Wo ein Fix in einer App gemacht wurde, prüfen, ob dieselbe Konstruktion im Nachbarn steht.**
+
+Erste Anwendung, auf `cable-planner#617` (Kanal für Lade-Hinweise, weil `healProjectPositions` still
+verwarf):
+
+| App | Ergebnis |
+| --- | --- |
+| cable-planner | der Ursprungsfall (`#617`) |
+| multicam-planner | **Treffer** (`multicam#83`). `dedupeIds` vergibt für jede doppelte Id eine frische — richtig, aber nicht folgenlos: der Modulkopf von `idRepair.ts` hält selbst fest, dass Shots, Takes und Presets an `VenueCamera.id` hängen und der Fokus-Lock an `ReferencePerson.id`. `DedupeResult.repaired` zählte das bereits und wurde **ausserhalb der Tests von keiner Zeile gelesen** |
+| light-planner | **sauber.** Der Loader weist ungültige Dateien mit einer Meldung ab, und `handleLoadProject` stellt Feld für Feld mit expliziten Standardwerten wieder her — keine stille Reparatur, kein Verwerfen |
+
+Der MultiCam-Fall ist die unangenehmste Sorte: **der Code kannte die Antwort schon.** Der Kommentar
+benannte die Folge, der Zähler war implementiert, die Tests prüften ihn — nur las ihn niemand.
+
+**Ein Umweg, der dazugehört.** Der erste Versuch meldete über `alert`, was dieselbe Funktion zwei
+Zeilen weiter oben für den Format-Fehler tut. Das liess einen *bestehenden* Test scheitern: `alert`
+gibt es im Test-Kontext nicht, und der alte Aufruf war nur nie aufgefallen, weil er dort nie feuert.
+Ein Store darf nicht an einem DOM-Global hängen — `#617` hatte das schon richtig entschieden
+(Kanal, nicht Dialog). Gefangen hat es der *volle* Testlauf, nicht der auf die berührte Datei.
+
 ### Was daraus als Nächstes zu bauen ist
 
 **Ein Kanal für Lade-Hinweise — gebaut** in `cable-planner#617`. `healProjectPositions` war eine
@@ -334,8 +360,8 @@ nebenbei getroffen werden:
    unbekanntem Slot ab, statt sie stillschweigend zu beschneiden. Beides ist vertretbar, das
    heutige Verhalten — annehmen und wegwerfen — ist es nicht.
 
-**Was das über abgebrochene Audits lehrt.** Über alle neunzehn Nachlesen hält dasselbe Muster: von
-den fünfzehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
+**Was das über abgebrochene Audits lehrt.** Über alle zwanzig Nachlesen hält dasselbe Muster: von
+den sechzehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
 
 - Inventar-Import: das Abweisen war richtig, das Schweigen falsch — der Hinweis rügte das Abweisen.
 - Template-Rekonstruktion: nicht die Zahl 50 war der Schaden, sondern ein einziges Feld.
