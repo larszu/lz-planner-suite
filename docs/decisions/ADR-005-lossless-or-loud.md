@@ -136,10 +136,13 @@ der nächsten Runde dieselbe Arbeit.
 | `graphml/semantics` verliert custom node/edge data beim Rebuild | **Hinweis hält nicht, aus demselben Grund wie NetBox.** GraphML ist rein lesend: die einzige IPC-Fläche ist `graphml:open-file`, einen Export gibt es nicht. Die Quelldatei bleibt, wo sie ist, und die importierten Elemente tragen `graphmlId` / `graphmlEdgeId` als Rückverweis. Grenze, kein Verlust. |
 | `exportGreengo` rebaut eine importierte `.gg5` aus benannten Properties | **Bestätigt — der schwerste Fall dieser Runde.** Anders als NetBox und GraphML hat Green-GO Importer *und* Exporter, also einen echten Round-Trip. `parseGg5File` liest `Settings`, `Users`, `Groups`; `exportGreengo` schreibt zusätzlich `Channels`, `SpecialChannels`, `ScriptSettings` und `UserSettings` aus **hartkodierten Defaults**. Importieren, eine Gruppe ändern, exportieren — und die Tastenbelegungen einer Intercom-Anlage kommen leer zurück. Der Modulkopf des Importers zählt „Devices, Rooms, Templates, …" sogar selbst auf. Gemeldet in `cable-planner#616`; die *Bewahrung* wartet auf eine Design-Entscheidung (siehe unten). |
 | `healProjectPositions` baut jede `sourceIdentity` aus einer festen Feldliste und löscht Rollen still | **Bestätigt, aber heute nicht nachweisbar auslösend.** `normaliseSourceIdentities` verwirft wortlos: eine Rolle ohne Namen, eine mit doppelter Id, und `clearDanglingIdentity` streicht danach die Verweise der Geräte darauf — eine Kamera verliert also ihre TSL-Adresse, ohne dass irgendwo etwas steht. Das ist Code aus ADR-001, und die Regel greift auf ihn genauso. Ausgelöst wird es aber nur von einem hand-editierten Projektfile, einem Merge-Konflikt in einer `.cp` oder einem Stand aus einer künftigen Version; die eigene Oberfläche erzeugt keine namenlose Rolle. Deshalb **nicht** vorgezogen: ADR-005 sortiert nach „real heute und billig", und dieser Fall ist real, aber nicht als heute auftretend belegt. Er braucht ohnehin etwas, das noch fehlt — einen Kanal für Lade-Hinweise, siehe unten. |
+| `buildSourceMap` stempelt jeden Wert als `planned`, `mergeSourceMap` liest `provenance` nie | **Bestätigt, gemeldet** in `cable-planner#618`. `.avsourcemap` ist beidseitig, also nach der Triage-Regel ein Kandidat — und der Verlust ist echt: ein von einer Runtime als `confirmed` gemeldeter Wert kommt als `planned` wieder heraus. Der Fund ist aber weniger die Zeile als der Grund, warum die vorhandene Schutzmaschinerie danebengreift: `collectExtra` hebt nur *unbekannte* Schlüssel ins `extra`-Fach, und `provenance` ist bekannt. **Ein Schlüssel, dessen Namen wir kennen und den wir trotzdem nicht halten können, ist schlimmer als ein unbekannter** — der Auffangmechanismus rettet, was er nicht versteht, und lässt fallen, was er benennen kann. Gemeldet statt verweigert: der Wert wird weiter übernommen, ein Test hält das fest. Die *Bewahrung* wäre ADR-003 Inkrement 2 (siehe unten). |
 
-Zwischenstand nach sechs nachgeprüften Hinweisen: **drei bestätigt, zwei widerlegt, einer bestätigt
-aber nicht als heute auftretend belegt.** Genau dieses Verhältnis ist der Grund, warum die 63 nicht
-ungeprüft in die Befundtabelle durften.
+Zwischenstand nach sieben nachgeprüften Hinweisen: **fünf bestätigt, zwei widerlegt.** Von den fünf
+sind drei behoben (`#614`, `#615`, `#617`) und zwei gemeldet, aber noch nicht bewahrt (`#616`,
+`#618`) — beide, weil die Bewahrung eine Entscheidung braucht, die diesem Audit nicht gehört.
+Knapp ein Drittel der geprüften Hinweise hielt der Nachlese nicht stand; das ist der Grund, warum
+die 63 nicht ungeprüft in die Befundtabelle durften.
 
 ### Die Triage-Regel, die sich daraus ergibt
 
@@ -157,12 +160,20 @@ echten Verlusten gehört in die zweite Gruppe.
 
 ### Was daraus als Nächstes zu bauen ist
 
-**Ein Kanal für Lade-Hinweise.** `healProjectPositions` ist eine reine Funktion ohne Weg zur
-Oberfläche; alles, was sie verwirft, verschwindet definitionsgemäß still. Solange dieser Kanal
-fehlt, kann Regel 3 auf dem Lade-Pfad gar nicht erfüllt werden. Er ist die Voraussetzung für den
-`sourceIdentity`-Fall und für jeden weiteren Fund in `healProjectPositions`.
+**Ein Kanal für Lade-Hinweise — gebaut** in `cable-planner#617`. `healProjectPositions` war eine
+reine Funktion ohne Weg zur Oberfläche; alles, was sie verwarf, verschwand definitionsgemäß still,
+und Regel 3 war auf dem Lade-Pfad damit gar nicht erfüllbar. Der Kanal ist bewusst schmal gehalten:
+der Grund steht als **Code, nicht als Satz** (`missing-required`, `duplicate-id`) — der Store kennt
+keine Sprache, die Formulierung gehört in die Oberfläche. Der Sammler ist optional; wird er nicht
+übergeben, ändert sich kein Verhalten. Der Bericht wandert **nicht** ins Projektfile: er beschreibt
+einen Ladevorgang, nicht das Projekt.
 
-**Zwei Design-Entscheidungen, die dem Eigentümer gehören** und die hier ausdrücklich *nicht*
+Damit ist der Weg für jeden weiteren Fund in `healProjectPositions` offen. Die übrigen
+Heilungsschritte sind aber **nicht** blind anzuschliessen — erst ist je Schritt zu prüfen, ob er
+überhaupt etwas verwirft. Ein Kanal, der Meldungen über Nicht-Verluste trägt, ist so schädlich wie
+gar keiner: er gewöhnt den Nutzer daran, das Banner wegzuklicken.
+
+**Drei Design-Entscheidungen, die dem Eigentümer gehören** und die hier ausdrücklich *nicht*
 nebenbei getroffen werden:
 
 1. Bleibt `exportGreengo` ein **Generator** (erzeugt eine frische Konfiguration aus dem Plan) oder
@@ -173,8 +184,20 @@ nebenbei getroffen werden:
    welche **Instanz**-Eigenschaften (`assetTag`, `serialNumber`, `qrId`, `installStatus`,
    `videohubRouting` …)? Die erste Gruppe läuft in Stücklisten weiter; eine falsche Zuordnung
    propagiert still falsche Preise — also genau der Schaden, gegen den dieser ADR geschrieben ist.
+3. Soll **ADR-003 Inkrement 2** (Provenienz im Plan-Modell) jetzt gebaut werden? Es wurde dort mit
+   der Begründung zurückgestellt, eine Verallgemeinerung lohne erst, wenn *zwei* Stellen sie
+   brauchen. Mit dem `.avsourcemap`-Fund liegt die zweite Stelle vor. Das ist die Voraussetzung
+   dafür, dass aus der Meldung Bewahrung wird — aber es erweitert das Plan-Modell und gehört als
+   solches entschieden, nicht als Nebenwirkung eines Verlust-Audits.
 
-**Was das über abgebrochene Audits lehrt.** Beide bestätigten Hinweise trafen den richtigen Ort mit
-der falschen Begründung, und der widerlegte klang von allen dreien am plausibelsten. Ein Hinweis
-sagt zuverlässig, *wo* man nachsehen soll, und unzuverlässig, *was* dort falsch ist. Wer die
-Begründung mitübernimmt, baut den Fix für einen Fehler, den es nicht gibt.
+**Was das über abgebrochene Audits lehrt.** Über alle sieben Nachlesen hält dasselbe Muster: von den
+fünf bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
+Beim Inventar-Import war das Abweisen richtig und das Schweigen falsch — der Hinweis rügte das
+Abweisen. Bei der Template-Rekonstruktion war nicht die Zahl 50 der Schaden, sondern ein einziges
+Feld. Bei `.avsourcemap` war die verlorene Provenienz nur der Anlass; der Fund war die Blindstelle
+im Auffangmechanismus. Und die beiden plausibelsten Hinweise der Runde waren die beiden falschen.
+
+> Ein Hinweis sagt zuverlässig, *wo* man nachsehen soll, und unzuverlässig, *was* dort falsch ist.
+
+Wer die Begründung mitübernimmt, baut den Fix für einen Fehler, den es nicht gibt — und bei drei von
+fünf Treffern hätte er dabei am eigentlichen Schaden vorbeigebaut.
