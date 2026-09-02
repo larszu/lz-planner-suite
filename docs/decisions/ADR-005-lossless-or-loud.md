@@ -97,7 +97,7 @@ Minuten geschrieben. Es wäre die ehrliche Beschreibung eines Zustands, den niem
 | --- | --- | --- |
 | 1 | Fremd-Domänen in `multicam-planner` und `light-planner` in die Projektdatei aufnehmen, mit Round-Trip-Test | Der einzige verifizierte Verlust *echter Nutzerdaten heute*. Ein Mechanismus, zwei Apps, und der Fix steht im `cable-planner` schon fertig da |
 | 2 | `light-planner`: die Venue-Projektion überschreibt die eigenen vollwertigen Wände nicht mehr | Ebenfalls heute und ebenfalls verifiziert, aber es betrifft eine App und braucht eine Feldzusammenführung statt eines zusätzlichen Feldes |
-| 3 | Die 63 ungeprüften Audit-Hinweise nachprüfen, jeden einzeln im Code | Sie sind Hinweise, keine Befunde. Sie ungeprüft abzuarbeiten hieße, Arbeit an erfundenen Fehlern zu leisten — genau das, wovor die Regel schützt |
+| 3 | Die 63 ungeprüften Audit-Hinweise nachprüfen, jeden einzeln im Code — **läuft**, siehe Protokoll unten | Sie sind Hinweise, keine Befunde. Sie ungeprüft abzuarbeiten hieße, Arbeit an erfundenen Fehlern zu leisten — genau das, wovor die Regel schützt |
 | 4 | Unbekannte `domains.*`-Slots und Wurzel-Keys bewahren (das `extra`-Muster für `.avplan`) | Braucht heute noch keine vierte App. Nach 1–3, weil hypothetischer Verlust nach echtem kommt |
 
 Inkrement 4 bewusst zuletzt: es war die Ausgangshypothese dieses ADRs und stellte sich als der
@@ -120,3 +120,24 @@ Inkrement 3 in der Reihenfolge und nicht in der Befundtabelle.
 Lesen in ein `extra`-Fach — aber kein Schreiber gibt sie je aus. Der Teil, der wirklich trägt, ist
 ein anderer: `unrepresented` sagt dem Nutzer, was nicht mitkam. Beim ersten Hinsehen war das eine
 Nebensache neben dem `extra`-Fach; beim Nachlesen ist es die Hauptsache.
+
+## Protokoll der Nachprüfung (Inkrement 3)
+
+Jeder Hinweis wird einzeln im Code nachgelesen, bevor ein Satz daraus zur Tatsache wird. Das
+Ergebnis steht hier — auch dann, wenn es „Hinweis hält nicht" lautet, denn ein Freispruch erspart
+der nächsten Runde dieselbe Arbeit.
+
+| Hinweis | Ergebnis |
+| --- | --- |
+| `inventoryStore.importSnapshot` verwirft ganze Entitäten still und meldet nur die Überlebenden | **Bestätigt, behoben** in `cable-planner#614`. Aber anders als behauptet: das *Abweisen* ist richtig — ein Lagerort ohne Namen ist kein Lagerort. Falsch war das Verschweigen. Der Import liefert jetzt einen Bericht mit einem wiederauffindbaren Griff je abgewiesener Zeile, und der Dialog wechselt auf Warnton statt grün zu melden. Der bestehende Test hatte das Schweigen als Sollverhalten festgeschrieben. |
+| `rentmanTemplateCache.toTemplateFromEquipment` baut aus 36 benannten Keys neu und verwirft ~50 | **Bestätigt, aber die Zahl trägt nicht.** 97 Felder auf `EquipmentItem`, 36 kopiert, 58 nicht. Der grösste Teil davon *gehört* nicht in ein Template: `assetTag`, `serialNumber`, `qrId`, `installStatus`, `videohubRouting` sind Instanz-Eigenschaften, sie zu kopieren wäre der umgekehrte Fehler. Der echte Schaden ist **ein einziges Feld**: `deviceTypeId`. Behoben in `cable-planner#615`. |
+| `netboxMapping` baut den `EquipmentItem` aus benannten Properties, `custom_fields`, `tags`, `comments`, `status`, `tenant` erreichen den Plan nie | **Hinweis hält nicht.** Zwei Gründe. Erstens erreichen die genannten Datenblatt-Felder den Plan sehr wohl: `serial`, `asset_tag`, `description` und Hersteller/Modell wandern in einen quellenbenannten `notes`-Block, das Modell zusätzlich in `subtitle`. Zweitens — und das entscheidet — ist die NetBox-Anbindung **lesend**: der API-Client kennt kein POST, PATCH, PUT oder DELETE, die IPC-Fläche besteht aus Token-Verwaltung, Verbindungstest und Abruf. Es gibt keinen Rückweg, auf dem etwas verloren gehen könnte. NetBox bleibt das führende System; der Plan modelliert einen Ausschnitt. Das ist eine **Grenze, kein Verlust** — dieselbe Unterscheidung wie beim `.gg5`-Export in ADR-003. |
+
+Zwischenstand nach drei nachgeprüften Hinweisen: zwei bestätigt (beide **anders** als behauptet),
+einer widerlegt. Genau dieses Verhältnis ist der Grund, warum die 63 nicht ungeprüft in die
+Befundtabelle durften.
+
+**Was das über abgebrochene Audits lehrt.** Beide bestätigten Hinweise trafen den richtigen Ort mit
+der falschen Begründung, und der widerlegte klang von allen dreien am plausibelsten. Ein Hinweis
+sagt zuverlässig, *wo* man nachsehen soll, und unzuverlässig, *was* dort falsch ist. Wer die
+Begründung mitübernimmt, baut den Fix für einen Fehler, den es nicht gibt.
