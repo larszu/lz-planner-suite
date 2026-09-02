@@ -11,7 +11,9 @@ import {
   type ForeignStageFields,
   type ForeignFloorPlanFields,
   type ForeignWallFields,
+  type ForeignPersonFields,
   mergeOwnWallFields,
+  mergeOwnPersonFields,
 } from '../utils/venueExchange';
 import type { AvPlan } from '../utils/avplan';
 import { alertDialog } from '@avplan/ui';
@@ -42,6 +44,7 @@ export function buildProjectFile(s: {
   stageForeign: Record<string, ForeignStageFields>;
   floorPlanForeign: ForeignFloorPlanFields;
   wallForeign: Record<string, ForeignWallFields>;
+  personForeign: Record<string, ForeignPersonFields>;
 }): ProjectFile {
   return {
     formatVersion: 1,
@@ -68,6 +71,9 @@ export function buildProjectFile(s: {
       : {}),
     ...(Object.keys(s.wallForeign ?? {}).length > 0
       ? { wallForeign: s.wallForeign }
+      : {}),
+    ...(Object.keys(s.personForeign ?? {}).length > 0
+      ? { personForeign: s.personForeign }
       : {}),
   };
 }
@@ -223,6 +229,7 @@ interface AppState {
   stageForeign: Record<string, ForeignStageFields>;
   floorPlanForeign: ForeignFloorPlanFields;
   wallForeign: Record<string, ForeignWallFields>;
+  personForeign: Record<string, ForeignPersonFields>;
   /** Importiert ein .avplan-Gesamtprojekt: laedt den cameras-Slot nativ,
    *  ueberlagert den geteilten Raum und bewahrt lighting/cabling verlustfrei. */
   importAvPlan: (avplan: AvPlan) => void;
@@ -1017,6 +1024,7 @@ export const useStore = create<AppState>((set, get) => ({
       stageForeign: project.stageForeign ?? {},
       floorPlanForeign: project.floorPlanForeign ?? {},
       wallForeign: project.wallForeign ?? {},
+      personForeign: project.personForeign ?? {},
     });
   },
 
@@ -1024,7 +1032,10 @@ export const useStore = create<AppState>((set, get) => ({
     // ADR-005, Regel 2 — die Projektion ist fuer Existenz und Geometrie
     // kanonisch, traegt aber MultiCams Wand-Muster nicht. Ohne die
     // Zusammenfuehrung loeschte jeder Venue-Import sie.
-    const r = mergeOwnWallFields(fromVenueExchange(ex), { walls: get().walls });
+    const r = mergeOwnPersonFields(
+      mergeOwnWallFields(fromVenueExchange(ex), { walls: get().walls }),
+      { persons: get().persons },
+    );
     // Wie beim Laden eines Plans (#72): der Austausch bringt fremde Ids mit,
     // die Zaehler muessen dahinter stehen, sonst kollidiert das naechste neue
     // Objekt mit einem importierten.
@@ -1039,6 +1050,7 @@ export const useStore = create<AppState>((set, get) => ({
       stageForeign: r.stageForeign,
       floorPlanForeign: r.floorPlanForeign,
       wallForeign: r.wallForeign,
+      personForeign: r.personForeign,
       projectVersion: s.projectVersion + 1,
     }));
   },
@@ -1047,6 +1059,7 @@ export const useStore = create<AppState>((set, get) => ({
   stageForeign: {},
   floorPlanForeign: {},
   wallForeign: {},
+  personForeign: {},
   importAvPlan: (avplan) => {
     const cameras = avplan.domains.cameras as ProjectFile | undefined;
     if (cameras) get().applyProjectFile(cameras);

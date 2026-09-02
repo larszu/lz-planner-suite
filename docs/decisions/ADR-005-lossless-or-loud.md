@@ -145,9 +145,10 @@ der nächsten Runde dieselbe Arbeit.
 | Der Videohub-Routing-Dump schreibt jeden Ausgang als entsperrt | **Bestätigt, behoben** in `cable-planner#621` — und der erste Befund dieser Runde, bei dem Information nicht verloren, sondern **erfunden** wird. `U` ist im Protokoll keine Leerstelle, sondern die Anweisung *zu entsperren*; der Dump ist zum Weiterverwenden gemacht (Zwischenablage, „Import routing"), und eine Sperre schützt typischerweise einen Live-Weg. Der Plan kennt keine Sperr-Absicht und hat sich eine ausgedacht, und zwar die gefährliche Richtung. |
 | Der Rentman-Importer baut für jeden Datensatz ein `raw`-Fach und liest es nie | **Hinweis hält nicht** — dritte Widerlegung, wieder über den Rückweg. `raw` wird an genau einer Stelle geschrieben und an keiner gelesen, erreicht aber nie die Persistenz, und der Export ist POST-only: der Quelldatensatz bleibt in Rentman. Grenze, kein Verlust. Bemerkenswert bleibt die **Umkehrung zum `.avsourcemap`-Fall**: dort ein Schlüssel, dessen Namen wir kennen und den wir nicht halten können; hier eine Tasche, die alles hält und nie geöffnet wird. Beide täuschen Sicherheit vor, aus entgegengesetzten Richtungen. |
 
-Zwischenstand nach achtzehn nachgeprüften Hinweisen: **vierzehn bestätigt, vier widerlegt.** Von den
-vierzehn sind zwölf behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`, `multicam#79`,
-`light#46`, `multicam#80`, `light#47`, `multicam#81`) und zwei gemeldet,
+Zwischenstand nach neunzehn nachgeprüften Hinweisen: **fünfzehn bestätigt, vier widerlegt.** Von den
+fünfzehn sind dreizehn behoben (`#614`, `#615`, `#617`, `#619` ×2, `#620` ×2, `#621`,
+`multicam#79`, `light#46`, `multicam#80`, `light#47`, `multicam#81`, `multicam#82`, `light#48`)
+und zwei gemeldet,
 aber noch nicht bewahrt (`#616`, `#618`) — beide, weil die Bewahrung eine Entscheidung braucht, die
 diesem Audit nicht gehört. Knapp ein Drittel der geprüften Hinweise hielt der Nachlese nicht stand;
 das ist der Grund, warum die 63 nicht ungeprüft in die Befundtabelle durften.
@@ -235,6 +236,40 @@ harmlos klingende Zeilen in zwei verschiedenen Repos. Erst nebeneinander gelegt 
 Fehler. Wer die nächste Runde plant, sollte die Hinweise deshalb **nach Datenpfad** gruppieren, nicht
 nach Datei.
 
+### Die Venue-Austausch-Fläche, vollständig abgegangen
+
+Nach dem Wand-Durchgang wurde nicht mehr die Hinweisliste abgearbeitet, sondern **jeder Pfad des
+geteilten Raums** — bis keiner mehr offen war. Das Ergebnis:
+
+| Pfad | Ergebnis |
+| --- | --- |
+| Bühnen-Höhe | `multicam#79` |
+| Raum-Maße | `light#46` |
+| Gebäudeplan (Herkunft, Seite, Name, Sperre) | `multicam#80` |
+| Bühnen-Objekt-Art | `light#47` |
+| Wände — Muster (Regel 2), Krümmung + Reflexion (Naht), Farbe (vergessen) | `multicam#81` |
+| Pose und Blickrichtung (Naht), eigene Sperre (Regel 2) | `multicam#82` |
+| Raum-Name | `light#48` |
+| Gebäudeplan, Gegenrichtung | **sauber** — light schreibt und liest alle Felder, die Maßstabs-Umrechnung ist eine exakte Inverse |
+| Bühnen, Gegenrichtung | **sauber** — das Austauschformat hat gar kein `type`-Feld; die eine echte Folge hatte `light#45` schon behoben |
+
+**Zwei von neun Pfaden brauchten keinen Fix.** Das gehört mit ins Ergebnis: ein abgegangener Pfad
+ohne Fund ist eine Aussage, ein nicht abgegangener ist keine. Ohne diese beiden Zeilen sieht die
+nächste Runde dort noch einmal nach.
+
+Drei wiederkehrende Formen, sortiert nach Häufigkeit:
+
+1. **Naht** — eine App modelliert ein Feld nicht, die andere setzt beim Import einen Standardwert
+   ein. Sechs Fälle.
+2. **Regel 2** — `importVenueExchange` setzte jede Liste im Ganzen neu und löschte damit, was das
+   Austauschformat nicht tragen kann (Wand-Muster, Objekt-Sperren). Zwei Fälle, beide in MultiCam,
+   beide von derselben Konstruktion. `light#45` hatte dieselbe Stelle in light schon behoben — das
+   war der Hinweis, den niemand auf MultiCam übertragen hatte.
+3. **Schlicht vergessen** — ein Feld, das beide Seiten modellieren und das trotzdem niemand
+   schreibt (`Wall.color`). Ein Fall.
+
+Nur Form 1 stand im Audit. Formen 2 und 3 kamen aus dem Pfad-Durchgang.
+
 ### Was daraus als Nächstes zu bauen ist
 
 **Ein Kanal für Lade-Hinweise — gebaut** in `cable-planner#617`. `healProjectPositions` war eine
@@ -299,8 +334,8 @@ nebenbei getroffen werden:
    unbekanntem Slot ab, statt sie stillschweigend zu beschneiden. Beides ist vertretbar, das
    heutige Verhalten — annehmen und wegwerfen — ist es nicht.
 
-**Was das über abgebrochene Audits lehrt.** Über alle achtzehn Nachlesen hält dasselbe Muster: von
-den vierzehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
+**Was das über abgebrochene Audits lehrt.** Über alle neunzehn Nachlesen hält dasselbe Muster: von
+den fünfzehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.
 
 - Inventar-Import: das Abweisen war richtig, das Schweigen falsch — der Hinweis rügte das Abweisen.
 - Template-Rekonstruktion: nicht die Zahl 50 war der Schaden, sondern ein einziges Feld.
