@@ -66,7 +66,7 @@ ausgegebener Wert, der es nicht ist, ist der Schaden.
 | --- | --- | --- |
 | 0 | Videohub-Status-Read entkoppeln | War ein aktiver Datenverlust — erledigt in `cable-planner#610` |
 | 1 | Rentman-Zähler: Startwert aus Rentmans eigener Menge statt aus der Planmenge, Feld zu `lastSentQty` umbenennen (mit Migration) — erledigt in `cable-planner#611` | Der Startwert ist der eigentliche Fehler; die Umbenennung macht ihn für den nächsten Entwickler unwiederholbar |
-| 2 | Provenienz-Anzeige als geteiltes UI-Element | Erst wenn zwei Stellen sie brauchen, lohnt die Verallgemeinerung |
+| 2 | Provenienz-Anzeige als geteiltes UI-Element — erledigt in `cable-planner#643`, Zuschnitt gemessen statt angenommen (siehe unten) | Erst wenn zwei Stellen sie brauchen, lohnt die Verallgemeinerung |
 | 3 | `sony-camera-bridge`: `BridgeTallyState` gegen die Regel prüfen — geprüft, Ergebnis unten | Anderes Repo, eigener Rhythmus |
 
 Inkrement 2 bewusst nicht zuerst: Ein gemeinsames Provenienz-Badge zu bauen, bevor der zweite
@@ -127,3 +127,48 @@ Nicht gebaut, und der Grund gehört dazu: der Entwicklungszweig dieses Repos tr�
 offenen Lizenz-PR (`sony-camera-bridge#8`), der eine Entscheidung des Eigentümers braucht. Einen
 sachfremden Fix daraufzusetzen würde diese Entscheidung mit fremdem Inhalt vermengen. Der Fix wartet
 darauf, dass der Zweig frei ist — er ist klein und hängt an nichts anderem.
+
+
+## Inkrement 2 — und warum das Messen den Zuschnitt geändert hat
+
+Gebaut in `cable-planner#643`, nachdem der Eigentümer die Zurückstellung aufgehoben hatte.
+
+Die Zurückstellung oben lautete: *„Ein gemeinsames Provenienz-Badge zu bauen, bevor der zweite
+Anwendungsfall existiert, wäre eine Abstraktion auf Verdacht."* Vor dem Bau wurden die Stellen
+deshalb **gemessen**, statt sie anzunehmen — und das Ergebnis hat den Zuschnitt geändert.
+
+**Es sind zwei Formen, nicht eine.**
+
+| Form | Aussage | Belegte Stellen |
+| --- | --- | --- |
+| Wert mit Herkunft | „diese Zahl wurde abgeschickt, nicht bestätigt" | Rentman `lastSentQty`, `portsUnknown`, `BridgeTallyState` (sony-camera-bridge) |
+| Liste des Nichtbestimmbaren | „das hier kam nicht durch" | `sourceMap.unresolved`, `changeImpact` `unknown`, `planDiff.unclassified` |
+
+Dieser ADR erwartete **eine** Verallgemeinerung. Es sind zwei, und nur die erste ist das, was er
+„Provenienz-Anzeige" nennt. Die zweite ist bereits **dreimal unabhängig gebaut** und funktioniert;
+sie mit hineinzuziehen wäre genau die Abstraktion auf Verdacht, gegen die die Zurückstellung
+geschrieben war. Inkrement 2 bekam deshalb ausdrücklich nur die erste, und ein Test hält den
+Zuschnitt fest.
+
+### Warum kein Provenienz-Feld je Datensatz
+
+Der naheliegende Bau wäre `{ value, provenance }` überall gewesen — eine Schema-Migration durch
+alle drei Apps. Beim Nachsehen zeigte sich: **die Stellen tragen ihre Herkunft längst**, nur
+implizit. `lastSentQty` heißt so, *weil* es abgeschickt wurde; `portsUnknown` *ist* die
+Unbekannt-Markierung.
+
+Ein Provenienz-Feld daneben wäre ein **zweiter Ort für dieselbe Wahrheit** gewesen — und zwei Orte
+laufen auseinander. Das ist keine Vermutung: der Zugangsdaten-Rundgang derselben Woche
+(`cable-planner#640`) hatte genau diesen Fehlermodus als Ursache, weil `stripSecrets` als
+ungeprüfte Kopie in zwei Dateien lag.
+
+Gebaut wurde stattdessen ein Vokabular (`unknown | planned | commanded | confirmed`), eine
+Deklarationsliste als Daten, und ein Badge, das bei `planned` **nichts** rendert — ein Badge an
+jedem Wert wäre dasselbe wie an keinem. **Keine Schema-Migration, kein Format-Eingriff.**
+
+### Inkrement 3 ist damit auch belegt
+
+Der Tally-Fund aus der Zeile darüber ist in `sony-camera-bridge#9` behoben: `BridgeTallyState`
+führt `undefined` als eigenen Wert, es gibt ein `tally_unknown`-Feedback für den Fall, den
+boolesche Lampen nicht ausdrücken können, und ein Toggle unterbleibt bei unbestätigtem Zustand —
+`!undefined` wäre `true` gewesen und hätte die Kamera aus purer Unkenntnis auf Sendung geschaltet.

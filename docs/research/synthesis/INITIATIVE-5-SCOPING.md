@@ -131,3 +131,53 @@ statt 97, und ohne Fehlermeldung. Aufgefallen ist es nur, weil die Zahl gegen de
 gehalten wurde statt geglaubt. Der bestehende `interfaceKeys` bleibt unangetastet: er ist
 zeichengleich zur Kopie im multicam-planner, und dieses „wortgleich nachprüfbar" ist mehr wert als
 eine Erweiterung.
+
+
+---
+
+## Gebaut (2026-09-03): das Register steht, Initiative 5 ist ganz
+
+Der Eigentümer hat entschieden: **getrennte Protokolldatei plus einsehbares Log im Menü.**
+Gebaut in `cable-planner#644`.
+
+**Die Entscheidung hat drei der vier Fragen oben gegenstandslos gemacht**, statt sie zu
+beantworten — und das ist der interessanteste Teil daran:
+
+| Frage | Was aus ihr wurde |
+| --- | --- |
+| 1. Wohin? | beantwortet: neben die App, nicht in den Plan |
+| 2. Was beim Zusammenführen? | **entfällt** — ein Protokoll, das nicht mitreist, wird nie gemerged |
+| 3. Wie lange? | bleibt, und ist beantwortet: die jüngsten `MAX_ENTRIES`, mit sichtbarem `dropped`-Zähler |
+| 4. Der Kollaborations-Fall | **entfällt** aus demselben Grund wie 2 |
+
+Eine Frage, deren Antwort andere Fragen verschwinden lässt, ist besser als eine, die sie
+beantwortet. Das ist hier keine Beobachtung im Nachhinein: die vier standen bewusst *nebeneinander*
+in diesem Dokument, damit sichtbar wird, welche Antwort wie viele davon trägt.
+
+**Der Preis, ausdrücklich benannt:** das Register reist nicht mit. Es hält fest, was *diese
+Maschine* ausgegeben hat. Wer den Plan weitergibt, gibt seine Druck-Historie nicht mit — und das
+ist die richtige Seite des Tauschs, denn die Frage lautet „was habe **ich** ausgeteilt", nicht „was
+hat irgendwer".
+
+### Zwei Entscheidungen im Bau, die nicht in der Frage standen
+
+**Aufgezeichnet wird an der einen Engstelle.** `save()` im Doku-Dialog ist der einzige Weg, durch
+den alle sechs Dokumente gehen — nicht die sechs `build()`-Funktionen. Ein Protokoll, das an sechs
+Stellen geschrieben wird, hat spätestens beim siebten Dokument eine Lücke, und eine Lücke in einem
+Register sieht aus wie „nicht ausgegeben".
+
+**Kein Eintrag ohne Stand.** Die Kabel-Stückliste hängt am Reserve-Aufschlag und hat keinen
+reproduzierbaren Stand. Ein Eintrag ohne Stand könnte später nie beantworten, ob er noch gilt — er
+wäre eine Protokoll-Zeile, die wie eine Aussage aussieht. Entsprechend kennt die Ansicht **drei**
+Zustände: aktuell, überholt, und nicht beurteilbar. Dieselbe Regel wie in `changeImpact`.
+
+### Initiative 5 im Ganzen
+
+| Stück | Wo |
+| --- | --- |
+| Vorwärts-Frage über zwei gegebene Stände | `changeImpact.ts` (`#638`) |
+| Datei-gegen-Datei-Vergleich + Dialog | `planDiff.ts`, `PlanCompareDialog` (`#639`) |
+| Register der ausgegebenen Dokumente | `documentLog.ts`, `DocumentLogDialog` (`#644`) |
+
+Damit beantwortet die App die Frage, mit der dieses Dokument anfing: *„welches der ausgedruckten
+Blätter ist jetzt hin?"*

@@ -75,8 +75,8 @@ Prosa unten war an mehreren Stellen älter als das Repository.
 | 4 | Gestempelter Druck + Papier-Rückweg | 22 | **fertig** | ADR-004, `lib/documentStamp.ts`, QR zurück in den Datensatz |
 | 10 | Confirmed-State-Disziplin | 23 | **teilweise** | ADR-003 Inkrement 1 steht; Inkrement 2 (Provenienz im Plan-Modell) liegt beim Eigentümer — Design-Frage 3 |
 | 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). Publikation offen |
-| 5 | Change-Impact-Sicht | 22 | **teilweise** | `lib/changeImpact.ts` (`#638`) + `lib/planDiff.ts` und der Vergleichs-Dialog (`#639`): zwei gegebene Plan-Stände gegeneinander, alle 146 Felder klassifiziert, `unknown` als eigenes Ergebnis. Es fehlt weiter das **Register der ausgegebenen Dokumente** — geparkte Design-Frage 6, `INITIATIVE-5-SCOPING.md` |
-| 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `cable-planner#632`/`#633` haben den Round-Trip geschärft. Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
+| 5 | Change-Impact-Sicht | 22 | **fertig** | `lib/changeImpact.ts` (`#638`), `lib/planDiff.ts` + Vergleichs-Dialog (`#639`) und das **Register der ausgegebenen Dokumente** (`#644`). Die Vorwärts-Frage ist damit vollständig: welches ausgeteilte Blatt ist hin |
+| 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `#632`/`#633` schärften den Round-Trip, `#645` macht ihn verlustfrei (ein geladenes Preset überlebt den Export). Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
 | 7 | Rückweg: Plan gegen As-built | 20 | **teilweise** | `lib/handoverPackage.ts` baut das As-built-/Closeout-Paket; der **Abgleich** Plan ↔ As-built fehlt |
 | 8 | Netz-/IP-Plan | 19 | **teilweise** | `lib/subnet.ts` + IPAM-Übersicht + NetBox-Import; ein aus den Geräte-Datensätzen **abgeleiteter** Adressplan fehlt |
 | 9 | Delivery-/Streaming-Kette | 18 | **offen** | nur Katalog-Treffer, kein Signalfluss-Modell |
@@ -99,21 +99,34 @@ beantwortet; keine Initiative wartet mehr auf eine Entscheidung, nur noch auf Ba
 
 | # | Frage | Entscheidung | Stand |
 | --- | --- | --- | --- |
-| 1 | Green-GO Generator oder Editor | **beides** — vorhandenes Preset laden und fortschreiben, sonst aus dem Plan erzeugen | zu bauen (Initiative 6) |
-| 2 | Modell- vs. Instanz-Felder | **Modell-Eigenschaften hängen immer am Gerät**, in jedem Plan, ob die Anwendung sie abfragt oder nicht | zu bauen |
-| 3 | ADR-003 Inkrement 2 | **ja, bauen** | Zuschnitt gemessen, Bau offen (entsperrt 10 und 11) |
+| 1 | Green-GO Generator oder Editor | **beides** — vorhandenes Preset laden und fortschreiben, sonst aus dem Plan erzeugen | **gebaut** — `cable#645` |
+| 2 | Modell- vs. Instanz-Felder | **Modell-Eigenschaften hängen immer am Gerät**, in jedem Plan, ob die Anwendung sie abfragt oder nicht | **gebaut** — `cable#646` |
+| 3 | ADR-003 Inkrement 2 | **ja, bauen** | **gebaut** — `cable#643` |
 | 4 | `.avplan` und unbekannte Slots | **laden, fragen, belegen lassen** | **gebaut** — `cable#641`, `light#52`, `multicam#87` |
 | 5 | Zugangsdaten in geteilten Vorlagen | **beim Export fragen** | **gebaut** — `cable#642` |
-| 6 | Register der ausgegebenen Dokumente | **getrennte Protokolldatei + einsehbares Log im Menü** | zu bauen (Initiative 5) |
+| 6 | Register der ausgegebenen Dokumente | **getrennte Protokolldatei + einsehbares Log im Menü** | **gebaut** — `cable#644` |
 | 7 | Zugangsdaten in `.avplan` | mit 5 zusammen beantwortet | **gebaut** — `cable#642` |
 
 Die Begründungen stehen dort, wo die Fragen gestellt wurden:
 `../../decisions/ADR-005-lossless-or-loud.md`, `CREDENTIALS-IN-TEMPLATES.md`,
 `INITIATIVE-5-SCOPING.md`.
 
-**Was das für die Reihenfolge heißt.** Der Engpass ist nicht mehr die Entscheidung, sondern die
-Arbeit. Initiative 6 und die Initiativen 10/11 sind jetzt baubar; Initiative 5 auch, mit dem
-Register als eigenem Stück.
+**Alle sieben sind entschieden UND gebaut.** Damit ist zum ersten Mal seit dem Anlegen dieses
+Papiers **keine Initiative durch eine offene Frage blockiert.** Was bleibt, ist Arbeit.
+
+**Was der Bau an den Entscheidungen selbst gelehrt hat** — dreimal war der eigentliche Befund
+nicht die Antwort, sondern etwas, das erst beim Umsetzen sichtbar wurde:
+
+- **Frage 4:** die richtige Antwort war *keine der beiden angebotenen*. Der ADR stellte
+  „durchreichen" gegen „ablehnen"; gewählt wurde *bewahren und fragen* — die dritte, die beide
+  Regeln zugleich erfüllt.
+- **Frage 3:** der Zuschnitt änderte sich durchs Messen. Es sind **zwei** Formen von Provenienz im
+  Code, nicht eine, und nur die erste ist das, was ADR-003 meint. Der naheliegende Bau — ein
+  Provenienz-Feld je Datensatz — wäre ein zweiter Ort für eine Wahrheit gewesen, die die
+  Feldnamen schon tragen. **Keine Schema-Migration nötig.**
+- **Fragen 1 und 2:** beide legten einen Fehler frei, den keine Frage gestellt hätte. Einer im
+  ersten Umsetzungsversuch (der Editor-Weg baute den Verlust wieder ein, den er beheben sollte),
+  einer im Bestand (zwei Rekonstruktionen mit entgegengesetztem Urteil über dieselben Felder).
 
 ### 0. Consolidate the fork — do this first, it is cheap and it blocks everything
 

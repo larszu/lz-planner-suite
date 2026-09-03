@@ -401,10 +401,43 @@ nebenbei getroffen werden:
 
 | # | Frage | Entscheidung | Stand |
 | --- | --- | --- | --- |
-| 1 | Green-GO Generator oder Editor | **beides** — ein vorhandenes Preset wird geladen und fortgeschrieben, sonst aus dem Plan erzeugt | offen zu bauen |
-| 2 | Modell- vs. Instanz-Felder | **Modell-Eigenschaften hängen immer am Gerät**, in jedem Plan, unabhängig davon ob die Anwendung sie abfragt | offen zu bauen |
-| 3 | ADR-003 Inkrement 2 | **ja, bauen** | Zuschnitt gemessen (siehe unten), Bau offen |
+| 1 | Green-GO Generator oder Editor | **beides** — ein vorhandenes Preset wird geladen und fortgeschrieben, sonst aus dem Plan erzeugt | **gebaut**: `cable-planner#645` |
+| 2 | Modell- vs. Instanz-Felder | **Modell-Eigenschaften hängen immer am Gerät**, in jedem Plan, unabhängig davon ob die Anwendung sie abfragt | **gebaut**: `cable-planner#646` |
+| 3 | ADR-003 Inkrement 2 | **ja, bauen** | **gebaut**: `cable-planner#643` — Zuschnitt gemessen, siehe unten |
 | 4 | `.avplan` und unbekannte Slots | **laden, fragen, und den Slot belegen lassen** | **gebaut**: `cable-planner#641`, `light-planner#52`, `multicam-planner#87` |
+
+**Alle vier sind damit gebaut.** Was der Bau gelehrt hat, steht bei den Fragen 1 und 2 unten —
+in beiden Fällen war der Befund nicht die Entscheidung, sondern etwas, das erst beim Umsetzen
+sichtbar wurde.
+
+### Frage 1: der Fehler im ersten Editor-Weg
+
+Der erste Anlauf hat `Users` **komplett** durch die plan-gebaute Sektion ersetzt — und damit genau
+den Verlust wieder eingebaut, gegen den der Editor-Weg gedacht war: Tastenbelegungen
+(`Channels`), Pincodes (`Security.Pincode`), Geräte-Registrierungen (`devices`), Einmess-Werte
+(`AudioProfile`). `importGreengo` benennt diese Felder sogar namentlich und nennt sie „den halben
+Einmessvorgang".
+
+**Aufgefallen ist es nur, weil ein Test den Pincode einer importierten Station geprüft hat.** Ohne
+ihn wäre eine Änderung durchgegangen, die verspricht den Round-Trip zu bewahren und ihn an der
+wichtigsten Stelle bricht. Die Sektionen werden jetzt Eintrag für Eintrag fortgeschrieben.
+
+Der zweite Punkt fiel erst beim Schreiben auf: der Generator würfelt bei **jedem** Export frische
+`ConfigPassword`/`AdminPassword`. Auf ein importiertes Bestandssystem angewandt hätte das den
+Nutzer aus seiner eigenen Anlage ausgesperrt.
+
+### Frage 2: der Widerspruch, der schon im Code stand
+
+Gemessen: `templateFromEquipment` trug **22 der 97** Felder. Beim Klassifizieren des Rests trat
+zutage, dass die Codebasis das richtige Urteil bereits enthielt — an anderer Stelle.
+`healRentmanLibraryFromProject` trägt die Netz-Identität bewusst **nicht** und begründet es („eine
+Library-Vorlage mit fest eingebauter IP erzeugt beim zweiten Herausziehen einen Adresskonflikt");
+`templateFromEquipment` trägt genau diese Felder mit.
+
+**Zwei Rekonstruktionen desselben Programms, zwei entgegengesetzte Urteile.** Aufgelöst wurde er
+nicht: die Netz-Identität im Template ist der Ausroll-Nutzen, den Frage 5 als echt bezeichnet und
+mit „beim Export fragen" beantwortet hat. Ein Test hält den Widerspruch jetzt **fest, statt ihn zu
+verstecken** — wer eine der beiden Seiten ändert, kommt dort vorbei.
 
 **Frage 4 ist damit die erste dieser vier, die durch ist** — und ihre Antwort war keine der beiden,
 die dieser Abschnitt gegenübergestellt hat. Weder stilles Durchreichen noch Ablehnen, sondern

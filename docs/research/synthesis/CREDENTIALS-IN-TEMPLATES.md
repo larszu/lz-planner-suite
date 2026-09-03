@@ -211,3 +211,31 @@ leerem Bestand schweigt.
 Mobile-Share seit jeher), zwei fragen jetzt (geteilte Bibliothek, `.avplan`).
 Speichern und CRDT-Sync tragen sie weiter — dort bleibt die Datei beim
 Eigentümer bzw. beim gemeinsam bearbeiteten Plan.
+
+
+---
+
+## Nachtrag (2026-09-03): was Design-Frage 2 hier noch freigelegt hat
+
+Beim Klassifizieren der 97 `EquipmentItem`-Felder für Design-Frage 2 (`cable-planner#646`) trat
+zutage, dass die Codebasis das Urteil über die Netz-Identität **zweimal fällt — entgegengesetzt**:
+
+* `healRentmanLibraryFromProject` trägt sie bewusst **nicht** und begründet es: *„eine
+  Library-Vorlage mit fest eingebauter IP erzeugt beim zweiten Herausziehen einen
+  Adresskonflikt."*
+* `templateFromEquipment` trägt genau diese Felder **mit** — und über den Bibliotheks-Sync in den
+  geteilten Ordner, was dieses Dokument beschreibt.
+
+Zwei Rekonstruktionen desselben Programms, zwei entgegengesetzte Urteile über dieselben Felder.
+Der Kommentar der ersten sagt sogar, warum er die Frage nicht mitentscheidet: *„Ob das dort richtig
+ist, ist eine eigene Frage — sie hier nebenbei mitzuentscheiden wäre falsch."*
+
+**Aufgelöst wurde er nicht,** und das ist Absicht. Die Netz-Identität im Template ist der
+Ausroll-Nutzen, den dieses Dokument als echt bezeichnet und den die Entscheidung „beim Export
+fragen" bedient. Ihn beim Klassifizieren nebenbei wegzunehmen wäre genau die
+Nebenbei-Entscheidung, die der zitierte Kommentar zurückweist.
+
+Was sich geändert hat: der Widerspruch ist jetzt **per Test festgehalten statt versteckt**
+(`tests/modelFields.test.ts`). Wer eine der beiden Seiten ändert, kommt dort vorbei und muss die
+andere mitbedenken. Das ist die kleinere, aber ehrlichere Art, eine offene Stelle zu behandeln:
+sie sichtbar halten, bis jemand sie entscheidet.
