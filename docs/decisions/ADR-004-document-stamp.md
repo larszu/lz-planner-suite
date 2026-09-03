@@ -119,3 +119,34 @@ entsteht.
 Dokument und melden seinen Stand. Das funktioniert am Telefon, in der Halle, ohne App — also unter
 genau den Bedingungen, unter denen jemand überhaupt zum Papier gegriffen hat. Ein QR-Code auf dem
 Plan-PDF ist die bequeme Variante; die abtippbare ist die belastbare.
+
+## Nachtrag: der Aufbaustand stand nicht im Fingerabdruck
+
+Regel 1 endet mit dem Satz „jede über das, was tatsächlich auf dem Papier steht". Die Umsetzung
+hielt ihn für die Listen ein und für den Plan-Ausdruck nur halb: `planFingerprint` deckte Geräte,
+Kabel und Orte ab — die Häkchen der bereits gesteckten Ports nicht.
+
+Die stehen aber auf dem Blatt. Der Mobile-Viewer meldet gesteckte Ports zurück, `EquipmentNode`
+zeichnet dafür ein Häkchen an den Port, und beide Plan-Export-Wege nehmen es mit: der Raster-Weg
+fotografiert das Viewport-DOM, der Vektor-Weg klont es. Ein Ausdruck von gestern Abend meldete sich
+damit als aktueller Stand, obwohl seitdem zwölf Ports abgehakt worden waren — auf einem Blatt,
+dessen einziger Zweck während des Aufbaus genau dieser Stand ist.
+
+Zwei Dinge sind daran über den Einzelfall hinaus interessant.
+
+**Der Filter ist die eigentliche Entscheidung, nicht die Ergänzung.** Kabel-Haken stehen nur im
+Kontextmenü, nie auf der Zeichnung; Haken auf gelöschten Geräten zeichnen nichts, und beim Löschen
+räumt niemand `checkState` auf. Beide mitzuzählen hätte eine Abweichung behauptet, die auf dem
+Papier niemand sehen kann — nach ADR-003 derselbe Schaden wie ein erfundener Zustand, nur in die
+andere Richtung. Regel 1 schneidet also in beide Richtungen: *alles*, was auf dem Blatt steht, und
+*nichts*, was nicht darauf steht.
+
+**Eine Fingerabdruck-Änderung entwertet Papier.** Der Haken-Block wird nur angehängt, wenn es Haken
+gibt; sonst hätte allein der zusätzliche Trenner jeden bestehenden Wert verschoben und jedes bereits
+gedruckte Blatt auf einen Schlag als veraltet gemeldet. Neu ist der Wert genau dort, wo der alte
+falsch war. Wer den Fingerabdruck erweitert, erbt diese Pflicht — und braucht dafür einen fest
+verdrahteten Regressionsanker, keinen Vorsatz.
+
+Gefunden hat das nicht ein Review, sondern eine Messung gegen den Code, einen Tag nach dem Bau des
+Registers. Der ADR war richtig aufgeschrieben; die Umsetzung hatte einen Fall übersehen, den kein
+Test verlangte, weil kein Test ihn kannte.

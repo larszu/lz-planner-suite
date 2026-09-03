@@ -68,18 +68,18 @@ Prosa unten war an mehreren Stellen älter als das Repository.
 
 | # | Initiative | Score | Stand | Belegt durch |
 | --- | --- | --- | --- | --- |
-| 0 | Fork konsolidieren | 20 | **teilweise** | Drift von 56/72/26 auf **18/19/17** gesenkt, CI-bewacht (`scripts/planner-drift.mjs`). Die Suite vendort weiterhin Kopien — verwaltet, nicht konsolidiert |
+| 0 | Fork konsolidieren | 20 | **teilweise** | Drift von 56/72/26 auf **18/19/17** gesenkt (cable/multicam/light, Stand `scripts/planner-drift-baseline.json`), CI-bewacht (`scripts/planner-drift.mjs`). **Die Zahlen hier veralten bei jedem Vendor-Schritt** — massgeblich ist die Baseline-Datei, nicht diese Zeile. Die Suite vendort weiterhin Kopien — verwaltet, nicht konsolidiert |
 | 1 | Identitäts-Spine + Label-Projektion | 27 | **fertig** | ADR-001, alle vier Inkremente, plus `cable-planner#637` (die Exporter gehen durch den Resolver) |
 | 2 | Tally-Map aus dem Plan | 24 | **fertig** | `lib/tallyMap.ts` — `buildTallyMap`, `tallyMapCsv`, `toTallyPiDevices` speist `tally-pi`s `devices[]` |
 | 3 | Stückliste / Kommissionier-Liste | 24 | **fertig** | `lib/planBom.ts` (ADR-002 Inkrement 4) |
 | 4 | Gestempelter Druck + Papier-Rückweg | 22 | **fertig** | ADR-004, `lib/documentStamp.ts`, QR zurück in den Datensatz |
 | 10 | Confirmed-State-Disziplin | 23 | **teilweise, alle bekannten Fälle geschlossen** | Nachgezählt 2026-09-03, Zahlen aus dem Quelltext statt aus der Erinnerung. **Zwei Sorten, zwei Register, beide gerechnet statt aufgezählt:** `deviceReadSites` führt 5 Stellen, an denen ein Geräte-Befund den Plan berührt (3 getrennt, 1 additiv, 1 liest-nur); `aiWriteSites` führt 4, an denen eine Maschine Werte erfindet (3 markiert, 1 mit Mensch dazwischen, keine ungedeckt). `specSource` in allen drei Planern, gehalten vom Suite-Guard `spec-source-vocabulary.mjs` (3 Feld-, 2 Helfer-Kopien, in CI). Dazu `sony#10` im Companion-Modul. **Warum nicht „fertig":** siehe Abschnitt 3c — jede der sechs Messrunden fand eine Schicht, die die vorige nicht kannte |
-| 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). **Beide dort genannten Blocker sind weg**, und der mechanische Schritt ist getan: die 253 Links stehen als `manufacturerUrl` im Katalog (`cable#649`), und die Eigenschaften-Leiste zeigt den **geerbten** Link mit genannter Herkunft — ohne die zweite Hälfte hätte der Nutzer nichts davon gesehen, weil der `DeviceTypePicker` keine Template-Felder kopiert. Offen bleiben die **8 Kataloge ohne Beleg** (echte Recherche, Schritt 3) und die Publikation selbst |
+| 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). **Beide dort genannten Blocker sind weg**, und der mechanische Schritt ist getan: die 253 Links stehen als `manufacturerUrl` im Katalog (`cable#649`), und die Eigenschaften-Leiste zeigt den **geerbten** Link mit genannter Herkunft — ohne die zweite Hälfte hätte der Nutzer nichts davon gesehen, weil der `DeviceTypePicker` keine Template-Felder kopiert. Offen bleibt die Publikation selbst — und die Kataloge ohne Beleg, aber **nicht acht, sondern sechs** (3c, Runde 9). Von den 17 `*Catalog.ts` fuehren 8 kein `manufacturerUrl`; zwei davon koennen keins fuehren: `connectorCatalog` haelt Stecker*typen* mit Symbol, `wirelessCatalog` haelt `WirelessDevice` (Handsender-Bodies, Kapseln, Headsets) — beide Typen haben das Feld gar nicht, es sitzt an `EquipmentTemplate` (`equipment.ts:509`). Sie standen nur deshalb in der Liste, weil gezaehlt wurde, was auf `Catalog.ts` endet. Echte Recherche brauchen: `blackmagic`, `camera`, `greengo`, `misc`, `monitor`, `ubiquiti` |
 | 5 | Change-Impact-Sicht | 22 | **fertig** | `lib/changeImpact.ts` (`#638`), `lib/planDiff.ts` + Vergleichs-Dialog (`#639`) und das **Register der ausgegebenen Dokumente** (`#644`). Die Vorwärts-Frage ist damit vollständig: welches ausgeteilte Blatt ist hin |
-| 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `#632`/`#633` schärften den Round-Trip, `#645` macht ihn verlustfrei (ein geladenes Preset überlebt den Export). Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
-| 7 | Rückweg: Plan gegen As-built | 20 | **teilweise** | `lib/handoverPackage.ts` baut das As-built-/Closeout-Paket; der **Abgleich** Plan ↔ As-built fehlt |
+| 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `#632`/`#633` schärften den Round-Trip. **`#645` sagte „verlustfrei" und war es nicht** — `ButtonFunctions` wurde bei jedem Export neu erfunden, also genau die Tastenbelegung der Beltpacks; berichtigt in `#653` (3c, Runde 7). Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
+| 7 | Rückweg: Plan gegen As-built | 20 | **teilweise** | `lib/handoverPackage.ts` baut das As-built-/Closeout-Paket. **Korrektur (3c, Runde 9):** „der Abgleich fehlt" stimmt so nicht mehr. Fuer den Geraetezustand gibt es ihn: `lib/atemLiveCompare.ts` stellt Plan und Live-Auslesung nebeneinander (`compareAssignments`, genutzt in `AtemAudioRouterDialog` und `AtemMvConfigDialog`). Fuer die Verkabelung gibt es die **Datenspur**, aber keinen Vergleich: `checkState.ports` haelt fest, was vor Ort gesteckt wurde, und seit `cable#654` steht dieser Stand auch im Plan-Fingerabdruck. Was fehlt, ist die Gegenueberstellung **Soll-Kabel gegen gesteckte Ports** — und die haengt an einer offenen Eigentuemer-Frage: wo der As-built-Zustand ueberhaupt wohnt |
 | 8 | Netz-/IP-Plan | 19 | **teilweise** | `lib/subnet.ts` + IPAM-Übersicht + NetBox-Import; ein aus den Geräte-Datensätzen **abgeleiteter** Adressplan fehlt |
-| 9 | Delivery-/Streaming-Kette | 18 | **offen** | nur Katalog-Treffer, kein Signalfluss-Modell |
+| 9 | Delivery-/Streaming-Kette | 18 | **halb offen, und zwar an der genannten Haelfte** | **Korrektur (siehe 3c, Runde 9).** „Nur Katalog-Treffer" war falsch: NDI, NDI-HX, Dante, AES67 und ST2110-20/30/40 sind Mitglieder der `SignalStandard`-Union (`types/cableSpec.ts`), haengen an Ports (`equipment.ts:108`) und Kabeln (`cable.ts:28`), tragen je eine Bandbreite (`bandwidthMbpsForStandard`) und eine Impedanz, und der Plan rechnet damit: Netz-Budget mit Link-Tier-Empfehlung (`CalculatorsDialog`), ST-2110-ohne-PTP (Pruefung 13), Impedanz-Bruch und passive Laengengrenze. Das ist ein Signalfluss-Modell. **Was wirklich fehlt, ist die Delivery-Haelfte:** SRT, RTMP, HLS, CDN kommen im Quelltext nicht vor — nicht als Standard, nicht als Katalog-Eintrag, nirgends. Die Initiative ist also nicht offen, sondern **an der Grenze zwischen Contribution und Distribution abgeschnitten** |
 
 **Was das für die Reihenfolge heißt.** Keine Initiative mit Score ≥ 22 ist mehr vollständig offen.
 **5 (Change-Impact)** war es bis zu diesem Stand und ist als Erstes gebaut worden — Inkrement 1
@@ -90,8 +90,9 @@ der ausgegebenen Dokumente, und **das führt heute nichts** (`INITIATIVE-5-SCOPI
 vier Fragen, drei davon ändern das Dateiformat).
 
 Damit ist die Tabelle in einem Zustand, den sie vorher nicht hatte: **jede verbleibende Lücke mit
-Score ≥ 20 ist entweder geparkt oder ein Teilstück** (6, 7, 8, 10, 11), und das höchstbewertete
-freie Feld ist Initiative 9 mit 18. Der eine Rest aus 5, der ohne jede Entscheidung ging — der
+Score ≥ 20 ist entweder geparkt oder ein Teilstück** (6, 7, 8, 10, 11), und **vollständig offen ist
+keine einzige mehr** — auch Initiative 9 nicht, die als letztes freies Feld galt, bis sie
+nachgemessen wurde (3c, Runde 9). Der eine Rest aus 5, der ohne jede Entscheidung ging — der
 Datei-gegen-Datei-Vergleich, kein Store, kein Format-Feld, kein Register — ist mit `#639` gebaut.
 
 **Was beim Eigentümer lag — und was er entschieden hat (2026-09-03).** Alle sieben Fragen sind
@@ -273,7 +274,7 @@ already export Green-GO config from `cable-planner`. The return path is the ligh
 declared out-of-scope gap and the network segment's plan-versus-found need — high value, highest
 complexity, and correctly sequenced last among the identity-dependent items.
 
-### 3c. Sechs Messrunden, sechs Korrekturen (2026-09-03)
+### 3c. Neun Messrunden, neun Korrekturen (2026-09-03)
 
 Abschnitt 25 verlangt Neu-Ableitung statt Flickwerk. Der Tag hat gezeigt, warum die Regel nicht
 nur für fremde Annahmen gilt: **jede Messrunde hat eine Annahme von mir selbst widerlegt**, und
@@ -287,11 +288,24 @@ zwar immer erst, nachdem ich sie bereits aufgeschrieben hatte.
 | 4 | Der `cable-planner` ist für Initiative 10 fertig | Der AI-Port-Vorschlag schrieb **geratene Ports als Tatsache** und brachte Prüfung 18 zum Schweigen — die Prüfung, die einen Menschen zu belegten Daten zwingen soll |
 | 5 | Jetzt ist er fertig | Die Plangenerierung tat dasselbe für einen **ganzen Plan**, samt Kabeln |
 | 6 | Es sind drei KI-Schreibstellen | Erst fünf (ein grep nach dem Import-Pfad), dann **vier** (das Kriterium fragt nach dem Aufruf). `LibraryPanel` kannte ich nicht, und es brachte eine ganze Quelle mit: `suggestFromWeb` zählt Stecker in einem Wikipedia-Schnipsel |
+| 7 | `#645` macht den Green-GO-Round-Trip verlustfrei — so steht es im PR, im Commit und in der Roadmap | `ButtonFunctions` wurde bei **jedem** Export neu erfunden: Tasten positionsweise aus der Array-Reihenfolge, Seite 2 auf Null. Auf einem Beltpack ist das die Tastenbelegung. Zwei eigene Bauteile hatten es verdeckt — die Fixture stand auf `{}` (nichts zu verlieren) und der Paritäts-Guard **verlangte** das Überschreiben. Berichtigt in `cable#653` |
+| 8 | Das Dokument-Register aus `#644` beantwortet „gilt dieses Blatt noch?" | Für den Plan-Ausdruck nicht: `planFingerprint` liess `checkState` aus. Die Häkchen der gesteckten Ports zeichnet `EquipmentNode` aber an den Port, und beide PDF-Wege nehmen das DOM mit. Ein Blatt mit dem Aufbaustand von gestern meldete sich als aktueller Stand — auf dem Papier, dessen einziger Zweck waehrend des Aufbaus genau dieser Stand ist. Berichtigt in `cable#654` |
+| 9 | Die Roadmap-Tabelle in 3b ist gemessen, also stimmt sie | Vier ihrer Zeilen hielten der Nachmessung nicht stand, und **alle vier in dieselbe Richtung: zu pessimistisch.** 9 („nur Katalog-Treffer") übersah sieben IP-Transporte als vollwertige `SignalStandard`-Mitglieder samt Netz-Budget und drei Prüfungen; 7 („der Abgleich fehlt") übersah `atemLiveCompare`; 11 zählte 8 belegfreie Kataloge, von denen zwei das Feld gar nicht führen können; 0 trug Drift-Zahlen, die jeder Vendor-Schritt veraltet |
 
-**Was daraus folgt, und warum Zeile 10 nicht „fertig" sagt.** Sechs von sechs Runden fanden
-eine Schicht, die die vorige nicht kannte. Eine siebte anzunehmen ist keine Schwarzmalerei,
+**Was daraus folgt, und warum Zeile 10 nicht „fertig" sagt.** Neun von neun Runden fanden
+eine Schicht, die die vorige nicht kannte. Eine zehnte anzunehmen ist keine Schwarzmalerei,
 sondern die einzige Lesart, die zu den Belegen passt. „Alle bekannten Fälle geschlossen" ist
 deshalb die stärkste Aussage, die dieser Stand trägt.
+
+**Runde 9 dreht die Richtung um, und das ist der interessantere Befund.** Die Runden 1 bis 8
+korrigierten *zu optimistische* Aussagen — „fertig", „verlustfrei", „drei Stellen". Runde 9
+korrigierte vier *zu pessimistische*: die Tabelle führte als fehlend, was gebaut dastand. Beides
+ist derselbe Fehler, und es ist der Fehler, gegen den dieses ganze Papier arbeitet — **ein Wert,
+den niemand nachgesehen hat, steht als Tatsache da.** Ob er zu gut oder zu schlecht ausfällt,
+ist eine Frage des Zufalls, nicht der Sorgfalt. Eine zu pessimistische Zeile ist dabei nicht die
+harmlosere Sorte: sie schickt Bauarbeit an eine Stelle, die schon trägt, und lässt die echte
+Lücke daneben liegen — bei Initiative 9 wäre exakt das passiert, denn die fehlende Hälfte ist
+nicht der Signalfluss, sondern SRT/RTMP/HLS.
 
 **Die Konsequenz ist gebaut, nicht bloss notiert.** Beide Sorten unbestätigter Werte haben
 jetzt ein Register, das die Stellen **aus dem Quelltext rechnet** statt sie aufzuzählen:
