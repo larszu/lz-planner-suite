@@ -75,22 +75,30 @@ Prosa unten war an mehreren Stellen älter als das Repository.
 | 4 | Gestempelter Druck + Papier-Rückweg | 22 | **fertig** | ADR-004, `lib/documentStamp.ts`, QR zurück in den Datensatz |
 | 10 | Confirmed-State-Disziplin | 23 | **teilweise** | ADR-003 Inkrement 1 steht; Inkrement 2 (Provenienz im Plan-Modell) liegt beim Eigentümer — Design-Frage 3 |
 | 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). Publikation offen |
-| 5 | Change-Impact-Sicht | 22 | **offen** | kein Code. Die höchstbewertete vollständig offene Initiative |
+| 5 | Change-Impact-Sicht | 22 | **teilweise** | `lib/changeImpact.ts` (Inkrement 1, `cable-planner#638`): die Vorwärts-Frage über zwei Plan-Stände, mit `unknown` als eigenem Ergebnis. Inkrement 2 abgesteckt statt gebaut — `INITIATIVE-5-SCOPING.md` |
 | 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `cable-planner#632`/`#633` haben den Round-Trip geschärft. Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
 | 7 | Rückweg: Plan gegen As-built | 20 | **teilweise** | `lib/handoverPackage.ts` baut das As-built-/Closeout-Paket; der **Abgleich** Plan ↔ As-built fehlt |
 | 8 | Netz-/IP-Plan | 19 | **teilweise** | `lib/subnet.ts` + IPAM-Übersicht + NetBox-Import; ein aus den Geräte-Datensätzen **abgeleiteter** Adressplan fehlt |
 | 9 | Delivery-/Streaming-Kette | 18 | **offen** | nur Katalog-Treffer, kein Signalfluss-Modell |
 
-**Was das für die Reihenfolge heißt.** Von den vier Initiativen mit Score ≥ 22 ist keine mehr
-vollständig offen außer **5 (Change-Impact)**. Sie trägt zugleich die höchste Komplexität der
-Tabelle (CX 5) und hängt an keiner der geparkten Entscheidungen — sie ist damit der nächste
-legitime Bau.
+**Was das für die Reihenfolge heißt.** Keine Initiative mit Score ≥ 22 ist mehr vollständig offen.
+**5 (Change-Impact)** war es bis zu diesem Stand und ist als Erstes gebaut worden — Inkrement 1
+steht. Ihr zweiter Teil hat dabei die Annahme dieses Abschnitts widerlegt: sie hängt eben doch an
+einer Eigentümer-Entscheidung. Die Vorwärts-Frage über zwei *gegebene* Stände ist ableitbar; die
+nützlichere Frage — „welche der zwölf ausgedruckten Listen sind jetzt hin" — braucht ein Register
+der ausgegebenen Dokumente, und **das führt heute nichts** (`INITIATIVE-5-SCOPING.md` nennt die
+vier Fragen, drei davon ändern das Dateiformat).
+
+Damit ist die Tabelle in einem Zustand, den sie vorher nicht hatte: **jede verbleibende Lücke mit
+Score ≥ 20 ist entweder geparkt oder ein Teilstück** (6, 7, 8, 10, 11), und das höchstbewertete
+freie Feld ist Initiative 9 mit 18. Was aus 5 ohne jede Entscheidung noch folgt, ist der
+Datei-gegen-Datei-Vergleich zweier Plan-Stände: kein Store, kein Format-Feld, kein Register.
 
 **Was beim Eigentümer liegt und Initiativen blockiert.** Initiative 10 wartet auf Design-Frage 3
 (ADR-003 Inkrement 2), Initiative 11 hängt daran mit; Initiative 6 kann ohne Design-Frage 1
-(Green-GO Generator oder Editor) keinen verlustfreien Round-Trip zusagen. Die fünf offenen Fragen
-stehen in `../../decisions/ADR-005-lossless-or-loud.md` und in
-`CREDENTIALS-IN-TEMPLATES.md`.
+(Green-GO Generator oder Editor) keinen verlustfreien Round-Trip zusagen. Die **sechs** offenen
+Fragen stehen in `../../decisions/ADR-005-lossless-or-loud.md`, in `CREDENTIALS-IN-TEMPLATES.md`
+und — als sechste — in `INITIATIVE-5-SCOPING.md`.
 
 ### 0. Consolidate the fork — do this first, it is cheap and it blocks everything
 
