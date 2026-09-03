@@ -49,6 +49,9 @@ jobs:
       - name: Test
         run: npm run test --workspaces --if-present
 
+      - name: Herkunfts-Vokabular (beide Planer-Kopien)
+        run: npm run spec:vocab
+
   # ---------------------------------------------------------------------------
   # Drift-Guard fuer die vendorten Planer-Kopien unter apps/.
   #
