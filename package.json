@@ -20,6 +20,7 @@
     "dev:cable": "npm run dev --workspace cable-planner",
     "dev:multicam": "npm run dev --workspace multicam-planner",
     "dev:light": "npm run dev --workspace light-planner",
+    "spec:vocab": "node scripts/spec-source-vocabulary.mjs",
     "drift": "node scripts/planner-drift.mjs --upstream ..",
     "drift:check": "node scripts/planner-drift.mjs --upstream .. --check"
   }
