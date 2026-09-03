@@ -23,6 +23,21 @@
 //
 // Die Klassifikation vergleicht Zeilen-Multimengen, nicht echte Merges.
 // Sie ist eine Triage-Hilfe, kein Ersatz fuer git diff.
+//
+// ZWEITE FRAGE, seit ADR-005 Inkrement 4: "Upstream changes not yet carried
+// over". Die Drift-Zahlen zaehlen Dateien und Zeilen-Differenzen, nicht
+// Aenderungen — eine Datei, die ohnehin `two-way` ist, bleibt `two-way`, ob
+// der letzte Upstream-Fix in ihr angekommen ist oder nicht. Daran ist ein
+// uebersprungener Vendoring-Commit vorbeigerutscht (cable#634): Drift zurueck
+// auf Baseline, Guard gruen, Fix fehlte trotzdem.
+//
+// Deshalb haelt die Baseline jetzt ein SHA-PAAR (upstreamSha + suiteSha) und
+// das Skript fragt zusaetzlich: welche Dateien hat upstream seit dem
+// Baseline-Stand angefasst, ohne dass die Suite ihre Kopie seither angefasst
+// hat? Kein Beweis fuer einen Verlust — eine Aenderung kann bewusst
+// draussengeblieben sein —, aber die Liste, die man beim Nachziehen durchgeht.
+// Sie braucht die Historie beider Repos; bei flachem Checkout sagt der
+// Bericht, dass er nicht pruefen konnte, statt Vollstaendigkeit zu behaupten.
 // ───────────────────────────────────────────────────────────────────────────
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
@@ -215,6 +230,71 @@ function upstreamSha(app) {
   }
 }
 
+/** HEAD dieses Repos. Zusammen mit `upstreamSha` macht er die Baseline zu
+ *  einem Paar aus zwei Staenden — erst damit laesst sich fragen, ob eine
+ *  Aenderung von drueben hier auch angekommen ist. */
+function suiteSha() {
+  try {
+    return execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim().slice(0, 12)
+  } catch {
+    return null
+  }
+}
+
+/** Dateien, die `git` zwischen zwei Staenden unter den ROOTS geaendert hat. */
+function changedSince(repoDir, sinceSha, pathPrefixes) {
+  try {
+    const out = execFileSync(
+      'git', ['-C', repoDir, 'diff', '--name-only', `${sinceSha}..HEAD`, '--', ...pathPrefixes],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    )
+    return out.split('\n').map((l) => l.trim()).filter(Boolean)
+  } catch {
+    return null // Stand nicht bekannt (flacher Checkout) — ehrlich melden, nicht raten
+  }
+}
+
+/**
+ * ADR-005, Regel 4, auf dieses Skript selbst angewandt.
+ *
+ * Der Drift-Vergleich zaehlt DATEIEN und ihre Zeilen-Differenz, nicht
+ * Aenderungen. Eine Datei, die ohnehin `two-way` ist, bleibt `two-way`, ob
+ * der letzte Upstream-Fix in ihr angekommen ist oder nicht — die Zahl bewegt
+ * sich nicht. Genau daran ist ein uebersprungener Vendoring-Commit
+ * vorbeigerutscht (cable#634): Drift zurueck auf Baseline, Guard gruen, Fix
+ * fehlte trotzdem. Aufgefallen ist es an den Testzahlen beider Seiten.
+ *
+ * Diese Pruefung stellt die Frage direkt: welche Dateien hat upstream seit
+ * dem Baseline-Stand angefasst, ohne dass die Suite ihre Kopie seither
+ * angefasst hat? Das ist kein Beweis fuer einen Verlust — eine Aenderung kann
+ * bewusst nicht uebernommen worden sein —, aber es ist die Liste, die man
+ * beim Nachziehen durchgehen muss.
+ *
+ * Braucht die Historie beider Repos. Bei flachem Checkout (CI) liefert
+ * `changedSince` null; dann sagt der Bericht das, statt Vollstaendigkeit zu
+ * behaupten.
+ */
+function uncarried(app, baseUpstreamSha, baseSuiteSha) {
+  if (!baseUpstreamSha || !baseSuiteSha) return { unknown: 'Baseline ohne SHA-Paar' }
+  const upDir = join(upstreamRoot, app)
+  const upChanged = changedSince(upDir, baseUpstreamSha, ROOTS)
+  if (upChanged === null) return { unknown: `Upstream-Stand ${baseUpstreamSha} lokal nicht bekannt` }
+  const suitePrefixes = ROOTS.map((r) => `apps/${app}/${r}`)
+  const suiteChanged = changedSince(ROOT, baseSuiteSha, suitePrefixes)
+  if (suiteChanged === null) return { unknown: `Suite-Stand ${baseSuiteSha} lokal nicht bekannt` }
+  const touchedHere = new Set(suiteChanged.map((f) => f.replace(`apps/${app}/`, '')))
+  const replaced = new Set(REPLACED_BY_PACKAGE[app] ?? [])
+  const files = upChanged.filter((f) => {
+    if (touchedHere.has(f)) return false
+    // `src/x` -> `x`, damit REPLACED_BY_PACKAGE dieselbe Form sieht wie sonst.
+    const bare = f.startsWith('src/') ? f.slice(4) : f
+    return !replaced.has(bare)
+  })
+  return { files }
+}
+
 function analyseApp(app) {
   // Upstream gilt als vorhanden, sobald mindestens `src` da ist.
   if (!existsSync(join(upstreamRoot, app, 'src'))) return { app, missingUpstream: true, findings: [] }
@@ -266,7 +346,24 @@ for (const r of results) {
     ...counts, drift, total: r.findings.length,
     missingUpstream: !!r.missingUpstream,
     upstreamSha: r.missingUpstream ? null : upstreamSha(r.app),
+    // Das Gegenstueck zu upstreamSha — siehe uncarried().
+    suiteSha: suiteSha(),
   }
+}
+
+// Welche Upstream-Aenderungen seit der Baseline hier noch nicht angekommen
+// sind. Braucht die Baseline, deshalb erst hier und nur wenn es eine gibt.
+const baselineForUncarried = existsSync(BASELINE)
+  ? JSON.parse(readFileSync(BASELINE, 'utf8'))
+  : null
+const uncarriedByApp = {}
+for (const app of APPS) {
+  if (summary[app].missingUpstream || !baselineForUncarried?.[app]) continue
+  uncarriedByApp[app] = uncarried(
+    app,
+    baselineForUncarried[app].upstreamSha,
+    baselineForUncarried[app].suiteSha,
+  )
 }
 
 // ---------- Bericht ----------
@@ -295,6 +392,24 @@ for (const r of results) {
 }
 if (!anyTwoWay) lines.push('None.', '')
 
+lines.push('## Upstream changes not yet carried over', '')
+lines.push('Files upstream touched since the baseline commit whose suite copy has not been')
+lines.push('touched since. Not proof of a loss — a change may have been left out on purpose —')
+lines.push('but this is the list to walk when vendoring. The drift counts above cannot show')
+lines.push('this: a file that is already `two-way` stays `two-way` either way.', '')
+let anyUncarried = false
+for (const app of APPS) {
+  const u = uncarriedByApp[app]
+  if (!u) continue
+  if (u.unknown) { lines.push(`- **${app}**: not checked — ${u.unknown}`); anyUncarried = true; continue }
+  if (!u.files.length) continue
+  anyUncarried = true
+  lines.push(`### ${app}`, '')
+  for (const f of u.files) lines.push(`- \`${f}\``)
+  lines.push('')
+}
+if (!anyUncarried) lines.push('None.', '')
+
 // Maschinenlesbar fuer Skripte (Stufe 2 der Konsolidierung).
 if (has('json')) {
   const byApp = {}
@@ -322,6 +437,19 @@ if (has('check')) {
   }
   const base = JSON.parse(readFileSync(BASELINE, 'utf8'))
   let failed = false
+  // Im check-Modus wird der Bericht nicht gedruckt — diese Liste aber schon.
+  // Sie ist der Grund, warum es sie gibt: sie soll beim Nachziehen gelesen
+  // werden, und nachgezogen wird nach einem `--check`.
+  for (const app of APPS) {
+    const u = uncarriedByApp[app]
+    if (!u) continue
+    if (u.unknown) { console.log(`? ${app}: Upstream-Aenderungen nicht pruefbar — ${u.unknown}`); continue }
+    if (!u.files.length) continue
+    console.log(
+      `! ${app}: ${u.files.length} Datei(en) hat upstream seit der Baseline angefasst, ` +
+      `die Suite-Kopie nicht:\n    ${u.files.join('\n    ')}`,
+    )
+  }
   for (const app of APPS) {
     const now = summary[app]
     const was = base[app]
