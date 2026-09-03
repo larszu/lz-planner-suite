@@ -73,8 +73,8 @@ Prosa unten war an mehreren Stellen älter als das Repository.
 | 2 | Tally-Map aus dem Plan | 24 | **fertig** | `lib/tallyMap.ts` — `buildTallyMap`, `tallyMapCsv`, `toTallyPiDevices` speist `tally-pi`s `devices[]` |
 | 3 | Stückliste / Kommissionier-Liste | 24 | **fertig** | `lib/planBom.ts` (ADR-002 Inkrement 4) |
 | 4 | Gestempelter Druck + Papier-Rückweg | 22 | **fertig** | ADR-004, `lib/documentStamp.ts`, QR zurück in den Datensatz |
-| 10 | Confirmed-State-Disziplin | 23 | **teilweise** | ADR-003 Inkrement 1 steht; Inkrement 2 (Provenienz im Plan-Modell) liegt beim Eigentümer — Design-Frage 3 |
-| 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). Publikation offen |
+| 10 | Confirmed-State-Disziplin | 23 | **teilweise** | Inkrement 2 ist entschieden und gebaut (`cable#643`: Vokabular, Badge, zwei erklärte Stellen). **Neu gemessen 2026-09-03:** drei Stellen im Renderer schrieben einen Geräte-Befund in ein persistiertes Plan-Feld — alle drei sind jetzt getrennt (Videohub in Inkrement 0, beide ATEM-Dialoge in `cable#647`), dazu `sony#10` im Companion-Modul (unbestätigt ≠ aus). Was fehlt, ist die **Regel statt der Praxis**: die Invariante hält an vier namentlich geprüften Stellen, ein fünfter Lese-Weg käme ohne Zwang durch |
+| 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). **Beide dort genannten Blocker sind weg:** Design-Frage 3 ist entschieden und gebaut, und `sony-camera-bridge` ist erreichbar (`#8`, `#10` gemergt). Der nächste Schritt ist der mechanische — die Kommentare in ein Feld heben; die Publikation selbst bleibt offen |
 | 5 | Change-Impact-Sicht | 22 | **fertig** | `lib/changeImpact.ts` (`#638`), `lib/planDiff.ts` + Vergleichs-Dialog (`#639`) und das **Register der ausgegebenen Dokumente** (`#644`). Die Vorwärts-Frage ist damit vollständig: welches ausgeteilte Blatt ist hin |
 | 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `#632`/`#633` schärften den Round-Trip, `#645` macht ihn verlustfrei (ein geladenes Preset überlebt den Export). Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
 | 7 | Rückweg: Plan gegen As-built | 20 | **teilweise** | `lib/handoverPackage.ts` baut das As-built-/Closeout-Paket; der **Abgleich** Plan ↔ As-built fehlt |
@@ -113,6 +113,35 @@ Die Begründungen stehen dort, wo die Fragen gestellt wurden:
 
 **Alle sieben sind entschieden UND gebaut.** Damit ist zum ersten Mal seit dem Anlegen dieses
 Papiers **keine Initiative durch eine offene Frage blockiert.** Was bleibt, ist Arbeit.
+
+### Was die Neu-Ableitung danach ergeben hat
+
+Abschnitt 25 verlangt Neu-Ableitung statt Flickwerk, und die erste nach den sieben Antworten
+hat den Stand von Initiative 10 **nicht bestätigt, sondern verschoben**. Die Tabelle führte sie
+als „wartet auf Design-Frage 3". Die Frage ist beantwortet und `cable#643` gebaut — aber was
+Initiative 10 verlangt, steht eine Ebene höher: *„every displayed value carries provenance
+(confirmed by device / last commanded / planned), and the UI must render the difference."*
+`cable#643` liefert das Vokabular und zwei erklärte Stellen; `ProvenanceBadge` steht heute an
+genau diesen zweien und nirgends sonst — nachgezählt, nicht angenommen.
+
+Die Messung, die daraus folgte, hat die eigentliche Lücke gefunden — und sie lag woanders als
+vermutet. Von 18 verschiedenen Lese-Aufrufen an 25 Stellen im Renderer schreiben **drei** ihren Befund in ein persistiertes
+Plan-Feld. Einer davon, `VideohubExportDialog`, war in Inkrement 0 bereits geheilt worden und
+trug die Begründung im eigenen Kommentar: *„Was der Hub tut, ist eine Beobachtung; was im Plan
+steht, eine Absicht."* Die beiden ATEM-Dialoge taten weiter genau das — der Audio-Dialog sogar
+ohne jede Rückfrage. Der Multiviewer-Dialog fragte, aber nur bei `sourceId !== 0`: ein bewusst
+schwarz geplanter Multiviewer ging still verloren.
+
+Das ist der Marktbefund **in seiner Umkehrung**. Die Segmente verlangen, den echten
+Geräte-Zustand zu lesen statt den letzten Befehl anzuzeigen; hier wurde der echte
+Geräte-Zustand gelesen und dann zur Absicht erklärt. Beide Richtungen zerstören dieselbe
+Unterscheidung, und die zweite ist die leisere.
+
+**Der verbleibende Rest ist damit präzise benennbar**, was er vorher nicht war: die Invariante
+gilt als Praxis an vier geprüften Stellen (drei im Renderer, eine im Companion-Modul), nicht als
+Regel, die ein neuer Lese-Weg automatisch erbt. Der Guard in `tests/atemLiveCompare.test.ts`
+nennt die drei Renderer-Stellen namentlich — er findet keine vierte. Das ist der nächste Schritt
+von Initiative 10, und er ist eine Struktur-Frage, keine Feature-Frage.
 
 **Was der Bau an den Entscheidungen selbst gelehrt hat** — dreimal war der eigentliche Befund
 nicht die Antwort, sondern etwas, das erst beim Umsetzen sichtbar wurde:

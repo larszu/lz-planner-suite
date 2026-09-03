@@ -75,20 +75,31 @@ it must not be shaped before ADR-003 Increment 2 (provenance in the plan model) 
 decided — otherwise the suite gets two different provenance vocabularies for the same
 idea, and the second one will be wrong.
 
-## What blocks it
+## What blocked it — both blockers are gone (2026-09-03)
 
-1. **Parked design question 3** — ADR-003 Increment 2 is a user decision, and this
-   initiative is downstream of it. Deciding the type-level shape first would prejudge it.
-2. **sony-camera-bridge is unreachable.** Its `claude/av-planner-market-research-39l0mv`
-   branch head is `0f073ea chore(licence): proprietaere Lizenz statt MIT`, PR #8 is open,
-   and there is no merge permission in that repository. The single best example of the
-   evidence class sits behind that PR.
+1. ~~**Parked design question 3**~~ — ADR-003 Increment 2 was a user decision and this
+   initiative is downstream of it. It has been decided ("ja, jetzt bauen") and built as
+   `cable-planner#643`: `types/provenance.ts` carries the vocabulary
+   (`unknown` / `planned` / `commanded` / `confirmed`) and `DECLARED_PROVENANCE` names the
+   sites. **That vocabulary is now the one this initiative must reuse** — the whole reason
+   for waiting was to avoid inventing a second one for the same idea.
+2. ~~**sony-camera-bridge is unreachable**~~ — merge permission was extended to all eight
+   repositories on 2026-09-03. PR #8 (licence) and PR #10 (`fix(tally): unbestätigt ist
+   nicht aus`) are merged; the repository's `master` is at `a79d988`. The single best
+   example of the evidence class — the AWB/ABB comment quoted above — is reachable.
+
+Note what #10 is, because it belongs to this file's argument: it is the *instance*-level
+half of the same idea, applied to the tally state. `BridgeTallyState` now carries
+`program?/preview?/isoRec?`, and `undefined` means "not confirmed" rather than "off". The
+type level, which is what this initiative is about, still has no such distinction: a port
+count read off a datasheet and one guessed by a name heuristic remain indistinguishable.
 
 ## If it is taken up
 
-In this order, and no further without the decision above:
+In this order — step 1 is now settled, so step 2 is the next actual work:
 
-1. Decide the vocabulary **with** ADR-003 Increment 2, not before it.
+1. ~~Decide the vocabulary **with** ADR-003 Increment 2, not before it.~~ Done: reuse
+   `cable-planner/src/renderer/types/provenance.ts`. Do not invent a second one.
 2. Lift the 253 existing `// Quelle:` comments into a field. Mechanical, reversible,
    loses nothing — the comments can stay.
 3. Only then the 8 catalogues without per-entry attribution, which is real research and
