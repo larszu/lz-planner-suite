@@ -73,8 +73,8 @@ Prosa unten war an mehreren Stellen älter als das Repository.
 | 2 | Tally-Map aus dem Plan | 24 | **fertig** | `lib/tallyMap.ts` — `buildTallyMap`, `tallyMapCsv`, `toTallyPiDevices` speist `tally-pi`s `devices[]` |
 | 3 | Stückliste / Kommissionier-Liste | 24 | **fertig** | `lib/planBom.ts` (ADR-002 Inkrement 4) |
 | 4 | Gestempelter Druck + Papier-Rückweg | 22 | **fertig** | ADR-004, `lib/documentStamp.ts`, QR zurück in den Datensatz |
-| 10 | Confirmed-State-Disziplin | 23 | **teilweise** | Inkrement 2 ist entschieden und gebaut (`cable#643`: Vokabular, Badge, zwei erklärte Stellen). **Neu gemessen 2026-09-03:** drei Stellen im Renderer schrieben einen Geräte-Befund in ein persistiertes Plan-Feld — alle drei sind jetzt getrennt (Videohub in Inkrement 0, beide ATEM-Dialoge in `cable#647`), dazu `sony#10` im Companion-Modul (unbestätigt ≠ aus). Was fehlt, ist die **Regel statt der Praxis**: die Invariante hält an vier namentlich geprüften Stellen, ein fünfter Lese-Weg käme ohne Zwang durch |
-| 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). **Beide dort genannten Blocker sind weg:** Design-Frage 3 ist entschieden und gebaut, und `sony-camera-bridge` ist erreichbar (`#8`, `#10` gemergt). Der nächste Schritt ist der mechanische — die Kommentare in ein Feld heben; die Publikation selbst bleibt offen |
+| 10 | Confirmed-State-Disziplin | 23 | **teilweise, alle bekannten Fälle geschlossen** | Nachgezählt 2026-09-03, Zahlen aus dem Quelltext statt aus der Erinnerung. **Zwei Sorten, zwei Register, beide gerechnet statt aufgezählt:** `deviceReadSites` führt 5 Stellen, an denen ein Geräte-Befund den Plan berührt (3 getrennt, 1 additiv, 1 liest-nur); `aiWriteSites` führt 4, an denen eine Maschine Werte erfindet (3 markiert, 1 mit Mensch dazwischen, keine ungedeckt). `specSource` in allen drei Planern, gehalten vom Suite-Guard `spec-source-vocabulary.mjs` (3 Feld-, 2 Helfer-Kopien, in CI). Dazu `sony#10` im Companion-Modul. **Warum nicht „fertig":** siehe Abschnitt 3c — jede der sechs Messrunden fand eine Schicht, die die vorige nicht kannte |
+| 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). **Beide dort genannten Blocker sind weg**, und der mechanische Schritt ist getan: die 253 Links stehen als `manufacturerUrl` im Katalog (`cable#649`), und die Eigenschaften-Leiste zeigt den **geerbten** Link mit genannter Herkunft — ohne die zweite Hälfte hätte der Nutzer nichts davon gesehen, weil der `DeviceTypePicker` keine Template-Felder kopiert. Offen bleiben die **8 Kataloge ohne Beleg** (echte Recherche, Schritt 3) und die Publikation selbst |
 | 5 | Change-Impact-Sicht | 22 | **fertig** | `lib/changeImpact.ts` (`#638`), `lib/planDiff.ts` + Vergleichs-Dialog (`#639`) und das **Register der ausgegebenen Dokumente** (`#644`). Die Vorwärts-Frage ist damit vollständig: welches ausgeteilte Blatt ist hin |
 | 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `#632`/`#633` schärften den Round-Trip, `#645` macht ihn verlustfrei (ein geladenes Preset überlebt den Export). Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
 | 7 | Rückweg: Plan gegen As-built | 20 | **teilweise** | `lib/handoverPackage.ts` baut das As-built-/Closeout-Paket; der **Abgleich** Plan ↔ As-built fehlt |
@@ -272,6 +272,44 @@ fills the segment with *no interchange format from anyone*, and we own an interc
 already export Green-GO config from `cable-planner`. The return path is the lighting segment's
 declared out-of-scope gap and the network segment's plan-versus-found need — high value, highest
 complexity, and correctly sequenced last among the identity-dependent items.
+
+### 3c. Sechs Messrunden, sechs Korrekturen (2026-09-03)
+
+Abschnitt 25 verlangt Neu-Ableitung statt Flickwerk. Der Tag hat gezeigt, warum die Regel nicht
+nur für fremde Annahmen gilt: **jede Messrunde hat eine Annahme von mir selbst widerlegt**, und
+zwar immer erst, nachdem ich sie bereits aufgeschrieben hatte.
+
+| # | Was ich annahm | Was die Messung ergab |
+| --- | --- | --- |
+| 1 | 255 `// Quelle:`-Kommentare | **253**, in 9 Dateien — die Zahl stand schon richtig im Scoping-Papier |
+| 2 | Die Katalog-Links erreichen den Nutzer, sobald das Feld gefüllt ist | Nein: der `DeviceTypePicker` setzt nur `deviceTypeId` und kopiert keine Template-Felder. Ohne Vererbungs-Anzeige wären 253 Belege aus einem unerreichbaren Kommentar in ein ebenso unerreichbares Feld gewandert |
+| 3 | „Eine Idee, ein Vokabular" (so im Commit geschrieben) | `isEstimate` war zwischen `light` und `multicam` **schon auseinandergelaufen**, keine Stunde nach der Entstehung — die englische Hälfte fehlte im light-planner, wo das Datenblatt oft englisch ist |
+| 4 | Der `cable-planner` ist für Initiative 10 fertig | Der AI-Port-Vorschlag schrieb **geratene Ports als Tatsache** und brachte Prüfung 18 zum Schweigen — die Prüfung, die einen Menschen zu belegten Daten zwingen soll |
+| 5 | Jetzt ist er fertig | Die Plangenerierung tat dasselbe für einen **ganzen Plan**, samt Kabeln |
+| 6 | Es sind drei KI-Schreibstellen | Erst fünf (ein grep nach dem Import-Pfad), dann **vier** (das Kriterium fragt nach dem Aufruf). `LibraryPanel` kannte ich nicht, und es brachte eine ganze Quelle mit: `suggestFromWeb` zählt Stecker in einem Wikipedia-Schnipsel |
+
+**Was daraus folgt, und warum Zeile 10 nicht „fertig" sagt.** Sechs von sechs Runden fanden
+eine Schicht, die die vorige nicht kannte. Eine siebte anzunehmen ist keine Schwarzmalerei,
+sondern die einzige Lesart, die zu den Belegen passt. „Alle bekannten Fälle geschlossen" ist
+deshalb die stärkste Aussage, die dieser Stand trägt.
+
+**Die Konsequenz ist gebaut, nicht bloss notiert.** Beide Sorten unbestätigter Werte haben
+jetzt ein Register, das die Stellen **aus dem Quelltext rechnet** statt sie aufzuzählen:
+`tests/deviceReadSites.test.ts` (Geräte-Befunde) und `tests/aiWriteSites.test.ts` (erfundene
+Werte). Eine neue Stelle lässt den jeweiligen Test fallen und wird namentlich genannt; wer sie
+einträgt, muss dabei beantworten, wo der Wert landet.
+
+Das ist der Unterschied, um den es geht: **eine aufgeschriebene Liste ist der Kenntnisstand
+ihres Autors, eine gerechnete ist der Zustand des Programms.** Runde 6 hat genau diesen
+Unterschied vorgeführt — dreimal griff ein ad-hoc-Muster daneben, einmal zu weit, einmal zu
+eng, einmal wieder zu weit.
+
+**Was ausdrücklich offen ist.** Ob ein vom Modell **erfundenes Kabel** eine Kennzeichnung
+tragen soll — und ob eine Markierung dafür überhaupt reicht. `Cable` hat kein `specSource`, und
+eine erfundene Verbindung behauptet mehr als eine erfundene Port-Zahl: dass zwei Ports
+zusammengehören. Das ist eine Formfrage mit mehreren vertretbaren Antworten und gehört dem
+Eigentümer; in `cable#651` ist die Lücke bewusst gelassen und durch einen Test festgehalten,
+damit sie als Entscheidung lesbar bleibt und nicht als Versäumnis.
 
 ## 4. Cross-module automation (section 28), grounded
 
