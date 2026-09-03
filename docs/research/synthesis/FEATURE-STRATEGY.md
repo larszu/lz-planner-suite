@@ -59,13 +59,53 @@ Score = `UV + FR + TS + ER + AV + IV - CX`.
 | **10** | **Confirmed-state discipline across every module** | 5 | 4 | 2 | 5 | 5 | 5 | 3 | **23** |
 | **11** | **Public device-capability registry** | 4 | 4 | 3 | 4 | 5 | 5 | 3 | **22** |
 
+## 3b. Wo die Roadmap wirklich steht (gemessen, 2026-09-03)
+
+Abschnitt 25 macht dieses Papier zum lebenden Dokument und verlangt Neu-Ableitung statt Flickwerk.
+Die Tabelle oben ist die ursprüngliche Ableitung und bleibt als solche stehen; dieser Abschnitt
+sagt, was davon heute im Code steht. **Aus dem Quellcode gelesen, nicht aus Commit-Titeln** — die
+Prosa unten war an mehreren Stellen älter als das Repository.
+
+| # | Initiative | Score | Stand | Belegt durch |
+| --- | --- | --- | --- | --- |
+| 0 | Fork konsolidieren | 20 | **teilweise** | Drift von 56/72/26 auf **18/19/17** gesenkt, CI-bewacht (`scripts/planner-drift.mjs`). Die Suite vendort weiterhin Kopien — verwaltet, nicht konsolidiert |
+| 1 | Identitäts-Spine + Label-Projektion | 27 | **fertig** | ADR-001, alle vier Inkremente, plus `cable-planner#637` (die Exporter gehen durch den Resolver) |
+| 2 | Tally-Map aus dem Plan | 24 | **fertig** | `lib/tallyMap.ts` — `buildTallyMap`, `tallyMapCsv`, `toTallyPiDevices` speist `tally-pi`s `devices[]` |
+| 3 | Stückliste / Kommissionier-Liste | 24 | **fertig** | `lib/planBom.ts` (ADR-002 Inkrement 4) |
+| 4 | Gestempelter Druck + Papier-Rückweg | 22 | **fertig** | ADR-004, `lib/documentStamp.ts`, QR zurück in den Datensatz |
+| 10 | Confirmed-State-Disziplin | 23 | **teilweise** | ADR-003 Inkrement 1 steht; Inkrement 2 (Provenienz im Plan-Modell) liegt beim Eigentümer — Design-Frage 3 |
+| 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). Publikation offen |
+| 5 | Change-Impact-Sicht | 22 | **offen** | kein Code. Die höchstbewertete vollständig offene Initiative |
+| 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `cable-planner#632`/`#633` haben den Round-Trip geschärft. Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
+| 7 | Rückweg: Plan gegen As-built | 20 | **teilweise** | `lib/handoverPackage.ts` baut das As-built-/Closeout-Paket; der **Abgleich** Plan ↔ As-built fehlt |
+| 8 | Netz-/IP-Plan | 19 | **teilweise** | `lib/subnet.ts` + IPAM-Übersicht + NetBox-Import; ein aus den Geräte-Datensätzen **abgeleiteter** Adressplan fehlt |
+| 9 | Delivery-/Streaming-Kette | 18 | **offen** | nur Katalog-Treffer, kein Signalfluss-Modell |
+
+**Was das für die Reihenfolge heißt.** Von den vier Initiativen mit Score ≥ 22 ist keine mehr
+vollständig offen außer **5 (Change-Impact)**. Sie trägt zugleich die höchste Komplexität der
+Tabelle (CX 5) und hängt an keiner der geparkten Entscheidungen — sie ist damit der nächste
+legitime Bau.
+
+**Was beim Eigentümer liegt und Initiativen blockiert.** Initiative 10 wartet auf Design-Frage 3
+(ADR-003 Inkrement 2), Initiative 11 hängt daran mit; Initiative 6 kann ohne Design-Frage 1
+(Green-GO Generator oder Editor) keinen verlustfreien Round-Trip zusagen. Die fünf offenen Fragen
+stehen in `../../decisions/ADR-005-lossless-or-loud.md` und in
+`CREDENTIALS-IN-TEMPLATES.md`.
+
 ### 0. Consolidate the fork — do this first, it is cheap and it blocks everything
 
 `../repos/INVENTORY.md` establishes that the suite does not consume the planners; it contains
 vendored copies, and **those copies have already diverged substantially in both directions.**
-Measured: 56 divergent paths in cable-planner, 72 in multicam-planner, 26 in light-planner. The
-suite's cable-planner has no NetBox import at all; the standalone cable-planner has no Lexware
-billing; the suite's multicam-planner is missing 8,145 lines and ten test files.
+Measured at the time of writing: 56 divergent paths in cable-planner, 72 in multicam-planner, 26 in
+light-planner. The suite's cable-planner has no NetBox import at all; the standalone cable-planner
+has no Lexware billing; the suite's multicam-planner is missing 8,145 lines and ten test files.
+
+> **Stand 2026-09-03:** die Zahlen sind auf **18 / 19 / 17** gesenkt und werden von
+> `scripts/planner-drift.mjs` in der CI bewacht; der Rest ist zum grossen Teil deklarierter
+> Overlay (`@avplan/*`-Pakete, Shell-Bridge, i18n) statt Auseinanderlaufen. Der Guard beantwortet
+> seit einer Nachbesserung auch die zweite Frage — *welche Upstream-Aenderung ist hier noch nicht
+> angekommen* —, weil ein uebersprungener Vendoring-Commit an den reinen Drift-Zahlen
+> vorbeigerutscht war. Die Suite vendort weiterhin Kopien: verwaltet, nicht konsolidiert.
 
 An identity spine that spans modules cannot be built on three hand-synced copies of the domain
 model — still less on three copies that already disagree. This is the same defect we are attacking

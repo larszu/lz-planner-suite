@@ -169,10 +169,62 @@ Ein Plan ohne Rollen exportiert eine leere Liste. Das ist die richtige Antwort, 
 Format transportiert Identität, und ohne Rolle gibt es keine. Was dabei offen bleibt, steht dann
 umso deutlicher in `unresolved`.
 
+### Inkrement 2 — die Exporter übernehmen den Resolver (erledigt, `cable-planner#637`)
+
+Der Schritt, den der Abschluss unten als „nächsten ehrlichen" benannt hatte. Vier Dinge hat er
+gelehrt, und drei davon sind Korrekturen an diesem ADR selbst.
+
+**Die Engstelle existierte schon — privat, und damit für ihren Zweck unbrauchbar.** Dieses ADR hat
+aus dem `minimal`-Entwurf übernommen: *„Keiner liefert zurück, woher der Text stammt. Eine
+Engstelle mit Provenienz im Rückgabewert löst das."* Genau die stand längst im Code — als private
+`portText` in `labelDerivation.ts`, also in der Ableitungsschicht. Die brauchte die Provenienz für
+ihre Kandidaten und hat sich die Auflösung selbst gebaut; die **Exporter**, für die dieses ADR sie
+vorgesehen hatte, blieben ohne. Sie ist jetzt nach `portLabel.ts` hochgezogen, nicht neu
+geschrieben, und `portDisplayLabel` ist der dünne Aufsatz darauf.
+
+> Ein geteilter Helfer, der im ersten Konsumenten entsteht, bleibt privat zu ihm. Wer ihn für einen
+> zweiten Konsumenten vorsieht, muss ihn dort auch hinstellen — sonst wird die Zusage zweimal
+> gebaut und nur einmal erfüllt.
+
+**Die Liste der vier Umgeher in diesem ADR war in zwei Punkten veraltet und in drei
+unvollständig.** `cableLabel.ts` und `exportVideohub.ts` benutzen den Resolver inzwischen. Dafür
+fehlten: `exportDevicePdf.ts` (die *eigenen* Ports gehen durch den Resolver, das Gegenende stand
+roh — beide Konventionen auf einem Blatt) und die Match-Keys in `equipmentSlice.ts` und
+`ReplaceDeviceSection.tsx`. Das ist dieselbe Erfahrung, die ADR-005 formuliert hat — *ein Hinweis
+sagt zuverlässig, wo man nachsehen soll, und unzuverlässig, was dort falsch ist* — nur war der
+Hinweis diesmal dieses ADR.
+
+**Match-Keys sind keine Exporter, tragen aber dieselbe Kette.** Sie mitzunehmen war keine
+Ausweitung, sondern die Bedingung dafür, dass der Guard ohne Ausnahmeliste auskommt — und eine
+Ausnahmeliste ist genau der Ort, an dem die nächste Abweichung wohnt. Die Entscheidung hat sich
+gelohnt: beide Keys trimmten erst *nach* dem Fallback, ein `contentLabel` aus Leerzeichen ergab
+damit einen leeren Key, und ein leerer Key fällt aus der Namens-Zuordnung heraus in die
+positionelle. Nach `cable-planner#635` entscheidet dieser Pfad beim Library-Update, welche Kabel
+ihren Port wiederfinden.
+
+**Ein Test, der auf beiden Ständen grün ist, ist wertlos — und man sieht es nur durch Einspritzen.**
+Der erste Entwurf des Match-Key-Tests hatte zwei alte Ports. Da hatte die Namens-Zuordnung den
+Köder schon verbraucht und die positionelle lag zufällig richtig. Erst mit dem alten Key
+zurückgespielt fiel auf, dass nur der Quell-Guard anschlug und der Verhaltenstest nichts prüfte.
+Mit einem einzigen alten Port und einem Köder davor fällt er. Dieselbe Probe hat eine zweite
+Behauptung widerlegt: der angebliche Whitespace-Fehler in `installerLists` existierte nicht, dessen
+Kette trimmte schon vorher.
+
 ## Damit ist ADR-001 umgesetzt
 
-Alle vier Inkremente stehen. Was offen bleibt, ist bewusst offen und in der Regel *kein Anker ohne
-Ziel-Spec* begründet: ISO-Präfix und Comms-Kanal warten auf ein belegtes Zielsystem in
-`labelTargets.ts`. Der nächste ehrliche Schritt ist nicht, das Schema zu erweitern, sondern die
-Exporter den Resolver übernehmen zu lassen — die Treue-Regel aus Inkrement 1 hält sie bis dahin
-absichtlich auseinander.
+Alle vier Inkremente stehen, und der Schritt, der hier als „nächster ehrlicher" benannt war, ist
+mit `cable-planner#637` getan: die Exporter gehen durch den Resolver, ein Guard hält die Kette
+einzig. Was offen bleibt, ist bewusst offen und in der Regel *kein Anker ohne Ziel-Spec* begründet:
+ISO-Präfix und Comms-Kanal warten auf ein belegtes Zielsystem in `labelTargets.ts`.
+
+Ein Satz dazu, den der erste Entwurf dieses Abschnitts falsch hatte: er kündigte Initiative 2
+(Tally-Map) als „damit frei" an. Die ist längst gebaut — `lib/tallyMap.ts` mit `buildTallyMap`
+und `toTallyPiDevices`. Nachgesehen statt fortgeschrieben; die Roadmap in
+[`FEATURE-STRATEGY.md`](../research/synthesis/FEATURE-STRATEGY.md) ist an mehreren Stellen älter
+als der Code, und Abschnitt 25 verlangt Neu-Ableitung statt Flickwerk. Der gemessene Stand steht
+dort jetzt.
+
+Was dieses Inkrement der Kette wirklich bringt: die Kamera-zu-Input-zu-Tally-Kette wird nicht
+erst auflösbar — sie war es —, sondern sie sagt jetzt **an jeder Stelle, woher ihr Text stammt**.
+Das ist die Voraussetzung für Design-Regel 1 (niemals einen unbestätigten Wert als Tatsache
+zeigen) auf dem Label-Pfad, nicht nur im Austauschformat.
