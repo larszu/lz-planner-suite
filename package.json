@@ -22,6 +22,7 @@
     "dev:light": "npm run dev --workspace light-planner",
     "spec:vocab": "node scripts/spec-source-vocabulary.mjs",
     "drift": "node scripts/planner-drift.mjs --upstream ..",
-    "drift:check": "node scripts/planner-drift.mjs --upstream .. --check"
+    "drift:check": "node scripts/planner-drift.mjs --upstream .. --check",
+    "features:reachable": "node scripts/reachable-features.mjs"
   }
 }

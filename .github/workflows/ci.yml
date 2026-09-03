@@ -52,6 +52,9 @@ jobs:
       - name: Herkunfts-Vokabular (beide Planer-Kopien)
         run: npm run spec:vocab
 
+      - name: Vendorte Features haben einen Bedienweg
+        run: npm run features:reachable
+
   # ---------------------------------------------------------------------------
   # Drift-Guard fuer die vendorten Planer-Kopien unter apps/.
   #

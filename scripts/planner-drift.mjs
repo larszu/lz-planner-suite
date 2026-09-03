@@ -458,6 +458,45 @@ else if (!has('check')) console.log(report)
 
 // ---------- Baseline / CI ----------
 if (has('write-baseline')) {
+  // Die Baseline haelt zwei Dinge fest: die Drift-Zahlen UND den
+  // `upstreamSha`, gegen den die „uncarried"-Liste gerechnet wird. Das
+  // Schreiben zieht beide nach — und genau das ist die Falle: es setzt den
+  // Sha vor, wodurch die Liste dessen, was upstream geaendert und in der
+  // Kopie nicht angekommen ist, auf leer zurueckfaellt. Die Zeilen fehlen
+  // danach immer noch, nur meldet sie niemand mehr.
+  //
+  // Das ist keine Theorie. Die Regel „erst `--check`, dann
+  // `--write-baseline`" ist heute genau deshalb entstanden: in der falschen
+  // Reihenfolge vergleicht der Check die Baseline mit sich selbst und meldet
+  // beruhigend „unveraendert", waehrend die Drift sich bewegt hat.
+  //
+  // Eine Regel im Kopf des Bedieners ist der schwaechste Schutz, den es
+  // gibt. Ab hier weigert sich das Werkzeug selbst.
+  const offen = APPS.map((app) => [app, uncarriedByApp[app]])
+    .filter(([, u]) => u && !u.unknown && u.files.length > 0)
+  if (offen.length > 0 && !has('force')) {
+    console.error(
+      '\nBaseline NICHT geschrieben — es liegen nicht uebernommene ' +
+      'Upstream-Aenderungen vor:\n',
+    )
+    for (const [app, u] of offen) {
+      console.error(`  ${app}:`)
+      for (const f of u.files) console.error(`    ${f.file} (${f.addedLines} Zeilen)`)
+    }
+    console.error(
+      '\nWuerde die Baseline jetzt geschrieben, ruecke der `upstreamSha` vor und\n' +
+      'diese Liste faellt auf leer — die Zeilen fehlten weiter, nur meldet sie\n' +
+      'niemand mehr. Entweder die Aenderungen vendorn, oder bewusst begraben\n' +
+      'mit --force.\n',
+    )
+    process.exit(1)
+  }
+  if (offen.length > 0) {
+    console.log('--force: die folgenden Upstream-Aenderungen werden begraben:');
+    for (const [app, u] of offen) {
+      for (const f of u.files) console.log(`  ${app}: ${f.file} (${f.addedLines} Zeilen)`)
+    }
+  }
   writeFileSync(BASELINE, JSON.stringify(summary, null, 2) + '\n')
   console.log(`Baseline geschrieben: ${relative(ROOT, BASELINE)}`)
   process.exit(0)
