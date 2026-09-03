@@ -9,6 +9,7 @@ import { gelLibrary } from '../core/gelLibrary';
 import { fixtureLibrary } from '../core/fixtureLibrary';
 import { getFixtureCCT, cctToRgb } from '../core/colorTemp';
 import { useTranslation } from '../i18n';
+import { isEstimate, isStaleSource } from '../types';
 
 interface Props {
   fixtures: PlacedFixture[];
@@ -464,9 +465,40 @@ const PropertyPanel: React.FC<Props> = ({
           </span>
           {showSpecs && (() => {
             const setSpec = (patch: Partial<Fixture>) => onUpdateFixture(f.id, { fixture: { ...f.fixture, ...patch } });
-            const sNum = (label: string, val: number | undefined, set: (v: number) => void, step = 1, title?: string) => (
+            // Der Beleg zum Wert, falls einer mitgespeichert wurde.
+            //
+            // Die Datenblatt-Extraktion liefert zu jedem Feld eine Quelle —
+            // ein Zitat oder eine als „geschaetzt" gekennzeichnete
+            // Begruendung — und der Dialog zeigt sie an. Gespeichert wurde
+            // sie bis dahin nicht, also war spaeter eine geschaetzte
+            // Streuwinkel-Angabe von einer abgelesenen nicht mehr zu
+            // unterscheiden. Genau diese Zahl geht in die Lichtberechnung.
+            const srcMark = (key: string, current: unknown) => {
+              const entry = f.fixture.specSource?.[key];
+              if (!entry) return null;
+              if (isStaleSource(entry, current)) {
+                return (
+                  <span
+                    className="spec-src spec-src-stale"
+                    title={`${t('prop.src.stale', 'Beleg bezog sich auf')} ${entry.value}: ${entry.source}`}
+                  >
+                    !
+                  </span>
+                );
+              }
+              const est = isEstimate(entry);
+              return (
+                <span
+                  className={est ? 'spec-src spec-src-est' : 'spec-src'}
+                  title={`${est ? t('prop.src.estimate', 'Geschätzt') : t('prop.src.cited', 'Beleg')}: ${entry.source}`}
+                >
+                  {est ? '≈' : '✓'}
+                </span>
+              );
+            };
+            const sNum = (label: string, val: number | undefined, set: (v: number) => void, step = 1, title?: string, srcKey?: string) => (
               <label className="prop-field" title={title}>
-                <span>{label}</span>
+                <span>{label}{srcKey ? srcMark(srcKey, val) : null}</span>
                 <input type="number" value={val ?? 0} step={step} onChange={(e) => set(Number(e.target.value))} />
               </label>
             );
@@ -477,11 +509,11 @@ const PropertyPanel: React.FC<Props> = ({
                   <input type="text" value={f.fixture.manufacturer} onChange={(e) => setSpec({ manufacturer: e.target.value })} /></label>
                 <label className="prop-field"><span>{t('prop.fixture.type', 'Typ')}</span>
                   <input type="text" value={f.fixture.name} onChange={(e) => setSpec({ name: e.target.value })} /></label>
-                {sNum(t('prop.power', 'Leistung (W)'), f.fixture.wattage, (v) => setSpec({ wattage: v }), 1)}
-                {sNum(t('prop.luminousFlux', 'Lichtstrom (lm)'), f.fixture.lumens, (v) => setSpec({ lumens: v }), 50, t('prop.luminousFluxTitle', 'Gesamt-Lichtstrom (Fallback, wenn keine Lux-Referenz)'))}
-                {sNum(t('prop.beam50deg', 'Beam 50 % (°)'), f.fixture.beamAngle, (v) => setSpec({ beamAngle: v }), 0.5, t('prop.beam50Title', 'Heller Kern (FWHM)'))}
-                {sNum(t('prop.field10deg', 'Field 10 % (°)'), f.fixture.fieldAngle, (v) => setSpec({ fieldAngle: v }), 0.5, t('prop.field10Title', 'Nutzbarer Rand – treibt die Berechnung (σ)'))}
-                {sNum(t('prop.cutoff25deg', 'Cutoff 2,5 % (°)'), f.fixture.cutoffAngle, (v) => setSpec({ cutoffAngle: v || undefined }), 0.5, t('prop.cutoffTitle', 'Wo das Licht endet (optional)'))}
+                {sNum(t('prop.power', 'Leistung (W)'), f.fixture.wattage, (v) => setSpec({ wattage: v }), 1, undefined, 'wattage')}
+                {sNum(t('prop.luminousFlux', 'Lichtstrom (lm)'), f.fixture.lumens, (v) => setSpec({ lumens: v }), 50, t('prop.luminousFluxTitle', 'Gesamt-Lichtstrom (Fallback, wenn keine Lux-Referenz)'), 'lumens')}
+                {sNum(t('prop.beam50deg', 'Beam 50 % (°)'), f.fixture.beamAngle, (v) => setSpec({ beamAngle: v }), 0.5, t('prop.beam50Title', 'Heller Kern (FWHM)'), 'beamAngle')}
+                {sNum(t('prop.field10deg', 'Field 10 % (°)'), f.fixture.fieldAngle, (v) => setSpec({ fieldAngle: v }), 0.5, t('prop.field10Title', 'Nutzbarer Rand – treibt die Berechnung (σ)'), 'fieldAngle')}
+                {sNum(t('prop.cutoff25deg', 'Cutoff 2,5 % (°)'), f.fixture.cutoffAngle, (v) => setSpec({ cutoffAngle: v || undefined }), 0.5, t('prop.cutoffTitle', 'Wo das Licht endet (optional)'), 'cutoffAngle')}
                 <label className="prop-field"><span>{t('prop.beamShape', 'Strahlform')}</span>
                   <select value={f.fixture.beamShape} onChange={(e) => setSpec({ beamShape: e.target.value as BeamShape })}>
                     <option value="circular">{t('prop.shape.circular', 'Kreisförmig')}</option><option value="elliptical">{t('prop.shape.elliptical', 'Elliptisch')}</option>
