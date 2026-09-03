@@ -30,10 +30,23 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const COPIES = [
+/**
+ * Wer das FELD fuehrt. Alle drei — seit `cable#650` auch der cable-planner,
+ * dessen AI-Port-Vorschlag geratene Ports als Tatsache schrieb.
+ */
+const FIELD_COPIES = [
   { app: 'light-planner', file: 'apps/light-planner/src/types.ts' },
   { app: 'multicam-planner', file: 'apps/multicam-planner/src/types/index.ts' },
+  { app: 'cable-planner', file: 'apps/cable-planner/src/renderer/types/equipment.ts' },
 ];
+
+/**
+ * Wer zusaetzlich die HELFER fuehrt — nur die beiden, die Marker anzeigen
+ * (`≈` Schaetzung, `!` ueberholt). Der cable-planner zeigt seinen Beleg
+ * ueber eine Zeichnungspruefung statt ueber ein Badge und braucht sie nicht;
+ * ihn hier mitzuverlangen hiesse, toten Code zu erzwingen.
+ */
+const COPIES = FIELD_COPIES.filter((c) => c.app !== 'cable-planner');
 
 /**
  * Den Rumpf einer `export const <name> = ... ;`-Deklaration herausschneiden,
@@ -58,13 +71,14 @@ const declaration = (src, name) => {
 const FUNCTIONS = ['isEstimate', 'isStaleSource'];
 const problems = [];
 
-const sources = COPIES.map((c) => ({
-  ...c,
-  src: readFileSync(join(ROOT, c.file), 'utf8'),
-}));
+const read = (c) => ({ ...c, src: readFileSync(join(ROOT, c.file), 'utf8') });
+const fieldSources = FIELD_COPIES.map(read);
+const sources = COPIES.map(read);
 
-// 1) Das Feld selbst muss es auf beiden Seiten geben.
-for (const c of sources) {
+// 1) Das Feld selbst muss es in ALLEN dreien in derselben Form geben.
+//    Das abschliessende Semikolon ist Stilfrage — der cable-planner setzt
+//    keine —, die Form davor nicht.
+for (const c of fieldSources) {
   if (!/specSource\?: Record<string, \{ value: string; source: string \}>/.test(c.src)) {
     problems.push(`${c.app}: kein oder abweichend geformtes \`specSource\` in ${c.file}`);
   }
@@ -110,5 +124,6 @@ if (problems.length > 0) {
   process.exit(1);
 }
 
-console.log('OK specSource-Vokabular: beide Kopien tragen dieselben Funktionen');
+console.log(`OK specSource: alle ${FIELD_COPIES.length} Planer fuehren das Feld in derselben Form`);
+console.log('OK die beiden anzeigenden Planer tragen dieselben Funktionen');
 console.log('OK isEstimate erkennt Schaetzungen in beiden Sprachen');
