@@ -75,7 +75,7 @@ Prosa unten war an mehreren Stellen älter als das Repository.
 | 4 | Gestempelter Druck + Papier-Rückweg | 22 | **fertig** | ADR-004, `lib/documentStamp.ts`, QR zurück in den Datensatz |
 | 10 | Confirmed-State-Disziplin | 23 | **teilweise** | ADR-003 Inkrement 1 steht; Inkrement 2 (Provenienz im Plan-Modell) liegt beim Eigentümer — Design-Frage 3 |
 | 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). Publikation offen |
-| 5 | Change-Impact-Sicht | 22 | **teilweise** | `lib/changeImpact.ts` (Inkrement 1, `cable-planner#638`): die Vorwärts-Frage über zwei Plan-Stände, mit `unknown` als eigenem Ergebnis. Inkrement 2 abgesteckt statt gebaut — `INITIATIVE-5-SCOPING.md` |
+| 5 | Change-Impact-Sicht | 22 | **teilweise** | `lib/changeImpact.ts` (`#638`) + `lib/planDiff.ts` und der Vergleichs-Dialog (`#639`): zwei gegebene Plan-Stände gegeneinander, alle 146 Felder klassifiziert, `unknown` als eigenes Ergebnis. Es fehlt weiter das **Register der ausgegebenen Dokumente** — geparkte Design-Frage 6, `INITIATIVE-5-SCOPING.md` |
 | 6 | Intercom-Plan als Daten | 20 | **teilweise** | `exportGreengo`/`importGreengo`/`intercomMatrixXlsx`; `cable-planner#632`/`#633` haben den Round-Trip geschärft. Ein **herstellerneutrales** Austauschformat fehlt weiter — genau die Lücke, die das Segment-Dossier als „no interchange format from anyone" führt |
 | 7 | Rückweg: Plan gegen As-built | 20 | **teilweise** | `lib/handoverPackage.ts` baut das As-built-/Closeout-Paket; der **Abgleich** Plan ↔ As-built fehlt |
 | 8 | Netz-/IP-Plan | 19 | **teilweise** | `lib/subnet.ts` + IPAM-Übersicht + NetBox-Import; ein aus den Geräte-Datensätzen **abgeleiteter** Adressplan fehlt |
@@ -91,8 +91,8 @@ vier Fragen, drei davon ändern das Dateiformat).
 
 Damit ist die Tabelle in einem Zustand, den sie vorher nicht hatte: **jede verbleibende Lücke mit
 Score ≥ 20 ist entweder geparkt oder ein Teilstück** (6, 7, 8, 10, 11), und das höchstbewertete
-freie Feld ist Initiative 9 mit 18. Was aus 5 ohne jede Entscheidung noch folgt, ist der
-Datei-gegen-Datei-Vergleich zweier Plan-Stände: kein Store, kein Format-Feld, kein Register.
+freie Feld ist Initiative 9 mit 18. Der eine Rest aus 5, der ohne jede Entscheidung ging — der
+Datei-gegen-Datei-Vergleich, kein Store, kein Format-Feld, kein Register — ist mit `#639` gebaut.
 
 **Was beim Eigentümer liegt und Initiativen blockiert.** Initiative 10 wartet auf Design-Frage 3
 (ADR-003 Inkrement 2), Initiative 11 hängt daran mit; Initiative 6 kann ohne Design-Frage 1

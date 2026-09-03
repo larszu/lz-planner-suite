@@ -51,6 +51,12 @@ const SECRET_KEYS = new Set(['password', 'passphrase', 'apiKey', 'secret', 'toke
 **4. `stripSecrets` gibt es genau einmal.** Es liegt im Mobile-Share-Pfad und
 wird von keinem anderen Ausgang benutzt.
 
+> **Stand 2026-09-03 (`cable-planner#640`):** dieser Punkt gilt so nicht mehr.
+> Die Regel liegt jetzt in `src/main/util/stripSecrets.ts` und wird von zwei
+> Ausgängen benutzt — der Mobile-Ansicht und dem Viewer-Export. Der Rest des
+> Dokuments bleibt gültig; siehe den Nachtrag unten.
+
+
 ## Warum das nicht einfach ein Bug ist
 
 Drei Gründe, es *nicht* nebenbei zu reparieren:
@@ -90,3 +96,76 @@ Kein Vorschlag, welche der vier Abhilfen es sein soll. Der billigste Schritt
 eine Verbesserung — aber auch er entscheidet, dass sie mitgehen *dürfen*.
 
 **Es ist die Entscheidung des Nutzers.**
+
+---
+
+## Nachtrag (2026-09-03): der vollständige Rundgang, und was er gefunden hat
+
+Dieses Dokument beschrieb einen Widerspruch an **einer** Stelle. Beim Aufzählen
+aller 146 Felder von `Cable`/`EquipmentItem` für den Plan-Vergleich
+(`cable-planner#639`) tauchte dasselbe Feld-Paar erneut auf — und diesmal wurde
+nicht beim zweiten Fund aufgehört, sondern **jeder** Ausgang einmal abgegangen.
+
+**Warum überhaupt messen.** Ein Ausgang, der das ganze `EquipmentItem`
+durchreicht, erwähnt `password` nirgends im Quelltext. Eine Textsuche findet ihn
+also nicht. Gemessen wurde deshalb mit einem Kanarienvogel-Wert durch jede reine
+Ableitung (`cable-planner tests/credentialExits.test.ts`).
+
+| Ausgang | Empfänger | Stand |
+| --- | --- | --- |
+| `project:save` / `save-as` | der Eigentümer selbst | trägt sie — richtig so |
+| CRDT-Sync | Mit-Planer am selben Plan | trägt sie — richtig so |
+| `mobileShareServer` | LAN-Ansicht, token-gated | strippt sie |
+| `project:export-viewer` (`.cpviewer`) | **externe Reviewer** | trug sie — **geschlossen** in `#640` |
+| zehn Dokument-Ableitungen (Pull-Liste … Plan-Vergleich) | Papier / CSV | sauber, jetzt per Test festgehalten |
+| `cableToAvPlan` (`.avplan`) | andere Apps, andere Leute | trägt sie — **offen** |
+| `templateFromEquipment` → geteilte Bibliothek | das Team | trägt sie — **offen**, dieses Dokument |
+
+### Der eine Fall, der keine Entscheidung war
+
+Der Viewer-Export war keine Abwägung, sondern eine Lücke: die Datei geht
+ausdrücklich an externe Reviewer, weder `src/viewer/` noch `src/mobile/` liest
+die beiden Felder, und die Regel dagegen gab es bereits nebenan. Es ging nichts
+verloren. Er ist deshalb geschlossen worden, ohne zu fragen — und der Grund,
+warum er offen war, ist derselbe wie so oft: **die Regel lag als Kopie in einer
+Datei statt als gemeinsames Stück.** Sie liegt jetzt an einer Stelle.
+
+### Der neue Fall, der eine Entscheidung IST
+
+`cableToAvPlan` schiebt per Rest-Spread das ganze Projekt nach
+`domains.cabling`. Ein Strippen wäre hier kein Gewinn ohne Preis: der Import
+liest `domains.cabling` als ganzes Projekt zurück, ein Round-Trip verlöre die
+Zugangsdaten also still — **ADR-005 in die andere Richtung**. Genau das
+unterscheidet ihn vom Viewer-Fall.
+
+`.avplan` ist zudem das app-übergreifende Austauschformat: die Datei geht
+absichtlich an jemanden, der ein anderes Gewerk plant. Ein Lichtplaner braucht
+das Passwort des Core-Switches nicht.
+
+Die vier Abhilfen aus dem Hauptteil gelten hier sinngemäß, plus eine fünfte,
+die es nur hier gibt: **beim Export fragen** — die `.avplan`-Datei einmal mit
+und einmal ohne Zugangsdaten zu können, ist keine Ausrede, sondern die einzige
+Antwort, die Round-Trip und Weitergabe gleichzeitig bedient.
+
+### Die Quer-Prüfung: bei den Nachbarn nachgesehen
+
+Dieselbe Frage in `multicam-planner` und `light-planner` gestellt, wie ADR-005
+Inkrement 3 es für die Naht-Pfade vorgemacht hat. Ergebnis: **nichts zu
+portieren.** Keiner der beiden modelliert Geräte-Netzzugang überhaupt — weder
+`password`/`username` noch, als Gegenprobe gesucht, `ipAddress` kommt in ihren
+zusammen 171 TS/TSX-Dateien vor.
+
+Das ist kein Nullbefund, sondern eine Eingrenzung: das Problem gehört dem
+cable-planner allein, weil nur er Geräte mit Zugangsdaten führt. Wer die Frage
+entscheidet, entscheidet sie für ein Repository, nicht für drei — und ein
+späteres „das müssen wir noch überall nachziehen" ist damit ausgeschlossen,
+gemessen statt vermutet.
+
+### Was das an der Frage ändert
+
+Nichts an ihrer Zuständigkeit — sie bleibt beim Eigentümer. Aber sie ist nicht
+mehr die Frage nach *einem* Weg. Es sind **zwei offene Austrittsstellen
+desselben Feld-Paars**, und wer eine davon entscheidet, hat gute Gründe, die
+andere gleich mitzuentscheiden: beide betreffen eine Datei, die absichtlich
+weitergegeben wird, und beide würden von derselben Antwort profitieren
+(strippen, fragen, oder ausdrücklich mitgeben und es im Dialog sagen).

@@ -78,3 +78,56 @@ Er entscheidet nichts über das Dateiformat.
 **Offen, und ausdrücklich beim Eigentümer.** Damit ist es die sechste geparkte Design-Frage; die
 anderen fünf stehen in [`../../decisions/ADR-005-lossless-or-loud.md`](../../decisions/ADR-005-lossless-or-loud.md)
 und [`CREDENTIALS-IN-TEMPLATES.md`](CREDENTIALS-IN-TEMPLATES.md).
+
+---
+
+## Nachtrag (2026-09-03): der zweite Weg ist gebaut
+
+`cable-planner#639` hat gebaut, was oben als „der billigere und ehrlichere nächste Schritt" steht:
+den **Vergleich zweier gegebener Plan-Stände**. Der Nutzer wählt eine zweite Projektdatei — etwa
+die Fassung, die ein Kollege zurückgeschickt hat —, und bekommt beide Antworten nebeneinander:
+`planDiff` sagt, *was* anders ist, `changeImpact` sagt, *welche Blätter* damit überholt sind.
+Damit hat Inkrement 1 auch seinen ersten Aufrufer; bis dahin war es eine Ableitung ohne Weg zum
+Nutzer.
+
+**An der geparkten Frage ändert das nichts.** Das Register der ausgegebenen Dokumente fehlt
+weiterhin, und mit ihm die eigentlich gewünschte Antwort („welches der Blätter, die ich ausgeteilt
+habe, ist hin"). Die vier Fragen oben stehen unverändert beim Eigentümer. Was gebaut wurde,
+entscheidet keine davon — das war die Bedingung.
+
+### Was der Bau gelehrt hat, und was oben so nicht stand
+
+**Die Klassifizierung ist die Arbeit, nicht der Vergleich.** Ein Vergleich über acht handverlesene
+Felder (Endpunkte, Typ, Länge) wäre in einer Stunde fertig gewesen und hätte die anderen 138 der
+insgesamt **146** Felder von `Cable`/`EquipmentItem` als „keine Änderung" ausgewiesen. Das ist
+nicht die kleine Lösung derselben Sache, sondern die gefährliche Richtung von ADR-005: eine
+Falschaussage, die wie eine Freigabe aussieht. Jedes Feld trägt jetzt eine Klasse
+(`identity` / `substantive` / `cosmetic` / `bookkeeping` / `sensitive`), und ein Laufzeit-Guard
+über die Typ-Quelle bricht, sobald ein neues Feld ohne Klasse dazukommt.
+
+**Zugangsdaten haben einen zweiten Ausgang, und der führt aufs Papier.** Beim Aufzählen der Felder
+fiel auf, dass `EquipmentItem` `username` und `password` führt — Geräte-Zugangsdaten, die in der
+Projektdatei stehen. Ein Vergleich, der Werte druckt, hätte sie in die CSV geschrieben. Sie sind
+deshalb als `sensitive` klassifiziert: die Änderung wird gemeldet, der Wert nie.
+
+Das ist **neuer Beleg für Design-Frage 5** ([`CREDENTIALS-IN-TEMPLATES.md`](CREDENTIALS-IN-TEMPLATES.md)):
+dort geht es um dieselben zwei Felder auf dem Weg in ein geteiltes Bibliotheks-Template. Nach zwei
+Funden war die Vermutung, dass es weitere gibt, keine Vermutung mehr, sondern eine Aufgabe — und
+sie ist in `cable-planner#640` erledigt: **jeder Ausgang einmal abgegangen**, mit einem
+Kanarienvogel-Wert statt mit einer Textsuche, weil ein Ausgang, der das ganze Item durchreicht,
+`password` nirgends erwähnt.
+
+Ergebnis: zehn Dokument-Ableitungen sauber (jetzt per Test festgehalten), der **Viewer-Export**
+trug sie und ist geschlossen, `.avplan` trägt sie und **bleibt offen** — dort wäre Strippen ein
+Round-Trip-Verlust, also ADR-005 in die andere Richtung. Die vollständige Tabelle steht im
+Nachtrag von `CREDENTIALS-IN-TEMPLATES.md`. Der Rundgang hat damit genau das geliefert, wofür
+ADR-005 Inkrement 3 die Naht-Pfade abgegangen ist: eine Lücke geschlossen, eine Entscheidung
+sauber vom Bug getrennt.
+
+**Das eigene Werkzeug hatte denselben Fehler wie die Sache, gegen die es schützt.** Der erste
+Feld-Auszug für den Guard hat drei Felder still verschluckt — `libraryRef`,
+`rackInternalSnapshot`, `atemMvCapabilitiesOverride`, alle drei mit mehrzeiligem Objekt-Typ. 94
+statt 97, und ohne Fehlermeldung. Aufgefallen ist es nur, weil die Zahl gegen den Quelltext
+gehalten wurde statt geglaubt. Der bestehende `interfaceKeys` bleibt unangetastet: er ist
+zeichengleich zur Kopie im multicam-planner, und dieses „wortgleich nachprüfbar" ist mehr wert als
+eine Erweiterung.
