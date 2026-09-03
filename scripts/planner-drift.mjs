@@ -31,13 +31,19 @@
 // uebersprungener Vendoring-Commit vorbeigerutscht (cable#634): Drift zurueck
 // auf Baseline, Guard gruen, Fix fehlte trotzdem.
 //
-// Deshalb haelt die Baseline jetzt ein SHA-PAAR (upstreamSha + suiteSha) und
-// das Skript fragt zusaetzlich: welche Dateien hat upstream seit dem
-// Baseline-Stand angefasst, ohne dass die Suite ihre Kopie seither angefasst
-// hat? Kein Beweis fuer einen Verlust — eine Aenderung kann bewusst
-// draussengeblieben sein —, aber die Liste, die man beim Nachziehen durchgeht.
-// Sie braucht die Historie beider Repos; bei flachem Checkout sagt der
-// Bericht, dass er nicht pruefen konnte, statt Vollstaendigkeit zu behaupten.
+// Deshalb fragt das Skript zusaetzlich ueber den INHALT: welche Zeilen hat
+// upstream seit dem in der Baseline vermerkten `upstreamSha` hinzugefuegt, und
+// fehlen sie in der Suite-Kopie vollstaendig? Kein Beweis fuer einen Verlust —
+// eine Aenderung kann bewusst draussengeblieben sein —, aber die Liste, die
+// man beim Nachziehen durchgeht.
+//
+// Ueber den Inhalt und nicht ueber die Suite-Historie, und das mit Absicht:
+// eine erste Fassung merkte sich zusaetzlich einen `suiteSha`. Das faellt beim
+// Squash-Merge um — der aufgezeichnete Commit landet nie auf main, und ein
+// frischer Klon meldet fuer immer „nicht pruefbar". Gebraucht wird nur die
+// Upstream-Historie, die beim Vendoring ohnehin dasteht; bei flachem Checkout
+// sagt der Bericht, dass er nicht pruefen konnte, statt Vollstaendigkeit zu
+// behaupten.
 // ───────────────────────────────────────────────────────────────────────────
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
@@ -230,17 +236,15 @@ function upstreamSha(app) {
   }
 }
 
-/** HEAD dieses Repos. Zusammen mit `upstreamSha` macht er die Baseline zu
- *  einem Paar aus zwei Staenden — erst damit laesst sich fragen, ob eine
- *  Aenderung von drueben hier auch angekommen ist. */
-function suiteSha() {
-  try {
-    return execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], {
-      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim().slice(0, 12)
-  } catch {
-    return null
+/** Zeilen-Multimenge aus einem Text (statt aus einer Datei). */
+function lineBagOf(text) {
+  const bag = new Map()
+  for (const raw of text.split('\n')) {
+    const line = normalise(raw)
+    if (!line) continue
+    bag.set(line, (bag.get(line) ?? 0) + 1)
   }
+  return bag
 }
 
 /** Dateien, die `git` zwischen zwei Staenden unter den ROOTS geaendert hat. */
@@ -256,6 +260,17 @@ function changedSince(repoDir, sinceSha, pathPrefixes) {
   }
 }
 
+/** Inhalt einer Datei zu einem bestimmten Commit, oder null. */
+function blobAt(repoDir, sha, path) {
+  try {
+    return execFileSync('git', ['-C', repoDir, 'show', `${sha}:${path}`], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024,
+    })
+  } catch {
+    return null
+  }
+}
+
 /**
  * ADR-005, Regel 4, auf dieses Skript selbst angewandt.
  *
@@ -266,32 +281,55 @@ function changedSince(repoDir, sinceSha, pathPrefixes) {
  * vorbeigerutscht (cable#634): Drift zurueck auf Baseline, Guard gruen, Fix
  * fehlte trotzdem. Aufgefallen ist es an den Testzahlen beider Seiten.
  *
- * Diese Pruefung stellt die Frage direkt: welche Dateien hat upstream seit
- * dem Baseline-Stand angefasst, ohne dass die Suite ihre Kopie seither
- * angefasst hat? Das ist kein Beweis fuer einen Verlust — eine Aenderung kann
- * bewusst nicht uebernommen worden sein —, aber es ist die Liste, die man
- * beim Nachziehen durchgehen muss.
+ * Die Frage direkt gestellt: welche Zeilen hat der Upstream-Commit-Bereich
+ * seit dem Baseline-Stand HINZUGEFUEGT, und fehlen sie in der Suite-Kopie
+ * vollstaendig? Dann ist die Aenderung nicht angekommen.
  *
- * Braucht die Historie beider Repos. Bei flachem Checkout (CI) liefert
- * `changedSince` null; dann sagt der Bericht das, statt Vollstaendigkeit zu
- * behaupten.
+ * Ueber den INHALT und nicht ueber die Suite-Historie, und das mit Absicht:
+ * die erste Fassung merkte sich zusaetzlich einen `suiteSha` und fragte, ob
+ * die Suite ihre Kopie seither angefasst hat. Das faellt beim Squash-Merge um
+ * — der aufgezeichnete Commit landet nie auf main, und ein frischer Klon
+ * meldet fuer immer „nicht pruefbar". Der Inhaltsvergleich braucht nur die
+ * Upstream-Historie, die beim Vendoring ohnehin dasteht.
+ *
+ * Bewusst tolerant: gemeldet wird nur, wenn ALLE hinzugefuegten Zeilen
+ * fehlen. Eine teilweise uebernommene Aenderung faengt er nicht — er soll den
+ * uebersprungenen Commit finden, nicht den halben Merge bewerten. Und er ist
+ * kein Beweis: eine Aenderung kann bewusst draussengeblieben sein.
  */
-function uncarried(app, baseUpstreamSha, baseSuiteSha) {
-  if (!baseUpstreamSha || !baseSuiteSha) return { unknown: 'Baseline ohne SHA-Paar' }
+/**
+ * Zeilen, die fuer sich nichts aussagen: Kommentar-Marker, schliessende
+ * Klammern, Kommata. Sie stehen in fast jeder Datei irgendwo, also findet die
+ * Suite-Kopie sie immer — und die Regel „ALLE neuen Zeilen fehlen" waere
+ * damit nie erfuellt. Genau daran ist librarySync.ts beim Gegentest
+ * durchgerutscht: 13 neue Zeilen, 11 fehlten, die zwei anderen waren `//`.
+ */
+const isTrivialLine = (l) => /^(\/\/|\/\*+|\*+\/?|[{}()[\];,]+)$/.test(l)
+
+function uncarried(app, baseUpstreamSha) {
+  if (!baseUpstreamSha) return { unknown: 'Baseline ohne upstreamSha' }
   const upDir = join(upstreamRoot, app)
   const upChanged = changedSince(upDir, baseUpstreamSha, ROOTS)
   if (upChanged === null) return { unknown: `Upstream-Stand ${baseUpstreamSha} lokal nicht bekannt` }
-  const suitePrefixes = ROOTS.map((r) => `apps/${app}/${r}`)
-  const suiteChanged = changedSince(ROOT, baseSuiteSha, suitePrefixes)
-  if (suiteChanged === null) return { unknown: `Suite-Stand ${baseSuiteSha} lokal nicht bekannt` }
-  const touchedHere = new Set(suiteChanged.map((f) => f.replace(`apps/${app}/`, '')))
   const replaced = new Set(REPLACED_BY_PACKAGE[app] ?? [])
-  const files = upChanged.filter((f) => {
-    if (touchedHere.has(f)) return false
+  const files = []
+  for (const f of upChanged) {
     // `src/x` -> `x`, damit REPLACED_BY_PACKAGE dieselbe Form sieht wie sonst.
     const bare = f.startsWith('src/') ? f.slice(4) : f
-    return !replaced.has(bare)
-  })
+    if (replaced.has(bare)) continue
+    const suiteFile = join(ROOT, 'apps', app, f)
+    // Datei fehlt der Suite ganz — das steht schon als `only-upstream` oben.
+    if (!existsSync(suiteFile)) continue
+    const now = blobAt(upDir, 'HEAD', f)
+    if (now === null) continue // upstream geloescht
+    const before = blobAt(upDir, baseUpstreamSha, f)
+    const added = excessLines(lineBagOf(now), lineBagOf(before ?? ''))
+      .filter((l) => !isTrivialLine(l))
+    if (!added.length) continue // reine Loeschung / Whitespace / nur Klammern
+    const suiteBag = lineBag(suiteFile)
+    const missing = added.filter((l) => !suiteBag.has(l))
+    if (missing.length === added.length) files.push({ file: f, addedLines: added.length })
+  }
   return { files }
 }
 
@@ -346,8 +384,6 @@ for (const r of results) {
     ...counts, drift, total: r.findings.length,
     missingUpstream: !!r.missingUpstream,
     upstreamSha: r.missingUpstream ? null : upstreamSha(r.app),
-    // Das Gegenstueck zu upstreamSha — siehe uncarried().
-    suiteSha: suiteSha(),
   }
 }
 
@@ -359,11 +395,7 @@ const baselineForUncarried = existsSync(BASELINE)
 const uncarriedByApp = {}
 for (const app of APPS) {
   if (summary[app].missingUpstream || !baselineForUncarried?.[app]) continue
-  uncarriedByApp[app] = uncarried(
-    app,
-    baselineForUncarried[app].upstreamSha,
-    baselineForUncarried[app].suiteSha,
-  )
+  uncarriedByApp[app] = uncarried(app, baselineForUncarried[app].upstreamSha)
 }
 
 // ---------- Bericht ----------
@@ -393,10 +425,11 @@ for (const r of results) {
 if (!anyTwoWay) lines.push('None.', '')
 
 lines.push('## Upstream changes not yet carried over', '')
-lines.push('Files upstream touched since the baseline commit whose suite copy has not been')
-lines.push('touched since. Not proof of a loss — a change may have been left out on purpose —')
-lines.push('but this is the list to walk when vendoring. The drift counts above cannot show')
-lines.push('this: a file that is already `two-way` stays `two-way` either way.', '')
+lines.push('Lines upstream ADDED since the baseline `upstreamSha` that are missing from the')
+lines.push('suite copy entirely. Not proof of a loss — a change may have been left out on')
+lines.push('purpose — but this is the list to walk when vendoring. The drift counts above')
+lines.push('cannot show it: a file that is already `two-way` stays `two-way` either way,')
+lines.push('which is how a skipped vendoring commit slipped through once.', '')
 let anyUncarried = false
 for (const app of APPS) {
   const u = uncarriedByApp[app]
@@ -405,7 +438,7 @@ for (const app of APPS) {
   if (!u.files.length) continue
   anyUncarried = true
   lines.push(`### ${app}`, '')
-  for (const f of u.files) lines.push(`- \`${f}\``)
+  for (const f of u.files) lines.push(`- \`${f.file}\` — ${f.addedLines} neue Zeile(n) fehlen`)
   lines.push('')
 }
 if (!anyUncarried) lines.push('None.', '')
@@ -446,8 +479,9 @@ if (has('check')) {
     if (u.unknown) { console.log(`? ${app}: Upstream-Aenderungen nicht pruefbar — ${u.unknown}`); continue }
     if (!u.files.length) continue
     console.log(
-      `! ${app}: ${u.files.length} Datei(en) hat upstream seit der Baseline angefasst, ` +
-      `die Suite-Kopie nicht:\n    ${u.files.join('\n    ')}`,
+      `! ${app}: ${u.files.length} Datei(en) hat upstream seit der Baseline geaendert, ` +
+      `deren neue Zeilen in der Suite-Kopie fehlen:\n    ` +
+      u.files.map((f) => `${f.file} (${f.addedLines})`).join('\n    '),
     )
   }
   for (const app of APPS) {
