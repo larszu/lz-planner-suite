@@ -3,10 +3,23 @@
 import type { InventoryItem, StorageNode, InventorySet, InventoryUnit } from './types';
 
 export const INVENTORY_FORMAT = 'avplan-inventory';
-// Version 2 (ADR-002): `InventoryItem.deviceTypeId`. Die Erhoehung schuetzt
-// vor stillem Verlust — ein Stand ohne das Feld wuerde eine Datei importieren
-// und beim Re-Export ohne das Feld zurueckschreiben. Mit der Version weigert
-// er sich stattdessen. Aeltere Dateien lesen wir unveraendert weiter.
+// Version 2 (ADR-002): `InventoryItem.deviceTypeId`.
+//
+// ADR-005, Inkrement 4 — hier stand als Begruendung, ein Stand ohne das Feld
+// wuerde es beim Re-Export verlieren. Fuer DIESES Paket stimmt das nicht:
+// `parseInventory` und `serializeInventory` unten reichen die Objekte
+// unveraendert durch, ein unbekanntes Feld ueberlebt also. Der Verlust, den
+// der Satz meinte, sitzt im cable-planner — dessen `healItem` baut jeden
+// Artikel Feld fuer Feld neu auf.
+//
+// Was die Version wirklich leistet: sie weist eine ZU NEUE Datei ab, statt sie
+// halb zu lesen (`f.version > INVENTORY_FORMAT_VERSION`). Die andere Richtung
+// — eine zu ALTE Datei, die beim Zusammenfuehren etwas WEGNIMMT — deckt sie
+// nicht ab. Genau das taten die Importe aller drei Apps: sie ersetzten den
+// lokalen Artikel als Ganzes, eine v1-Datei loeschte also die bestaetigte
+// deviceTypeId. Dafuer ist jetzt in jeder App ein Merge-Helfer da (cable:
+// renderer/lib/inventoryMerge.ts, light und multicam: inventory/merge.ts).
+// Aeltere Dateien lesen wir unveraendert weiter.
 export const INVENTORY_FORMAT_VERSION = 2;
 
 export interface InventorySnapshot {

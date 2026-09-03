@@ -1411,7 +1411,8 @@ export const en: Dict = {
   'greengo.importOverlay.title': 'Import .gg5 — link devices',
   'greengo.importOverlay.system': 'System:',
   'greengo.importOverlay.unreadTitle': 'This file contains sections the import does not read',
-  'greengo.importOverlay.unreadHint': 'An export from Cable Planner creates a new .gg5 and fills those sections with defaults. It does not replace the original file — keep it.',
+  'greengo.importOverlay.unreadHint': 'An export from Cable Planner creates a new .gg5 and fills those sections and fields with defaults. It does not replace the original file — keep it.',
+  'greengo.importOverlay.unreadEntries': ' ({count} entries)',
   'greengo.importOverlay.importedGroups': 'Imported groups',
   'greengo.importOverlay.linkStations': 'Link stations → canvas devices',
   'greengo.importOverlay.linkHint':
@@ -1537,7 +1538,10 @@ export const en: Dict = {
   'mobile.dialog.starting': 'Starting…',
   'mobile.dialog.startServer': 'Start LAN server',
   'mobile.dialog.securityHeading': 'Security notes',
-  'mobile.dialog.security.readOnly': 'Read-only: the phone can only read, not write.',
+  'mobile.dialog.security.writeBack':
+    'The phone does not only read: checks, newly added cables and field feedback flow back into the project. Whoever has the QR code can change the plan.',
+  'mobile.dialog.security.token':
+    'Every write path requires the token from the QR code. Passwords and keys are stripped from the project before it leaves the device.',
   'mobile.dialog.security.bind':
     'The server binds to the local network (0.0.0.0). If it is unclear who is on the network, prefer stopping it.',
   'mobile.dialog.security.autostop':
@@ -3084,6 +3088,13 @@ export const en: Dict = {
   'app.loadReport.duplicateId': 'duplicate id, the first entry wins',
   'app.loadReport.missingRequired': 'required field missing (name)',
   'app.loadReport.hint': 'Devices that pointed at these roles lost their assignment — including the TSL address used for tally. Saving overwrites the file with this state.',
+  'app.mobileDrop.title': 'Cables sent from a phone were not taken over',
+  'app.mobileDrop.cable': 'Cable',
+  'app.mobileDrop.planLocked': 'the plan is locked or finalized',
+  'app.mobileDrop.equipmentGone': 'that device is no longer in the plan',
+  'app.mobileDrop.portGone': 'that port no longer exists on this device',
+  'app.mobileDrop.duplicate': 'this connection is already in the plan',
+  'app.mobileDrop.hint': 'The phone only reported "sent" to the technician — it cannot know about the rejection. Someone out on site may be waiting for a cable that never reaches the plan.',
   'app.pdfProgress.title': 'PDF is being created…',
   'app.pdfProgress.hint':
     'Large plans may take a few seconds. Please do not cancel.',
@@ -3207,7 +3218,7 @@ export const en: Dict = {
   'export.render.rasterHint': 'JPEG snapshot. Reliable, but text blurs at high zoom in the PDF.',
   'export.render.vector': 'Vector',
   'export.render.vectorHint':
-    'Chromium printToPDF. Text stays selectable & sharp at any zoom. Smaller file size.',
+    'Chromium printToPDF. Text stays selectable & sharp at any zoom. Smaller file size. No title block — revision, state fingerprint and QR code are in the raster PDF only.',
   'export.patch.perDeviceHint': '— or create one patch sheet per device:',
   'export.patch.devicesCount': 'Devices',
   'export.patch.selectAll': 'Select all',
