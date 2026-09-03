@@ -94,11 +94,26 @@ Score ≥ 20 ist entweder geparkt oder ein Teilstück** (6, 7, 8, 10, 11), und d
 freie Feld ist Initiative 9 mit 18. Der eine Rest aus 5, der ohne jede Entscheidung ging — der
 Datei-gegen-Datei-Vergleich, kein Store, kein Format-Feld, kein Register — ist mit `#639` gebaut.
 
-**Was beim Eigentümer liegt und Initiativen blockiert.** Initiative 10 wartet auf Design-Frage 3
-(ADR-003 Inkrement 2), Initiative 11 hängt daran mit; Initiative 6 kann ohne Design-Frage 1
-(Green-GO Generator oder Editor) keinen verlustfreien Round-Trip zusagen. Die **sechs** offenen
-Fragen stehen in `../../decisions/ADR-005-lossless-or-loud.md`, in `CREDENTIALS-IN-TEMPLATES.md`
-und — als sechste — in `INITIATIVE-5-SCOPING.md`.
+**Was beim Eigentümer lag — und was er entschieden hat (2026-09-03).** Alle sieben Fragen sind
+beantwortet; keine Initiative wartet mehr auf eine Entscheidung, nur noch auf Bau.
+
+| # | Frage | Entscheidung | Stand |
+| --- | --- | --- | --- |
+| 1 | Green-GO Generator oder Editor | **beides** — vorhandenes Preset laden und fortschreiben, sonst aus dem Plan erzeugen | zu bauen (Initiative 6) |
+| 2 | Modell- vs. Instanz-Felder | **Modell-Eigenschaften hängen immer am Gerät**, in jedem Plan, ob die Anwendung sie abfragt oder nicht | zu bauen |
+| 3 | ADR-003 Inkrement 2 | **ja, bauen** | Zuschnitt gemessen, Bau offen (entsperrt 10 und 11) |
+| 4 | `.avplan` und unbekannte Slots | **laden, fragen, belegen lassen** | **gebaut** — `cable#641`, `light#52`, `multicam#87` |
+| 5 | Zugangsdaten in geteilten Vorlagen | **beim Export fragen** | **gebaut** — `cable#642` |
+| 6 | Register der ausgegebenen Dokumente | **getrennte Protokolldatei + einsehbares Log im Menü** | zu bauen (Initiative 5) |
+| 7 | Zugangsdaten in `.avplan` | mit 5 zusammen beantwortet | **gebaut** — `cable#642` |
+
+Die Begründungen stehen dort, wo die Fragen gestellt wurden:
+`../../decisions/ADR-005-lossless-or-loud.md`, `CREDENTIALS-IN-TEMPLATES.md`,
+`INITIATIVE-5-SCOPING.md`.
+
+**Was das für die Reihenfolge heißt.** Der Engpass ist nicht mehr die Entscheidung, sondern die
+Arbeit. Initiative 6 und die Initiativen 10/11 sind jetzt baubar; Initiative 5 auch, mit dem
+Register als eigenem Stück.
 
 ### 0. Consolidate the fork — do this first, it is cheap and it blocks everything
 

@@ -26,7 +26,16 @@ import { useModule } from '../../store/settingsStore'
 import { exportStagePlotSvg } from '../../lib/exportStagePlot'
 import { downloadBlob } from '../../lib/downloadBlob'
 import { parseCameraList, cameraListToEquipment } from '../../lib/multicamCameraImport'
-import { cableToAvPlan, parseAvPlan } from '../../lib/avplan'
+import {
+  cableToAvPlan,
+  parseAvPlan,
+  pickUnknownDomains,
+  unknownDomainSlots,
+  KNOWN_DOMAIN_SLOTS,
+} from '../../lib/avplan'
+import { unknownDomainsDialog } from '../../lib/unknownDomainsDialog'
+import { countCredentialBearers, stripCredentials } from '../../lib/credentialKeys'
+import { credentialChoiceDialog, type CredentialChoice } from '../../lib/credentialChoiceDialog'
 import { buildSourceMap, mergeSourceMap, parseSourceMap } from '../../lib/sourceMap'
 import { summarizeForeign, hasForeign } from '../../lib/foreignView'
 import type { CablePlannerProject } from '../../types/project'
@@ -132,11 +141,32 @@ export const MenuBar = ({
   // nativ und bewahrt geteilten Raum + Kamera-/Licht-Domaenen 1:1 (in der
   // .avplan UND im eigenen Projektfile via project.avForeign).
   const avplanImportRef = useRef<HTMLInputElement | null>(null)
-  const handleExportAvplan = () => {
+  const handleExportAvplan = async () => {
     const project = useProjectStore.getState().project
+
+    // Design-Frage 5 — die `.avplan` geht absichtlich an ein anderes Gewerk.
+    // Ein Lichtplaner braucht das Passwort des Core-Switches nicht; ein
+    // Cable-Planner, der seine eigene Datei zurueckliest, will es behalten.
+    // Deshalb wird gefragt statt pauschal entschieden — und nur dann, wenn
+    // ueberhaupt etwas dabei ist.
+    const withCredentials = countCredentialBearers(project.equipment ?? [])
+    let choice: CredentialChoice = 'strip'
+    if (withCredentials > 0) {
+      const answer = await credentialChoiceDialog(
+        withCredentials,
+        t(
+          'cred.dest.avplan',
+          'Die .avplan geht an andere Gewerke. Ohne Zugangsdaten verliert ein Rück-Import in diese App sie allerdings.',
+        ),
+      )
+      if (answer === null) return
+      choice = answer
+    }
+
     const avplan = cableToAvPlan(project, { appVersion: __APP_VERSION__, exportedAt: new Date().toISOString() })
+    const payload = choice === 'strip' ? stripCredentials(avplan) : avplan
     const safe = (project.metadata?.name || 'projekt').replace(/[^a-zA-Z0-9_-]+/g, '_')
-    downloadBlob(`${safe}.avplan`, JSON.stringify(avplan, null, 2), 'application/json')
+    downloadBlob(`${safe}.avplan`, JSON.stringify(payload, null, 2), 'application/json')
   }
   const handleImportAvplan = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -144,10 +174,38 @@ export const MenuBar = ({
       try {
         const avplan = parseAvPlan(await file.text())
         const base = (avplan.domains.cabling as CablePlannerProject | undefined) ?? useProjectStore.getState().project
-        useProjectStore.getState().loadProject({
-          ...base,
-          avForeign: { venue: avplan.venue, cameras: avplan.domains.cameras, lighting: avplan.domains.lighting },
-        })
+
+        // ADR-005 — Slots, die das Format nicht benennt. Vorher wurden sie
+        // hier stillschweigend fallengelassen: die Datei wurde angenommen und
+        // der fremde Inhalt war weg. Jetzt wird gefragt, und die Vorauswahl
+        // ist die, die nichts entscheidet.
+        const unknown = unknownDomainSlots(avplan)
+        const foreign: NonNullable<CablePlannerProject['avForeign']> = {
+          venue: avplan.venue,
+          cameras: avplan.domains.cameras,
+          lighting: avplan.domains.lighting,
+        }
+        if (unknown.length > 0) {
+          const free = KNOWN_DOMAIN_SLOTS.filter(
+            (slot) => slot !== 'cabling' && avplan.domains[slot] === undefined,
+          )
+          const decisions = await unknownDomainsDialog(unknown, [...free])
+          const carried = pickUnknownDomains(avplan)
+          for (const slot of unknown) {
+            // `null` = weggeklickt, also nichts entschieden. Die vorsichtige
+            // Lesart ist behalten, nicht verwerfen.
+            const action = decisions?.[slot] ?? { kind: 'keep' as const }
+            if (action.kind === 'discard') {
+              delete carried[slot]
+            } else if (action.kind === 'assign') {
+              ;(foreign as Record<string, unknown>)[action.target] = carried[slot]
+              delete carried[slot]
+            }
+          }
+          if (Object.keys(carried).length > 0) foreign.unknownDomains = carried
+        }
+
+        useProjectStore.getState().loadProject({ ...base, avForeign: foreign })
       } catch {
         await infoDialog(
           t('app.menu.file.importAvplanError', 'Import fehlgeschlagen — keine gültige .avplan-Datei.'),
@@ -446,7 +504,7 @@ export const MenuBar = ({
             {t('app.menu.file.importCameras', 'MultiCam-Kameras importieren…')}
           </MenuItem>
           <MenuSep />
-          <MenuItem onClick={handleExportAvplan} icon={<Icon icon={Upload} size="sm" />}>
+          <MenuItem onClick={() => void handleExportAvplan()} icon={<Icon icon={Upload} size="sm" />}>
             {t('app.menu.file.exportAvplan', 'Gesamtprojekt exportieren (.avplan)…')}
           </MenuItem>
           <MenuItem onClick={() => avplanImportRef.current?.click()} icon={<Icon icon={ImportIcon} size="sm" />}>

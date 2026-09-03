@@ -373,6 +373,10 @@ eingebaut. Siehe Design-Frage 4.
 **Vier Design-Entscheidungen, die dem Eigentümer gehören** und die hier ausdrücklich *nicht*
 nebenbei getroffen werden:
 
+> **Stand 2026-09-03:** Frage 4 ist entschieden und gebaut, Frage 3 ist entschieden und steht
+> zum Bau an. Die Formulierungen unten bleiben als der Zustand stehen, in dem gefragt wurde —
+> was daraus geworden ist, steht im Nachtrag am Ende dieses Abschnitts.
+
 1. Bleibt `exportGreengo` ein **Generator** (erzeugt eine frische Konfiguration aus dem Plan) oder
    wird er ein **Editor**, der das importierte Rohdokument behält und nur Geändertes hineinmerged?
    Das entscheidet, ob der `.gg5`-Round-Trip je verlustfrei werden kann.
@@ -392,6 +396,39 @@ nebenbei getroffen werden:
    nicht verspricht. Die Alternative ist ehrlicher Widerspruch: `parseAvPlan` lehnt eine Datei mit
    unbekanntem Slot ab, statt sie stillschweigend zu beschneiden. Beides ist vertretbar, das
    heutige Verhalten — annehmen und wegwerfen — ist es nicht.
+
+### Nachtrag (2026-09-03): was der Eigentümer entschieden hat
+
+| # | Frage | Entscheidung | Stand |
+| --- | --- | --- | --- |
+| 1 | Green-GO Generator oder Editor | **beides** — ein vorhandenes Preset wird geladen und fortgeschrieben, sonst aus dem Plan erzeugt | offen zu bauen |
+| 2 | Modell- vs. Instanz-Felder | **Modell-Eigenschaften hängen immer am Gerät**, in jedem Plan, unabhängig davon ob die Anwendung sie abfragt | offen zu bauen |
+| 3 | ADR-003 Inkrement 2 | **ja, bauen** | Zuschnitt gemessen (siehe unten), Bau offen |
+| 4 | `.avplan` und unbekannte Slots | **laden, fragen, und den Slot belegen lassen** | **gebaut**: `cable-planner#641`, `light-planner#52`, `multicam-planner#87` |
+
+**Frage 4 ist damit die erste dieser vier, die durch ist** — und ihre Antwort war keine der beiden,
+die dieser Abschnitt gegenübergestellt hat. Weder stilles Durchreichen noch Ablehnen, sondern
+*bewahren und fragen*: der Slot überlebt (Regel 1), der Nutzer erfährt davon (Regel 3), und er kann
+ihn ausdrücklich einer bekannten Domäne zuweisen oder sichtbar verwerfen. Die Vorauswahl ist die,
+die nichts entscheidet.
+
+Das ist der lehrreiche Teil: **die Frage bot zwei Antworten an, die richtige war eine dritte.** Ein
+Entwurf, der die Wahl auf die zwei naheliegenden verengt, verliert die, die beide Regeln zugleich
+erfüllt.
+
+**Zum Zuschnitt von Frage 3.** Vor dem Bau wurden die Stellen gemessen, die ein geteiltes
+Provenienz-Element tragen sollen — genau das, wovor dieser ADR und ADR-003 warnen („eine
+Abstraktion auf Verdacht"). Ergebnis: es sind **zwei Formen, nicht eine.**
+
+| Form | Aussage | Belegte Stellen |
+| --- | --- | --- |
+| Wert mit Herkunft | „dieser Wert ist befohlen / unbekannt, nicht bestätigt" | Rentman `lastSentQty`, `portsUnknown`, `BridgeTallyState` (sony-camera-bridge) |
+| Liste des Nichtbestimmbaren | „das hier kam nicht durch" | `sourceMap.unresolved`, `changeImpact` `unknown`, `planDiff.unclassified` |
+
+Beide kommen mehrfach vor; die zweite ist bereits dreimal unabhängig gebaut. ADR-003 erwartete
+**eine** Verallgemeinerung — es sind zwei, und nur die erste ist das, was er „Provenienz-Anzeige"
+nennt. Inkrement 2 bekommt deshalb ausdrücklich nur die erste Form; die zweite mit hineinzuziehen
+wäre die Abstraktion auf Verdacht, gegen die die Zurückstellung überhaupt geschrieben war.
 
 **Was das über abgebrochene Audits lehrt.** Über alle einundzwanzig Nachlesen hält dasselbe Muster:
 von den siebzehn bestätigten Hinweisen traf **kein einziger** den richtigen Ort mit der richtigen Begründung.

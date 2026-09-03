@@ -169,3 +169,45 @@ desselben Feld-Paars**, und wer eine davon entscheidet, hat gute Gründe, die
 andere gleich mitzuentscheiden: beide betreffen eine Datei, die absichtlich
 weitergegeben wird, und beide würden von derselben Antwort profitieren
 (strippen, fragen, oder ausdrücklich mitgeben und es im Dialog sagen).
+
+---
+
+## Entschieden (2026-09-03): beim Export fragen
+
+Der Eigentümer hat **fragen** gewählt — und damit keine der beiden Pauschalen.
+Gebaut in `cable-planner#642`; beide offenen Ausgänge sind zu.
+
+**Warum das die richtige Form war.** Beide Pauschalen haben einen echten Preis,
+und die Abwägung hängt am einzelnen Vorgang: immer strippen kostet den
+Ausroll-Nutzen und beim `.avplan` den verlustfreien Round-Trip (ADR-005 in die
+andere Richtung), immer mitgeben schreibt Switch-Passwörter in einen
+Team-Ordner. Eine Entscheidung, die je Vorgang anders ausfällt, gehört an den
+Vorgang und nicht in eine Konstante.
+
+**Zwei Dinge, die beim Bauen wichtiger waren als die Frage selbst.**
+
+1. **Die Entscheidung ist ein Pflicht-Parameter ohne Default.**
+   `syncSharedLibrary(credentials)` lässt sich nicht mehr ohne Antwort rufen.
+   Ein Default hätte den alten Zustand — „geht stillschweigend mit" —
+   wiederhergestellt, sobald ihn jemand wegzulassen vergisst. Der Compiler hat
+   prompt den einzigen Aufrufer gemeldet; genau das war der Zweck.
+
+2. **Die Regel steht zwangsläufig zweimal, und das ist jetzt bewacht.**
+   Renderer und Hauptprozess teilen keinen Quellbaum (`tsconfig.app.json` sieht
+   `src/renderer`, `tsconfig.main.json` sieht `src/main`, und der Renderer darf
+   laut Architektur nicht hinübergreifen). Die Kopie ist unvermeidbar — das
+   *ungeprüfte Auseinanderlaufen* war die Ursache des ganzen Befunds, denn der
+   Viewer-Export bekam die Regel des Mobile-Share-Pfads nie mit.
+   `tests/credentialKeys.test.ts` liest beide Quelldateien und fällt, sobald die
+   Mengen differieren.
+
+**Und eine kleine Regel, die aus dem Nachbarn kam:** gefragt wird nur, wenn
+etwas dabei ist, und `password: ''` zählt nicht. Eine Rückfrage, die bei jedem
+Export erscheint und meistens „nichts dabei" bedeutet, wird zur Klickgewohnheit
+— dieselbe Überlegung, mit der `avPlanImportWarning` im light-planner bei
+leerem Bestand schweigt.
+
+**Bilanz der vier Ausgänge:** zwei geschlossen (Viewer-Export in `#640`,
+Mobile-Share seit jeher), zwei fragen jetzt (geteilte Bibliothek, `.avplan`).
+Speichern und CRDT-Sync tragen sie weiter — dort bleibt die Datei beim
+Eigentümer bzw. beim gemeinsam bearbeiteten Plan.
