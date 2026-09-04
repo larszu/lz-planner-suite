@@ -1050,8 +1050,18 @@ ist selbst ein Ergebnis.
 * **Was der Guard im ersten Lauf fand:** in `cable-planner` einen toten Link in
   `CONTRIBUTING.md` auf ein `CODE_OF_CONDUCT.md`, das es nicht gab, obwohl der
   Satz daneben „this project ships a Code of Conduct" lautete. Nachgeliefert.
-* **Offen bleibt:** `multicam-planner` (2 Dokumente) und `Broadcast-intercom`
-  (3 Dokumente, hat bereits einen `docs/README.md`, der nur nicht verlinkt ist).
+* **Alle acht Repos erledigt** (2026-09-04): `cable-planner#689`/`#690`,
+  `multicam-planner#89`, `Broadcast-intercom#7`, `light-planner#68` und dieser
+  Suite-PR. `sony-camera-bridge`, `tally-pi` und `pi-media-station` waren
+  bereits sauber (ein bzw. kein Dokument ausserhalb der Einstiegsseiten).
+* **Was der Guard beim Vendorieren zusätzlich fand** — und was nur in der Suite
+  existiert: die IPC-Domäne **`lexware:*`** (Brücke zur Lexware-Office-Anbindung,
+  API-Key bleibt in `main`) war nirgends beschrieben. Sie gibt es upstream
+  nicht, sie ist Teil des Suite-Overlays, und genau deshalb hat sie kein
+  Upstream-Dokument je erwähnt. Nachgetragen in der IPC-Tabelle der
+  vendorierten `docs/architecture.md`, ausdrücklich als Suite-only markiert.
+  Zweiter Fund derselben Runde: `docs/suite-mockup/` fehlte in der Kopie ganz,
+  wodurch der Index der Kopie einen toten Link trug — nachvendoriert.
 
 ---
 

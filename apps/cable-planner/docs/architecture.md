@@ -29,7 +29,7 @@ plus einem optionalen HTTP-Renderer für Mobile-Geräte.
            v
 +-----------------------+
 |  mobileShareServer    |
-|  Express (ephemeral)  |
+|  node:http (ephemeral)|
 |  serves src/mobile/   |
 +-----------------------+
 ```
@@ -64,6 +64,8 @@ Alle IPC-Channels sind nach Domäne präfixiert. Definitionen in
 | `logs:*` | `logIpc.ts` | `renderer-error` (Renderer → Main, one-way) |
 | `signaling:*` | `signalingIpc.ts` | LAN-Signaling-Relay für die Yjs/WebRTC-Kollaboration (#413) |
 | `collabDiscovery:*` | `collabDiscoveryIpc.ts` | Bonjour/mDNS-Discovery von Kollaborations-Peers im LAN |
+| `documentLog:*` | `documentLogIpc.ts` | `append`, `read`, `clear` — das Register der ausgegebenen Dokumente (ADR-004). Es überdauert die Sitzung und gehört damit auf die Platte. |
+| `lexware:*` | `lexwareIpc.ts` | **Nur in der Suite-Kopie** (`av-planner-suite/apps/cable-planner`): Brücke zwischen Renderer/Shell und dem Lexware-Office-Client. Der API-Key bleibt in `main` (keytar), der Renderer sieht ihn nie. Diese Domäne gibt es upstream nicht — sie ist Teil des Suite-Overlays. |
 
 **Invarianten**:
 1. **Ein Channel = eine Domäne**. Niemals einen Channel quer durch Domänen
@@ -323,7 +325,8 @@ keep-local Dialog.
 
 ### 6.6 · Mobile-Share
 
-`mobileShareServer.ts` startet Express auf ephemerem Port,
+`mobileShareServer.ts` startet einen `node:http`-Server auf ephemerem Port
+(kein Express — die App hat kein Web-Framework als Abhängigkeit),
 liefert `src/mobile/` an Smartphones im LAN. Bidirektional:
 - Main → Mobile: aktuelle Projekt-Snapshot (Pull-Endpunkt), Passwörter und
   Schlüssel vorher via `stripSecrets` entfernt.
@@ -371,7 +374,9 @@ nirgendwo hardcoded.
 
 **Native Deps** (achten!):
 - `keytar` — OS-Credentials (Rentman-Token).
-- `@julusian/freetype2` (transitiv via Three) — GreenGo-PDF-Export-Fonts.
+- `@julusian/freetype2` — **transitiv via `atem-connection`**, nicht via Three
+  und nirgends direkt importiert (`grep -rn freetype src/` ist leer). Er steht
+  hier trotzdem, weil `npmRebuild` ihn für die Electron-ABI neu bauen muss.
 - `electron-rebuild` muss nach jedem Electron-Update laufen.
 
 ---
@@ -386,7 +391,15 @@ Das Wichtigste in Listenform. Niemals brechen ohne expliziten Architektur-Review
 4. **`preload.cts` bleibt CommonJS** — Electron's contextBridge braucht das.
 5. **Pfad-Validierung passiert in `main`**, nie im Renderer.
 6. **`projectStore` ist Single Source of Truth** für Projekt-Daten.
-7. **Three.js-Imports nur in `components/Rack/`** — Bundle-Size-Schutz.
+7. **Three.js bleibt hinter der Lazy-Grenze** — Bundle-Size-Schutz. Der
+   Import-*Ort* ist dabei nicht das Kriterium: solange ein statisch
+   importiertes Modul nach `Rack/` hineinreicht, liegt Three im Haupt-Chunk,
+   egal wie diszipliniert die Importe sind. Genau so war es — bis auf
+   `lib/exportRack.ts` standen alle Three-Importe brav in `Rack/`, und
+   `LibraryPanel` zog den `RackBuilderDialog` statisch herein. Die beiden
+   Eintritte (`RackBuilderDialog`, `RackEditorDialog`) sind deshalb `lazy` und
+   werden nur gemountet, wenn sie offen sind; gemessen 4.193 → 2.938 kB (gzip
+   1.165 → 822). `tests/threeBundleGrenze.test.ts` hält das fest.
 8. **Connection-Locks bei externen Services** (ATEM `connectInFlight`).
 9. **Patch-Versionen bevorzugt** — keine großen Sprünge (Standing User Directive).
 10. **Keine Emojis im Code** außer auf expliziten Wunsch.

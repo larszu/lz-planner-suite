@@ -14,7 +14,7 @@
     "dist:win": "npm run build && electron-builder --win nsis portable --publish never",
     "dist:mac": "npm run build && electron-builder --mac --x64 --arm64 --publish never",
     "lint": "eslint .",
-    "test": "vitest run && npm run avplan:check && npm run venue:check && npm run mvr:check && npm run spec:check && npm run identity:check && npm run i18n:check",
+    "test": "vitest run && npm run avplan:check && npm run venue:check && npm run mvr:check && npm run spec:check && npm run identity:check && npm run i18n:check && npm run docs:check",
     "test:watch": "vitest",
     "spec:check": "node --experimental-strip-types scripts/spec-source-check.ts",
     "venue:check": "node --experimental-strip-types scripts/venue-exchange-check.ts",
@@ -22,7 +22,8 @@
     "mvr:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/mvr-check.ts",
     "identity:check": "node --experimental-strip-types scripts/project-identity-check.ts",
     "i18n:check": "node --experimental-strip-types scripts/i18n-reachable-check.ts",
-    "ci:complete": "node --experimental-strip-types scripts/ci-runs-every-check.ts"
+    "ci:complete": "node --experimental-strip-types scripts/ci-runs-every-check.ts",
+    "docs:check": "node --experimental-strip-types scripts/docs-reachable-check.ts"
   },
   "dependencies": {
     "@avplan/inventory-core": "*",

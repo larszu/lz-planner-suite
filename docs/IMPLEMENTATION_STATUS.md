@@ -59,7 +59,7 @@ Fehlerzeile gar nicht treffen konnte.)
 
 | Repo | build | typecheck | lint | Tests |
 | --- | --- | --- | --- | --- |
-| `cable-planner` | **0** | **0** (`tsc -p tsconfig.app.json`) | **0 Fehler** (10 Warnungen) | **0** — 990 Tests in 100 Dateien |
+| `cable-planner` | **0** | **0** (`tsc -p tsconfig.app.json`) | **0 Fehler** (10 Warnungen) | **0** — 1009 Tests in 103 Dateien |
 | `multicam-planner` | **0** | in `build` enthalten | **0 Fehler** (49 Warnungen) | **0** — 396 Tests in 29 Dateien |
 | `light-planner` | **0** | in `build` enthalten | **0 Fehler** (49 Warnungen) | **0** — 12 Tests + 4 Format-Checks (`avplan`, `venue`, `mvr`, `spec`) |
 | `av-planner-suite` | **0** | in `build` enthalten | — | **0** — 36 Shell + 45 Pakete |
@@ -68,7 +68,7 @@ Fehlerzeile gar nicht treffen konnte.)
 | `tally-pi` | `py_compile` OK für alle 5 Module | — | — | **0** — 55 Tests (`python -m unittest discover -s tests`) |
 | `pi-media-station` | `py_compile` OK für alle 3 Module | — | — | **0** — 21 Tests (`python -m unittest discover -s tests`) |
 
-### Die vier Suite-Guards
+### Die fünf Suite-Guards
 
 Alle mit Exit 0 gelaufen:
 
@@ -76,6 +76,7 @@ Alle mit Exit 0 gelaufen:
 | --- | --- | --- |
 | Herkunfts-Vokabular | `npm run spec:vocab` | 3 Feld-Kopien, 2 Helfer-Kopien gleich |
 | Feature-Erreichbarkeit | `npm run features:reachable` | 2 vendorte Kopien erreichbar |
+| Doku-Auffindbarkeit | `npm run docs:reachable` | 68 Dokumente, alle von einer Einstiegsseite aus erreichbar |
 | Native Dialoge | `npm run dialogs:native` | 663 Dateien, 0 Treffer — Muster seit B-1 vollständig |
 | Planer-Drift | `npm run drift:check` | unverändert gegen die Baseline (Zahlen: `scripts/planner-drift-baseline.json`) |
 
