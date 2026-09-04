@@ -124,6 +124,7 @@ export const RackBuilderDialogExportMenu = ({
               setOpen(false)
               const refs = canvas3DRefs.current
               if (!refs) {
+                // Dieser Handler ist nicht async (der PNG-Export daneben schon).
                 void infoDialog(t('rack.export.no3dInit', '3D-Tab muss zuerst geöffnet worden sein um die 3D-Szene zu initialisieren.'), { tone: 'warning' })
                 return
               }

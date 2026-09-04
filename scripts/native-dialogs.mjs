@@ -87,9 +87,20 @@ const stripComments = (src) => {
     const c = src[i];
     const next = src[i + 1];
     if (quote) {
-      out += c;
-      if (c === '\\') { out += next ?? ''; i += 2; continue; }
-      if (c === quote) quote = null;
+      // Einfach-/doppelt-gequotete Zeichenketten werden GELEERT (Anfuehrungs-
+      // zeichen bleiben, damit die Struktur stimmt). Grund: der Guard soll
+      // Code lesen, keine Daten. `shotlist.test.ts` enthaelt den XSS-Testtext
+      // '<script>alert(1)</script>' -- ohne diese Leerung waere das ein
+      // Fehltreffer, sobald das Muster auch die rohe Schreibweise kennt.
+      //
+      // Template-Literale bleiben ABSICHTLICH lesbar: in `${...}` kann echter
+      // Code stehen, und den will der Guard sehen. Der Preis ist ein moeglicher
+      // Fehltreffer, wenn ein Template-Literal `alert(` als Text enthaelt --
+      // das waere sichtbar und erklaerbar, das Gegenteil nicht.
+      const lesbar = quote === '`';
+      if (c === '\\') { out += lesbar ? c + (next ?? '') : '  '; i += 2; continue; }
+      if (c === quote) { out += c; quote = null; i += 1; continue; }
+      out += lesbar ? c : ' ';
       i += 1;
       continue;
     }
@@ -113,6 +124,24 @@ const stripComments = (src) => {
   return out;
 };
 
+/**
+ * Beide Schreibweisen -- und das ist der Punkt.
+ *
+ * Die erste Fassung suchte nur `window.alert(`. Die globalen Funktionen heissen
+ * aber `alert`, `confirm`, `prompt`; `window.` ist optional und wird ueblicher-
+ * weise weggelassen. Im cable-planner standen genau so drei echte `alert(`
+ * hinter einem gruenen Haken, bis `cable#657` es korrigierte.
+ *
+ * Ein Guard, der die haeufigere Schreibweise nicht kennt, ist schlimmer als
+ * keiner: er beantwortet die Frage mit "nein" statt mit "weiss ich nicht".
+ *
+ * `[^.\w$]` davor schliesst Eigenschaftszugriffe (`foo.alert(`) und laengere
+ * Bezeichner (`confirmDialog(`, `onConfirm(`) aus; das optionale `window.` holt
+ * die qualifizierte Schreibweise wieder herein. Beim Reparieren im cable-planner
+ * ging genau die zuerst verloren -- eine Blindstelle gegen die andere getauscht.
+ */
+const NATIVE_CALL = /(^|[^.\w$])(?:window\.)?(confirm|alert|prompt)\s*\(/g
+
 const treffer = [];
 let dateien = 0;
 
@@ -122,8 +151,8 @@ for (const scope of SCOPES) {
     if (ERLAUBT.some((r) => r.test(rel))) continue;
     dateien += 1;
     const code = stripComments(readFileSync(file, 'utf8'));
-    for (const m of code.matchAll(/window\.(confirm|alert|prompt)\s*\(/g)) {
-      treffer.push({ file: rel, line: code.slice(0, m.index).split('\n').length, fn: m[1] });
+    for (const m of code.matchAll(NATIVE_CALL)) {
+      treffer.push({ file: rel, line: code.slice(0, m.index).split('\n').length, fn: m[2] });
     }
   }
 }
@@ -135,7 +164,7 @@ if (dateien === 0) {
 
 if (treffer.length > 0) {
   console.error('\nNative Browser-Dialoge im Quelltext:\n');
-  for (const t of treffer) console.error(`  ${t.file}:${t.line} — window.${t.fn}()`);
+  for (const t of treffer) console.error(`  ${t.file}:${t.line} — ${t.fn}()`);
   console.error(
     '\nErsatz aus `@avplan/ui`: confirmDialog, alertDialog, promptDialog.\n' +
     'Steht dahinter etwas, das Arbeit verwirft, gehoert `destructive: true`\n' +
