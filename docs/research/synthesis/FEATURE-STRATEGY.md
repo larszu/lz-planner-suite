@@ -324,60 +324,92 @@ berichtigten Zeilen betreffen Belege und Zahlen, nicht das Urteil.
 
 ---
 
-### 3e. Die Gegenrunde zu Runde 10 (2026-09-04)
+### 3e. Die Gegenrunde zu Runde 10 — vollständig (2026-09-04)
 
-`suite#75` hat offen stehen lassen, dass die adversariale Gegenprobe — jede der zwölf
-Feststellungen von einem **zweiten** Prüfer widerlegen lassen — in ein Session-Limit gelaufen
-und nicht durch war. Sie ist jetzt teilweise durch, und das Ergebnis gehört hierher, auch weil
-es unvollständig ist.
+`suite#75` hat offen gelassen, dass die adversariale Gegenprobe — jede der zwölf
+Feststellungen von einem **zweiten** Prüfer widerlegen lassen — in ein
+Session-Limit gelaufen war. Sie ist inzwischen **vollständig durch**: 12 von 12,
+dazu drei Korpus-Durchgänge.
 
-**Was tatsächlich lief: 3 von 12.** Neun Prüfer sind erneut am Limit gescheitert. Die drei, die
-durchkamen, deckten die Zeilen 0 (Fork konsolidieren), 1 (Identitäts-Spine) und 2 (Tally-Map)
-ab — also die drei, an denen Runde 10 die schwersten Korrekturen vorgenommen hatte.
+**Zehn von zwölf Feststellungen halten nicht. Und keine einzige hat eine Stufe
+verschoben.** Alle zehn bestätigten „teilweise" und widerlegten stattdessen
+**Belege**. Das ist ein anderes Ergebnis, als der Aufbau erwartet hatte, und ein
+aussagekräftigeres: Nach zehn Runden stimmen die *Urteile*; was weiter wandert,
+ist die Begründung darunter.
 
-**Alle drei kamen mit `haelt_stand: false` zurück. Keiner davon hat die Stufe verschoben.** Alle
-drei bestätigten „teilweise" und widerlegten stattdessen **Belege** der Feststellung. Das ist ein
-anderes Ergebnis, als der Aufbau erwartet hatte, und ein aussagekräftigeres: Nach zehn Runden
-stimmen die *Urteile*; was weiter wandert, ist die Begründung darunter.
+Gehalten haben nur zwei — Initiative 6 (Intercom-Plan) und 11 (Capability-
+Registry), beide mit dem ausdrücklichen Zusatz, dass die gefundenen Abweichungen
+den Stand *schlechter* machen, nicht besser.
 
-Drei Befunde wiegen schwer genug, um Code zu ändern:
+**Die elfte Sorte Fehler, in zehn Runden nicht vorgekommen.** Der Ertrag lag
+nicht im Urteil, sondern in den Belegen — und zwar ausgerechnet in denen, die
+die erste Runde als **stark** markiert hatte:
 
-1. **`apps/cable-planner/LICENSE` trug MIT auf proprietär gestelltem Code.** Upstream stellte
-   cable-planner am 2026-08-29 um (`bc4e083`, 104 Zeilen). Die vendorte Kopie stammte unverändert
-   aus dem Erst-Import vom 2026-07-10 und sagte weiter „MIT License". `multicam-planner` und
-   `light-planner` hatten in der Suite überhaupt keine Lizenzdatei. Der Drift-Guard meldete die
-   ganze Zeit „Drift unverändert" — `LICENSE` stand weder in seinen `ROOTS` noch in `ROOT_FILES`.
-   Das ist **wörtlich** der Fehlermodus, gegen den `ROOT_FILES` eingeführt worden war (Kommentar
-   dort: „Ein Drift-Bericht, der 'OK' sagt, während die Arbeitsanweisung veraltet ist, ist
-   schlimmer als keiner"), nur mit Rechtsfolge statt mit Prozessfolge. **Die Lehre war auf genau
-   die eine Datei angewandt worden, die sie ausgelöst hatte, und auf keine zweite.**
+* Zeile 0 führte den CI-Job als Erreichbarkeitsnachweis. Er ist erreichbar und
+  tat nichts: die Upstream-Checkouts klonten mit Tiefe 1, der Baseline-Sha
+  existiert dort nicht, und die Rückweg-Prüfung meldete „Stand nicht bekannt" —
+  in genau dem Fall, für den es sie gibt. **Es gab keinen Weltzustand, in dem
+  sie etwas findet.** Das Schweigen im Log war Vakuum, kein Freispruch.
+* Zeile 1 führte einen Guard „ohne Ausnahmeliste über alle Renderer-Quellen".
+  Der Glob endet vor `src/mobile` — der Oberfläche, die jemand mit einem Stecker
+  in der Hand ansieht.
+* Zeile 3 führte 31 grüne Tests. Alle 31 Fixtures haben genau **eine**
+  Lagerposition; der Fall, den ein Lager täglich hat, kam in keinem vor.
 
-2. **Die Rückweg-Prüfung des Drift-Guards ist in CI strukturell wirkungslos.** Die drei
-   Upstream-Checkouts in `ci.yml` setzen kein `fetch-depth`, `actions/checkout@v4` klont also mit
-   Tiefe 1. Der Baseline-Sha existiert in einem flachen Klon nicht, das Skript meldet ehrlich
-   „Stand nicht bekannt" — und zwar genau im einzigen Fall, für den es die Prüfung gibt
-   (bewegter Upstream). Bei unbewegtem Upstream ist der Vergleich per Konstruktion leer. **Es gab
-   keinen Weltzustand, in dem sie in CI etwas findet.** Der Prüfer hat es mit einem echten
-   `git clone --depth 1` nachgestellt und im CI-Log des zitierten Laufs bestätigt, dass keine
-   einzige `?`-, `!`- oder `=`-Zeile vorkam. **Das Schweigen dort war Vakuum, kein Freispruch.**
+**Ein Beleg, der als besonders tragfähig notiert wurde, ist der, den niemand
+mehr nachprüft.** Das unterscheidet sich von allen zehn Sorten davor, und es ist
+die unangenehmste: Die Sorgfalt, mit der ein Beleg ausgesucht wird, schützt ihn
+danach vor Prüfung.
 
-3. **Der Router-Defekt (B-27) ist schwerer als gemessen.** Zwei Prüfer haben ihn unabhängig mit
-   ausgeführten Proben nachgestellt: Er ist nicht „erster Treffer gewinnt", sondern total
-   (`feedingInput` bricht an *jedem* Router ab, es gibt gar keinen ATEM-Link); das Ergebnis hängt
-   an der Reihenfolge des `equipment`-Arrays statt am Plan; und die `.avsourcemap` trägt denselben
-   Defekt wie `tally.json`. Details in B-27.
+**Was daraus repariert wurde** — nicht notiert, sondern behoben:
 
-**Was die Gegenrunde als Methode lehrt.** Sie hat keine einzige Stufe bewegt und trotzdem drei
-Reparaturen ausgelöst. Der Ertrag lag nicht im Urteil, sondern in den Belegen — und zwar
-ausgerechnet in denen, die die erste Runde als **stark** markiert hatte. Zeile 0 führte den
-CI-Job als Erreichbarkeitsnachweis; er ist erreichbar und tut nichts. Zeile 1 führte einen Guard
-„ohne Ausnahmeliste über alle Renderer-Quellen"; der Glob endet vor `src/mobile` (B-29). **Ein
-Beleg, der als besonders tragfähig notiert wurde, ist der, den niemand mehr nachprüft** — das ist
-die elfte Sorte Fehler, und sie unterscheidet sich von allen zehn davor.
+| Befund | Wo | PR |
+| --- | --- | --- |
+| MIT-Lizenz auf proprietär gestelltem Code (3 Apps) | Suite | `suite#76` |
+| Flacher CI-Checkout machte die Rückweg-Prüfung wirkungslos | Suite | `suite#76` |
+| Router im Weg ergab eine falsche Mischer-Eingangsnummer | cable | `cable#675` |
+| Mobile umging die Port-Label-Engstelle | cable | `cable#675` |
+| Lagerbestand wurde über Lagerpositionen nicht summiert | cable | `cable#676` |
+| Kommissionier-Liste verschwieg die Fehlmenge | cable | `cable#676` |
+| Plan-PDF stand in keinem Dokument-Register | cable | `cable#676` |
+| Netz-Budget zählte Link-Kapazität als Last | cable | `cable#676` |
+| Vorgabe-Standard war der schmalste statt des breitesten | cable | `cable#676` |
 
-Offen bleibt: neun der zwölf Gegenproben sind nicht gelaufen. Zeilen 3, 4, 5, 6, 7, 8, 9, 10 und
-11 stehen weiter einfach geprüft da, nicht doppelt. Nach drei von drei mit `false` wäre die
-Annahme, die übrigen neun hielten, die einzige, die nicht zu den Belegen passt.
+Fünf weitere Befunde sind zu groß für eine Reparatur und stehen als B-30 bis
+B-34 im Backlog, mit Datei und Zeile.
+
+**Die drei Korpus-Durchgänge**, zum ersten Mal gegen den Korpus statt gegen die
+Roadmap:
+
+1. **Von 38 P1-Bedarfen haben zwölf überhaupt keine Initiative.** Elf davon
+   fallen in zwei Cluster: die **Zeitachse fehlt vollständig** (Bedarfe 4, 6, 7,
+   8, 10 setzen alle einen Ablauf-/Rundown-Datensatz voraus — in keinem der acht
+   Repos gibt es einen; der einzige Zeit-Datensatz ist eine handgetippte
+   Flachliste in der Shell ohne Import, Export oder Referenz), und **die zweite
+   Hälfte gebauter Sachen** (das Modell steht, die Handlung fehlt: Kabellängen
+   werden geschätzt, aber nur per Knopf und als Luftlinie; Shotlisten liegen in
+   `localStorage` statt in der Projektdatei; Container bewegen ihren Inhalt, aber
+   es gibt keine Aus-/Einbuchung).
+2. **23 Matrix-Zeilen mit Target über Today:** 6 geschlossen, 10 teilweise, 5
+   unverändert offen — und **zwei Zellen der Matrix selbst falsch**, beide zu
+   pessimistisch (RF-Koordination und Show-Control-SDK; siehe die Korrektur in
+   `FEATURE-MATRIX.md`).
+3. **Drei vollständig unbesetzte Segmente** (Show-Control-Planung,
+   Delivery/Streaming, Running-Order-als-Daten) und ein vierter Befund, der
+   schwerer wiegt: **es gibt in keinem der acht Repos ein Zeitmodell.** Die
+   Bedarfs-Datenbank nennt genau das selbst „the largest gap for AV Planner Suite
+   specifically" — und in der Roadmap-Tabelle in 3b ist es keiner Initiative
+   zugeordnet und deshalb dort unsichtbar. Dazu: **vier der acht Repos sind aus
+   der Suite gar nicht erreichbar** (die Modul-Registry der Shell führt fünf
+   Einträge; Broadcast-intercom, tally-pi, sony-camera-bridge und
+   pi-media-station stehen nicht darunter).
+
+**Die zwölfte Sorte, aus Durchgang 2.** Eine `WON'T`-Zeile ist eine Anweisung an
+den nächsten Leser, etwas *nicht* zu bauen. Steht sie über etwas, das bereits
+ausgeliefert ist, ist sie nicht bloß veraltet — sie führt jemanden dazu,
+vorhandene Arbeit zu übersehen oder ein zweites Mal zu machen. **Eine falsche
+Absage kostet mehr als eine falsche Zusage**, weil niemand sie nachprüft: eine
+Zusage wird eingefordert, eine Absage nicht.
 
 ---
 

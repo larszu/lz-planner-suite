@@ -92,11 +92,38 @@ none of them holds a technical specification of the show.
 | Lighting console programming | grandMA, ETC Eos | no | WON'T — decades of muscle memory, safety-critical |
 | Photoreal previz | Capture, WYSIWYG, Depence | `part` (3D preview) | WON'T — sketch quality is the deliberate position |
 | Audio system prediction (SPL/coverage) | ArrayCalc, Soundvision, EASE | no | WON'T — vendor-specific acoustic models we cannot replicate |
-| RF coordination | Wireless Workbench, WSM | no | WON'T compute; YES to exporting into them |
-| Show-control runtime | Companion | no | WON'T — integrate via its module SDK instead |
+| RF coordination | Wireless Workbench, WSM | **YES** (`lib/rfCoordination.ts`, reachable via the Wireless-Rig dialog) | **computes today** — channel spacing plus 3rd-order intermodulation for 2 and 3 transmitters; YES to exporting into WWB/WSM. See the correction note below. |
+| Show-control runtime | Companion | **module shipped** (`Broadcast-intercom/companion-module`, `sony-camera-bridge/companion-dev`) | WON'T build a runtime — integrate via its module SDK, which is **already done** for two of the runtimes. See the correction note below. |
 | Intercom runtime | Riedel, Clear-Com, Green-GO | **YES** (Broadcast-intercom) | YES — but self-hosted/small-show niche, not matrix replacement |
 | Camera paint runtime | Sony MSU, CyanView | **YES** (sony-camera-bridge) | YES |
 | Tally runtime | Tally Arbiter, hardware | **YES** (tally-pi) | YES |
+
+> **Korrektur, 2026-09-04 (Gegenrunde zur zehnten Messrunde).** Zwei Zeilen dieses
+> Blocks standen auf `no` / `WON'T` und widersprachen damit ausgeliefertem Code.
+> Beide Male in dieselbe Richtung: die Matrix war zu pessimistisch.
+>
+> * **RF-Koordination.** `cable-planner/src/renderer/lib/rfCoordination.ts:57`
+>   (`computeRfConflicts`) rechnet Kanalabstand und Intermodulation dritter
+>   Ordnung für zwei und drei Sender; der Dateikopf nennt Wireless Workbench
+>   ausdrücklich als Vorbild. Erreichbar über `MenuBar` → `WirelessRigDialog`
+>   → `wirelessRig.ts:74`, gedeckt von `tests/rfCoordination.test.ts`.
+> * **Show-Control-Runtime.** Die als Alternative genannte SDK-Integration ist
+>   gebaut: `Broadcast-intercom/companion-module` (eigenes Paket gegen
+>   `@companion-module/base`) und
+>   `sony-camera-bridge/companion-dev/companion-module-sony-camera-bridge`.
+>
+> Warum das als Korrektur und nicht als Fußnote steht: **eine `WON'T`-Zeile ist
+> eine Anweisung an den nächsten Leser, etwas nicht zu bauen.** Steht sie über
+> etwas, das bereits ausgeliefert ist, ist sie nicht bloß veraltet — sie führt
+> jemanden dazu, vorhandene Arbeit zu übersehen oder ein zweites Mal zu machen.
+> Dieselbe Erwägung wie bei der CI-Ausnahme in `cable-planner/CLAUDE.md`, die
+> aus demselben Grund entfernt wurde.
+>
+> Die übrigen sieben `WON'T`-Zeilen dieses Blocks wurden bei derselben
+> Gelegenheit am Quelltext nachgeprüft und halten. Eine Hälfte einer Zeile
+> bleibt offen: „Media playback — YES as a planned endpoint" ist im
+> `cable-planner` nicht eingelöst; `pi-media-station` kommt dort als Gerät oder
+> Endpunkt nicht vor.
 
 ## F. Platform qualities
 

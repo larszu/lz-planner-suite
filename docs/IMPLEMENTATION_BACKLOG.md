@@ -580,7 +580,7 @@ ist selbst ein Ergebnis.
 
 ### B-27 · Die Ableitung liest den Router-Zustand nicht
 
-* **Status:** offen
+* **Status:** erledigt (`cable#675`)
 * **Befund (gemessen 2026-09-04, Runde 10):** `buildGraphContext` nimmt nur
   `equipment` + `cables`; `feedingInput` bricht an jedem Router ab. Der
   Videohub-Kreuzpunkt liegt seit `cable#601` im Projekt (`equipment.ts:456`)
@@ -656,7 +656,7 @@ ist selbst ein Ergebnis.
 
 ### B-29 · Mobile- und Viewer-Ansicht umgehen die Port-Label-Engstelle
 
-* **Status:** offen
+* **Status:** erledigt (`cable#675`)
 * **Befund (gemessen 2026-09-04, Gegenrunde):** `cable#6xx` hat die
   Port-Beschriftung auf **eine** Stelle zusammengezogen (`lib/portLabel.ts`) und
   einen Guard dazugestellt, der verhindert, dass jemand die Kette nachbaut. Der
@@ -683,6 +683,137 @@ ist selbst ein Ergebnis.
   Guard-Glob deckt `../src/**/*.{ts,tsx}` statt nur `renderer`; ein zweiter
   Guard belegt positiv, dass keine Oberfläche `port.name` roh rendert.
 * **Aufwand:** klein
+
+### B-30 · Serialisierte Einheiten zählen für die Lagerdeckung nicht
+
+* **Status:** offen
+* **Befund (2026-09-04, Gegenrunde):** `buildPlanBom(equipment, items, nodes)`
+  und `resolveCoverage(equipment, items)` nehmen `units` **gar nicht entgegen**.
+  `types/inventory.ts:185` kennt `UnitCondition = 'ok' | 'defect' | 'inRepair' |
+  'retired'`, und `InventoryUnit` trägt einen eigenen `locationId`. Beides ist
+  über die Oberfläche gepflegt (`InventoryDialog.tsx:447` Tab „Einheiten",
+  `:1258` Zustands-Dropdown, `:1273` `moveUnit`).
+* **Schaden:** Vier Geräte im Bestand, zwei davon in Reparatur → die Stückliste
+  sagt „gedeckt, Bestand 4", die Kommissionier-Liste schickt jemanden nach vier.
+* **Warum das besonders ärgert:** Der Code weiß an anderer Stelle sehr wohl,
+  dass der Zustand Lager-Information ist — `packList.ts:69-76` trägt `condition`
+  in die Packliste, `inventoryReport.ts:39/83` zählt nach Zustand. Nur die
+  Liste, die **ins Lager geht**, nicht.
+* **DoD:** `resolveCoverage` bekommt die Einheiten; ein Test mit zwei `inRepair`
+  belegt, dass sie nicht als Bestand zählen.
+* **Aufwand:** mittel
+
+### B-31 · Ein Rack mit zwölf Geräten ist eine Zeile mit Menge 1
+
+* **Status:** offen
+* **Befund (2026-09-04, Gegenrunde):** `groupPresetSpawnSlice.ts:197-236` legt
+  für ein eingefügtes Rack **genau ein** `EquipmentItem` an (Kategorie `Rack`,
+  ohne `deviceTypeId`); die enthaltenen Geräte leben nur im
+  `rackInternalSnapshot` (`types/equipment.ts:345-357`: nur
+  name/startUnit/rackUnits/rentmanId). `deriveDemand` liest ausschließlich
+  `equipment` — `rack`/`rackInternalSnapshot` kommen in `planBom.ts` und
+  `inventoryCoverage.ts` kein einziges Mal vor.
+* **Schaden:** Ein 12-Geräte-Rack erscheint als „1× FOH Rack (Rack) — nicht im
+  Lager", ohne jeden Hinweis, dass zwölf Positionen darunter verschwinden.
+  Stiller Unterlauf.
+* **Verwandt:** `types/project.ts:222/225` — `drumKit` und `wirelessRig` liegen
+  ebenfalls außerhalb von `project.equipment` und tauchen in keiner Stückliste
+  auf. Der Funkstrecken-Plan plant Sender-Bodies und Kapseln mit echter
+  Katalog-GUID; die Drum-Mikrofonierung hat stattdessen ihre **eigene, zweite**
+  Materialliste (`lib/drumMicing.ts:198-229`, nur Zwischenablage, kein CSV,
+  kein Lagerabgleich).
+* **DoD:** `deriveDemand` sieht Rack-Inhalte, `drumKit` und `wirelessRig`; die
+  zweite Materialliste in `drumMicing.ts` geht durch dieselbe Projektion oder
+  verschwindet.
+* **Aufwand:** mittel
+
+### B-32 · Der Übergabe-Stempel deckt nur die halbe Seite
+
+* **Status:** offen
+* **Befund (2026-09-04, Gegenrunde, von zwei Prüfern unabhängig):** Der
+  Fingerabdruck läuft über `handoverTable` = `assetRegisterTable` ∪
+  `cableBomTable` (`handoverPackage.ts:38-44`). Gedruckt wird mehr: der
+  Commissioning-Abschnitt (`:91-98`) liest `c.installStatus` und `c.testResult`,
+  der Umfang-Abschnitt `project.locations`. **Keine dieser Größen geht in den
+  Fingerabdruck** — `assetRegisterTable` stammt aus `project.equipment` (Kabel
+  kommen dort nicht vor), `cableBomTable` aggregiert nach
+  `${c.type}|${len}|${c.isTieLine}`.
+* **Schaden, beide Enden UI-erreichbar:** Übergabe drucken → in
+  `CableProperties.tsx:248` `setCableInstallStatus` setzen → §3 auf dem Blatt
+  ist nachweislich falsch, aber `currentStand('uebergabe', project)` liefert
+  unverändert denselben Wert, und der Rückweg meldet grün „aktueller Stand".
+* **Warum das die schwerste Stelle ist:** ADR-004 bezeichnet dieses Blatt selbst
+  als das schwerste — „das Blatt geht an den Betreiber und liegt dort
+  jahrelang". Kein Test deckt es: `documentStamp.test.ts:325-332` weist Drift
+  nur über die Kabellänge nach, die in der BOM steht.
+* **DoD:** `handoverTable` deckt den gedruckten Inhalt; ein Test ändert
+  `installStatus` und belegt, dass der Stand sich bewegt.
+* **Aufwand:** klein
+
+### B-33 · Der Beleg für geratene Ports lässt sich durch eine Umsortierung löschen
+
+* **Status:** offen
+* **Befund (2026-09-04, Gegenrunde):** `PortsSection.tsx:33-47` (`applyPorts`)
+  löscht bei **jeder** Port-Änderung `specSource.inputs` **und**
+  `specSource.outputs`. Auslöser ist jede `PortList`-Änderung — ein Zeichen im
+  Namensfeld *eines* Inputs löscht auch den Beleg der Outputs, und
+  `handleDragEnd` → `onChange(arrayMove(...))` löscht beide Seiten bei einer
+  **Umsortierung, die keinen einzigen Wert ändert**. Danach ist
+  `drawingChecks.ts:583` still — genau das Schweigen, gegen das `#650`
+  geschrieben wurde.
+* **Verschärfend:** `PortAiSuggestButton` rendert nur bei leeren Port-Listen.
+  Nach dem Anwenden des Vorschlags ist der Knopf weg; jede weitere Berührung
+  läuft zwingend durch den Löscher.
+* **Zwei weitere Hälften desselben Befunds:** (a) Der Beleg wird gespeichert und
+  **nirgends gezeigt** — 13 Fundstellen für `specSource`, keine liest `.source`
+  oder `.value` zur Anzeige; bis zu 160 Zeichen Fundstelle aus dem Web-Weg sind
+  schreibgeschützte Deko. (b) `equipment.specSource` fehlt im hauseigenen
+  Provenienz-Register (`types/provenance.ts:81-97`), obwohl es der jüngste und
+  breiteste Herkunftsträger ist — und `provenance.test.ts` prüft nur die
+  Vorwärtsrichtung, nie „jedes herkunftstragende Feld ist deklariert".
+* **DoD:** Nur die geänderte Seite verliert ihren Beleg, und nur bei geänderten
+  Werten; ein Test fährt `applyPorts` (heute prüft der Guard nur, dass die
+  Zeichenkette `delete rest.inputs` im Quelltext steht). `specSource` steht im
+  Provenienz-Register, und das Register prüft beide Richtungen.
+* **Aufwand:** klein bis mittel
+
+### B-34 · Die Zeitachse fehlt in allen acht Repos
+
+* **Status:** offen
+* **Befund (2026-09-04, Korpus-Durchgang):** **Kein Datensatz in keinem der acht
+  Repos kann sagen, WANN ein Gerät, eine Kamera oder ein Fixture gebraucht
+  wird.** `cable-planner` führt an Projekt und Gerät nur `updatedAt` und
+  `handoverDate`, das Inventar keinen Zeitraum, `multicam`s `Shotlist` ist eine
+  Reihenfolge ohne Uhr. Der einzige Zeitbezug im ganzen Baum ist eine
+  dreispaltige Notizliste in der Suite-Shell
+  (`apps/shell/src/data/project.ts:24-28`, `ScheduleItem {time,title,dept}`) —
+  ohne Import, ohne Export, ohne eine einzige Referenz auf ein Planer-Objekt.
+* **Wie groß das ist:** **Fünf der zwölf P1-Bedarfe ohne Initiative** setzen
+  einen Ablauf-/Rundown-Datensatz voraus. Die Bedarfs-Datenbank nennt es selbst
+  „the largest gap for AV Planner Suite specifically" (`USER-NEED-DATABASE.md`,
+  Bedarf 8). Die gebaute Change-Impact-Sicht beantwortet dieselbe Frage nur
+  Plan-gegen-Plan, nie Zeitplan-gegen-Plan.
+* **Warum es in der Roadmap unsichtbar ist:** Es ist keiner der zwölf
+  Initiativen zugeordnet und taucht in der Tabelle in Abschnitt 3b deshalb gar
+  nicht auf. Das ist eine Eigenschaft der Tabelle, nicht des Bedarfs.
+* **DoD:** Eigentümer-Entscheidung zuerst (E-18) — ob die Suite die Zeitachse
+  überhaupt besetzt. Erst danach ein Datenmodell.
+* **Aufwand:** groß
+
+### B-35 · Vier der acht Repos sind aus der Suite nicht erreichbar
+
+* **Status:** offen
+* **Befund (2026-09-04, Korpus-Durchgang):** Die Modul-Registry der Shell
+  (`apps/shell/src/modules/registry.ts:48-134`) führt fünf Einträge.
+  `Broadcast-intercom`, `tally-pi`, `sony-camera-bridge` und `pi-media-station`
+  stehen nicht darunter.
+* **Warum das zählt:** Die Feature-Matrix führt drei davon als **`YES`** — sie
+  sind das, was die Suite den Incumbents entgegensetzt. Aus der Suite heraus
+  gibt es sie nicht. Das ist derselbe Unterschied wie „Code existiert" gegen
+  „Code ist erreichbar", nur eine Ebene höher.
+* **DoD:** Entweder in der Registry verdrahtet, oder in der Matrix als bewusst
+  eigenständig ausgewiesen — nicht stillschweigend beides.
+* **Aufwand:** klein (Ausweisung) bis mittel (Verdrahtung)
 
 ---
 
@@ -788,6 +919,8 @@ gehalten, nicht als Versäumnis:
 | E-15 | Wie sieht das **Abbrechen** eines Lager-Imports aus — Drei-Wege-Dialog, Vorschau-Schritt oder Undo für den Lager-Store? | B-22 — heute importieren Escape und Backdrop-Klick still zusammenführend, und der Schreibvorgang ist nicht rücknehmbar |
 | E-16 | Werden `PrintDialog` und `TitleBlock` **verdrahtet** oder **gelöscht**? | B-24 — 21 KB Code und 48 übersetzte Zeichenketten, deren Funktion es woanders schon gibt |
 | E-17 | Welche Sprache ist die Quellsprache von `sony-camera-bridge`? | B-26 — davon hängt ab, ob 32 Stellen übersetzt oder 140 umgeschrieben werden |
+| E-18 | Besetzt die Suite die **Zeitachse** — Ablauf/Rundown als Datenobjekt? | B-34 — fünf der zwölf P1-Bedarfe ohne Initiative hängen daran, und die Bedarfs-Datenbank nennt es selbst „the largest gap for AV Planner Suite specifically". Ein Ja ist ein neues Kern-Datenmodell quer durch alle Planer, ein Nein muss in der Feature-Matrix als WON'T stehen statt zu fehlen |
+| E-19 | Sind die vier Runtime-Repos Teil der **Suite** oder bewusst eigenständig? | B-35 — die Matrix führt drei davon als `YES`, die Modul-Registry der Shell kennt sie nicht. Verdrahten oder ausweisen; stillschweigend beides ist der heutige Zustand |
 
 ---
 
@@ -833,3 +966,10 @@ gehalten, nicht als Versäumnis:
 | Zehnte Messrunde: 6 von 12 Zeilen widerlegt | `suite#75` |
 | MIT-Lizenz auf proprietär gestelltem Code (3 Apps) | `suite#76` |
 | Flacher CI-Checkout machte die Rückweg-Prüfung wirkungslos | `suite#76` |
+| Router im Weg ergab eine falsche Mischer-Eingangsnummer (B-27) | `cable#675` |
+| Mobile umging die Port-Label-Engstelle (B-29) | `cable#675` |
+| Lagerbestand über Lagerpositionen nicht summiert | `cable#676` |
+| Kommissionier-Liste verschwieg die Fehlmenge | `cable#676` |
+| Plan-PDF stand in keinem Dokument-Register | `cable#676` |
+| Netz-Budget zählte Link-Kapazität als Last | `cable#676` |
+| Zwei WON'T-Zeilen widersprachen ausgeliefertem Code | `suite#77` |
