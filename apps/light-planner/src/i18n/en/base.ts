@@ -46,4 +46,19 @@ export const base: Record<string, string> = {
   'tool.grid': 'Grid',
   'tool.floorplan': 'Floor plan',
   'tool.export': 'Export',
+  // Vendoriert aus light#66: die Werkzeugleiste hatte fuer Beschriftung und
+  // Kurzhilfe bisher nur EINEN Schluessel (`topbar.tools` fuer das Nav-Label);
+  // die elf Titel-Kurzhilfen standen roh deutsch im `title`-Attribut.
+  'tool.rail': 'Tools',
+  'tool.select.hint': 'Select & move — V',
+  'tool.pan.hint': 'Pan the view — space/H',
+  'tool.person.hint': 'Place a person',
+  'tool.stage.hint': 'Draw a rectangular riser',
+  'tool.stagepoly.hint': 'Draw a stage as a polygon',
+  'tool.truss.hint': 'Drag a truss',
+  'tool.wall.hint': 'Draw a wall path',
+  'tool.camera.hint': 'Set a camera position (not photo mode)',
+  'tool.rect.hint': 'Draw a rectangle / marker',
+  'tool.line.hint': 'Draw a line',
+  'tool.measure.hint': 'Measure a distance',
 };

@@ -317,4 +317,20 @@ export const dialogs: Record<string, string> = {
   'onb.tour3.hint': 'Space pans the view, the mouse wheel zooms.',
   'onb.tour4.title': 'Inventory, bottom left',
   'onb.tour4.body': 'The inventory button opens the cross-project stock (items, locations, sets, individual units). Through export/import it shares its format with Cable Planner and MultiCam Planner – one inventory for the whole suite.',
+  // Vendoriert aus light#66: der Versions-Dialog war in der Suite nur mit
+  // EINEM Schluessel gewickelt (`version.restoreConfirm`); Kopf, Liste,
+  // Leerzustand und die Diff-Zeile standen roh deutsch da.
+  'version.title': 'Versions & comparison',
+  'version.namePlaceholder': 'Name this version (e.g. after rehearsal 1)…',
+  'version.save': 'Save',
+  'version.empty': 'No versions yet. Save the current state to compare against it later.',
+  'version.fixtures': 'fixtures',
+  'version.restore': 'Load this version',
+  'version.delete': 'Delete version',
+  'version.pick': 'Pick a version on the left to see what changed since then.',
+  'version.noDiff': 'No differences from the current state.',
+  'version.change': 'change',
+  'version.changes': 'changes',
+  'version.since': 'since',
+  'version.current': 'current',
 };
