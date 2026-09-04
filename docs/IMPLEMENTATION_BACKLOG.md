@@ -399,6 +399,33 @@ ist selbst ein Ergebnis.
 
 ---
 
+### B-21 · Der Versions-Vergleich sieht 6 von 14 Kategorien
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-14)
+* **Befund (nachgeprüft 2026-09-04, light-planner):** `diffProjects`
+  (`src/core/diff.ts:112-120`) vergleicht genau sechs Kategorien —
+  `fixtures`, `persons`, `trusses`, `walls`, `stageElements`, `ceilings`.
+  `ProjectData` hat vierzehn inhaltliche: es fehlen `shapes`,
+  `customFixtures`, `fixtureGroups`, `scenes`, `cameras`, `layers`, `floor`
+  und `sun`.
+* **Schadensweg:** Wer nur Formen verschiebt, eine Szene ändert, eine Kamera
+  umstellt oder die Sonne dreht, bekommt im Versions-Dialog **„Keine
+  Unterschiede zum aktuellen Stand"**. Das ist keine Lücke in der Anzeige,
+  sondern eine Falschaussage: der Nutzer verwirft daraufhin eine Version, die
+  sich sehr wohl unterscheidet.
+* **Warum das nicht nebenbei entschieden wird:** Der Vergleich braucht pro
+  Kategorie eine Beschriftungsfunktion und eine Feldliste (`FieldSpec`) —
+  welche Felder eine Änderung *ausmachen* und wie sie benannt werden, ist eine
+  Produktentscheidung. Für `layers`, `floor` und `sun` kommt hinzu, dass sie
+  keine Listen sind und die vorhandene `diffList`-Maschinerie nicht passt.
+* **Ehrliches Zwischenmaß, falls die Erweiterung wartet:** die Aussage der
+  Oberfläche auf das eingrenzen, was tatsächlich verglichen wurde. „Keine
+  Unterschiede" darf nicht mehr behaupten, als der Vergleich abdeckt —
+  verlustfrei-oder-laut gilt auch für eine Aussage über einen Vergleich.
+* **Aufwand:** klein (Aussage eingrenzen) / mittel (Kategorien ergänzen)
+
+---
+
 ## Niedrig
 
 ### B-12 · `pi-media-station` und `tally-pi` ohne Tests
@@ -467,6 +494,7 @@ gehalten, nicht als Versäumnis:
 | E-11 | Soll der Cross-Link bis **in** die eingebetteten Planer reichen? | B-18 — braucht einen gemeinsamen Id-Raum zwischen Shell-Seed-Modell und den Planer-Projekten |
 | E-12 | Wo wohnt Lexware architektonisch — Shell oder Planer? | B-19 — eigene Shell-Domäne (dann braucht Cable es nicht mehr) vs. Preload für den eingebetteten Planer |
 | E-13 | Bleibt die Shell-Vorschau ein eigenständiges Übersichtsmodell? | B-20 — wenn ja, fehlt eine sichtbare Kennzeichnung; wenn nein, müssen die Modelle zusammengeführt werden |
+| E-14 | Welche Kategorien soll der Versions-Vergleich zeigen, und welche Felder machen darin eine Änderung aus? | B-21 — betrifft acht heute unsichtbare Kategorien; `layers`/`floor`/`sun` sind keine Listen und brauchen eine eigene Vergleichsform |
 
 ---
 

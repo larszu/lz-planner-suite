@@ -754,7 +754,7 @@ const App: React.FC = () => {
     }
   }, [fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, cameras, layers, floor, sun, floorPlan, projectId]);
 
-  const handleLoadProject = useCallback((data: ProjectData) => {
+  const handleLoadProject = useCallback((data: ProjectData, keepId?: string) => {
     historyRef.current = [];
     futureRef.current = [];
     suppressLogRef.current = true;       // don't log the bulk state swap
@@ -794,8 +794,22 @@ const App: React.FC = () => {
     }
     setPlanMode('none');
     setProjectMeta(data.meta);
-    const newId = 'proj-' + Date.now();
-    setProjectId(newId);
+    // Die Projekt-Identitaet: `keepId` gesetzt heisst "dasselbe Projekt", nur
+    // mit anderem Inhalt (aus der Geraete-Liste geladen, oder eine Version
+    // wiederhergestellt). Ohne `keepId` ist es wirklich ein neues Projekt
+    // (.avplan-Import, Datei-Import) und bekommt eine frische Id.
+    //
+    // WARUM DAS ZAEHLT. Vorher wurde hier IMMER eine neue Id erzeugt. An
+    // `projectId` haengen aber die Versions-Schnappschuesse
+    // (`versionStore.saveVersion(projectId, …)`) und die Zuordnung beim
+    // Speichern (`saveProjectToStorage` dedupliziert ueber die Id). Das kostete
+    // drei Dinge auf einmal:
+    //   1. Eine Version wiederherstellen machte alle uebrigen Versionen
+    //      desselben Projekts sofort unerreichbar -- ohne Neustart.
+    //   2. Nach jedem App-Start waren alle Schnappschuesse verwaist.
+    //   3. Laden + Bearbeiten + Speichern legte einen ZWEITEN Eintrag in der
+    //      Geraete-Liste an, statt den bestehenden zu aktualisieren.
+    setProjectId(keepId ?? 'proj-' + Date.now());
     setSelectedIds(new Set());
     setProjectDialogMode(null);
   }, []);
@@ -1231,6 +1245,18 @@ const App: React.FC = () => {
       meta, fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups,
       trusses, walls, ceilings, scenes, cameras, layers, floor, sun,
       floorPlan: floorPlan ? serializeFloorPlan(floorPlan) : undefined,
+      // ADR-005 — dritter Bauplatz fuer ein vollstaendiges ProjectData, und
+      // der einzige, dem die Felder fehlten. Was hier gebaut wird, geht in den
+      // Versions-Schnappschuss; beim Wiederherstellen setzt handleLoadProject
+      // die Refs aus GENAU diesen Feldern zurueck. Ohne sie verlor jedes
+      // Zurueckholen einer Version die Kamera-, Kabel- und Raum-Daten.
+      ...foreignDomainsField(preservedDomainsRef.current),
+      ...(Object.keys(preservedVenueRef.current).length > 0
+        ? { venueForeign: preservedVenueRef.current }
+        : {}),
+      ...(Object.keys(preservedPersonsRef.current).length > 0
+        ? { personForeign: preservedPersonsRef.current }
+        : {}),
     };
   }, [projectMeta, fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, cameras, layers, floor, sun, floorPlan]);
 
@@ -1690,7 +1716,21 @@ const App: React.FC = () => {
           projectId={projectId}
           projectName={projectMeta?.name ?? ''}
           currentDoc={buildCurrentDoc()}
-          onRestore={(doc) => { handleLoadProject(doc); setVersionOpen(false); }}
+          // Dieselbe Projekt-Identitaet behalten: eine Version des Projekts
+          // wiederherzustellen macht daraus kein anderes Projekt.
+          // Und den Grundriss mitgeben: `versionStore.saveVersion` laesst ihn
+          // BEWUSST aus dem Schnappschuss weg. `handleLoadProject` liest ein
+          // fehlendes `floorPlan` aber als "keiner vorhanden" und setzt auf
+          // null. Beide Entscheidungen sind fuer sich richtig; zusammen
+          // loeschten sie bei jedem Wiederherstellen den importierten und
+          // kalibrierten Gebaeudeplan.
+          onRestore={(doc) => {
+            handleLoadProject(
+              { ...doc, floorPlan: floorPlan ? serializeFloorPlan(floorPlan) : undefined },
+              projectId,
+            )
+            setVersionOpen(false)
+          }}
           onClose={() => setVersionOpen(false)}
         />
       )}
