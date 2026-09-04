@@ -90,7 +90,21 @@ ist selbst ein Ergebnis.
 
 ### B-5 · Der Rückweg Suite → upstream hat keine Liste
 
-* **Status:** offen
+* **Status:** ~~offen~~ **erledigt 2026-09-04** (`suite#64`) — der Drift-Bericht
+  hat jetzt einen Abschnitt „Suite-only — nicht nach upstream uebernommen",
+  der die Dateien mit Zeilenzahl nennt, analog zur „uncarried"-Liste.
+* **Stand der letzten Durchsicht (2026-09-04):** 53 Kandidaten (suite-ahead +
+  two-way) wurden einzeln gegen die Upstream-Fassung gelesen. Ergebnis: **41
+  von 50 sind bewusste Überlagerung.** Von neun Kandidaten haben nach
+  Nachprüfung **drei** gehalten — die drei rohen `alert(`-Aufrufe im
+  `cable-planner`, die in `cable#657` portiert wurden. Gefallen sind: vier
+  light-planner-i18n-Kandidaten (der Sprachschalter ist upstream **nicht
+  erreichbar**, siehe B-13 — Übersetzen änderte dort nichts Sichtbares) und
+  drei `bonjour-service`-Typänderungen (upstream compiliert sauber, also kein
+  Defekt, sondern eine Suite-Build-Anpassung).
+* **Lehre daraus:** die Trefferquote roher Kandidaten lag bei **3 von 9**. Ein
+  Guard, der automatisch urteilt, wäre also zu zwei Dritteln falsch gewesen.
+  Die Liste vorzulegen ist richtig, sie zu bewerten bleibt Handarbeit.
 * **Befund:** `scripts/planner-drift.mjs` **zählt** `suite-ahead` (heute: cable
   8, multicam 1), **listet die Dateien aber in keinem Abschnitt auf.** Nur die
   `two-way`-Dateien werden namentlich genannt. Genau deshalb läuft diese Liste
@@ -247,4 +261,5 @@ gehalten, nicht als Versäumnis:
 | Suite-Guard traf nur `window.alert(` (B-1) | `suite#63` |
 | CI für `Broadcast-intercom` (B-2) | `Broadcast-intercom#6` |
 | CI für `sony-camera-bridge` (B-3) | `sony-camera-bridge#11` |
+| Rückweg-Liste im Drift-Bericht (B-5) | `suite#64` |
 | Vier zu pessimistische Roadmap-Zeilen berichtigt | `suite#60` |

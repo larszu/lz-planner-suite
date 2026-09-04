@@ -43,8 +43,8 @@ Antwort darauf.
 | `multicam-planner` | 4.3.2 | ~21.800 LOC | 2 Workflows |
 | `light-planner` | 1.0.0 | ~15.800 LOC | 2 Workflows |
 | `av-planner-suite` | 1.0.0 | Shell + 4 Pakete + 3 vendorte Planer | 2 Workflows |
-| `Broadcast-intercom` | 0.1.0 | ~7.250 LOC (server/web/shared/companion) | **keine** |
-| `sony-camera-bridge` | 1.0.0 | ~11.500 LOC | **keine** |
+| `Broadcast-intercom` | 0.1.0 | ~7.250 LOC (server/web/shared/companion) | 1 Workflow (neu) |
+| `sony-camera-bridge` | 1.0.0 | ~11.500 LOC | 1 Workflow (neu) |
 | `tally-pi` | — | 2.978 LOC Python, 5 Module | nur Syntax-Check |
 | `pi-media-station` | — | 638 LOC Python + Electron-Manager | **keine** |
 
@@ -108,7 +108,7 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | Tally-Datenvertrag | `COMPLETE` | `lib/tallyMap.ts` + `tests/tallyMap.test.ts`; Felder decken sich mit `gpio_watcher.py:79` (`me` fällt bewusst weg, dort Default 1) |
 | Green-GO Round-Trip | `PARTIAL` | Preset überlebt den Export inkl. `ButtonFunctions` (`cable#653`); ein **herstellerneutrales** Austauschformat fehlt |
 | Mobile-Share (LAN) | `IMPLEMENTED` | `services/mobileShareServer.ts`, Token pro Sitzung auf allen Schreibwegen; keine automatisierte End-to-End-Prüfung |
-| Kollaboration (CRDT/Signaling) | `PARTIAL` | `npm run test:crdt` / `test:signaling` vorhanden, laufen **nicht** in der Haupt-CI |
+| Kollaboration (CRDT/Signaling) | `IMPLEMENTED` | `test:crdt` und `test:signaling` laufen seit `cable#658` in CI; der WebRTC-/Cross-Maschine-Teil bleibt ungeprüft (braucht echte Geräte) |
 | Fenster-/MRU-Zustand | `IMPLEMENTED` | bewusst **nicht** atomar (`main/index.ts:135`, `ipc/projectIpc.ts:37/46`) — beide Leser sind vollständig defensiv und fallen auf Default zurück; kein Nutzerdaten-Pfad |
 
 ### 3.2 `av-planner-suite` — Schale und Konsolidierung
@@ -121,16 +121,16 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | Feature-Erreichbarkeits-Guard | `COMPLETE` | `scripts/reachable-features.mjs`, in CI; nennt ausdrücklich, was er **nicht** prüft |
 | Native-Dialoge-Guard | `COMPLETE` | `scripts/native-dialogs.mjs`; seit B-1 beide Schreibweisen, Zeichenketten geleert, Gegentest über alle sechs Formen |
 | Geteilte Pakete | `IMPLEMENTED` | `inventory-core`, `lexware-core`, `onboarding-core`, `ui`; 45 Tests |
-| Rückweg Suite → upstream | `MISSING` | der Drift-Bericht zählt `suite-ahead`, **listet die Dateien aber nirgends auf** — genau deshalb läuft die Liste niemand |
+| Rückweg Suite → upstream | `PARTIAL` | der Drift-Bericht **nennt** die suite-ahead-Dateien jetzt (`suite#64`); die Bewertung Overlay/Fix bleibt Handarbeit — gemessene Trefferquote roher Kandidaten: 3 von 9 |
 
 ### 3.3 Die übrigen Repos
 
 | Repo | Status | Beleg |
 | --- | --- | --- |
 | `Broadcast-intercom` Kern | `IMPLEMENTED` | 38 Smoke-Prüfungen grün gegen laufenden Server |
-| `Broadcast-intercom` CI | `MISSING` | keine Workflow-Datei; die vorhandene Prüfung läuft nie automatisch |
+| `Broadcast-intercom` CI | `COMPLETE` | `ci.yml` baut, startet den Kern mit `MOCK_DEVICES=1` und fährt die 38 Smoke-Prüfungen (`#6`, erster Lauf grün) |
 | `sony-camera-bridge` | `IMPLEMENTED` | 15 Tests grün in zwei Workspaces, ganz auf ADR-003 ausgerichtet |
-| `sony-camera-bridge` CI | `MISSING` | keine Workflow-Datei |
+| `sony-camera-bridge` CI | `COMPLETE` | `ci.yml` mit `npm ci` + `npm test` (`#11`, grün) |
 | `tally-pi` | `IMPLEMENTED` | 5 Python-Module, systemd-Units, `bootstrap.sh`; CI prüft nur Syntax |
 | `pi-media-station` | `IMPLEMENTED` | `main.py`/`sensor.py`/`web_ui.py` + Electron-Manager; keine CI, keine Tests |
 

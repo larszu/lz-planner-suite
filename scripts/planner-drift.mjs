@@ -424,6 +424,35 @@ for (const r of results) {
 }
 if (!anyTwoWay) lines.push('None.', '')
 
+lines.push('', '## Suite-only — nicht nach upstream uebernommen (suite-ahead)', '')
+lines.push('Dateien, in denen die Suite Zeilen hat und upstream KEINE fehlen -- die')
+lines.push('Kopie ist also strikt weiter. Die Kennzahl `suite-ahead` in der Tabelle')
+lines.push('oben zaehlt sie seit jeher, benannt hat sie niemand. Genau deshalb ist')
+lines.push('diese Liste nie jemand durchgegangen.')
+lines.push('')
+lines.push('**Das ist eine Vorlage, kein Urteil.** Der grosse Teil davon ist bewusste')
+lines.push('Ueberlagerung: `@avplan/*`-Importe, Shell-Einbettung, Theme, Web statt')
+lines.push('Electron. Gemessen waren das 41 von 50 untersuchten Dateien. Die Frage,')
+lines.push('die hier gestellt wird, ist nur: *hat jemand draufgeschaut?*')
+lines.push('')
+lines.push('Warum es zaehlt: in Suite-PR #1 wurde ein nativer Dialog in `CollabPanel`')
+lines.push('ersetzt, upstream bekam den Fix nie -- und der abgehakte Punkt 41 in')
+lines.push('`docs/ux-audit.md` war damit fuer den Suite-Code richtig und fuer den')
+lines.push('cable-Code falsch. Dieselbe Datei, in beide Repos vendort.')
+lines.push('')
+let anySuiteAhead = false
+for (const r of results) {
+  const sa = r.findings
+    .filter((f) => f.kind === 'suite-ahead')
+    .sort((a, b) => b.suiteOnly - a.suiteOnly)
+  if (!sa.length) continue
+  anySuiteAhead = true
+  lines.push(`### ${r.app}`, '', '| File | lines only in suite |', '| --- | --- |')
+  for (const f of sa) lines.push(`| \`${f.file}\` | ${f.suiteOnly} |`)
+  lines.push('')
+}
+if (!anySuiteAhead) lines.push('None.', '')
+
 lines.push('## Upstream changes not yet carried over', '')
 lines.push('Lines upstream ADDED since the baseline `upstreamSha` that are missing from the')
 lines.push('suite copy entirely. Not proof of a loss — a change may have been left out on')
