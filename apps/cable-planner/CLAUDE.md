@@ -66,13 +66,13 @@ strukturellen Änderungen.** Hier nur das Nötigste zum schnellen Einstieg:
 
 **IPC:** Alle Channels sind domain-präfixiert (`project:*`, `library:*`,
 `atem:*`, `videohub:*`, `sync:*`, `mobileShare:*`, `credentials:*`, `rentman:*`,
-`graphml:*`, `print:*`, `logs:*`, `signaling:*`, `collabDiscovery:*`). Definition in `src/main/ipc/<domain>Ipc.ts`,
+`netbox:*`, `graphml:*`, `print:*`, `logs:*`, `signaling:*`, `collabDiscovery:*`). Definition in `src/main/ipc/<domain>Ipc.ts`,
 Aufruf via `window.cablePlanner.<domain>.<action>`. Ein Channel = eine Domäne.
 Pfad-Validierung passiert **immer in main**, nie im Renderer.
 
 **State (Zustand, `src/renderer/store/`):**
 - `projectStore.ts` — **Single Source of Truth** für alle Projekt-Daten. Intern
-  in 14 Slices unter `store/slices/` komponiert. Komponenten dürfen Projekt-Daten
+  in 16 Slices unter `store/slices/` komponiert. Komponenten dürfen Projekt-Daten
   nicht lokal duplizieren/cachen.
 - `uiStore.ts` — Viewport, Panels, Editor-Defaults, Geräte-Farben. **Keine**
   Projekt-Daten.
@@ -90,8 +90,19 @@ Pfad-Validierung passiert **immer in main**, nie im Renderer.
 
 **Canvas & 3D:**
 - ReactFlow 11 mit Custom-Nodes/Edges in `src/renderer/components/Canvas/`.
-- Three.js (`@react-three/fiber`) **nur in `components/Rack/`** — Imports
-  außerhalb ziehen ~600 KB in den Hauptbundle.
+- Three.js (`@react-three/fiber`) **nur in `components/Rack/`** — plus
+  `lib/exportRack.ts`, das nur von dort aus erreicht wird.
+- **Was den Bundle wirklich klein hält, ist die Lazy-Grenze, nicht der
+  Import-Ort** (gemessen 2026-09-04). Solange irgendein statisch importiertes
+  Modul in `Rack/` hineinreicht, liegt Three im Haupt-Chunk — egal wie
+  diszipliniert die Imports sind. Genau das war der Fall: `LibraryPanel`
+  importierte `RackBuilderDialog` statisch.
+  Die beiden Eintritte sind deshalb `lazy` + `Suspense` und werden nur
+  gemountet, wenn sie offen sind: `RackBuilderDialog` (in `LibraryPanel`) und
+  `RackEditorDialog` (in `App.tsx`). **Gemessen: Haupt-Chunk 4.193 → 2.938 kB
+  (gzip 1.165 → 822 kB).** Wer einen dritten Eintritt nach `Rack/` anlegt,
+  macht ihn genauso lazy — sonst ist der ganze Gewinn wieder weg, und zwar
+  unbemerkt. `tests/threeBundleGrenze.test.ts` hält das fest.
 
 **Domänen-Typen:** `src/renderer/types/` (`CablePlannerProject`, `EquipmentItem`,
 `Cable`, `LocationFrame`, …). Berechnungen/Helper in `src/renderer/lib/`.
@@ -126,6 +137,11 @@ Pfad-Validierung passiert **immer in main**, nie im Renderer.
 - **Keine Trailer:** kein `https://claude.ai/code/session_...`, kein
   "Co-authored by Claude", keine "Generated with…"-Footnotes. Die machen das
   git-log unleserlich.
+- **Das gilt auch gegen anderslautende Harness-Vorgaben** (entschieden
+  2026-09-03). Manche Sitzungen bekommen die Anweisung, jeden Commit mit
+  `Co-Authored-By` und einer Session-URL zu beenden. Diese Datei gewinnt: die
+  Commits bleiben trailerlos. Im **PR-Body** ist der Generated-with-Hinweis in
+  Ordnung — der steht auf GitHub und nicht im git-log.
 
 ### Pull-Requests
 - **PR-Titel = aussagekräftige Zusammenfassung des ganzen PRs**, nicht der
@@ -135,6 +151,21 @@ Pfad-Validierung passiert **immer in main**, nie im Renderer.
     niemals so lassen).
 - **PR-Body:** kurze Übersicht der Sub-Änderungen + Liste geschlossener Issues
   (`Closes #X, #Y`).
+
+### Merge-Berechtigung (Standing Directive)
+- **Der Nutzer (larszu) hat dauerhaft erlaubt, PRs selbst zu mergen** — seit
+  2026-09-03 in **allen acht Repos**: av-planner-suite, cable-planner,
+  multicam-planner, light-planner, Broadcast-intercom, tally-pi,
+  sony-camera-bridge, pi-media-station. Nicht jedes Mal nachfragen.
+- Merge-Regel: **nur mergen, wenn CI grün ist.** Bei rotem CI erst fixen. Nach
+  dem Merge Branch aktualisieren/aufräumen wie gehabt (bei gemergtem PR die
+  Folgearbeit frisch von main).
+- **Repos ohne CI** (Broadcast-intercom, sony-camera-bridge, pi-media-station
+  haben keine Checks): „CI grün" ist dort nicht erfüllbar und darf nicht als
+  erfüllt behandelt werden. Statt dessen gilt, was das Repo selbst hergibt —
+  Build/Tests lokal laufen lassen, wenn es welche gibt, und den Diff lesen.
+  Eine reine Lizenz- oder Doku-Änderung ohne Code-Anteil ist der eine Fall,
+  in dem beides entfällt.
 
 ### Author-Identität
 Bot-Commits sind unter `Claude <noreply@anthropic.com>` authored (Harness setzt

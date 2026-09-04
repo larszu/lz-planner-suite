@@ -10,7 +10,7 @@
     "drift": 15,
     "total": 37,
     "missingUpstream": false,
-    "upstreamSha": "38230774eab9"
+    "upstreamSha": "d523feecd781"
   },
   "multicam-planner": {
     "only-upstream": 0,

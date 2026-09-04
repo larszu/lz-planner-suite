@@ -61,6 +61,28 @@ const APPS = ['cable-planner', 'multicam-planner', 'light-planner']
  * Monorepo und Standalone unterscheiden.
  */
 const ROOTS = ['src', 'tests']
+
+/**
+ * Einzelne Dateien in der App-Wurzel, die genauso vendoriert sind wie der
+ * Quelltext -- aber in keiner der ROOTS liegen und deshalb bis 2026-09-04
+ * UNBEOBACHTET drifteten.
+ *
+ * Gemessen an dem Tag: `apps/cable-planner/CLAUDE.md` lag 39 Zeilen hinter
+ * upstream. Ihm fehlten unter anderem die Regel "keine Trailer in
+ * Commit-Messages" und die Merge-Berechtigung -- also genau die Anweisungen,
+ * nach denen jemand handelt, der unter `apps/cable-planner/` arbeitet und
+ * diese Datei als naechstliegende CLAUDE.md liest. Ein Drift-Bericht, der
+ * "OK" sagt, waehrend die Arbeitsanweisung veraltet ist, ist schlimmer als
+ * keiner: er behauptet eine Deckung, die es nicht gibt.
+ *
+ * `scripts/` bleibt weiterhin draussen (Build-Skripte duerfen sich
+ * unterscheiden), package.json ebenso -- Monorepo und Standalone haben
+ * zwangslaeufig verschiedene Abhaengigkeiten und Skripte.
+ */
+const ROOT_FILES = ['CLAUDE.md']
+
+/** Was git bei `changedSince` als Pfadfilter sieht: Wurzeln plus Einzeldateien. */
+const TRACKED = [...ROOTS, ...ROOT_FILES]
 const BASELINE = join(ROOT, 'scripts', 'planner-drift-baseline.json')
 
 /**
@@ -309,7 +331,7 @@ const isTrivialLine = (l) => /^(\/\/|\/\*+|\*+\/?|[{}()[\];,]+)$/.test(l)
 function uncarried(app, baseUpstreamSha) {
   if (!baseUpstreamSha) return { unknown: 'Baseline ohne upstreamSha' }
   const upDir = join(upstreamRoot, app)
-  const upChanged = changedSince(upDir, baseUpstreamSha, ROOTS)
+  const upChanged = changedSince(upDir, baseUpstreamSha, TRACKED)
   if (upChanged === null) return { unknown: `Upstream-Stand ${baseUpstreamSha} lokal nicht bekannt` }
   const replaced = new Set(REPLACED_BY_PACKAGE[app] ?? [])
   const files = []
@@ -366,6 +388,26 @@ function analyseApp(app) {
       // Bewusstes Overlay der Suite (Shell, Lexware, i18n) — kein Drift.
       findings.push({ file: label(f), kind: overlay.has(label(f)) ? 'expected-overlay' : 'only-suite' })
     }
+  }
+
+  // Einzeldateien in der App-Wurzel (siehe ROOT_FILES) — gleiche Einstufung,
+  // nur ohne walk().
+  for (const f of ROOT_FILES) {
+    const suiteFile = join(ROOT, 'apps', app, f)
+    const upFile = join(upstreamRoot, app, f)
+    const hasSuite = existsSync(suiteFile)
+    const hasUp = existsSync(upFile)
+    if (!hasSuite && !hasUp) continue
+    if (!hasSuite) {
+      findings.push({ file: f, kind: dead.has(f) ? 'dead-upstream' : 'only-upstream' })
+      continue
+    }
+    if (!hasUp) {
+      findings.push({ file: f, kind: overlay.has(f) ? 'expected-overlay' : 'only-suite' })
+      continue
+    }
+    const c = classify(suiteFile, upFile)
+    if (c) findings.push({ file: f, ...c })
   }
 
   return { app, findings }
