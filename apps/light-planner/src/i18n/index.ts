@@ -13,6 +13,7 @@ import { topbar } from './en/topbar';
 import { panels } from './en/panels';
 import { app } from './en/app';
 import { dialogs } from './en/dialogs';
+import { inventory } from './en/inventory';
 
 // English overrides, aus Domänen-Teildicts komponiert. Deutsch bleibt
 // Quell-Sprache (Fallback im JSX via t(key, 'Deutsch')); fehlt ein Key, greift
@@ -23,6 +24,7 @@ const en: Record<string, string> = {
   ...panels,
   ...app,
   ...dialogs,
+  ...inventory,
 };
 
 export function translate(language: 'de' | 'en', key: string, de: string): string {

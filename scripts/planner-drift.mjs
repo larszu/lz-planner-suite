@@ -341,6 +341,30 @@ function blobAt(repoDir, sha, path) {
  */
 const isTrivialLine = (l) => /^(\/\/|\/\*+|\*+\/?|[{}()[\];,]+)$/.test(l)
 
+/**
+ * Zeilenbeutel ueber die GANZE Suite-Kopie einer App (alle `TRACKED`-Wurzeln),
+ * gecacht. Braucht die Verlagerungs-Erkennung unten.
+ */
+const appBagCache = new Map()
+function appLineBag(app) {
+  const hit = appBagCache.get(app)
+  if (hit) return hit
+  const bag = new Map()
+  for (const root of ROOTS) {
+    const dir = join(ROOT, 'apps', app, root)
+    if (!existsSync(dir)) continue
+    for (const f of walk(dir)) {
+      for (const [line, n] of lineBag(join(dir, f))) bag.set(line, (bag.get(line) ?? 0) + n)
+    }
+  }
+  for (const f of ROOT_FILES) {
+    const p = join(ROOT, 'apps', app, f)
+    if (existsSync(p)) for (const [line, n] of lineBag(p)) bag.set(line, (bag.get(line) ?? 0) + n)
+  }
+  appBagCache.set(app, bag)
+  return bag
+}
+
 function uncarried(app, baseUpstreamSha) {
   if (!baseUpstreamSha) return { unknown: 'Baseline ohne upstreamSha' }
   const upDir = join(upstreamRoot, app)
@@ -348,6 +372,7 @@ function uncarried(app, baseUpstreamSha) {
   if (upChanged === null) return { unknown: `Upstream-Stand ${baseUpstreamSha} lokal nicht bekannt` }
   const replaced = new Set(REPLACED_BY_PACKAGE[app] ?? [])
   const files = []
+  const verlagert = []
   for (const f of upChanged) {
     // `src/x` -> `x`, damit REPLACED_BY_PACKAGE dieselbe Form sieht wie sonst.
     const bare = f.startsWith('src/') ? f.slice(4) : f
@@ -379,9 +404,33 @@ function uncarried(app, baseUpstreamSha) {
     // hat wie upstream jetzt. Fuer alles, was vorher schon gemeldet wurde,
     // aendert sich dadurch nichts (Suite 0 < upstream >=1 bleibt "fehlt").
     const missing = added.filter((l) => (suiteBag.get(l) ?? 0) < (nowBag.get(l) ?? 0))
-    if (missing.length === added.length) files.push({ file: f, addedLines: added.length })
+    if (missing.length !== added.length) continue
+
+    // VERLAGERT STATT FEHLEND. Der Vergleich oben sieht nur DIESELBE Datei.
+    // Traegt die Suite-Kopie denselben Inhalt in einer anderen Datei, meldete
+    // er ihn trotzdem als fehlend -- und diese Meldung liesse sich nie
+    // ausraeumen, weil sie nichts beschreibt, was man nachziehen koennte.
+    //
+    // Gemessener Fall (suite#71): light#59 haengt 33 englische Schluessel an
+    // das Inline-Woerterbuch in `src/i18n/index.ts`. Die Suite-Kopie hat das
+    // Woerterbuch laengst in Teildicts unter `src/i18n/en/` zerlegt; die
+    // Schluessel stehen dort, `index.ts` komponiert nur noch. Inhaltlich
+    // getragen, textuell in einer anderen Datei.
+    //
+    // Bewusst streng: als verlagert gilt nur, was JEDE hinzugefuegte Zeile
+    // woanders in der Kopie wiederfindet, mit derselben Zaehlung wie oben.
+    // Fehlt auch nur eine, bleibt es eine offene, blockierende Meldung --
+    // eine halb getragene Aenderung ist keine Ablage-Frage.
+    const appBag = appLineBag(app)
+    const fehltGanz = added.filter((l) => (appBag.get(l) ?? 0) < (nowBag.get(l) ?? 0))
+    if (fehltGanz.length === 0) { verlagert.push({ file: f, addedLines: added.length }); continue }
+    // Teilweise verlagert: die Meldung bleibt offen, nennt aber beide Zahlen.
+    // „52 neue Zeilen fehlen", wenn 34 davon in der Kopie stehen, ist eine
+    // Uebertreibung -- und eine Meldung, der man ihre Zahl nicht glaubt,
+    // liest beim naechsten Mal niemand mehr nach.
+    files.push({ file: f, addedLines: added.length, missingLines: fehltGanz.length, beispiele: fehltGanz })
   }
-  return { files }
+  return { files, verlagert }
 }
 
 function analyseApp(app) {
@@ -545,10 +594,27 @@ for (const app of APPS) {
   const u = uncarriedByApp[app]
   if (!u) continue
   if (u.unknown) { lines.push(`- **${app}**: not checked — ${u.unknown}`); anyUncarried = true; continue }
-  if (!u.files.length) continue
-  anyUncarried = true
+  if (!u.files.length && !u.verlagert.length) continue
+  if (u.files.length) anyUncarried = true
   lines.push(`### ${app}`, '')
-  for (const f of u.files) lines.push(`- \`${f.file}\` — ${f.addedLines} neue Zeile(n) fehlen`)
+  for (const f of u.files) {
+    const rest = f.addedLines - f.missingLines
+    lines.push(
+      `- \`${f.file}\` — ${f.missingLines} von ${f.addedLines} neuen Zeile(n) fehlen` +
+      (rest ? ` (${rest} in einer anderen Datei der Kopie)` : ''),
+    )
+    // Die Zeilen SELBST, nicht nur ihre Zahl. Ob eine Meldung eine bewusste
+    // Abweichung oder ein uebersprungener Commit ist, entscheidet ihr
+    // Inhalt -- und wer das ohne sie beurteilen will, schreibt sich dasselbe
+    // Skript noch einmal.
+    for (const l of f.beispiele.slice(0, 8)) lines.push(`  - \`${l.replace(/`/g, "'")}\``)
+    if (f.beispiele.length > 8) lines.push(`  - … ${f.beispiele.length - 8} weitere`)
+  }
+  // Getragen, nur woanders abgelegt. Steht hier, damit die Zeile nicht
+  // spurlos verschwindet — offen ist sie nicht.
+  for (const f of u.verlagert) {
+    lines.push(`- \`${f.file}\` — ${f.addedLines} neue Zeile(n) **verlagert** (in der Kopie in einer anderen Datei)`)
+  }
   lines.push('')
 }
 if (!anyUncarried) lines.push('None.', '')
@@ -591,7 +657,7 @@ if (has('write-baseline')) {
     )
     for (const [app, u] of offen) {
       console.error(`  ${app}:`)
-      for (const f of u.files) console.error(`    ${f.file} (${f.addedLines} Zeilen)`)
+      for (const f of u.files) console.error(`    ${f.file} (${f.missingLines} von ${f.addedLines} Zeilen)`)
     }
     console.error(
       '\nWuerde die Baseline jetzt geschrieben, ruecke der `upstreamSha` vor und\n' +
@@ -604,7 +670,7 @@ if (has('write-baseline')) {
   if (offen.length > 0) {
     console.log('--force: die folgenden Upstream-Aenderungen werden begraben:');
     for (const [app, u] of offen) {
-      for (const f of u.files) console.log(`  ${app}: ${f.file} (${f.addedLines} Zeilen)`)
+      for (const f of u.files) console.log(`  ${app}: ${f.file} (${f.missingLines} von ${f.addedLines} Zeilen)`)
     }
   }
   writeFileSync(BASELINE, JSON.stringify(summary, null, 2) + '\n')
@@ -626,11 +692,18 @@ if (has('check')) {
     const u = uncarriedByApp[app]
     if (!u) continue
     if (u.unknown) { console.log(`? ${app}: Upstream-Aenderungen nicht pruefbar — ${u.unknown}`); continue }
+    if (u.verlagert.length) {
+      console.log(
+        `= ${app}: ${u.verlagert.length} Datei(en) verlagert — die neuen Zeilen stehen in ` +
+        `der Kopie in einer anderen Datei:\n    ` +
+        u.verlagert.map((f) => `${f.file} (${f.addedLines})`).join('\n    '),
+      )
+    }
     if (!u.files.length) continue
     console.log(
       `! ${app}: ${u.files.length} Datei(en) hat upstream seit der Baseline geaendert, ` +
       `deren neue Zeilen in der Suite-Kopie fehlen:\n    ` +
-      u.files.map((f) => `${f.file} (${f.addedLines})`).join('\n    '),
+      u.files.map((f) => `${f.file} (${f.missingLines} von ${f.addedLines})`).join('\n    '),
     )
   }
   for (const app of APPS) {

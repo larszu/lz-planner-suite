@@ -1,5 +1,5 @@
-/** EN-Overrides: ScheduleDialog, FixtureEditor, AboutDialog-Prosa.
- *  Keys: dlg.* */
+/** EN-Overrides: ScheduleDialog, FixtureEditor, AboutDialog-Prosa,
+ *  VersionDialog. Keys: dlg.*, version.* */
 export const dialogs: Record<string, string> = {
   // ── AboutDialog ──
   'dlg.about.desc': 'Planning of event and stage lighting – floor-plan import, scale, fixtures with real photometric data, heatmap, 3D preview with photo view, scenes, layers, DMX patch & export.',
@@ -179,4 +179,11 @@ export const dialogs: Record<string, string> = {
   // ── ScheduleDialog: chrome ──
   'dlg.sch.close': 'Close',
   'dlg.sch.empty': 'No fixtures placed yet.',
+
+  // ── VersionDialog ──
+  //
+  // Der einzige `version.*`-Schlüssel; er sitzt in einer Rückfrage, die einen
+  // ungesicherten Stand verwirft. Genau dort ist eine unübersetzte Warnung am
+  // teuersten.
+  'version.restoreConfirm': 'Load this version? Unsaved changes will be lost.',
 };

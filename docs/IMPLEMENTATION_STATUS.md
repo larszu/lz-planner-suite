@@ -127,6 +127,7 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | Versionen & Vergleich (light) | `PARTIAL` | Sichern, Vergleichen und Wiederherstellen sind echt; die Identität ist seit `light#57` stabil, Grundriss und Fremd-Domänen überleben seit `light#58`. Offen: der Vergleich sieht 6 von 14 Kategorien (B-21) |
 | Tab-Leiste (13 Tabs) | `PARTIAL` | eigene Views sind echt (`OverviewSurface`, `BoardCanvas`, `previews.tsx`), aber der Tab-**Wechsel** ist ein No-Op: `activeTab` kommt an vier Stellen vor, alle vier nur Anzeige (B-16) |
 | Cross-Link Planer → Shell | `MISSING` | `avplan:navigate` existiert dreimal: Empfänger, Typ, Build-Artefakt. Kein Sender, und im Bus fehlt der `post*`-Helfer, den Theme/Settings/Command/Lexware alle haben (B-18) |
+| Sprachumschaltung Shell → `light-planner` | `PARTIAL` | Kette vollstaendig: `SettingsModal.tsx:124` → `App.tsx:450` (`{ …, language }`) → `PlannerFrame` → `shellSettings.ts:51` → `uiStore`. Seit `suite#71` haben alle **563** erreichbaren Schluessel eine englische Fassung, `i18n:check` haelt das in CI fest. Bis dahin bekam ein englischer Nutzer den ganzen Lager-Dialog auf Deutsch. `PARTIAL` und nicht `IMPLEMENTED`, weil **12 gerenderte Komponenten gar kein `t()`** aufrufen (~110 Stellen, B-23): der Schalter wirkt, die Oberflaeche folgt ihm nur teilweise. Standalone (`npm run dev:light`) bleibt der Schalter unerreichbar (B-13) |
 | Lexware — Key + Verbindungstest | `COMPLETE` | bis zum echten HTTPS-Aufruf gegen `api.lexoffice.io` |
 | Lexware — Beleg anlegen | `BROKEN` | die Brücke läuft nur im iframe, ihr Handler braucht die Electron-Preload-Bridge — die beiden Bedingungen schließen sich aus (B-19) |
 | SVG-Vorschau der Shell | `PARTIAL` | rechnet echte Formen aus echten Daten, aber aus einem shell-eigenen Parallelmodell statt aus den Planern (B-20) |
@@ -141,8 +142,8 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | `Broadcast-intercom` CI | `COMPLETE` | `ci.yml` baut, startet den Kern mit `MOCK_DEVICES=1` und fährt die 38 Smoke-Prüfungen (`#6`, erster Lauf grün) |
 | `sony-camera-bridge` | `IMPLEMENTED` | 15 Tests grün in zwei Workspaces, ganz auf ADR-003 ausgerichtet |
 | `sony-camera-bridge` CI | `COMPLETE` | `ci.yml` mit `npm ci` + `npm test` (`#11`, grün) |
-| `tally-pi` | `IMPLEMENTED` | 5 Python-Module, systemd-Units, `bootstrap.sh`; CI prüft nur Syntax |
-| `pi-media-station` | `IMPLEMENTED` | `main.py`/`sensor.py`/`web_ui.py` + Electron-Manager; keine CI, keine Tests |
+| `tally-pi` | `IMPLEMENTED` | 5 Python-Module, systemd-Units, `bootstrap.sh`; seit `#7` **46 Tests** in CI (ATEM-Offset, ME-Zählung, `offline` wird nie `safe`) |
+| `pi-media-station` | `IMPLEMENTED` | `main.py`/`sensor.py`/`web_ui.py` + Electron-Manager; seit `#3` erste CI (`verify.yml`) und **21 Tests** (Schema-Heilung, Filterfenster, Dummy-Rückfall ohne `gpiozero`) |
 
 ### 3.4 Integration über Repo-Grenzen
 

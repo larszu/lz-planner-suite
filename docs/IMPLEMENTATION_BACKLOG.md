@@ -424,19 +424,81 @@ ist selbst ein Ergebnis.
   verlustfrei-oder-laut gilt auch für eine Aussage über einen Vergleich.
 * **Aufwand:** klein (Aussage eingrenzen) / mittel (Kategorien ergänzen)
 
+### B-22 · Der Lager-Import kennt kein Abbrechen
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-15)
+* **Befund (nachgeprüft 2026-09-04, beide Kopien):** `doImport`
+  (`apps/light-planner/src/inventory/InventoryDialog.tsx:69-81`) fragt nach dem
+  Einlesen der Datei genau **eine** Ja/Nein-Frage. `true` heißt ersetzen,
+  `false` heißt **zusammenführen** — importiert wird in beiden Fällen. Einen
+  Weg, den Import an dieser Stelle noch abzubrechen, gibt es nicht.
+* **Schadensweg:** In der Suite ist die Frage ein `confirmDialog`; dessen
+  `false` kommt nicht nur vom Zweit-Knopf, sondern auch von **Escape** und vom
+  **Klick neben den Dialog** (`packages/ui/src/dialog.tsx:113-133`). Beide
+  Gesten heißen überall sonst „nichts tun"; hier schreiben sie fremde Artikel
+  in den Bestand. `importSnapshot` (`inventory/store.ts:82-101`) ruft
+  `persist` sofort, und ein Undo für den Lager-Store existiert nicht — der
+  Stand ist danach nicht wiederherstellbar.
+* **Warum das nicht neu ist, aber schlimmer wurde:** Upstream fragt mit
+  `window.confirm`, und der deutsche Text sagte dort ausdrücklich „Abbrechen =
+  zusammenführen". Die Aussage stimmte — die Suite hat den Aufruf durch
+  `confirmDialog` mit eigenen Beschriftungen ersetzt, womit der Satz einen
+  Knopf beschrieb, den es nicht mehr gibt. Dieser PR zieht den Text nach
+  (`Bestehenden Bestand ersetzen?`), die fehlende dritte Möglichkeit bleibt.
+* **Warum das nicht nebenbei entschieden wird:** Ein dritter Ausgang passt
+  nicht in `confirmDialog` (`Promise<boolean>`). Ob die Antwort ein eigener
+  Drei-Wege-Dialog ist, ein vorgeschalteter Vorschau-Schritt („X Artikel, Y
+  Lagerorte — übernehmen?") oder ein Undo für den Lager-Store, ist eine
+  Produktentscheidung mit sehr unterschiedlichem Aufwand.
+* **Ehrliches Zwischenmaß, falls die Entscheidung wartet:** Escape und
+  Hintergrund-Klick dürfen nicht importieren. Solange es keinen dritten
+  Ausgang gibt, ist „nichts tun" die richtige Bedeutung für beide Gesten.
+* **Aufwand:** klein (Escape/Backdrop entschärfen) / mittel (dritter Ausgang)
+
+### B-23 · Zwölf Dialoge der Suite sind gar nicht erst gewickelt
+
+* **Status:** offen
+* **Befund (gemessen 2026-09-04, `i18n:check`):** Die Suite-Kopie ist weit
+  gewickelt — `PropertyPanel` 272 `t()`-Aufrufe, `ScheduleDialog` 95,
+  `FixtureEditor` 66. **Zwölf** gerenderte Komponenten haben trotzdem
+  **keinen einzigen**: `AreaLightDialog` (~21 sichtbare Stellen),
+  `CanvasActions` (~18), `ProjectDialog` (~14), `ThreePointDialog` (~14),
+  `ChangesDialog` (~13), `FloorPlanPanel` (~7), `Scene3D` (~7), `ScaleDialog`
+  (~5) und vier weitere — zusammen ~110 Stellen.
+* **Warum das hier schwerer wiegt als upstream:** Der Sprachschalter ist in
+  der Suite **erreichbar** (`SettingsModal` → `App.tsx:450` → `PlannerFrame` →
+  `shellSettings.ts:51` → `uiStore`). Wer auf Englisch stellt, bekommt diese
+  zwölf Dialoge auf Deutsch — kein latenter, sondern ein sichtbarer Zustand.
+  Upstream ist derselbe Befund folgenlos, weil der Schalter zu ist (B-13).
+* **Warum es kein Beiwerk dieses PRs war:** Wickeln heißt, für jede Stelle
+  einen Schlüssel zu vergeben und die deutsche Quellform als Fallback zu
+  setzen. Über ~110 Stellen ist das eine eigene, prüfbare Arbeit — mit dem
+  Vendoring der englischen Schlüssel vermischt wäre weder das eine noch das
+  andere nachvollziehbar geblieben.
+* **DoD:** `i18n:check` meldet für die Suite-Kopie **0** gerenderte
+  Komponenten ohne `t()`; die neuen Schlüssel haben englische Fassungen.
+* **Aufwand:** mittel
+
 ---
 
 ## Niedrig
 
 ### B-12 · `pi-media-station` und `tally-pi` ohne Tests
 
-* **Status:** offen
-* **Befund:** Beide Python-Repos haben keine Tests; `tally-pi` prüft in CI nur
-  die Syntax. Die reinen Funktionen darin (Adress-Ableitung, Zustandslogik)
-  wären ohne Hardware testbar.
-* **Nachgeprüft 2026-09-04:** weiterhin offen. `find` nach `test_*.py`,
-  `*_test.py` und einem `tests/`-Verzeichnis findet in **beiden** Repos nichts.
-* **Aufwand:** mittel
+* **Status:** ~~offen~~ **erledigt 2026-09-04** (`tally-pi#7`,
+  `pi-media-station#3`) — 46 + 21 Tests, beide in CI.
+* **Befund:** Beide Python-Repos hatten keine Tests; `tally-pi` prüfte in CI
+  nur die Syntax. Die reinen Funktionen darin (Adress-Ableitung,
+  Zustandslogik) waren ohne Hardware testbar — genau das ist jetzt geprüft.
+* **Was die Tests festhalten:** in `tally-pi` das dokumentierte Offset im
+  ATEM-Protokoll und die Umrechnung der 0- gegen 1-basierten ME-Zählung, dazu
+  die Zusicherung, dass `offline` niemals zu `safe` wird; in
+  `pi-media-station` die Schema-Heilung der Konfiguration (`setdefault` statt
+  `update`, Tiefkopie der Vorgaben) und das Fünf-Werte-Filterfenster des
+  Sensors. `pi-media-station` hat damit überhaupt zum ersten Mal CI
+  (`verify.yml`); `gpiozero` wird dort bewusst **nicht** installiert, damit
+  der Dummy-Rückfall mitgeprüft ist.
+* **Aufwand:** war mittel
 
 ### B-13 · `light-planner`: Sprachschalter ist upstream nicht erreichbar
 
@@ -470,6 +532,29 @@ ist selbst ein Ergebnis.
   die Weitergabe in `i18n/index.ts:69`), und `grep` findet in `src/` **keinen
   einzigen** Import von `MenuBar` oder `Toolbar`.
 * **Aufwand:** mittel (Abdeckung) **vor** klein (Schalter) — nicht umgekehrt.
+* **Teilschritt 2026-09-04 (`light#59`, `light#60`, dieser PR):** Jeder
+  Schlüssel, den es **gibt**, hat jetzt eine englische Fassung — upstream 34
+  von 34, in der Suite 563 von 563, geprüft von `i18n:check` in beiden CIs.
+* **Und die Korrektur dazu, noch am selben Tag (`light#61`):** Das ist
+  **nicht** dasselbe wie „die Oberfläche ist übersetzt", und ich hatte es hier
+  zuerst so notiert. Gemessen sitzen upstream **~496 von ~497** sichtbaren
+  Textstellen in Komponenten mit **null** `t()`-Aufrufen — `PropertyPanel`
+  (~163), `FixtureEditor` (~67), `TopBar` (~65), `ScheduleDialog` (~60).
+  Gewickelt ist im Wesentlichen ein Dialog. Die Abdeckungszahl misst die
+  Schlüssel, die existieren, nicht den Text, den der Nutzer sieht; seit
+  `light#61` steht die zweite Zahl unter jedem Lauf daneben.
+* **Damit bleibt die Reihenfolge, wie sie war:** erst wickeln, dann
+  übersetzen, dann den Schalter. Der Schalter ist der kleinste der drei
+  Schritte und weiterhin der letzte.
+* **Und in der Suite war es kein latenter, sondern ein sichtbarer Schaden.**
+  Dort ist der Schalter längst erreichbar: `apps/shell/.../SettingsModal.tsx:124`
+  bietet die Sprache an, `App.tsx:450` reicht sie als `{ …, language }` in den
+  iframe, `PlannerFrame` sendet sie, und `shellSettings.ts:51` setzt sie im
+  `uiStore` des Planers. Ein Nutzer, der in der Suite auf Englisch stellte,
+  bekam den kompletten Lager-Dialog und die Beleg-Marken auf Deutsch — und
+  `t('common.edit', 'Edit')` zeigte umgekehrt einem deutschen Nutzer Englisch.
+  Standalone (`npm run dev:light`) ist der Schalter auch in der Suite-Kopie
+  nicht erreichbar; `connectShellSettings` ist dort ein No-op.
 
 ---
 
@@ -495,6 +580,7 @@ gehalten, nicht als Versäumnis:
 | E-12 | Wo wohnt Lexware architektonisch — Shell oder Planer? | B-19 — eigene Shell-Domäne (dann braucht Cable es nicht mehr) vs. Preload für den eingebetteten Planer |
 | E-13 | Bleibt die Shell-Vorschau ein eigenständiges Übersichtsmodell? | B-20 — wenn ja, fehlt eine sichtbare Kennzeichnung; wenn nein, müssen die Modelle zusammengeführt werden |
 | E-14 | Welche Kategorien soll der Versions-Vergleich zeigen, und welche Felder machen darin eine Änderung aus? | B-21 — betrifft acht heute unsichtbare Kategorien; `layers`/`floor`/`sun` sind keine Listen und brauchen eine eigene Vergleichsform |
+| E-15 | Wie sieht das **Abbrechen** eines Lager-Imports aus — Drei-Wege-Dialog, Vorschau-Schritt oder Undo für den Lager-Store? | B-22 — heute importieren Escape und Backdrop-Klick still zusammenführend, und der Schreibvorgang ist nicht rücknehmbar |
 
 ---
 
@@ -523,3 +609,9 @@ gehalten, nicht als Versäumnis:
 | `Strg+P`/`Strg+A` ohne Handler; `selectAll`/`jumpToPatches` gebunden | `cable#669` |
 | Custom-Palette: folgenloser Akzent-Regler entfernt | `cable#669` |
 | ADR-005: „Speichern (Gerät)" verlor die Fremd-Domänen | `light#56` |
+| i18n: 40 von 42 englischen Schlüsseln bedienten toten Code | `light#59` |
+| `i18n:check` las nur eine der beiden Wörterbuch-Formen | `light#60` |
+| Lager-Dialog + Beleg-Marken der Suite englisch (563/563) | `suite#71` |
+| `identity:check` war vendoriert, lief aber in keiner Suite-CI | `suite#71` |
+| Tests + CI für `tally-pi` (B-12) | `tally-pi#7` |
+| Erste CI + Tests für `pi-media-station` (B-12) | `pi-media-station#3` |

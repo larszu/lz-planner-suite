@@ -10,7 +10,7 @@
     "drift": 15,
     "total": 37,
     "missingUpstream": false,
-    "upstreamSha": "352e876dab97"
+    "upstreamSha": "2e7e5d47d125"
   },
   "multicam-planner": {
     "only-upstream": 0,
@@ -27,15 +27,15 @@
   },
   "light-planner": {
     "only-upstream": 0,
-    "only-suite": 1,
+    "only-suite": 2,
     "two-way": 16,
     "upstream-ahead": 0,
     "suite-ahead": 0,
     "expected-overlay": 15,
     "dead-upstream": 2,
-    "drift": 17,
-    "total": 34,
+    "drift": 18,
+    "total": 35,
     "missingUpstream": false,
-    "upstreamSha": "827e565065a9"
+    "upstreamSha": "7c84acc580f8"
   }
 }

@@ -153,6 +153,17 @@ export const panels: Record<string, string> = {
   'prop.refBeam': 'Ref. at beam (°)',
   'prop.refBeamTitle': 'Beam angle at which the lux reference was measured',
 
+  // ── Beleg-Marken an den technischen Daten ───────────────────────────────────
+  //
+  // Die drei stehen als `title` an einem einzelnen Zeichen (✓ / ≈ / !) neben
+  // dem Feld. Ohne englische Fassung sagt der Tooltip einem englischen Nutzer
+  // gar nichts — das Zeichen allein trägt die Bedeutung nicht.
+  'prop.src.cited': 'Cited',
+  'prop.src.estimate': 'Estimated',
+  // Wird mit dem alten Wert und der Quelle verkettet:
+  // "Source referred to 12°: <Quelle>".
+  'prop.src.stale': 'Source referred to',
+
   // ── Calculation trace ───────────────────────────────────────────────────────
   'prop.calcTitle': 'Calculation (lux at target point)',
   'prop.showCalc': 'Show calculation',

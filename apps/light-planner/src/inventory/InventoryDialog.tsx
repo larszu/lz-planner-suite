@@ -72,7 +72,7 @@ const InventoryDialog: React.FC<Props> = ({ onClose }) => {
       setMsg(t('inventory.importErr', 'Keine gültige Lager-Datei (avplan-inventory).'));
       return;
     }
-    const replace = await confirmDialog(t('inventory.importConfirm', 'Bestehenden Bestand ERSETZEN? Abbrechen = zusammenführen.'), {
+    const replace = await confirmDialog(t('inventory.importConfirm', 'Bestehenden Bestand ersetzen?'), {
       okLabel: t('inventory.importReplace', 'Ersetzen'),
       cancelLabel: t('inventory.importMerge', 'Zusammenführen'),
     });
@@ -164,7 +164,7 @@ const InventoryDialog: React.FC<Props> = ({ onClose }) => {
                     <td style={{ ...cell, opacity: 0.8 }}>{it.code ?? '—'}</td>
                     <td style={{ ...cell, opacity: 0.8 }}>{it.ownership ?? '—'}</td>
                     <td style={{ ...cell, textAlign: 'right' }}>
-                      <button onClick={() => setForm({ ...it })} style={{ marginRight: 4 }}>{t('common.edit', 'Edit')}</button>
+                      <button onClick={() => setForm({ ...it })} style={{ marginRight: 4 }}>{t('common.edit', 'Bearbeiten')}</button>
                       <button onClick={() => removeItem(it.id)} aria-label={t('common.delete', 'Löschen')}><Icon name="trash" size={13} /></button>
                     </td>
                   </tr>
