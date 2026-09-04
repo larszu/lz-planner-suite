@@ -124,6 +124,12 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | Feature-Erreichbarkeits-Guard | `COMPLETE` | `scripts/reachable-features.mjs`, in CI; nennt ausdrücklich, was er **nicht** prüft |
 | Native-Dialoge-Guard | `COMPLETE` | `scripts/native-dialogs.mjs`; seit B-1 beide Schreibweisen, Zeichenketten geleert, Gegentest über alle sechs Formen |
 | Geteilte Pakete | `IMPLEMENTED` | `inventory-core`, `lexware-core`, `onboarding-core`, `ui`; 45 Tests |
+| Tab-Leiste (13 Tabs) | `PARTIAL` | eigene Views sind echt (`OverviewSurface`, `BoardCanvas`, `previews.tsx`), aber der Tab-**Wechsel** ist ein No-Op: `activeTab` kommt an vier Stellen vor, alle vier nur Anzeige (B-16) |
+| Cross-Link Planer → Shell | `MISSING` | `avplan:navigate` existiert dreimal: Empfänger, Typ, Build-Artefakt. Kein Sender, und im Bus fehlt der `post*`-Helfer, den Theme/Settings/Command/Lexware alle haben (B-18) |
+| Lexware — Key + Verbindungstest | `COMPLETE` | bis zum echten HTTPS-Aufruf gegen `api.lexoffice.io` |
+| Lexware — Beleg anlegen | `BROKEN` | die Brücke läuft nur im iframe, ihr Handler braucht die Electron-Preload-Bridge — die beiden Bedingungen schließen sich aus (B-19) |
+| SVG-Vorschau der Shell | `PARTIAL` | rechnet echte Formen aus echten Daten, aber aus einem shell-eigenen Parallelmodell statt aus den Planern (B-20) |
+| Dev-Einbettung der Planer | `BROKEN` | Fallback-Ports 4181-4183, kein Planer hört dort; der dokumentierte Dev-Weg trifft nie einen laufenden Planer (B-17). Nur Entwickler betroffen |
 | Rückweg Suite → upstream | `PARTIAL` | der Drift-Bericht **nennt** die suite-ahead-Dateien jetzt (`suite#64`); die Bewertung Overlay/Fix bleibt Handarbeit — gemessene Trefferquote roher Kandidaten: 3 von 9 |
 
 ### 3.3 Die übrigen Repos

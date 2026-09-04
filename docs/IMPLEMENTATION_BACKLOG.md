@@ -293,6 +293,112 @@ ist selbst ein Ergebnis.
 
 ---
 
+### B-16 · Acht von dreizehn Suite-Tabs schalten nichts
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-9)
+* **Befund (nachgeprüft 2026-09-04):** `registry.ts` definiert 13 Tabs über
+  fünf Module. Die Shell hat sehr wohl **eigene** Views — `OverviewSurface`,
+  `BoardCanvas`, `previews.tsx` sind Shell-Code, kein iframe. Der Befund liegt
+  woanders: **der Tab-Wechsel selbst ist ein No-Op.** `activeTab` kommt im
+  gesamten Shell-Code an genau vier Stellen vor, und **alle vier** sind
+  Anzeige:
+
+  ```
+  App.tsx:437        activeTab={tabs[moduleId]}      weiterreichen
+  TabDeck.tsx:40/58  activeTab                       Prop + Typ
+  TabDeck.tsx:101    <Tabs active={activeTab} …>     markieren
+  ```
+
+  Kein einziger Lesepfad wählt damit einen Inhalt aus.
+* **Schadensweg:** Der Nutzer klickt im Modul „Kameras" auf „3D-Vorschau"
+  (oder wählt es in der Befehlspalette). Die Markierung wandert, der Inhalt
+  bleibt exakt derselbe 2D-SVG-Plan. Keine Fehlermeldung, kein Hinweis — es
+  sieht aus, als sei die 3D-Ansicht kaputt, nicht als gäbe es sie nicht.
+* **Aufwand:** klein (entfernen) / groß (ausbauen)
+
+### B-17 · Die dokumentierte Dev-Einbettung trifft nie einen laufenden Planer
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-10)
+* **Befund (nachgeprüft 2026-09-04):** Die Dev-Fallback-URLs der Shell stehen
+  auf `4181`/`4182`/`4183` (`registry.ts:73/91/109`, so auch in `README.md`
+  Zeile 144-146 dokumentiert). **Kein Planer hört je auf diesen Ports:**
+  `multicam-planner/vite.config.ts:18` setzt ausdrücklich `port: 5173`, cable
+  und light setzen gar keinen und landen damit auf dem Vite-Default 5173 —
+  der zweite gestartete rückt auf 5174 weiter.
+* **Es ist nicht der Ausnahmefall, sondern der Normalfall:** wer der README
+  Schritt 3+4 wörtlich folgt, sieht sechs Sekunden „wird geladen…" und danach
+  „Signal-Flow ist gerade nicht erreichbar".
+* **Nicht fest verdrahtet:** `plannerUrl()` (`registry.ts:44-46`) liest zuerst
+  ein gebündeltes Manifest, dann `VITE_PLANNER_*`, erst dann den Fallback. Die
+  Env-Variablen stehen sogar in der README. Falsch sind die **Defaults**, nicht
+  der Mechanismus.
+* **Nur Entwickler-Schaden**, kein Endnutzer-Schaden: die ausgelieferte
+  Desktop-Suite nimmt den gebündelten Pfad.
+* **Aufwand:** klein
+
+### B-18 · Cross-Link: die Shell hört, aber niemand ruft
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-11)
+* **Befund (nachgeprüft 2026-09-04):** `avplan:navigate` kommt in der ganzen
+  Suite **dreimal** vor, und keine davon ist ein Sender:
+
+  ```
+  apps/shell/src/App.tsx:336     if (msg.type === 'avplan:navigate' …)   Empfänger
+  packages/ui/src/embed.ts:25    type: 'avplan:navigate'                 Typdefinition
+  packages/ui/dist/embed.d.ts:21 (Build-Artefakt derselben Zeile)
+  ```
+
+  Der Bus hat für Theme, Settings, Command und Lexware jeweils `post*`/`request*`-Helfer.
+  Für Navigate gibt es **keinen** — nur den Typ. Die Richtung Planer → Shell
+  ist damit nicht implementiert, nicht bloß ungenutzt.
+* **Schadensweg:** Kein Datenschaden. Der Nutzer wählt im Eigenschaften-Panel
+  eine Kamera und klickt „Im Signal-Flow zeigen": die Shell wechselt korrekt
+  das Modul, aber die Auswahl geht verloren — er muss das Objekt drüben von
+  Hand wiederfinden.
+* **Aufwand:** klein (Sender ergänzen) — aber siehe E-11: es braucht einen
+  gemeinsamen Id-Raum, sonst zeigt der Sprung ins Leere.
+
+### B-19 · Lexware: zwei Bedingungen, die sich gegenseitig ausschließen
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-12)
+* **Befund (nachgeprüft 2026-09-04):** Der Key-Weg (hinterlegen + Verbindung
+  testen) ist echt und vollständig — bis zum HTTPS-Aufruf gegen
+  `api.lexoffice.io`. Der **Beleg-Weg**, über den überhaupt erst ein Angebot
+  oder eine Rechnung entsteht, ist durchtrennt, und zwar an einer besonders
+  unglücklichen Stelle. `connectShellLexware`
+  (`packages/ui/src/embed.ts:327`) hält sich absichtlich heraus, wenn die Seite
+  **nicht** eingebettet ist (`window.parent === window` → No-op). Der Handler
+  in `apps/cable-planner/src/renderer/lib/shellLexware.ts` greift dagegen auf
+  `window.cablePlanner!` zu — die **Electron-Preload-Bridge**.
+
+  | Modus | eingebettet? | `window.cablePlanner`? | Ergebnis |
+  | --- | --- | --- | --- |
+  | iframe (**Standard**) | ja → Brücke aktiv | **nein**, kein Preload | Handler wirft, Shell bekommt `{ok:false}` |
+  | `WebContentsView` (`NATIVE_CABLE`, laut `main.cjs:18` **standardmäßig aus**) | nein → Brücke **No-op** | ja | Shell bekommt **gar keine** Antwort |
+
+  Die beiden Bedingungen sind Spiegelbilder: der Weg läuft genau dort, wo seine
+  Voraussetzung fehlt. In keiner ausgelieferten Konfiguration entsteht ein Beleg.
+* **Aufwand:** mittel
+
+### B-20 · Die Shell-Vorschau zeigt echte Daten — aus dem falschen Modell
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-13)
+* **Befund (nachgeprüft 2026-09-04):** Die SVG-Vorschau
+  (`apps/shell/src/shell/previews.tsx`) ist **kein** Platzhalter: jede Form
+  wird aus dem übergebenen `SuiteProject` gerechnet — Knotenkarten aus
+  Position und Name, Bezier-Kabel aus `from`/`to` mit Typ und Länge,
+  FOV-Kegel aus `hfovDeg`, Heatmap-Radius aus `dimmerPct`. Auswahl ist mit
+  Bibliothek und Eigenschaften-Panel bidirektional verdrahtet.
+* **Zutreffend ist der andere Teil:** die Daten stammen aus
+  `apps/shell/src/data/project.ts` — einem **shell-eigenen Parallelmodell**,
+  nicht aus den eingebetteten Planern.
+* **Schadensweg:** Der Nutzer verkabelt im eingebetteten Cable-Planer, klickt
+  „Zur Übersicht" und sieht weiter die Demo-Verkabelung. Nichts an der
+  Oberfläche sagt, dass das ein anderes Datenmodell ist.
+* **Aufwand:** klein (kennzeichnen) / groß (zusammenführen)
+
+---
+
 ## Niedrig
 
 ### B-12 · `pi-media-station` und `tally-pi` ohne Tests
@@ -356,6 +462,11 @@ gehalten, nicht als Versäumnis:
 | E-6 | Was zählt als **Beleg** für einen Steckertyp / eine Funkkomponente? | B-11 |
 | E-7 | Liefert der Planer den Pi **direkt** oder bleibt die Datei der Weg? | B-6 |
 | E-8 | Soll importierte Rentman-Leistung (`powerWatts`) in die Stromrechnung eingehen? | B-15 — ändert die Gesamtlast bestehender Pläne von 0 W auf einen echten Wert |
+| E-9 | Werden die acht wirkungslosen Tabs **entfernt** oder **ausgebaut**? | B-16 — Ausbauen heißt acht neue Views (Rack, 3D ×2, Heatmap-Report, Plan-Checks, Moodboard, 2D-Plan) |
+| E-10 | Auf welcher Seite werden die Dev-Ports angeglichen? | B-17 — Planer auf 4181-4183 festnageln berührt cable-planners `dev:electron` und lights Screenshot-Skripte; die Shell umzustellen scheitert an der 5173-Kollision zweier Planer |
+| E-11 | Soll der Cross-Link bis **in** die eingebetteten Planer reichen? | B-18 — braucht einen gemeinsamen Id-Raum zwischen Shell-Seed-Modell und den Planer-Projekten |
+| E-12 | Wo wohnt Lexware architektonisch — Shell oder Planer? | B-19 — eigene Shell-Domäne (dann braucht Cable es nicht mehr) vs. Preload für den eingebetteten Planer |
+| E-13 | Bleibt die Shell-Vorschau ein eigenständiges Übersichtsmodell? | B-20 — wenn ja, fehlt eine sichtbare Kennzeichnung; wenn nein, müssen die Modelle zusammengeführt werden |
 
 ---
 
