@@ -21,8 +21,10 @@ Nachgeprüft, nicht vermutet:
 
 - **`EquipmentItem` trägt `name` — den Instanznamen auf dem Canvas** („Kamera 1", „Kamera 2") —
   und **kein** `model`-Feld. Was für ein Gerätemodell dahintersteht, sagt allein die optionale
-  `deviceTypeId`: die stabile Datenblatt-GUID aus dem Katalog-Register (444 Einträge,
-  `lib/deviceTypeRegistry.ts`). Sie ist die einzige autoritative Typ-Aussage im Plan.
+  `deviceTypeId`: die stabile Datenblatt-GUID aus dem Katalog-Register
+  (`lib/deviceTypeRegistry.ts`, 412 Einträge — gemessen 2026-09-04 über
+  `listDeviceTypes().length`; die Zahl wächst mit jedem Katalog-Eintrag und trägt
+  das Argument nicht). Sie ist die einzige autoritative Typ-Aussage im Plan.
 - **`InventoryItem` trägt `model` als freien Text** und **keine** `deviceTypeId`. Die
   Feldliste des eingefrorenen Wire-Contracts `avplan-inventory` (Version 1) bestätigt das.
 - **Die einzige vorhandene Brücke ist `inventoryStore.seedFromEquipment`**, und sie verbindet über

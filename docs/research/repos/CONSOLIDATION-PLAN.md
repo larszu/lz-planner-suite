@@ -25,9 +25,14 @@ suite deliberately removed in *"Lager-Tool entfernt"* (2026-07-14).
 Both sets of changes live in the same file, interleaved. The same pattern holds across 63 files.
 A directional copy in either direction loses a feature.
 
-## Current measurement
+## Measurement when this plan was written
 
-Produced by `scripts/planner-drift.mjs`, recorded in `DRIFT-REPORT.md`:
+These are the numbers the staged path below starts from (161 total) — they are the
+*before*, not the current state. The current numbers live in
+`scripts/planner-drift-baseline.json`, which CI maintains, and are rendered into
+`DRIFT-REPORT.md` by `npm run drift:report`. This heading said "Current measurement"
+until 2026-09-04, by which time it was 100 files of drift out of date; a stale number
+under a heading that claims currency is worse than no number.
 
 | App | drift | only-upstream | only-suite | two-way | upstream-ahead | suite-ahead | expected-overlay |
 | --- | --- | --- | --- | --- | --- | --- | --- |

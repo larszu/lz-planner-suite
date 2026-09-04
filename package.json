@@ -23,6 +23,7 @@
     "spec:vocab": "node scripts/spec-source-vocabulary.mjs",
     "drift": "node scripts/planner-drift.mjs --upstream ..",
     "drift:check": "node scripts/planner-drift.mjs --upstream .. --check",
+    "drift:report": "node scripts/planner-drift.mjs --upstream .. --report docs/research/repos/DRIFT-REPORT.md",
     "features:reachable": "node scripts/reachable-features.mjs",
     "dialogs:native": "node scripts/native-dialogs.mjs",
     "licence:check": "node scripts/licence-consistency.mjs"

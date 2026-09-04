@@ -38,6 +38,11 @@ export const en: Dict = {
   'cred.strip': 'Without credentials',
   'cred.dest.sharedLib': 'They would be written to the shared folder and readable by the whole team.',
   'cred.dest.avplan': 'The .avplan goes to other trades. Without credentials, re-importing it into this app loses them.',
+  // Die drei weiteren Ausgaenge (2026-09-04). Die deutschen Fassungen stehen
+  // als Fallback am Aufruf; hier nur die englischen Ueberschreibungen.
+  'cred.dest.sharedSync': 'into the shared folder — everyone on the team who hits Pull gets the file.',
+  'cred.dest.cpdevice': 'as a .cpdevice file — meant for a USB stick, e-mail or file sharing.',
+  'cred.dest.cpgroup': 'as a .cpgroup file — meant for a USB stick, e-mail or file sharing.',
   'avplan.unknown.title': 'This file contains unknown sections',
   'avplan.unknown.body': 'The file carries sections this app does not know — probably from a newer build or another trade. By default they are carried through unchanged and will be in the file again on the next export.',
   'avplan.unknown.keep': 'Carry through (unchanged, preserved on export)',
@@ -1470,6 +1475,17 @@ export const en: Dict = {
   'greengo.export.xlsxTitle':
     'Download current GreenGo configuration as an intercom-matrix Excel (for print / hand-off).',
   'greengo.export.xlsx': 'Export Excel matrix',
+  // B-8 — herstellerneutrales Austauschformat. Nur im englischen Dict; die
+  // deutsche Quellsprache steht als Fallback am Aufruf.
+  'intercom.export.button': 'Export neutral',
+  'intercom.export.title':
+    'Vendor-neutral intercom file — stations, conferences and who talks/listens, readable outside GreenGo too.',
+  'intercom.import.button': 'Import neutral',
+  'intercom.import.title': 'Import a vendor-neutral intercom file (avplan-intercom).',
+  'intercom.import.invalid':
+    'Not a valid vendor-neutral intercom file (avplan-intercom) — or it comes from a newer version.',
+  // Die Platzhalter {n} und {g} werden im Code ersetzt und muessen bleiben.
+  'intercom.import.done': '{n} stations and {g} conferences imported.',
   'greengo.saveProject': 'Save in project',
   'greengo.export.gg5': 'Export as .gg5',
   'greengo.importOverlay.title': 'Import .gg5 — link devices',

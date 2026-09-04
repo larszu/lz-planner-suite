@@ -992,6 +992,33 @@ ist selbst ein Ergebnis.
 
 ---
 
+### B-37 · Die Doku nennt ein ICE-/TURN-Feld, das die App nicht hat
+
+* **Status:** offen.
+* **Befund (gemessen 2026-09-04):** `cable-planner/docs/self-hosted-relay.md:51`
+  weist den Nutzer an: „Die TURN-Zugangsdaten trägst du in der App unter
+  **Zusammenarbeit → ICE-Server** ein (bzw. via `iceServers`-Feld)." Beides gibt
+  es nicht. `grep -rn iceServers src/` in `cable-planner` liefert **null
+  Treffer**; `CollabPanel.tsx` hat genau ein Server-Feld, und das ist der
+  Signaling-Server. `webrtcProvider.ts:51` reicht an `WebrtcProvider` nur
+  `signaling` und `password` durch — kein `peerOpts`, also bleibt es bei den
+  Default-STUN-Servern von y-webrtc.
+* **Warum das mehr ist als ein Doku-Fehler:** Die Seite existiert für genau den
+  Fall, in dem STUN nicht reicht — zwei Standorte hinter symmetrischem NAT. Sie
+  erklärt die coturn-Installation vollständig und bricht dann an der Stelle ab,
+  an der die Zugangsdaten in die App müssten. Wer der Anleitung folgt, hat einen
+  laufenden TURN-Server, den nichts benutzt, und keinen Hinweis darauf, warum
+  die Verbindung trotzdem scheitert.
+* **Was zu tun ist — nicht die Doku streichen, das Feld bauen.** Der Weg ist
+  kurz und vollständig sichtbar: `WebrtcOptions` um `iceServers` erweitern und
+  als `peerOpts: { config: { iceServers } }` durchreichen; ein Feld in
+  `PersistedCollab` (Rohtext, damit `turns:`-URLs mit Credentials eingebbar
+  bleiben) plus Parser; ein Eingabefeld im `CollabPanel` neben dem
+  Signaling-Server; Test für den Parser. Erst wenn das steht, stimmt die Seite.
+* **Aufwand:** klein bis mittel.
+
+---
+
 ## Nicht zu entscheiden ohne den Eigentümer
 
 Diese Punkte sind **bewusst offen** und werden nicht nebenbei entschieden. Sie
@@ -1060,6 +1087,10 @@ gehalten, nicht als Versäumnis:
 | `i18n:check` zaehlte TypeScript-Vergleiche als deutschen Text | `light#63` |
 | `i18n:check` meldet ungewickelte Komponenten (B-13) | `light#61` |
 | Tests + CI für `tally-pi` (B-12) | `tally-pi#7` |
+| README/JSON-LD/Generator sagten „open source" gegen die eigene Lizenz | `cable#686` |
+| Vier Dokumente mit vier verschiedenen Drift-Ständen | `suite` (dieser PR) |
+| ADR-002: 444 statt gemessener 412 Katalog-Einträge | `suite` (dieser PR) |
+| `tally-pi`/`pi-media-station` galten als test- und CI-los (55/21 Tests) | `suite` (dieser PR) |
 | Erste CI + Tests für `pi-media-station` (B-12) | `pi-media-station#3` |
 | Tally-Id-Vertrag: jede echte `tally.json` wurde abgelehnt | `cable#674` |
 | Zehnte Messrunde: 6 von 12 Zeilen widerlegt | `suite#75` |

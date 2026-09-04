@@ -45,8 +45,8 @@ Antwort darauf.
 | `av-planner-suite` | 1.0.0 | Shell + 4 Pakete + 3 vendorte Planer | 2 Workflows |
 | `Broadcast-intercom` | 0.1.0 | ~7.250 LOC (server/web/shared/companion) | 1 Workflow (neu) |
 | `sony-camera-bridge` | 1.0.0 | ~11.500 LOC | 1 Workflow (neu) |
-| `tally-pi` | — | 2.978 LOC Python, 5 Module | nur Syntax-Check |
-| `pi-media-station` | — | 638 LOC Python + Electron-Manager | **keine** |
+| `tally-pi` | — | 2.978 LOC Python, 5 Module | 1 Workflow (`verify.yml`: compileall + `bash -n` + Unit-Tests) |
+| `pi-media-station` | — | 638 LOC Python + Electron-Manager | 1 Workflow (`verify.yml`: Deps + compileall + `bash -n` + Unit-Tests) |
 
 ---
 
@@ -59,14 +59,14 @@ Fehlerzeile gar nicht treffen konnte.)
 
 | Repo | build | typecheck | lint | Tests |
 | --- | --- | --- | --- | --- |
-| `cable-planner` | **0** | **0** (`tsc -p tsconfig.app.json`) | **0 Fehler** (10 Warnungen) | **0** — 806 Tests in 77 Dateien |
+| `cable-planner` | **0** | **0** (`tsc -p tsconfig.app.json`) | **0 Fehler** (10 Warnungen) | **0** — 990 Tests in 100 Dateien |
 | `multicam-planner` | **0** | in `build` enthalten | **0 Fehler** (49 Warnungen) | **0** — 396 Tests in 29 Dateien |
 | `light-planner` | **0** | in `build` enthalten | **0 Fehler** (49 Warnungen) | **0** — 12 Tests + 4 Format-Checks (`avplan`, `venue`, `mvr`, `spec`) |
-| `av-planner-suite` | **0** | in `build` enthalten | — | **0** — 35 Shell + 45 Pakete |
+| `av-planner-suite` | **0** | in `build` enthalten | — | **0** — 36 Shell + 45 Pakete |
 | `Broadcast-intercom` | **0** (nach `npm install`, 224 Pakete) | — | — | **0** — **38 Smoke-Tests gegen einen laufenden Kern** |
-| `sony-camera-bridge` | — | — | — | **0** — 15 Tests (node:test) in zwei Workspaces: `bridge` 8, Companion-Modul 7 |
-| `tally-pi` | `py_compile` OK für alle 5 Module | — | — | keine |
-| `pi-media-station` | `py_compile` OK für alle 3 Module | — | — | keine |
+| `sony-camera-bridge` | — | — | — | **0** — 18 Tests (node:test) in zwei Workspaces: `bridge` 11, Companion-Modul 7 |
+| `tally-pi` | `py_compile` OK für alle 5 Module | — | — | **0** — 55 Tests (`python -m unittest discover -s tests`) |
+| `pi-media-station` | `py_compile` OK für alle 3 Module | — | — | **0** — 21 Tests (`python -m unittest discover -s tests`) |
 
 ### Die vier Suite-Guards
 
@@ -77,7 +77,7 @@ Alle mit Exit 0 gelaufen:
 | Herkunfts-Vokabular | `npm run spec:vocab` | 3 Feld-Kopien, 2 Helfer-Kopien gleich |
 | Feature-Erreichbarkeit | `npm run features:reachable` | 2 vendorte Kopien erreichbar |
 | Native Dialoge | `npm run dialogs:native` | 663 Dateien, 0 Treffer — Muster seit B-1 vollständig |
-| Planer-Drift | `npm run drift:check` | 15 / 20 / 17 unverändert |
+| Planer-Drift | `npm run drift:check` | unverändert gegen die Baseline (Zahlen: `scripts/planner-drift-baseline.json`) |
 
 ### `Broadcast-intercom`: der aussagekräftigste Einzelbefund
 
@@ -120,7 +120,7 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 
 | Bereich | Status | Beleg |
 | --- | --- | --- |
-| Vendoring der drei Planer | `IMPLEMENTED` | `apps/*`, Drift CI-bewacht (16/20/17), Baseline mit `upstreamSha` |
+| Vendoring der drei Planer | `IMPLEMENTED` | `apps/*`, Drift CI-bewacht, Baseline mit `upstreamSha` (Stand: `scripts/planner-drift-baseline.json`) |
 | Drift-Guard | `COMPLETE` | `scripts/planner-drift.mjs`; `--write-baseline` verweigert bei offener uncarried-Liste (`suite#61`) |
 | Herkunfts-Vokabular-Guard | `COMPLETE` | `scripts/spec-source-vocabulary.mjs`, in CI |
 | Feature-Erreichbarkeits-Guard | `COMPLETE` | `scripts/reachable-features.mjs`, in CI; nennt ausdrücklich, was er **nicht** prüft |
@@ -149,7 +149,7 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | `Broadcast-intercom` i18n | `COMPLETE` | 165 Schluessel, EN und DE vollstaendig — und zwar **vom Typ erzwungen** (`const DE: typeof EN`), ein fehlender Schluessel waere ein Compile-Fehler. Die 29 wertgleichen Eintraege sind echte Gleichwoerter (Monitor, Signal, Sidetone, VOX) |
 | `sony-camera-bridge` Oberflaechen-Sprache | `PARTIAL` | 172 sichtbare Textstellen ohne jede i18n, davon **32 deutsch** und der Rest englisch — in denselben Dialogen nebeneinander (B-26) |
 | `sony-camera-bridge` CI | `COMPLETE` | `ci.yml` mit `npm ci` + `npm test` (`#11`, grün) |
-| `tally-pi` | `IMPLEMENTED` | 5 Python-Module, systemd-Units, `bootstrap.sh`; seit `#7` **46 Tests** in CI (ATEM-Offset, ME-Zählung, `offline` wird nie `safe`) |
+| `tally-pi` | `IMPLEMENTED` | 5 Python-Module, systemd-Units, `bootstrap.sh`; seit `#7` **55 Tests** in CI (ATEM-Offset, ME-Zählung, `offline` wird nie `safe`) |
 | `pi-media-station` | `IMPLEMENTED` | `main.py`/`sensor.py`/`web_ui.py` + Electron-Manager; seit `#3` erste CI (`verify.yml`) und **21 Tests** (Schema-Heilung, Filterfenster, Dummy-Rückfall ohne `gpiozero`) |
 
 ### 3.4 Integration über Repo-Grenzen
