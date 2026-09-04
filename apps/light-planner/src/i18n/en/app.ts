@@ -49,4 +49,25 @@ export const app: Record<string, string> = {
   // Inventory launcher
   'app.inventory.title': 'Storage / inventory',
   'app.inventory.label': 'Storage',
+
+  // ── CanvasActions (B-23, light#62) ──
+
+  'canvas.align': 'Align',
+  'canvas.alignX': 'Align horizontally (X)',
+  'canvas.alignY': 'Align vertically (Y)',
+  'canvas.alignZ': 'To the same height (Z)',
+  'canvas.distH': 'Distribute horizontally',
+  'canvas.distV': 'Distribute vertically',
+  'canvas.group': 'Group',
+  'canvas.ungroup': 'Ungroup',
+  'canvas.rotateMinus': 'Rotate −15°',
+  'canvas.rotatePlus': 'Rotate +15°',
+  'canvas.autoLight': 'Auto light',
+  'canvas.threePoint': '3-point',
+  'canvas.threePointHint': 'Three-point lighting for the selection',
+  'canvas.threePointConfig': 'Configure three-point…',
+  'canvas.area': 'Area',
+  'canvas.areaHint': 'Light the area evenly',
+  'canvas.ceiling': 'Ceiling',
+  'canvas.ceilingHint': 'Build a ceiling from the walls',
 };

@@ -70,4 +70,8 @@ export const inventory: Record<string, string> = {
   'common.cancel': 'Cancel',
   'common.edit': 'Edit',
   'common.delete': 'Delete',
+
+  // Aus light#62: der Schliessen-Knopf im Projekt- und Aenderungs-Dialog.
+
+  'common.close': 'Close',
 };

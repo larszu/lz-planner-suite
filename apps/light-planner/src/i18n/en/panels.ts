@@ -314,4 +314,28 @@ export const panels: Record<string, string> = {
   'prop.kbd.undo': 'Undo',
   'prop.kbd.del': 'Del',
   'prop.kbd.cancel': 'Cancel',
+
+  // ── Ebenen-, Szenen- und Grundriss-Panel (B-23, light#62) ──
+
+  'panel.expand': 'Expand',
+  'panel.collapse': 'Collapse',
+  'panel.layers.hide': 'Hide',
+  'panel.layers.show': 'Show',
+  'panel.layers.unlock': 'Unlock',
+  'panel.layers.lock': 'Lock (not selectable)',
+  'panel.scene.title': 'Scenes',
+  'panel.scene.save': 'Save the current look',
+  'panel.scene.saveHint': 'Store the current look as a new scene',
+  'panel.scene.empty': 'No scenes yet. Set your fixtures and save the look.',
+  'panel.scene.overwrite': 'Overwrite with the current look',
+  'panel.scene.rename': 'Rename',
+  'panel.scene.delete': 'Delete scene',
+  'panel.floor.title': 'Floor plan',
+  'panel.floor.remove': 'Remove floor plan',
+  'panel.floor.page': 'Page',
+  'panel.floor.width': 'Width',
+  'panel.floor.height': 'Height',
+  'panel.floor.scale': 'Scale',
+  'panel.floor.opacity': 'Opacity',
+  'panel.floor.lock': 'Lock',
 };

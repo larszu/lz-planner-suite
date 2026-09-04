@@ -457,14 +457,31 @@ ist selbst ein Ergebnis.
 
 ### B-23 · Zwölf Dialoge der Suite sind gar nicht erst gewickelt
 
-* **Status:** offen
+* **Status:** **erledigt 2026-09-04** (`light#62`, `light#63`, `suite#72`) —
+  `i18n:check` meldet für diese Kopie **keine** gerenderte Komponente ohne
+  `t()` mehr.
 * **Befund (gemessen 2026-09-04, `i18n:check`):** Die Suite-Kopie ist weit
   gewickelt — `PropertyPanel` 272 `t()`-Aufrufe, `ScheduleDialog` 95,
-  `FixtureEditor` 66. **Zwölf** gerenderte Komponenten haben trotzdem
+  `FixtureEditor` 66. **Zwölf** gerenderte Komponenten hatten trotzdem
   **keinen einzigen**: `AreaLightDialog` (~21 sichtbare Stellen),
   `CanvasActions` (~18), `ProjectDialog` (~14), `ThreePointDialog` (~14),
   `ChangesDialog` (~13), `FloorPlanPanel` (~7), `Scene3D` (~7), `ScaleDialog`
   (~5) und vier weitere — zusammen ~110 Stellen.
+* **Und zwei Korrekturen an der Messung selbst, beide in dieselbe Richtung:**
+  * `Scene3D` (~7) und `PlanCanvas` (~4) standen als Rest auf der Liste. Sie
+    haben **keine einzige** deutsche Textstelle — die Heuristik traf
+    TypeScript-Vergleiche (`xhr.status >= 200 && xhr.status < 300`).
+    Berichtigt in `light#63`, gegengeprüft an den 98 Stellen aus `light#62`:
+    97 erkennt die Regel weiter, alle 11 Falschtreffer sind weg.
+  * `Onboarding` war mit **einer** Stelle gemeldet und hatte **dreizehn**.
+    Die Heuristik liest JSX-Text und vier beschriftende Attribute — nicht
+    Zeichenketten in Objekt-Literalen (`title:`, `body:`, `description:`),
+    und genau so sind Tour-Schritte und Welcome-Aktionen aufgebaut. Der
+    Rahmen dieser Dialoge kam längst übersetzt aus
+    `@avplan/onboarding-core`: englische Knöpfe um deutschen Text.
+* **Die Zahl bleibt also eine Untergrenze**, und der Check sagt das im
+  Kommentar. Sie ist gut genug, um „übersetzt" von „nicht übersetzt" zu
+  unterscheiden — nicht, um Arbeit daraus zu planen.
 * **Warum das hier schwerer wiegt als upstream:** Der Sprachschalter ist in
   der Suite **erreichbar** (`SettingsModal` → `App.tsx:450` → `PlannerFrame` →
   `shellSettings.ts:51` → `uiStore`). Wer auf Englisch stellt, bekommt diese
@@ -475,9 +492,10 @@ ist selbst ein Ergebnis.
   setzen. Über ~110 Stellen ist das eine eigene, prüfbare Arbeit — mit dem
   Vendoring der englischen Schlüssel vermischt wäre weder das eine noch das
   andere nachvollziehbar geblieben.
-* **DoD:** `i18n:check` meldet für die Suite-Kopie **0** gerenderte
-  Komponenten ohne `t()`; die neuen Schlüssel haben englische Fassungen.
-* **Aufwand:** mittel
+* **DoD (erfüllt):** `i18n:check` meldet für die Suite-Kopie **0**
+  gerenderte Komponenten ohne `t()`; alle **711** erreichbaren Schlüssel
+  haben eine englische Fassung.
+* **Aufwand:** war mittel
 
 ---
 
@@ -613,5 +631,9 @@ gehalten, nicht als Versäumnis:
 | `i18n:check` las nur eine der beiden Wörterbuch-Formen | `light#60` |
 | Lager-Dialog + Beleg-Marken der Suite englisch (563/563) | `suite#71` |
 | `identity:check` war vendoriert, lief aber in keiner Suite-CI | `suite#71` |
+| Neun Dialoge/Panels ohne `t()` gewickelt (B-23) | `light#62`, `suite#72` |
+| Onboarding-Inhalt gewickelt; B-23 in der Suite bei 0 | `suite#72` |
+| `i18n:check` zaehlte TypeScript-Vergleiche als deutschen Text | `light#63` |
+| `i18n:check` meldet ungewickelte Komponenten (B-13) | `light#61` |
 | Tests + CI für `tally-pi` (B-12) | `tally-pi#7` |
 | Erste CI + Tests für `pi-media-station` (B-12) | `pi-media-station#3` |
