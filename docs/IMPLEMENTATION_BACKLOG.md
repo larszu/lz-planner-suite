@@ -243,8 +243,23 @@ ist selbst ein Ergebnis.
 * **Nachgeprüft 2026-09-04:** weiterhin offen. `grep -c manufacturerUrl` über
   `blackmagicCatalog.ts`, `cameraCatalog.ts`, `greengoCatalog.ts`,
   `miscCatalog.ts`, `monitorCatalog.ts`, `ubiquitiCatalog.ts` liefert
-  **sechsmal 0**.
-* **Aufwand:** mittel (Recherche, kein Code)
+  **sechsmal 0**. Zusammen sind das **159** Einträge.
+* **In dieser Umgebung nicht machbar, und zwar belegt:** Die
+  Hersteller-Domänen laufen in den Egress-Filter — gemessen
+  `blackmagicdesign.com`, `ui.com` und **`lynx-technik.com`**, dessen URLs
+  hier bereits im Code stehen. Weder eine neue noch eine vorhandene Adresse
+  lässt sich von hier aus öffnen; die Websuche liefert Händlerseiten (B&H,
+  Markertek, Full Compass), keine Hersteller-Produktseiten.
+* **Deshalb bleibt es liegen, statt geraten zu werden:** 159 URLs
+  einzutragen, die niemand geöffnet hat, wäre genau der Fehler, gegen den die
+  Belegkette dieses Repos gebaut ist — ein `manufacturerUrl`, der ins Leere
+  zeigt, ist schlechter als ein leeres Feld, weil er Prüfbarkeit behauptet.
+* **Was dabei herausfiel:** Von den 253 **vorhandenen** Belegen zeigt einer
+  auf einen Händler (Behringer X32 → Markertek), während der Eintrag 25
+  Zeilen darunter auf `behringer.com` zeigt. Seit `cable#672` hält ein Guard
+  das fest, mit einer begründeten Ausnahme, die von selbst wegfällt.
+* **Aufwand:** mittel (Recherche, kein Code) — braucht eine Umgebung mit
+  Netzzugang zu den Herstellern
 
 ---
 
