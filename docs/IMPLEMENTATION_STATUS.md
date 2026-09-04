@@ -109,6 +109,9 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | Green-GO Round-Trip | `PARTIAL` | Preset überlebt den Export inkl. `ButtonFunctions` (`cable#653`); ein **herstellerneutrales** Austauschformat fehlt |
 | Mobile-Share (LAN) | `IMPLEMENTED` | `services/mobileShareServer.ts`, Token pro Sitzung auf allen Schreibwegen; keine automatisierte End-to-End-Prüfung |
 | Kollaboration (CRDT/Signaling) | `IMPLEMENTED` | `test:crdt` und `test:signaling` laufen seit `cable#658` in CI; der WebRTC-/Cross-Maschine-Teil bleibt ungeprüft (braucht echte Geräte) |
+| Leistungsberechnung | `COMPLETE` | eine Kette in `lib/equipmentSelectors.ts` seit `cable#668`; vorher vier Kopien, von denen zwei den aktiven Betriebsmodus nicht kannten — zu niedrig rechnete ausgerechnet der Stromrechner, aus dessen Summe Phasenverteilung, Generator-kVA und USV-Laufzeit kommen. Guard: `tests/effektiveLeistung.test.ts` |
+| Tastenkürzel-Oberfläche | `COMPLETE` | `cable#669`; `Strg+P`/`Strg+A` standen in der Hilfe ohne jeden Handler, `selectAll` und `jumpToPatches` sind jetzt echt gebunden. Zwei Aktionen bleiben bewusst ohne Handler, mit Grund im Guard `tests/tastenkuerzelStimmen.test.ts` |
+| Custom-Palette | `COMPLETE` | `cable#669`; zwei der drei Regler waren immer verdrahtet (Canvas + jeder Export), der dritte (`accent`) wurde gespeichert und von nichts gelesen — entfernt statt mit erfundener Bedeutung gefüllt. Guard: `tests/customPaletteWirktWirklich.test.ts` |
 | Fenster-/MRU-Zustand | `IMPLEMENTED` | bewusst **nicht** atomar (`main/index.ts:135`, `ipc/projectIpc.ts:37/46`) — beide Leser sind vollständig defensiv und fallen auf Default zurück; kein Nutzerdaten-Pfad |
 
 ### 3.2 `av-planner-suite` — Schale und Konsolidierung
@@ -150,10 +153,15 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 Ehrlich benannt, damit die Abwesenheit eines Befundes nicht als Freigabe
 gelesen wird:
 
-1. **Nur `src/` und `tests/`.** Der Drift-Vergleich hat `ROOTS = ['src','tests']`;
-   `docs/`, `.github/`, `electron/`, `package.json`, `index.html`,
-   `vite.config.ts` sind nie im Feld. Ausgerechnet der Vorfall, der die ganze
-   Rückweg-Untersuchung ausgelöst hat, war ein Eintrag in `docs/ux-audit.md`.
+1. **Fast nur `src/` und `tests/`.** Der Drift-Vergleich hatte
+   `ROOTS = ['src','tests']`; `docs/`, `.github/`, `electron/`, `package.json`,
+   `index.html`, `vite.config.ts` waren nie im Feld. Ausgerechnet der Vorfall,
+   der die ganze Rückweg-Untersuchung ausgelöst hat, war ein Eintrag in
+   `docs/ux-audit.md`.
+   **Seit B-14 teilweise geschlossen:** `ROOT_FILES` nimmt `CLAUDE.md` dazu —
+   die Lücke fiel auf, weil die vendorierte `apps/cable-planner/CLAUDE.md`
+   unbemerkt 39 Zeilen zurücklag, darunter die Commit- und Merge-Regeln. Der
+   Rest der Liste steht weiterhin außerhalb.
 2. **Code, der in ein geteiltes Paket ausgewandert ist.** Das upstream-Original
    steht auf `REPLACED_BY_PACKAGE` und hat kein Gegenstück — es fällt aus jedem
    Datei-zu-Datei-Vergleich.
@@ -162,6 +170,29 @@ gelesen wird:
 5. **Keine laufende Desktop-App geprüft.** Electron-Builds, echte Geräte (ATEM,
    Videohub, Sony-Kamera, Pi-GPIO) und die Drucker-/Plotter-Pfade sind nicht
    ausgeführt worden — nur ihr Code gelesen.
+
+### Und ein Befund über die Erhebung selbst
+
+**Die Schweregrade dieses Audits liefen dem Code voraus.** Von den bislang
+einzeln nachgeprüften Behauptungen hat **keine** in ihrer ursprünglichen
+Einstufung gehalten:
+
+| Behauptung | eingestuft als | tatsächlich |
+| --- | --- | --- |
+| Leistungsberechnung „vier auseinanderlaufende Fassungen" | `BROKEN` | `PARTIAL` — sie laufen in **einer** Dimension auseinander (aktiver Modus). Widerlegt: zweite Watt→Ampere-Umrechnung, hartkodierte Spannung, abweichender BTU-Faktor, doppelt gezählte Netzteile — nichts davon existiert |
+| Settings → Darstellung → Custom-Palette | `UI_ONLY` | `PARTIAL` — **zwei von drei** Reglern wirken bis in den Canvas und jeden Export und werden persistiert; nur `accent` war folgenlos |
+| Hilfe → Tastaturkürzel | `UI_ONLY` | `PARTIAL` — gemountet, über drei Wege erreichbar, **16 von 18** Einträgen durch echte Handler gedeckt; zwei waren tot |
+| light-planner localStorage „verliert Daten" | `BROKEN` | `PARTIAL` — die Plandaten überleben den Round-Trip vollständig, jedes optionale Feld hat einen Default, Quota ist behandelt; verloren gingen **drei** benannte ADR-005-Felder |
+
+Das ist kein Zufall, sondern die Bauart der Methode: ein Prüfer, der eine Lücke
+sucht, findet eine — und schreibt sie so groß, wie sie aus seiner Perspektive
+aussieht. **Ein Befund gilt hier deshalb erst, wenn er am Quelltext einzeln
+nachgeprüft ist.** Die vier oben waren nach der Nachprüfung immer noch echt und
+alle vier sind inzwischen behoben; ihre Einstufung war es nicht.
+
+Umgekehrt gilt dasselbe: `PARTIAL` statt `BROKEN` macht keinen der vier
+harmlos. Der Stromrechner rechnete zu niedrig, und zwar in der Ansicht, aus der
+die Absicherung abgeleitet wird.
 
 ---
 

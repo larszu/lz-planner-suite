@@ -378,3 +378,9 @@ gehalten, nicht als Versäumnis:
 | CI für `sony-camera-bridge` (B-3) | `sony-camera-bridge#11` |
 | Rückweg-Liste im Drift-Bericht (B-5) | `suite#64` |
 | Vier zu pessimistische Roadmap-Zeilen berichtigt | `suite#60` |
+| CRDT-/Signaling-Pruefung in CI (B-4, war laengst erledigt) | `cable#658` |
+| Vendorierung cable #659-#662 + `CLAUDE.md`-Drift (B-14) | `suite#65` |
+| Leistungskette vereinheitlicht (vier Kopien, zwei ohne Modus) | `cable#668` |
+| `Strg+P`/`Strg+A` ohne Handler; `selectAll`/`jumpToPatches` gebunden | `cable#669` |
+| Custom-Palette: folgenloser Akzent-Regler entfernt | `cable#669` |
+| ADR-005: „Speichern (Gerät)" verlor die Fremd-Domänen | `light#56` |
