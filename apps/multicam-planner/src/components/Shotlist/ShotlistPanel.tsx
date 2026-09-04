@@ -10,6 +10,7 @@ import {
   FiSquare,
   FiTrash2,
 } from 'react-icons/fi';
+import { confirmDialog, promptDialog } from '@avplan/ui';
 import { useStore } from '../../store/useStore';
 import { captureCurrentShot } from '../../utils/captureShot';
 import {
@@ -235,8 +236,13 @@ export default function ShotlistPanel() {
           title="Shotlist umbenennen"
           onClick={() => {
             if (!list) return;
-            const name = window.prompt('Name der Shotlist:', list.name);
-            if (name && name.trim()) renameShotlist(list.id, name.trim());
+            // Die Suite laeuft im Browser-Shell; `window.prompt` traegt dort
+            // zwar, aber ohne Theme, ohne Fokusfalle und ohne Uebersetzung --
+            // und in einer Electron-Huelle gaebe es kommentarlos null zurueck.
+            void (async () => {
+              const name = await promptDialog('Name der Shotlist:', { defaultValue: list.name });
+              if (name && name.trim()) renameShotlist(list.id, name.trim());
+            })();
           }}
         >
           Umbenennen
@@ -247,10 +253,17 @@ export default function ShotlistPanel() {
           title="Shotlist loeschen"
           onClick={() => {
             if (!list) return;
-            if (window.confirm(`Shotlist "${list.name}" mit ${list.shots.length} Shots loeschen?`)) {
+            void (async () => {
+              // Loeschen nimmt die Shots mit -- also der rote Knopf, den
+              // `window.confirm` nicht anbietet.
+              const ok = await confirmDialog(
+                `Shotlist "${list.name}" mit ${list.shots.length} Shots loeschen?`,
+                { destructive: true },
+              );
+              if (!ok) return;
               stopPlayback();
               removeShotlist(list.id);
-            }
+            })();
           }}
         >
           <FiTrash2 size={13} />

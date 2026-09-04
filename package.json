@@ -23,6 +23,7 @@
     "spec:vocab": "node scripts/spec-source-vocabulary.mjs",
     "drift": "node scripts/planner-drift.mjs --upstream ..",
     "drift:check": "node scripts/planner-drift.mjs --upstream .. --check",
-    "features:reachable": "node scripts/reachable-features.mjs"
+    "features:reachable": "node scripts/reachable-features.mjs",
+    "dialogs:native": "node scripts/native-dialogs.mjs"
   }
 }

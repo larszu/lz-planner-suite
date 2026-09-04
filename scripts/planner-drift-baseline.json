@@ -2,26 +2,26 @@
   "cable-planner": {
     "only-upstream": 0,
     "only-suite": 0,
-    "two-way": 10,
+    "two-way": 9,
     "upstream-ahead": 0,
     "suite-ahead": 8,
     "expected-overlay": 22,
     "dead-upstream": 0,
-    "drift": 18,
-    "total": 40,
+    "drift": 17,
+    "total": 39,
     "missingUpstream": false,
-    "upstreamSha": "c2ea596d3634"
+    "upstreamSha": "dd7f33f4f149"
   },
   "multicam-planner": {
     "only-upstream": 0,
     "only-suite": 0,
-    "two-way": 18,
+    "two-way": 19,
     "upstream-ahead": 0,
     "suite-ahead": 1,
     "expected-overlay": 16,
     "dead-upstream": 0,
-    "drift": 19,
-    "total": 35,
+    "drift": 20,
+    "total": 36,
     "missingUpstream": false,
     "upstreamSha": "ba7774b3eb73"
   },

@@ -55,6 +55,9 @@ jobs:
       - name: Vendorte Features haben einen Bedienweg
         run: npm run features:reachable
 
+      - name: Keine nativen Browser-Dialoge
+        run: npm run dialogs:native
+
   # ---------------------------------------------------------------------------
   # Drift-Guard fuer die vendorten Planer-Kopien unter apps/.
   #

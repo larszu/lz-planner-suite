@@ -875,7 +875,12 @@ const App: React.FC = () => {
       walls: walls.length, stageElements: stageElements.length, shapes: shapes.length,
       ceilings: ceilings.length, persons: persons.length, hasFloorPlan: !!floorPlan,
     });
-    if (warnung && !window.confirm(warnung)) return;
+    // `confirmDialog` statt `window.confirm`: die Datei importiert es seit
+    // laengerem und die Funktion ist ohnehin `async` -- diese eine Stelle war
+    // beim Umstellen liegengeblieben. Ausgerechnet die: der Import ersetzt das
+    // offene Projekt, ohne lighting-Domaene durch ein leeres. `destructive`
+    // faerbt den Knopf rot, was `window.confirm` nicht kann.
+    if (warnung && !(await confirmDialog(warnung, { destructive: true }))) return;
     const now = new Date().toISOString();
     const lighting = avplan.domains.lighting as ProjectData | undefined;
     const base: ProjectData = lighting ?? {

@@ -93,6 +93,13 @@ export const CollabPanel = () => {
 
   // Beitreten übernimmt den Plan des Hosts und ersetzt den lokalen — bei
   // vorhandenem lokalem Plan vorher rückfragen, damit keine Arbeit verloren geht.
+  //
+  // Die Rückfrage lief über `window.confirm`. Der UX-Audit führte Punkt 41
+  // („keine nativen Dialoge mehr in Komponenten") als erledigt — für diese
+  // Stelle stimmte das nicht. Sie ist die einzige, die übrig war, und
+  // ausgerechnet die mit dem grössten Schaden: das OK ersetzt den lokalen Plan.
+  // `confirmDialog` ist deshalb hier nicht nur konsistenter, sondern trägt das,
+  // was `window.confirm` nicht kann — `destructive`, also der rote Knopf.
   const onJoin = async (s: DiscoveredCollabSession): Promise<void> => {
     const p = useProjectStore.getState().project
     const hasLocalPlan =
@@ -102,11 +109,15 @@ export const CollabPanel = () => {
     if (
       hasLocalPlan &&
       !(await confirmDialog(
-        t(
-          'collab.join.replaceConfirm',
-          'Beitreten lädt den Plan des Hosts und ersetzt deinen aktuellen Plan. Fortfahren?',
-        ),
-        { destructive: true },
+        t('collab.join.replaceTitle', 'Lokalen Plan durch den Plan des Hosts ersetzen?'),
+        {
+          body: t(
+            'collab.join.replaceConfirm',
+            'Beitreten lädt den Plan des Hosts und ersetzt deinen aktuellen Plan. Fortfahren?',
+          ),
+          okLabel: t('collab.join.replaceOk', 'Beitreten und ersetzen'),
+          destructive: true,
+        },
       ))
     ) {
       return
