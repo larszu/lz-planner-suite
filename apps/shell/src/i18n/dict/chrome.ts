@@ -149,4 +149,6 @@ export const chrome: Record<string, string> = {
   'chrome.preview.camerasLabel': 'The camera plan',
   'chrome.preview.lichtLabel': 'The light plan',
   'chrome.preview.stage': 'Stage',
+  // Topbar: Einstieg in den Projekt-Hub
+  'chrome.topbar.manageProjects': 'Manage projects…',
 }

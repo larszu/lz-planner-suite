@@ -141,4 +141,13 @@ export const panels: Record<string, string> = {
   'panels.aria.layerToggle': 'Layer {name} {action}',
   'panels.action.show': 'show',
   'panels.action.hide': 'hide',
+  // LibraryPanel — Gruppenueberschriften je Modul
+  'panels.lib.overview.scope': 'Scope',
+  'panels.lib.overview.crew': 'Crew',
+  'panels.lib.signal.devices': 'Devices',
+  'panels.lib.signal.cablesGroup': 'Cables',
+  'panels.lib.cameras.title': 'Cameras',
+  // „Fixtures" ist im deutschen Buehnenlicht-Jargon gebraeuchlich und steht
+  // deshalb schon in der Quellsprache so; der Eintrag haelt es fest.
+  'panels.lib.licht.title': 'Fixtures',
 }

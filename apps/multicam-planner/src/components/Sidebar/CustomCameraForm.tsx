@@ -294,7 +294,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
       {aiSources && Object.keys(aiSources).length > 0 && (
         <div className="text-[10px] border border-bc-line rounded px-1.5 py-1 space-y-0.5">
           <div className="opacity-70">
-            {t('sidebar.form.specSourceHead', 'Herkunft der Werte — bitte prüfen:')}
+            {t('sidebar.form.specSourceHead', 'Where the values come from — please verify:')}
           </div>
           {Object.entries(aiSources).map(([field, entry]) => (
             <div key={field} className="flex gap-1">

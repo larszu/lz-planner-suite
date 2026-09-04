@@ -116,4 +116,6 @@ export const config: Record<string, string> = {
   'config.cmd.new': 'New project',
   'config.cmd.settings': 'Open settings',
   'config.cmd.toggleTheme': 'Toggle theme (dark / light)',
+  // Name, den ein frisch angelegtes Projekt bekommt
+  'config.newProjectName': 'New project',
 }

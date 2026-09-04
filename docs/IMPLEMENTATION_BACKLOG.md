@@ -497,6 +497,65 @@ ist selbst ein Ergebnis.
   haben eine englische Fassung.
 * **Aufwand:** war mittel
 
+### B-24 · Zwei übersetzte Dateien in `cable-planner`, die niemand rendert
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-16)
+* **Befund (gemessen 2026-09-04, `tests/i18nErreichbarkeit.test.ts`):**
+  `components/Print/PrintDialog.tsx` (16 KB, **34** `t()`-Aufrufe) und
+  `components/Canvas/TitleBlock.tsx` (5 KB, **14**) werden **nirgends**
+  importiert — weder statisch noch lazy.
+* **Die Funktion fehlt nicht:** Gedruckt wird über `ExportDialog`, das
+  `printPdfBlob` selbst aufruft; der Schriftkopf im PDF-Export entsteht in
+  `exportPdfVector.ts` (`renderTitleBlock`) aus eigenem Code. Beide Dateien
+  sind Doppel, keine Lücken.
+* **Warum es trotzdem zählt:** 48 übersetzte Zeichenketten und 21 KB Code, die
+  bei jeder Suche mitkommen und bei jeder Übersetzungsrunde mit veranschlagt
+  werden. Genau dieselbe Form wie `MenuBar`/`Toolbar` in `light-planner`
+  (B-13), wo 40 von 42 englischen Schlüsseln toten Code bedienten.
+* **Warum nicht nebenbei gelöscht:** 21 KB Code zu entfernen, den jemand
+  vielleicht noch anschließen will, ist keine Aufräumarbeit, sondern eine
+  Produktentscheidung.
+* **Bis dahin:** Der Test benennt beide bei jedem Lauf und lässt keine
+  **dritte** Datei still dazukommen.
+* **Aufwand:** klein (löschen) / mittel (verdrahten)
+
+### B-25 · `multicam-planner` upstream hat gar keine i18n
+
+* **Status:** offen
+* **Befund (gemessen 2026-09-04):** Upstream ist die Oberfläche fest deutsch —
+  `grep` findet in `src/` **keinen einzigen** `useTranslation`-Aufruf und kein
+  `i18n`-Verzeichnis. Die **Suite-Kopie** dagegen ist zweisprachig aufgebaut
+  (Englisch als Quellsprache, deutsches Override-Dict in `src/i18n/de/`,
+  479 Schlüssel).
+* **Schadensweg:** Die Shell schickt die Sprache an alle drei Planer
+  (`App.tsx:450`). Im Standalone-MultiCam gibt es niemanden, der sie
+  entgegennimmt — wer dort Englisch wählt, bekommt durchgehend Deutsch.
+* **Warum das ein Rückweg-Fall ist (B-5):** Die Arbeit ist getan, nur in der
+  falschen Richtung. Die Kopien sind an diesen Dateien allerdings weit
+  auseinander (`Sidebar.tsx` 129/104 Zeilen zweiseitig), ein Rückweg ist
+  deshalb kein Kopieren.
+* **Aufwand:** groß
+
+### B-26 · `sony-camera-bridge`: eine Oberfläche, zwei Sprachen
+
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-17)
+* **Befund (gemessen 2026-09-04):** Die Web-RCP (`packages/web-rcp/src`) hat
+  **172** sichtbare Textstellen und **keine i18n** — kein `useTranslation`,
+  kein Wörterbuch. Davon sind **32 deutsch**, der Rest englisch, in denselben
+  Dialogen nebeneinander: `ConnectionPanel` beschriftet „Kamera IP
+  (WiFi/LAN)", „– Gerät wählen –" und „Kamera-Nr." zwischen englischen
+  Feldern; der `FirstStartWizard` fragt „Welche Kamera möchtest du als erstes
+  einrichten?" und listet darunter englische Beschreibungen.
+* **Warum das zählt:** Das ist kein Übersetzungsrückstand, sondern ein
+  uneinheitliches Produkt. Ein Nutzer kann sich auf keine Sprache verlassen,
+  und es gibt keinen Schalter, mit dem er etwas daran ändern könnte.
+* **Warum es nicht nebenbei entschieden wird:** Welche Sprache die
+  Quellsprache dieses Repos ist, steht nirgends. Die übrigen Planer sind
+  deutsch-quellig, `multicam-planner` in der Suite englisch-quellig, die
+  Intercom-Web-App zweisprachig per Typ. Erst die Antwort entscheidet, ob
+  32 Stellen übersetzt oder 140 umgeschrieben werden.
+* **Aufwand:** klein (vereinheitlichen) / mittel (i18n einziehen)
+
 ---
 
 ## Niedrig
@@ -599,6 +658,8 @@ gehalten, nicht als Versäumnis:
 | E-13 | Bleibt die Shell-Vorschau ein eigenständiges Übersichtsmodell? | B-20 — wenn ja, fehlt eine sichtbare Kennzeichnung; wenn nein, müssen die Modelle zusammengeführt werden |
 | E-14 | Welche Kategorien soll der Versions-Vergleich zeigen, und welche Felder machen darin eine Änderung aus? | B-21 — betrifft acht heute unsichtbare Kategorien; `layers`/`floor`/`sun` sind keine Listen und brauchen eine eigene Vergleichsform |
 | E-15 | Wie sieht das **Abbrechen** eines Lager-Imports aus — Drei-Wege-Dialog, Vorschau-Schritt oder Undo für den Lager-Store? | B-22 — heute importieren Escape und Backdrop-Klick still zusammenführend, und der Schreibvorgang ist nicht rücknehmbar |
+| E-16 | Werden `PrintDialog` und `TitleBlock` **verdrahtet** oder **gelöscht**? | B-24 — 21 KB Code und 48 übersetzte Zeichenketten, deren Funktion es woanders schon gibt |
+| E-17 | Welche Sprache ist die Quellsprache von `sony-camera-bridge`? | B-26 — davon hängt ab, ob 32 Stellen übersetzt oder 140 umgeschrieben werden |
 
 ---
 
@@ -633,6 +694,9 @@ gehalten, nicht als Versäumnis:
 | `identity:check` war vendoriert, lief aber in keiner Suite-CI | `suite#71` |
 | Neun Dialoge/Panels ohne `t()` gewickelt (B-23) | `light#62`, `suite#72` |
 | Onboarding-Inhalt gewickelt; B-23 in der Suite bei 0 | `suite#72` |
+| 451 englische Zeilen im deutschen Wörterbuch (cable) | `cable#671` |
+| 58 neuere Schlüssel in `cable-planner` übersetzt | `cable#671` |
+| Deutscher Text als englische Quellsprache (multicam) | `suite#73` |
 | `i18n:check` zaehlte TypeScript-Vergleiche als deutschen Text | `light#63` |
 | `i18n:check` meldet ungewickelte Komponenten (B-13) | `light#61` |
 | Tests + CI für `tally-pi` (B-12) | `tally-pi#7` |

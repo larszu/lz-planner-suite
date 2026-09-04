@@ -187,4 +187,5 @@ export const overview: Record<string, string> = {
   'overview.phase.setup': 'Setup',
   'overview.phase.show': 'Show',
   'overview.phase.teardown': 'Teardown',
+  'overview.editor.header.datePick': 'Pick date',
 }

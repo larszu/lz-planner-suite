@@ -29,6 +29,7 @@ export const sidebar: Record<string, string> = {
   'sidebar.calc.person': 'Person',
 
   // ── CustomCameraForm (sidebar.form.*) ──
+  'sidebar.form.specSourceHead': 'Herkunft der Werte — bitte prüfen:',
   'sidebar.form.create': 'Erstellen',
   'sidebar.form.newCamera': 'Neue eigene Kamera',
   'sidebar.form.alertSensorDims': 'Sensorbreite und -höhe in mm eingeben.',

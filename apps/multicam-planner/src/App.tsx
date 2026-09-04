@@ -443,14 +443,17 @@ export default function App() {
         >
           <div className="flex-1">
             <strong className="font-semibold">
-              {t('load.idRepair.title', '{count} doppelte Id(s) in der Projektdatei repariert.').replace(
+              {/* Englisch ist hier die QUELLSPRACHE (siehe i18n/index.ts) — der
+                  deutsche Text gehoert ins de-Teildict, nicht hierhin. Stand er
+                  an dieser Stelle, bekam ein englischer Nutzer Deutsch. */}
+              {t('load.idRepair.title', '{count} duplicate id(s) in the project file repaired.').replace(
                 '{count}',
                 String(idRepairCount),
               )}
             </strong>{' '}
             {t(
               'load.idRepair.hint',
-              'Betroffene Objekte haben eine neue Id bekommen. Verweise darauf — Shots, Takes, Presets und Fokus-Sperren — zeigen jetzt auf das jeweils erste Objekt mit der alten Id und sind zu prüfen.',
+              'The affected objects were given a new id. References to them — shots, takes, presets and focus locks — now point at the first object carrying the old id and need checking.',
             )}
           </div>
           <button
