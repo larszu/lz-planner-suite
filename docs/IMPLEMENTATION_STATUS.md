@@ -184,6 +184,31 @@ gelesen wird:
    Videohub, Sony-Kamera, Pi-GPIO) und die Drucker-/Plotter-Pfade sind nicht
    ausgeführt worden — nur ihr Code gelesen.
 
+### Zehnte Messrunde (2026-09-04): sechs von zwölf Roadmap-Zeilen widerlegt
+
+Jede der zwölf Initiativen einzeln am Quelltext nachgeprüft, mit einem eigenen Prüfer je Zeile
+und der ausdrücklichen Anweisung, das Dokument als Behauptung zu behandeln. Ergebnis: **sechs
+Zeilen hielten nicht** — und anders als in Runde 9 gingen die drei schwersten Abweichungen in
+Richtung **zu optimistisch**:
+
+| Zeile | stand auf | ist |
+| --- | --- | --- |
+| 3 Stückliste, 5 Change-Impact | fertig | **fertig** |
+| 1 Identitäts-Spine, 2 Tally-Map, 4 Gestempelter Druck | fertig | **teilweise** |
+| 0 Fork, 7 As-built, 8 Netz-Plan | teilweise | teilweise, Zahlen/Belege falsch |
+
+Zwei der Befunde waren echte Fehler und sind repariert, nicht nur notiert:
+
+* **`cable#674`** — jede echte `tally.json` wurde von tally-pi zurückgewiesen: 36-stellige
+  `uuidv4()` gegen ein Feld, das `guide_server.py:310` auf 32 Zeichen begrenzt. Geprüft worden
+  waren die **Feldnamen**, nicht die **Wertebereiche**; das Fixture trug `'r1'`.
+* **`cable#673`** — der Druck-Knopf druckte ungestempelt, obwohl die Initiative
+  „gestempelter **Druck**" heißt. Drei PDF-Wege, einer gestempelt, die Nachbarn nicht.
+
+Offen als **B-27** (die Ableitung liest den Router-Zustand nicht — Tally-Karte trägt die
+Router- statt der ATEM-Eingangsnummer, ohne Befund) und **B-28** (ATEM- und Videohub-Labels
+hängen nicht an der Rolle).
+
 ### Und ein Befund über die Erhebung selbst
 
 **Die Schweregrade dieses Audits liefen dem Code voraus.** Von den bislang

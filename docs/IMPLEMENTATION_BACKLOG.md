@@ -167,11 +167,18 @@ ist selbst ein Ergebnis.
 ### B-6 · Plan → Tally-Pi: der Transport ist ein Medienbruch
 
 * **Status:** offen (Entscheidung beim Eigentümer)
-* **Befund:** Der Datenvertrag stimmt und ist getestet — `toTallyPiDevices`
-  liefert `{id, name, input}`, `gpio_watcher.py:79` setzt `me` selbst auf 1,
-  `guide_server.py:251` fängt `out_gpio`/`gpio` ab. Aber:
+* **Befund:** `toTallyPiDevices` liefert `{id, name, input}`,
+  `gpio_watcher.py:79` setzt `me` selbst auf 1, `guide_server.py:251` fängt
+  `out_gpio`/`gpio` ab. Aber:
   `ExportDialog.tsx:1299` erzeugt eine **Download-Datei**, die jemand von Hand
   nach `/opt/pi-guide/tally.json` kopieren muss.
+* **Berichtigung 2026-09-04 — „der Datenvertrag stimmt" stand hier und stimmte
+  nicht.** `toTallyPiDevices` schrieb die Rollen-`uuidv4()` (36 Zeichen) in ein
+  Feld, das `guide_server.py:310` gegen `^[A-Za-z0-9_-]{1,32}$` prüft, und bei
+  einem Verstoß wirft der Pi **die ganze Datei** zurück. Jede echte
+  `tally.json` aus dem Planer war unbrauchbar. Verglichen worden waren hier die
+  **Feldnamen**, nicht die **Wertebereiche** — und das Fixture trug `'r1'`, zwei
+  Zeichen. Behoben in `cable#674`; der Transport bleibt offen.
 * **Warum das zählt:** Genau der Medienbruch, gegen den der Auftrag angetreten
   ist („fewest media breaks").
 * **Offene Frage an den Eigentümer:** Soll der Planer den Pi direkt beliefern
@@ -570,6 +577,45 @@ ist selbst ein Ergebnis.
   Intercom-Web-App zweisprachig per Typ. Erst die Antwort entscheidet, ob
   32 Stellen übersetzt oder 140 umgeschrieben werden.
 * **Aufwand:** klein (vereinheitlichen) / mittel (i18n einziehen)
+
+### B-27 · Die Ableitung liest den Router-Zustand nicht
+
+* **Status:** offen
+* **Befund (gemessen 2026-09-04, Runde 10):** `buildGraphContext` nimmt nur
+  `equipment` + `cables`; `feedingInput` bricht an jedem Router ab. Der
+  Videohub-Kreuzpunkt liegt seit `cable#601` im Projekt (`equipment.ts:456`)
+  und wird von der Ableitung **nicht gelesen**.
+* **Schadensweg, zweifach:** Bei der Standard-Broadcast-Kette Kamera →
+  Videohub → ATEM löst der Plan den **Router** als Quelle auf statt der Kamera
+  (Initiative 1). Und die Tally-Karte trägt die **Router**-Eingangsnummer
+  statt der ATEM-Nummer (`labelDerivation.ts:327` führt beide Senkenarten
+  gleichberechtigt, `tallyMap.ts:105` nimmt den ersten Treffer). **Es wird kein
+  Befund erzeugt** — die Karte sieht vollständig aus und ist falsch. Das ist
+  die schlimmere der beiden Formen: ein sichtbarer Fehler kostet Zeit, ein
+  unsichtbarer kostet die Sendung.
+* **Warum das genau hier steht:** ADR-001 hat diesen Fall ausdrücklich zum
+  Blocker erklärt und ihn zu Inkrement 0 gemacht. Das Inkrement ist gebaut —
+  der Zustand wird persistiert — aber **niemand konsumiert ihn**. Formal
+  beseitigt, praktisch unverändert, und von keinem Test gedeckt.
+* **DoD:** `buildGraphContext` bekommt den Routing-Zustand; `feedingInput`
+  geht durch einen Router hindurch, wenn ein Kreuzpunkt gesetzt ist; ein Test
+  über die Kette Kamera → Videohub → ATEM belegt Quelle **und**
+  ATEM-Eingangsnummer.
+* **Aufwand:** mittel
+
+### B-28 · Die Rolle besitzt die Mischer- und Router-Labels nicht
+
+* **Status:** offen
+* **Befund (gemessen 2026-09-04, Runde 10):** Ein Umbenennen der
+  `SourceIdentity` ändert den UMD-Text, die `.avsourcemap` und die Tally-CSV —
+  aber **nicht** den ATEM-Lang-/Kurznamen und **nicht** die Videohub-Labels.
+* **Warum das der Kern der Zusage ist:** Initiative 1 heißt „Rename kostet eine
+  Änderung", und die Feature-Matrix führt „Switcher mnemonics generated" und
+  „Router source/destination labels generated" als Zielzeilen. Genau die zwei
+  Systeme, in die ein Name heute weiterhin von Hand getippt wird, hängen nicht
+  an der Rolle. Die Bedarfs-Datenbank nennt das achtmal aus acht Berufen
+  (P1 #5, #9): „Stop typing camera identity into six to eight systems."
+* **Aufwand:** mittel
 
 ---
 

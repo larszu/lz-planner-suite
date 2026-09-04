@@ -69,10 +69,10 @@ Prosa unten war an mehreren Stellen älter als das Repository.
 | # | Initiative | Score | Stand | Belegt durch |
 | --- | --- | --- | --- | --- |
 | 0 | Fork konsolidieren | 20 | **teilweise** | Drift von 56/72/26 auf **18/19/17** gesenkt (cable/multicam/light, Stand `scripts/planner-drift-baseline.json`), CI-bewacht (`scripts/planner-drift.mjs`). **Die Zahlen hier veralten bei jedem Vendor-Schritt** — massgeblich ist die Baseline-Datei, nicht diese Zeile. Die Suite vendort weiterhin Kopien — verwaltet, nicht konsolidiert |
-| 1 | Identitäts-Spine + Label-Projektion | 27 | **fertig** | ADR-001, alle vier Inkremente, plus `cable-planner#637` (die Exporter gehen durch den Resolver) |
-| 2 | Tally-Map aus dem Plan | 24 | **fertig** | `lib/tallyMap.ts` — `buildTallyMap`, `tallyMapCsv`, `toTallyPiDevices` speist `tally-pi`s `devices[]` |
+| 1 | Identitäts-Spine + Label-Projektion | 27 | **teilweise — die Spine steht, die Projektion halb** (berichtigt Runde 10) | Gebaut und erreichbar: `SourceIdentity` als Rolle neben den Geräten, CRUD-Slice, Migration in `healProjectPositions`, Eigenschaften-Sektion an jedem Gerät, `LabelTargetSpec` mit fünf Zeichenbudgets, Kollisions-Befunde im Plan-Check, `.avsourcemap` mit Provenienz, Tally-Tab; 148 Tests. **Zwei Hälften fehlen, beide am Kern:** (a) der seit `cable#601` persistierte Videohub-Kreuzpunkt wird von der Ableitung **nicht gelesen** — `buildGraphContext` nimmt nur equipment+cables, `feedingInput` bricht an jedem Router ab, also löst Kamera→Videohub→ATEM weiter den ROUTER als Quelle auf. Genau der von ADR-001 benannte Blocker: formal beseitigt, praktisch unverändert, von keinem Test gedeckt. (b) Die Rolle besitzt die ATEM-Lang-/Kurznamen und die Videohub-Labels **nicht** — ein Umbenennen ändert UMD-Text, `.avsourcemap` und Tally-CSV, aber nicht die zwei Systeme, an denen „Rename kostet eine Änderung" hängt |
+| 2 | Tally-Map aus dem Plan | 24 | **teilweise** (berichtigt Runde 10) | `lib/tallyMap.ts` (`buildTallyMap`, `tallyMapCsv`, `toTallyPiDevices`) ist gebaut, erreichbar über den Export-Dialog und getestet. **„speist tally-pis `devices[]`" stimmt trotzdem nicht:** es gibt keinen Transport in keiner Richtung (B-6), und der Datenvertrag, den B-6 ausdrücklich für stimmig erklärte, war es nicht — `toTallyPiDevices` schrieb die 36-stellige Rollen-`uuidv4()` in ein Feld, das `guide_server.py:310` auf `^[A-Za-z0-9_-]{1,32}$` begrenzt; tally-pi wies **die ganze Datei** zurück. Verglichen worden waren die Feldnamen, nicht die Wertebereiche, und das Fixture trug `'r1'` — zwei Zeichen. **Behoben in `cable#674`.** Offen bleibt ein zweiter, unabhängiger Mangel: bei Kamera→Videohub→ATEM trägt die Karte die **Router**-Eingangsnummer statt der ATEM-Nummer, ohne Befund — sie sieht vollständig aus und ist falsch (dieselbe Ursache wie Initiative 1a) |
 | 3 | Stückliste / Kommissionier-Liste | 24 | **fertig** | `lib/planBom.ts` (ADR-002 Inkrement 4) |
-| 4 | Gestempelter Druck + Papier-Rückweg | 22 | **fertig** | ADR-004, `lib/documentStamp.ts`, QR zurück in den Datensatz |
+| 4 | Gestempelter Druck + Papier-Rückweg | 22 | **teilweise** (berichtigt Runde 10) | ADR-004 Inkremente 1/2 sind gebaut und erreichbar: `lib/documentStamp.ts` stempelt alle sechs Installateur-Dokumente, das Plan-PDF trägt Revision, Stand-Zeile und Dokument-QR, der Rückweg ist beidseitig verdrahtet (QR-Scan **und** acht abgetippte Zeichen im Mobile-Viewer), dazu das Dokument-Register (`#644`) und `checkState` im Fingerabdruck (`#654`); 63 Tests. **Der namensgebende Fall fehlte:** `handlePrintPdf` und der Rentman-Anhang gingen durch denselben Builder **ohne** Stempel — das gedruckte Blatt zeigte ein nacktes „Rev 2" ohne Stand und ohne QR, also genau die falsche Gewissheit, gegen die ADR-004 geschrieben wurde. Die Initiative heißt „gestempelter **Druck**", und der Weg, der „Drucken" heißt, war der eine ohne Stempel. **Behoben in `cable#673`**, samt Guard über alle Aufrufstellen. Weiter offen: ADR-004 Inkrement 3 (Dokument-QR auf den Listen) und Inkrement 4 (multicam/light: null Stempel-Code) |
 | 10 | Confirmed-State-Disziplin | 23 | **teilweise, alle bekannten Fälle geschlossen** | Nachgezählt 2026-09-03, Zahlen aus dem Quelltext statt aus der Erinnerung. **Zwei Sorten, zwei Register, beide gerechnet statt aufgezählt:** `deviceReadSites` führt 5 Stellen, an denen ein Geräte-Befund den Plan berührt (3 getrennt, 1 additiv, 1 liest-nur); `aiWriteSites` führt 4, an denen eine Maschine Werte erfindet (3 markiert, 1 mit Mensch dazwischen, keine ungedeckt). `specSource` in allen drei Planern, gehalten vom Suite-Guard `spec-source-vocabulary.mjs` (3 Feld-, 2 Helfer-Kopien, in CI). Dazu `sony#10` im Companion-Modul. **Warum nicht „fertig":** siehe Abschnitt 3c — jede der sechs Messrunden fand eine Schicht, die die vorige nicht kannte |
 | 11 | Öffentliche Capability-Registry | 22 | **teilweise** | `lib/deviceTypeRegistry.ts` löst Typ-GUIDs intern auf; `INITIATIVE-11-SCOPING.md` hat den fehlenden Teil bestimmt: nicht die Registry, sondern die **Form des Belegs** (253 `// Quelle:`-Kommentare, kein `provenance`-Feld). **Beide dort genannten Blocker sind weg**, und der mechanische Schritt ist getan: die 253 Links stehen als `manufacturerUrl` im Katalog (`cable#649`), und die Eigenschaften-Leiste zeigt den **geerbten** Link mit genannter Herkunft — ohne die zweite Hälfte hätte der Nutzer nichts davon gesehen, weil der `DeviceTypePicker` keine Template-Felder kopiert. Offen bleibt die Publikation selbst — und die Kataloge ohne Beleg, aber **nicht acht, sondern sechs** (3c, Runde 9). Von den 17 `*Catalog.ts` fuehren 8 kein `manufacturerUrl`; zwei davon koennen keins fuehren: `connectorCatalog` haelt Stecker*typen* mit Symbol, `wirelessCatalog` haelt `WirelessDevice` (Handsender-Bodies, Kapseln, Headsets) — beide Typen haben das Feld gar nicht, es sitzt an `EquipmentTemplate` (`equipment.ts:509`). Sie standen nur deshalb in der Liste, weil gezaehlt wurde, was auf `Catalog.ts` endet. Echte Recherche brauchen: `blackmagic`, `camera`, `greengo`, `misc`, `monitor`, `ubiquiti` |
 | 5 | Change-Impact-Sicht | 22 | **fertig** | `lib/changeImpact.ts` (`#638`), `lib/planDiff.ts` + Vergleichs-Dialog (`#639`) und das **Register der ausgegebenen Dokumente** (`#644`). Die Vorwärts-Frage ist damit vollständig: welches ausgeteilte Blatt ist hin |
@@ -273,6 +273,56 @@ fills the segment with *no interchange format from anyone*, and we own an interc
 already export Green-GO config from `cable-planner`. The return path is the lighting segment's
 declared out-of-scope gap and the network segment's plan-versus-found need — high value, highest
 complexity, and correctly sequenced last among the identity-dependent items.
+
+### 3d. Zehnte Runde — und diesmal in die andere Richtung (2026-09-04)
+
+Runde 9 hatte vier Zeilen als **zu pessimistisch** entlarvt und daraus die Lehre gezogen, die
+Erhebung neige zur Schwarzmalerei. Die zehnte Runde hat jede der zwölf Zeilen einzeln am
+Quelltext nachgeprüft — mit einem eigenen Prüfer je Initiative, der ausdrücklich angewiesen war,
+das Dokument als **Behauptung** zu behandeln.
+
+**Sechs von zwölf Zeilen hielten nicht, und die drei schwersten Abweichungen gingen in die
+umgekehrte Richtung: zu optimistisch.** Die Lehre aus Runde 9 war also selbst zu allgemein.
+
+| Zeile | stand auf | ist | Richtung |
+| --- | --- | --- | --- |
+| 3 Stückliste | fertig | **fertig** | — |
+| 5 Change-Impact | fertig | **fertig** | — |
+| 1 Identitäts-Spine | fertig | **teilweise** | zu optimistisch |
+| 2 Tally-Map | fertig | **teilweise** | zu optimistisch |
+| 4 Gestempelter Druck | fertig | **teilweise** | zu optimistisch |
+| 0 Fork konsolidieren | teilweise | teilweise, **Zahlen falsch** | beides |
+| 7 Plan gegen As-built | teilweise | teilweise, **Belege falsch** | 3× zu pessimistisch, 1× zu optimistisch |
+| 8 Netz-/IP-Plan | teilweise | teilweise, **Belege falsch** | beides |
+| 6, 9, 10, 11 | teilweise | teilweise | — |
+
+**Der Befund, der am meisten lehrt** (Zeile 2): Die Suite-Doku erklärte den Datenvertrag mit
+tally-pi ausdrücklich für „stimmig und getestet". Geprüft worden waren die **Feldnamen** —
+`id`, `name`, `input` vorhanden, `me`/`out_gpio` bewusst weggelassen. Dass `id` einen
+**Wertebereich** hat, kam nicht vor: `guide_server.py:310` lässt 32 Zeichen zu, eine Rollen-Id
+ist ein `uuidv4()` mit 36, und die Prüfung wirft dann **die ganze Datei** zurück. Jede echte
+`tally.json` aus dem Planer war unbrauchbar. Dass es niemandem auffiel, liegt am Fixture: die
+Tests trugen `identityId: 'r1'` — zwei Zeichen. **Ein Testdatum, das der echten Eingabe nicht
+ähnelt, prüft die Stelle nicht, an der es bricht.**
+
+**Der zweitwichtigste** (Zeile 4): Drei PDF-Wege gehen aus derselben Canvas. Einer war
+gestempelt, mit einem Kommentar, der die Initiative zitiert — die beiden Nachbarn nicht, darunter
+der Knopf, der „Drucken" heißt. Dieselbe Form, die in dieser Sitzung siebenmal aufgetaucht ist:
+**eine Zusicherung existiert, ist an ihrer Stelle begründet, und ein Nachbar-Aufrufer kennt sie
+nicht.**
+
+**Was die zwölfte Runde mitnehmen sollte.** Zehn von zehn Runden haben eine Schicht gefunden, die
+die vorige nicht kannte. Runde 10 fügt zwei Sorten hinzu, die in 3c noch nicht vorkamen:
+
+1. **Ein Vertrag ist mehr als seine Feldnamen.** Wer zwei Seiten abgleicht, muss die Wertebereiche
+   mitnehmen — Länge, Zeichensatz, Eindeutigkeit, Einheit.
+2. **Ein Fixture, das die Grenze nicht erreicht, ist kein Test der Grenze.** `'r1'` gegen 32
+   Zeichen ist keine Prüfung, sondern eine Illustration.
+
+Beide Befunde sind repariert (`cable#673`, `cable#674`), nicht nur notiert. Die übrigen vier
+berichtigten Zeilen betreffen Belege und Zahlen, nicht das Urteil.
+
+---
 
 ### 3c. Neun Messrunden, neun Korrekturen (2026-09-03)
 
