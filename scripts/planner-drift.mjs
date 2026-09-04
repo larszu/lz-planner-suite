@@ -57,10 +57,14 @@ const APPS = ['cable-planner', 'multicam-planner', 'light-planner']
  * Verglichene Wurzeln je App. Anfangs war das nur `src`, was einen blinden
  * Fleck hatte: cable-planner haelt seine Tests in `tests/`, also blieben fuenf
  * fehlende Testdateien unsichtbar — darunter die Tests fuer den NetBox-Code.
- * `scripts/` bleibt bewusst draussen: Build-Skripte duerfen sich zwischen
- * Monorepo und Standalone unterscheiden.
+ * `scripts/` stand mit derselben Begruendung draussen -- "Build-Skripte duerfen
+ * sich zwischen Monorepo und Standalone unterscheiden". Nachgemessen
+ * (2026-09-04) stimmt das nicht: von **38** Dateien unter `apps/<app>/scripts`
+ * wich **eine einzige** ab, und die war ein echter, nicht uebernommener Fix
+ * (`light#56` erweitert `avplan-check.ts`). Die Ausnahme kostete also nichts
+ * ausser Blindheit. `scripts/` ist deshalb jetzt im Feld.
  */
-const ROOTS = ['src', 'tests']
+const ROOTS = ['src', 'tests', 'scripts']
 
 /**
  * Einzelne Dateien in der App-Wurzel, die genauso vendoriert sind wie der
@@ -134,6 +138,15 @@ const SUITE_OVERLAY = {
     'tests/i18n.test.ts', 'tests/pdfExport.test.ts',
   ],
 }
+
+/**
+ * Wie REPLACED_BY_PACKAGE, aber mit Wurzel-Praefix -- fuer Wurzeln ausserhalb
+ * von `src`. `scripts/inventory-contract-check.ts` friert upstream den
+ * Wire-Contract des portablen Lagers ein; in der Suite tut das
+ * `packages/inventory-core/test/contract.test.ts` (gleiche Zusicherung,
+ * gleicher INVENTORY_FORMAT_VERSION). Zurueckzukopieren waere ein Rueckschritt.
+ */
+REPLACED_BY_PACKAGE['light-planner'].push('scripts/inventory-contract-check.ts')
 
 const DEAD_UPSTREAM = {
   'light-planner': [
@@ -349,7 +362,23 @@ function uncarried(app, baseUpstreamSha) {
       .filter((l) => !isTrivialLine(l))
     if (!added.length) continue // reine Loeschung / Whitespace / nur Klammern
     const suiteBag = lineBag(suiteFile)
-    const missing = added.filter((l) => !suiteBag.has(l))
+    const nowBag = lineBagOf(now)
+    // ZAEHLEND vergleichen, nicht nur "kommt vor". Die erste Fassung fragte
+    // `suiteBag.has(l)` -- und uebersah damit die haeufigste Form eines
+    // nachgezogenen Fixes: das DUPLIZIEREN eines Blocks, den die Suite-Kopie
+    // an anderer Stelle schon einmal hat.
+    //
+    // Gemessen an `light#56`: der ADR-005-Fix kopiert drei Zeilen vom Datei-
+    // in den Geraete-Speicherpfad. Upstream stehen sie danach zweimal, in der
+    // Suite weiterhin einmal. `has()` sagte "vorhanden", also galt die
+    // Aenderung als teilweise getragen -- und `missing.length === added.length`
+    // war nie erfuellt. Der Bericht schwieg, waehrend der Datenverlust in der
+    // Suite-Kopie weiterbestand.
+    //
+    // Eine Zeile gilt als getragen, wenn die Suite MINDESTENS so viele Kopien
+    // hat wie upstream jetzt. Fuer alles, was vorher schon gemeldet wurde,
+    // aendert sich dadurch nichts (Suite 0 < upstream >=1 bleibt "fehlt").
+    const missing = added.filter((l) => (suiteBag.get(l) ?? 0) < (nowBag.get(l) ?? 0))
     if (missing.length === added.length) files.push({ file: f, addedLines: added.length })
   }
   return { files }
@@ -374,9 +403,19 @@ function analyseApp(app) {
     // Pfade tragen die Wurzel, damit src/x und tests/x unterscheidbar bleiben.
     const label = (f) => (root === 'src' ? f : `${root}/${f}`)
 
+    // Die Ausnahmelisten wurden fuer die Wurzel `src` geschrieben und tragen
+    // deshalb keinen Praefix. Mit mehreren Wurzeln waere ein nackter Name
+    // mehrdeutig (zwei Wurzeln koennen denselben Basisnamen haben), also
+    // akzeptieren wir beide Schreibweisen: alt ohne, neu mit Wurzel.
+    const istAusnahme = (menge, f) => menge.has(f) || menge.has(label(f))
+
     for (const f of upFiles) {
       if (!suiteFiles.has(f)) {
-        const kind = replaced.has(f) ? 'expected-overlay' : dead.has(f) ? 'dead-upstream' : 'only-upstream'
+        const kind = istAusnahme(replaced, f)
+          ? 'expected-overlay'
+          : istAusnahme(dead, f)
+            ? 'dead-upstream'
+            : 'only-upstream'
         findings.push({ file: label(f), kind })
         continue
       }
