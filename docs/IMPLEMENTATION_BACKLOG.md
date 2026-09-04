@@ -597,10 +597,47 @@ ist selbst ein Ergebnis.
   Blocker erklärt und ihn zu Inkrement 0 gemacht. Das Inkrement ist gebaut —
   der Zustand wird persistiert — aber **niemand konsumiert ihn**. Formal
   beseitigt, praktisch unverändert, und von keinem Test gedeckt.
+* **Nachtrag aus der Gegenrunde (2026-09-04):** Zwei unabhängige Prüfer haben
+  den Befund mit **ausgeführten** Proben gegen den echten Quelltext
+  nachgestellt und dabei drei Dinge gefunden, die die erste Messung nicht
+  hatte:
+  1. **Der Fehler ist nicht „erster Treffer gewinnt", sondern total.**
+     `feedingInput` (`labelDerivation.ts:188-189`) gibt für *jedes* Gerät mit
+     `DeviceKind` `null` zurück. Bei Kamera → Videohub → ATEM entsteht deshalb
+     **gar kein** ATEM-Link für die Kamera — nicht bloß ein späterer. Es gibt
+     nichts, wonach ein besserer `find()` suchen könnte.
+  2. **Das Ergebnis hängt an der Array-Reihenfolge, nicht am Plan.** Identischer
+     Plan, identische Kabel, nur `project.equipment` umsortiert:
+     `[cam, vh, atem]` → `input 7`, `[cam, atem, vh]` → `input 3`. Beide ohne
+     Befund. Das widerspricht der Zusage des Moduls über sich selbst
+     (`tallyMap.ts:205-212`: „Wer die Datei später neu erzeugt, trifft dieselben
+     Einträge wieder") — die exportierte Nummer ist eine Funktion des
+     Bearbeitungsverlaufs.
+  3. **Die `.avsourcemap` trägt denselben Defekt.** `sourceMap.ts:194` macht
+     exakt denselben ungeprüften Griff, `:208` schreibt dieselbe Router-Nummer.
+     Der Befund betrifft also **beide** Ausgabewege, nicht nur `tally.json`.
+  Dazu ein vierter Schadensweg, der vorher unbenannt war: `emitUmd`
+  (`labelDerivation.ts:288-295`) feuert nur bei `sink === 'atem'` und bekommt
+  dort den *Videohub* als Quelle. In Router-Plänen gibt es deshalb **null**
+  UMD-Kandidaten für Kameras, `labelTargetIssues` prüft keinen einzigen
+  Kamera-UMD-Text, und der offene Anker lautet wörtlich „Smart Videohub 20x20
+  speist ATEM Mini Extreme auf Eingang 1 — ohne gebundene Rolle gibt es keinen
+  Ort für die UMD-Adresse". Die App fordert den Nutzer also auf, **dem Router**
+  eine Rolle und eine UMD-Adresse zu geben. Das ist keine Nichtaussage, das ist
+  eine falsche Anweisung, die vom Fehler wegführt.
+* **Warum das die Priorität hebt:** `tallyMap.ts:13-21` schreibt selbst auf,
+  warum eine erfundene Nummer schlimmer ist als ein fehlendes Feld — „sie sieht
+  aus wie eine Zusage und schaltet die falsche Lampe". Genau das tut das Modul
+  heute in jedem Plan mit einem Router im Weg. Es ist Kategorie (c) — der Code
+  tut nicht, was er verspricht — und nicht bloß (b).
 * **DoD:** `buildGraphContext` bekommt den Routing-Zustand; `feedingInput`
   geht durch einen Router hindurch, wenn ein Kreuzpunkt gesetzt ist; ein Test
   über die Kette Kamera → Videohub → ATEM belegt Quelle **und**
-  ATEM-Eingangsnummer.
+  ATEM-Eingangsnummer. **Und, unabhängig davon, ob der Kreuzpunkt bekannt ist:**
+  wo die Kette nicht bis zum Tally-Mischer aufgelöst werden kann, gibt es
+  **keine Zahl** und stattdessen einen Befund — in `tally.json` *und* in der
+  `.avsourcemap`. Die Auswahl wird deterministisch (kein `find()` über die
+  Geräte-Reihenfolge).
 * **Aufwand:** mittel
 
 ### B-28 · Die Rolle besitzt die Mischer- und Router-Labels nicht
@@ -616,6 +653,36 @@ ist selbst ein Ergebnis.
   an der Rolle. Die Bedarfs-Datenbank nennt das achtmal aus acht Berufen
   (P1 #5, #9): „Stop typing camera identity into six to eight systems."
 * **Aufwand:** mittel
+
+### B-29 · Mobile- und Viewer-Ansicht umgehen die Port-Label-Engstelle
+
+* **Status:** offen
+* **Befund (gemessen 2026-09-04, Gegenrunde):** `cable#6xx` hat die
+  Port-Beschriftung auf **eine** Stelle zusammengezogen (`lib/portLabel.ts`) und
+  einen Guard dazugestellt, der verhindert, dass jemand die Kette nachbaut. Der
+  Guard globt `../src/renderer/**/*.{ts,tsx}`
+  (`tests/portLabelAdoption.test.ts:236`) — `src/mobile/` und `src/viewer/`
+  liegen außerhalb.
+* **Wirkung:** `MobileApp.tsx:785` rendert `{p.name}` roh, `:810`
+  `{otherPort.name}` roh; `grep` nach `portDisplayLabel|resolvePortLabel|
+  portLabelPair` über `src/mobile` und `src/viewer` findet **null** Treffer. Die
+  LAN-Ansicht am Telefon zeigt damit `1 SDI 3G PGM (1080p50/60)`, wo Canvas,
+  Patchliste, Geräte-PDF und jeder Export `PGM` zeigen.
+* **Warum ausgerechnet dort:** Das ist die Oberfläche des Technikers **während
+  des Aufbaus** — die einzige, die jemand mit einem Stecker in der Hand ansieht.
+  Von allen Stellen, an denen die Beschriftung abweichen darf, ist das die
+  teuerste.
+* **Warum der Guard es nicht finden kann:** Er sucht mit
+  `/contentLabel[^)\n]{0,40}\|\|/` eine *nachgebaute* Kette. `mobile` baut
+  nichts nach — es ignoriert `contentLabel` schlicht. Der Guard belegt „keine
+  zweite Kopie der Kette", nicht „jede Oberfläche geht durch die Engstelle".
+  Das ist derselbe Fehler wie bei `i18n:check`, der nur eine der beiden
+  Wörterbuch-Formen las: eine Prüfung, deren Erfassungsbereich enger ist als
+  ihre Zusage.
+* **DoD:** `src/mobile` und `src/viewer` gehen durch `portDisplayLabel`; der
+  Guard-Glob deckt `../src/**/*.{ts,tsx}` statt nur `renderer`; ein zweiter
+  Guard belegt positiv, dass keine Oberfläche `port.name` roh rendert.
+* **Aufwand:** klein
 
 ---
 
@@ -762,3 +829,7 @@ gehalten, nicht als Versäumnis:
 | `i18n:check` meldet ungewickelte Komponenten (B-13) | `light#61` |
 | Tests + CI für `tally-pi` (B-12) | `tally-pi#7` |
 | Erste CI + Tests für `pi-media-station` (B-12) | `pi-media-station#3` |
+| Tally-Id-Vertrag: jede echte `tally.json` wurde abgelehnt | `cable#674` |
+| Zehnte Messrunde: 6 von 12 Zeilen widerlegt | `suite#75` |
+| MIT-Lizenz auf proprietär gestelltem Code (3 Apps) | `suite#76` |
+| Flacher CI-Checkout machte die Rückweg-Prüfung wirkungslos | `suite#76` |

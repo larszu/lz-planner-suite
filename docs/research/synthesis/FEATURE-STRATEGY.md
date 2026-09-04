@@ -324,6 +324,63 @@ berichtigten Zeilen betreffen Belege und Zahlen, nicht das Urteil.
 
 ---
 
+### 3e. Die Gegenrunde zu Runde 10 (2026-09-04)
+
+`suite#75` hat offen stehen lassen, dass die adversariale Gegenprobe — jede der zwölf
+Feststellungen von einem **zweiten** Prüfer widerlegen lassen — in ein Session-Limit gelaufen
+und nicht durch war. Sie ist jetzt teilweise durch, und das Ergebnis gehört hierher, auch weil
+es unvollständig ist.
+
+**Was tatsächlich lief: 3 von 12.** Neun Prüfer sind erneut am Limit gescheitert. Die drei, die
+durchkamen, deckten die Zeilen 0 (Fork konsolidieren), 1 (Identitäts-Spine) und 2 (Tally-Map)
+ab — also die drei, an denen Runde 10 die schwersten Korrekturen vorgenommen hatte.
+
+**Alle drei kamen mit `haelt_stand: false` zurück. Keiner davon hat die Stufe verschoben.** Alle
+drei bestätigten „teilweise" und widerlegten stattdessen **Belege** der Feststellung. Das ist ein
+anderes Ergebnis, als der Aufbau erwartet hatte, und ein aussagekräftigeres: Nach zehn Runden
+stimmen die *Urteile*; was weiter wandert, ist die Begründung darunter.
+
+Drei Befunde wiegen schwer genug, um Code zu ändern:
+
+1. **`apps/cable-planner/LICENSE` trug MIT auf proprietär gestelltem Code.** Upstream stellte
+   cable-planner am 2026-08-29 um (`bc4e083`, 104 Zeilen). Die vendorte Kopie stammte unverändert
+   aus dem Erst-Import vom 2026-07-10 und sagte weiter „MIT License". `multicam-planner` und
+   `light-planner` hatten in der Suite überhaupt keine Lizenzdatei. Der Drift-Guard meldete die
+   ganze Zeit „Drift unverändert" — `LICENSE` stand weder in seinen `ROOTS` noch in `ROOT_FILES`.
+   Das ist **wörtlich** der Fehlermodus, gegen den `ROOT_FILES` eingeführt worden war (Kommentar
+   dort: „Ein Drift-Bericht, der 'OK' sagt, während die Arbeitsanweisung veraltet ist, ist
+   schlimmer als keiner"), nur mit Rechtsfolge statt mit Prozessfolge. **Die Lehre war auf genau
+   die eine Datei angewandt worden, die sie ausgelöst hatte, und auf keine zweite.**
+
+2. **Die Rückweg-Prüfung des Drift-Guards ist in CI strukturell wirkungslos.** Die drei
+   Upstream-Checkouts in `ci.yml` setzen kein `fetch-depth`, `actions/checkout@v4` klont also mit
+   Tiefe 1. Der Baseline-Sha existiert in einem flachen Klon nicht, das Skript meldet ehrlich
+   „Stand nicht bekannt" — und zwar genau im einzigen Fall, für den es die Prüfung gibt
+   (bewegter Upstream). Bei unbewegtem Upstream ist der Vergleich per Konstruktion leer. **Es gab
+   keinen Weltzustand, in dem sie in CI etwas findet.** Der Prüfer hat es mit einem echten
+   `git clone --depth 1` nachgestellt und im CI-Log des zitierten Laufs bestätigt, dass keine
+   einzige `?`-, `!`- oder `=`-Zeile vorkam. **Das Schweigen dort war Vakuum, kein Freispruch.**
+
+3. **Der Router-Defekt (B-27) ist schwerer als gemessen.** Zwei Prüfer haben ihn unabhängig mit
+   ausgeführten Proben nachgestellt: Er ist nicht „erster Treffer gewinnt", sondern total
+   (`feedingInput` bricht an *jedem* Router ab, es gibt gar keinen ATEM-Link); das Ergebnis hängt
+   an der Reihenfolge des `equipment`-Arrays statt am Plan; und die `.avsourcemap` trägt denselben
+   Defekt wie `tally.json`. Details in B-27.
+
+**Was die Gegenrunde als Methode lehrt.** Sie hat keine einzige Stufe bewegt und trotzdem drei
+Reparaturen ausgelöst. Der Ertrag lag nicht im Urteil, sondern in den Belegen — und zwar
+ausgerechnet in denen, die die erste Runde als **stark** markiert hatte. Zeile 0 führte den
+CI-Job als Erreichbarkeitsnachweis; er ist erreichbar und tut nichts. Zeile 1 führte einen Guard
+„ohne Ausnahmeliste über alle Renderer-Quellen"; der Glob endet vor `src/mobile` (B-29). **Ein
+Beleg, der als besonders tragfähig notiert wurde, ist der, den niemand mehr nachprüft** — das ist
+die elfte Sorte Fehler, und sie unterscheidet sich von allen zehn davor.
+
+Offen bleibt: neun der zwölf Gegenproben sind nicht gelaufen. Zeilen 3, 4, 5, 6, 7, 8, 9, 10 und
+11 stehen weiter einfach geprüft da, nicht doppelt. Nach drei von drei mit `false` wäre die
+Annahme, die übrigen neun hielten, die einzige, die nicht zu den Belegen passt.
+
+---
+
 ### 3c. Neun Messrunden, neun Korrekturen (2026-09-03)
 
 Abschnitt 25 verlangt Neu-Ableitung statt Flickwerk. Der Tag hat gezeigt, warum die Regel nicht

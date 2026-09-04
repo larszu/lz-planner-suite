@@ -79,11 +79,30 @@ const ROOTS = ['src', 'tests', 'scripts']
  * "OK" sagt, waehrend die Arbeitsanweisung veraltet ist, ist schlimmer als
  * keiner: er behauptet eine Deckung, die es nicht gibt.
  *
- * `scripts/` bleibt weiterhin draussen (Build-Skripte duerfen sich
- * unterscheiden), package.json ebenso -- Monorepo und Standalone haben
- * zwangslaeufig verschiedene Abhaengigkeiten und Skripte.
+ * package.json bleibt draussen -- Monorepo und Standalone haben
+ * zwangslaeufig verschiedene Abhaengigkeiten und Skripte. (Dieser Absatz
+ * nannte bis 2026-09-04 auch `scripts/` als draussen, waehrend ROOTS es
+ * seit demselben Tag enthaelt. Ein Kommentar, der den Erfassungsbereich
+ * falsch beschreibt, ist genau die Sorte Beleg, mit der spaeter jemand
+ * eine Luecke begruendet, die es nicht gibt.)
+ *
+ * LICENSE kam am 2026-09-04 dazu, und zwar aus einem Befund, der schwerer
+ * wiegt als die CLAUDE.md-Luecke, aus der diese Liste entstand:
+ * `apps/cable-planner/LICENSE` trug seit dem Erst-Import (5e9566a,
+ * 2026-07-10) eine MIT-Lizenz. Upstream stellte cable-planner am
+ * 2026-08-29 auf eine proprietaere Lizenz um (bc4e083); die vendorte
+ * Kopie blieb MIT. `apps/multicam-planner/LICENSE` und
+ * `apps/light-planner/LICENSE` fehlten ganz, obwohl upstream beide 104
+ * Zeilen fuehren. Der Guard meldete waehrenddessen "Drift unveraendert".
+ *
+ * Das ist derselbe Fehlermodus wie bei CLAUDE.md, nur mit Rechtsfolge: Wer
+ * `apps/cable-planner/` ansieht, findet die naechstliegende Lizenzdatei und
+ * liest daraus eine Erlaubnis, die der Eigentuemer sechs Tage zuvor
+ * zurueckgenommen hatte. Die Lehre aus der CLAUDE.md-Luecke war auf genau
+ * eine Datei angewandt worden statt auf die Frage, welche Wurzeldateien
+ * sonst noch etwas BEHAUPTEN.
  */
-const ROOT_FILES = ['CLAUDE.md']
+const ROOT_FILES = ['CLAUDE.md', 'LICENSE']
 
 /** Was git bei `changedSince` als Pfadfilter sieht: Wurzeln plus Einzeldateien. */
 const TRACKED = [...ROOTS, ...ROOT_FILES]

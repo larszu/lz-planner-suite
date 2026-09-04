@@ -58,6 +58,11 @@ jobs:
       - name: Keine nativen Browser-Dialoge
         run: npm run dialogs:native
 
+      # Braucht keinen Upstream-Checkout und laeuft deshalb hier statt im
+      # Drift-Job: der ueberspringt sich, wenn die Nachbar-Repos fehlen.
+      - name: Vendorte Apps tragen die Lizenz der Suite
+        run: npm run licence:check
+
   # ---------------------------------------------------------------------------
   # Drift-Guard fuer die vendorten Planer-Kopien unter apps/.
   #
@@ -85,6 +90,15 @@ jobs:
         with:
           repository: larszu/cable-planner
           path: upstream/cable-planner
+          # Volle Historie, nicht der Default depth:1. Die zweite Frage des
+          # Guards ("was hat sich upstream seit der Baseline getan, das die
+          # Suite nicht uebernommen hat") loest den Baseline-Sha im
+          # Upstream-Klon auf. Im flachen Klon existiert dieser Commit nicht,
+          # planner-drift.mjs meldet dann ehrlich "Stand nicht bekannt" — und
+          # zwar in genau dem Fall, fuer den es die Pruefung gibt: bewegtem
+          # Upstream. Ohne diese Zeile hat sie in CI keinen Weltzustand, in
+          # dem sie etwas findet (nachgemessen 2026-09-04).
+          fetch-depth: 0
 
       - name: Checkout multicam-planner
         uses: actions/checkout@v4
@@ -92,6 +106,15 @@ jobs:
         with:
           repository: larszu/multicam-planner
           path: upstream/multicam-planner
+          # Volle Historie, nicht der Default depth:1. Die zweite Frage des
+          # Guards ("was hat sich upstream seit der Baseline getan, das die
+          # Suite nicht uebernommen hat") loest den Baseline-Sha im
+          # Upstream-Klon auf. Im flachen Klon existiert dieser Commit nicht,
+          # planner-drift.mjs meldet dann ehrlich "Stand nicht bekannt" — und
+          # zwar in genau dem Fall, fuer den es die Pruefung gibt: bewegtem
+          # Upstream. Ohne diese Zeile hat sie in CI keinen Weltzustand, in
+          # dem sie etwas findet (nachgemessen 2026-09-04).
+          fetch-depth: 0
 
       - name: Checkout light-planner
         uses: actions/checkout@v4
@@ -99,6 +122,15 @@ jobs:
         with:
           repository: larszu/light-planner
           path: upstream/light-planner
+          # Volle Historie, nicht der Default depth:1. Die zweite Frage des
+          # Guards ("was hat sich upstream seit der Baseline getan, das die
+          # Suite nicht uebernommen hat") loest den Baseline-Sha im
+          # Upstream-Klon auf. Im flachen Klon existiert dieser Commit nicht,
+          # planner-drift.mjs meldet dann ehrlich "Stand nicht bekannt" — und
+          # zwar in genau dem Fall, fuer den es die Pruefung gibt: bewegtem
+          # Upstream. Ohne diese Zeile hat sie in CI keinen Weltzustand, in
+          # dem sie etwas findet (nachgemessen 2026-09-04).
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4

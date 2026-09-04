@@ -24,6 +24,7 @@
     "drift": "node scripts/planner-drift.mjs --upstream ..",
     "drift:check": "node scripts/planner-drift.mjs --upstream .. --check",
     "features:reachable": "node scripts/reachable-features.mjs",
-    "dialogs:native": "node scripts/native-dialogs.mjs"
+    "dialogs:native": "node scripts/native-dialogs.mjs",
+    "licence:check": "node scripts/licence-consistency.mjs"
   }
 }
