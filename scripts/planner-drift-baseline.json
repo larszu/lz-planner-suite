@@ -5,12 +5,12 @@
     "two-way": 7,
     "upstream-ahead": 0,
     "suite-ahead": 9,
-    "expected-overlay": 23,
+    "expected-overlay": 25,
     "dead-upstream": 0,
     "drift": 16,
-    "total": 39,
+    "total": 41,
     "missingUpstream": false,
-    "upstreamSha": "0f901d7c1590"
+    "upstreamSha": "da0339103ad7"
   },
   "multicam-planner": {
     "only-upstream": 0,
@@ -36,6 +36,6 @@
     "drift": 18,
     "total": 35,
     "missingUpstream": false,
-    "upstreamSha": "f66b838ad61e"
+    "upstreamSha": "88ea1e106df2"
   }
 }

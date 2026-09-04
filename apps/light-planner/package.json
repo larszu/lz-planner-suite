@@ -21,7 +21,8 @@
     "avplan:check": "node --experimental-strip-types scripts/avplan-check.ts",
     "mvr:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/mvr-check.ts",
     "identity:check": "node --experimental-strip-types scripts/project-identity-check.ts",
-    "i18n:check": "node --experimental-strip-types scripts/i18n-reachable-check.ts"
+    "i18n:check": "node --experimental-strip-types scripts/i18n-reachable-check.ts",
+    "ci:complete": "node --experimental-strip-types scripts/ci-runs-every-check.ts"
   },
   "dependencies": {
     "@avplan/inventory-core": "*",
