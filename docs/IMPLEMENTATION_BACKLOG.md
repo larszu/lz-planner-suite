@@ -556,7 +556,7 @@ ist selbst ein Ergebnis.
 
 ### B-25 · `multicam-planner` upstream hat gar keine i18n
 
-* **Status:** offen
+* **Status:** offen (Entscheidung beim Eigentümer, siehe **E-20**)
 * **Befund (gemessen 2026-09-04):** Upstream ist die Oberfläche fest deutsch —
   `grep` findet in `src/` **keinen einzigen** `useTranslation`-Aufruf und kein
   `i18n`-Verzeichnis. Die **Suite-Kopie** dagegen ist zweisprachig aufgebaut
@@ -569,6 +569,18 @@ ist selbst ein Ergebnis.
   falschen Richtung. Die Kopien sind an diesen Dateien allerdings weit
   auseinander (`Sidebar.tsx` 129/104 Zeilen zweiseitig), ein Rückweg ist
   deshalb kein Kopieren.
+* **Nachgemessen 2026-09-04, und dabei fiel die eigentliche Frage auf:** Die
+  Suite-Kopie ist in **14 Dateien** gewickelt und trägt **482** deutsche
+  Override-Schlüssel — aber mit **Englisch als Quellsprache**
+  (`t('ns.key', 'English source')`, deutsches Override-Dict). `cable-planner`
+  und `light-planner` machen es genau andersherum: **Deutsch ist Quellsprache**,
+  Englisch das Override. Ein Rückweg „so wie es ist" trüge also die umgekehrte
+  Konvention in ein Repo, dessen zwei Geschwister die andere benutzen — und das
+  ist keine Formfrage: Quellsprache ist der Text, der im JSX steht und bei
+  fehlendem Schlüssel erscheint. Die Richtung später zu drehen heißt, ~500
+  Zeichenketten erneut anzufassen.
+* **Deshalb nicht geraten:** siehe E-20. Ohne diese Entscheidung wäre jede
+  Richtung eine halbe Tageslast, die man im Zweifel wegwirft.
 * **Aufwand:** groß
 
 ### B-26 · `sony-camera-bridge`: eine Oberfläche, zwei Sprachen
@@ -880,7 +892,27 @@ ist selbst ein Ergebnis.
 
 ### B-13 · `light-planner`: Sprachschalter ist upstream nicht erreichbar
 
-* **Status:** offen
+* **Status:** **erledigt 2026-09-04** (`light#61`, `#62`, `#63`, `#66`, `#67`)
+  — die dreistufige Reihenfolge ist zu Ende gegangen: erst wickeln, dann
+  übersetzen, dann der Schalter.
+
+  | | vor der Runde | jetzt |
+  | --- | --- | --- |
+  | gerenderte Komponenten ganz ohne `t()` | 10 (~365 Textstellen) | **0** |
+  | erreichbare Schlüssel mit englischer Fassung | 42 | **670** |
+  | Sprachschalter erreichbar | nein | **ja** (Topbar-Menü) |
+
+  Der Schalter war das kleinste Stück und musste das letzte sein: vorher
+  freigelegt hätte er eine zu ~85 % deutsche Oberfläche auf Englisch gestellt,
+  und ein Nutzer hätte die Funktion zu Recht für kaputt gehalten.
+  **Ein Guard hält den Zustand fest** (`i18n-reachable-check.ts`, Abschnitt 3):
+  geprüft wird nicht, ob `setLanguage` existiert — das war nie das Problem —,
+  sondern ob es aus einer *gerenderten* Datei aufgerufen wird. Gegengeprobt in
+  beide Richtungen.
+  **Nicht erledigt und ausdrücklich offen:** `MenuBar.tsx` / `Toolbar.tsx`,
+  36 übersetzte Aufrufe in Dateien, die niemand rendert. Verdrahten oder
+  löschen ist eine Eigentümer-Entscheidung (verwandt mit E-16).
+* **Vorher:** offen
 * **Befund:** Die i18n-Infrastruktur existiert, aber `setLanguage` wird nur in
   `src/components/MenuBar.tsx:77` aufgerufen — und **diese Datei importiert
   niemand**; `App.tsx` rendert `TopBar` + `ToolRail`. Das Drift-Skript der Suite
@@ -986,6 +1018,7 @@ gehalten, nicht als Versäumnis:
 | E-16 | Werden `PrintDialog` und `TitleBlock` **verdrahtet** oder **gelöscht**? | B-24 — 21 KB Code und 48 übersetzte Zeichenketten, deren Funktion es woanders schon gibt |
 | E-17 | Welche Sprache ist die Quellsprache von `sony-camera-bridge`? | B-26 — davon hängt ab, ob 32 Stellen übersetzt oder 140 umgeschrieben werden |
 | E-18 | Besetzt die Suite die **Zeitachse** — Ablauf/Rundown als Datenobjekt? | B-34 — fünf der zwölf P1-Bedarfe ohne Initiative hängen daran, und die Bedarfs-Datenbank nennt es selbst „the largest gap for AV Planner Suite specifically". Ein Ja ist ein neues Kern-Datenmodell quer durch alle Planer, ein Nein muss in der Feature-Matrix als WON'T stehen statt zu fehlen |
+| E-20 | Welche Sprache ist die **Quellsprache** von `multicam-planner`? | B-25 — die Suite-Kopie nutzt Englisch als Quelle mit deutschem Override (482 Schlüssel, 14 Dateien), `cable-planner` und `light-planner` umgekehrt. Der Rückweg upstream legt die Konvention fest; sie später zu drehen heißt, ~500 Zeichenketten erneut anzufassen. Verwandt mit E-17 (dieselbe Frage für `sony-camera-bridge`) |
 | E-19 | Sind die vier Runtime-Repos Teil der **Suite** oder bewusst eigenständig? | B-35 — die Matrix führt drei davon als `YES`, die Modul-Registry der Shell kennt sie nicht. Verdrahten oder ausweisen; stillschweigend beides ist der heutige Zustand |
 
 ---
@@ -1054,3 +1087,4 @@ gehalten, nicht als Versäumnis:
 | `powerWatts`/`weightKg`-Typ-Doku nannte erfundene Konsumenten (B-15, Doku-Teil) | `cable#681` |
 | Rolle besitzt Mischer-/Router-Labels (B-28) | `cable#682` |
 | Topbar/Statusleiste/Bibliothek/Versionen gewickelt (B-13) | `light#66` |
+| Gerenderte Oberfläche vollständig gewickelt + Sprachschalter (B-13) | `light#67` |
