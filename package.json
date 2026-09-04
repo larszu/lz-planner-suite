@@ -26,6 +26,7 @@
     "drift:report": "node scripts/planner-drift.mjs --upstream .. --report docs/research/repos/DRIFT-REPORT.md",
     "features:reachable": "node scripts/reachable-features.mjs",
     "dialogs:native": "node scripts/native-dialogs.mjs",
-    "licence:check": "node scripts/licence-consistency.mjs"
+    "licence:check": "node scripts/licence-consistency.mjs",
+    "docs:reachable": "node scripts/docs-reachable.mjs"
   }
 }

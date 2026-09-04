@@ -1019,6 +1019,42 @@ ist selbst ein Ergebnis.
 
 ---
 
+### B-38 · 67 von 67 Dokumenten waren unauffindbar — erledigt
+
+* **Status:** ~~offen~~ **erledigt 2026-09-04** (`suite`, `cable#689`).
+* **Befund:** Von 67 Dokumenten unter `docs/` war **keines** von einer
+  Einstiegsseite aus verlinkt — weder `IMPLEMENTATION_STATUS.md` noch
+  `IMPLEMENTATION_BACKLOG.md`, also die beiden Dokumente, auf denen die gesamte
+  laufende Arbeit steht, noch die fünf ADRs, noch der Recherchekorpus. In
+  `cable-planner` waren es zwölf von dreizehn, darunter
+  `docs/self-hosted-relay.md` — ausgerechnet die Seite, die jemand sucht, wenn
+  die Zusammenarbeit über Mobilfunk nicht zustande kommt.
+* **Warum das kein Kosmetikpunkt ist:** Es ist dieselbe Form wie B-13 (der
+  Sprachschalter, der existierte, aber in einer nie gerenderten Datei lag): die
+  Sache ist da, sie ist sorgfältig gemacht, und sie liegt außerhalb des Weges,
+  der zu ihr führt. Bei einem Recherchekorpus, der Produktentscheidungen tragen
+  soll, heißt das: unauffindbare Evidenz wird nicht gelesen, und die
+  Entscheidung fällt ohne sie. Der Rechercheteil hatte mit
+  `research/README.md` sogar ein sehr gutes eigenes Inhaltsverzeichnis — es
+  verlinkte nur niemand.
+* **Was gebaut wurde:** `docs/README.md` in beiden Repos als Einstieg, vom
+  jeweiligen README aus verlinkt, plus vier Messungen unter
+  `research/synthesis/`, die im Korpus-Index fehlten. Der Guard
+  (`npm run docs:reachable`, in CI) prüft **nicht** „steht jedes Dokument im
+  Index" — dann wäre der Index selbst die Liste, die veraltet — sondern läuft
+  den Link-Graphen von den Einstiegsseiten ab. Ein Verzeichnis-Link erschließt
+  die Dokumente darin, damit `research/README.md` seine 40 Einzeldossiers nicht
+  einzeln aufzählen muss. Tote Links fallen mit auf: sie machen ein Dokument
+  genauso unerreichbar wie gar kein Link, sehen im Index aber nach
+  Vollständigkeit aus.
+* **Was der Guard im ersten Lauf fand:** in `cable-planner` einen toten Link in
+  `CONTRIBUTING.md` auf ein `CODE_OF_CONDUCT.md`, das es nicht gab, obwohl der
+  Satz daneben „this project ships a Code of Conduct" lautete. Nachgeliefert.
+* **Offen bleibt:** `multicam-planner` (2 Dokumente) und `Broadcast-intercom`
+  (3 Dokumente, hat bereits einen `docs/README.md`, der nur nicht verlinkt ist).
+
+---
+
 ## Nicht zu entscheiden ohne den Eigentümer
 
 Diese Punkte sind **bewusst offen** und werden nicht nebenbei entschieden. Sie
@@ -1091,6 +1127,7 @@ gehalten, nicht als Versäumnis:
 | Vier Dokumente mit vier verschiedenen Drift-Ständen | `suite` (dieser PR) |
 | ADR-002: 444 statt gemessener 412 Katalog-Einträge | `suite` (dieser PR) |
 | `tally-pi`/`pi-media-station` galten als test- und CI-los (55/21 Tests) | `suite` (dieser PR) |
+| Doku-Auffindbarkeit: 67 von 67 Dokumenten verwaist (B-38) | `suite` (dieser PR) |
 | Erste CI + Tests für `pi-media-station` (B-12) | `pi-media-station#3` |
 | Tally-Id-Vertrag: jede echte `tally.json` wurde abgelehnt | `cable#674` |
 | Zehnte Messrunde: 6 von 12 Zeilen widerlegt | `suite#75` |

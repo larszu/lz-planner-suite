@@ -17,6 +17,20 @@ verified.
 | [`synthesis/FEATURE-MATRIX.md`](synthesis/FEATURE-MATRIX.md) | Capability comparison, with nine deliberate "won't build" decisions. |
 | [`synthesis/FEATURE-STRATEGY.md`](synthesis/FEATURE-STRATEGY.md) | The derived roadmap, prioritised, with the cross-module automation chain. |
 
+## Measurements behind open design questions
+
+These sit under `synthesis/` because they are evidence, not decisions. Each one measures
+something an open question depends on and deliberately stops short of deciding it — the
+decision belongs to the owner (`IMPLEMENTATION_BACKLOG.md`, section "Nicht zu entscheiden
+ohne den Eigentümer").
+
+| Document | What it measures |
+| --- | --- |
+| [`synthesis/CREDENTIALS-IN-TEMPLATES.md`](synthesis/CREDENTIALS-IN-TEMPLATES.md) | Credentials that travel inside library templates — the measurement behind design question 5. |
+| [`synthesis/TEMPLATE-FIELD-MEASUREMENT.md`](synthesis/TEMPLATE-FIELD-MEASUREMENT.md) | Which template fields are model properties and which are instance state — design question 2. |
+| [`synthesis/INITIATIVE-5-SCOPING.md`](synthesis/INITIATIVE-5-SCOPING.md) | What the change-impact view actually needs for increment 2. |
+| [`synthesis/INITIATIVE-11-SCOPING.md`](synthesis/INITIATIVE-11-SCOPING.md) | Device capability registry: scouting that changed what the initiative *is*, recorded so nobody plans against the original description. |
+
 ## Evidence
 
 | Directory | Contents |

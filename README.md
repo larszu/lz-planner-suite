@@ -172,6 +172,23 @@ The individual planners keep their own desktop builds (`npm run dist` in each ap
 
 ---
 
+## 📚 Documentation
+
+- [**`docs/README.md`**](docs/README.md) — index of everything under `docs/`:
+  implementation status and backlog, the five ADRs, and the market/user research
+  corpus.
+- [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) — what
+  actually runs across the eight repos, evidenced by execution rather than plans.
+- [`docs/research/README.md`](docs/research/README.md) — ~21,000 lines of market
+  and user research across 16 segments, 11 professions and 8 repositories.
+  Start at [`METHOD.md`](docs/research/METHOD.md).
+
+`npm run docs:reachable` fails the build if a document under `docs/` is not
+reachable by links from an entry page — every one of them was orphaned until
+2026-09-04.
+
+---
+
 ## 📝 Notes
 
 - Nested `apps/*/.github/workflows/` are **inert** in the monorepo — GitHub only runs workflows

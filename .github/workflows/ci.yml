@@ -63,6 +63,13 @@ jobs:
       - name: Vendorte Apps tragen die Lizenz der Suite
         run: npm run licence:check
 
+      # Am 2026-09-04 war KEINES der 67 Dokumente unter docs/ von einer
+      # Einstiegsseite aus verlinkt -- auch nicht IMPLEMENTATION_STATUS und
+      # IMPLEMENTATION_BACKLOG. Ein Dokument, das nur findet, wer den Ordner
+      # durchblaettert, ist praktisch nicht vorhanden.
+      - name: Dokumentation ist auffindbar
+        run: npm run docs:reachable
+
   # ---------------------------------------------------------------------------
   # Drift-Guard fuer die vendorten Planer-Kopien unter apps/.
   #
