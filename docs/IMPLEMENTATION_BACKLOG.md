@@ -686,7 +686,7 @@ ist selbst ein Ergebnis.
 
 ### B-30 · Serialisierte Einheiten zählen für die Lagerdeckung nicht
 
-* **Status:** offen
+* **Status:** erledigt (`cable#677`)
 * **Befund (2026-09-04, Gegenrunde):** `buildPlanBom(equipment, items, nodes)`
   und `resolveCoverage(equipment, items)` nehmen `units` **gar nicht entgegen**.
   `types/inventory.ts:185` kennt `UnitCondition = 'ok' | 'defect' | 'inRepair' |
@@ -703,9 +703,9 @@ ist selbst ein Ergebnis.
   belegt, dass sie nicht als Bestand zählen.
 * **Aufwand:** mittel
 
-### B-31 · Ein Rack mit zwölf Geräten ist eine Zeile mit Menge 1
+### B-31 · Bedarf, der außerhalb von `project.equipment` liegt
 
-* **Status:** offen
+* **Status:** Rack-Hälfte erledigt (`cable#677`); `drumKit`/`wirelessRig` offen
 * **Befund (2026-09-04, Gegenrunde):** `groupPresetSpawnSlice.ts:197-236` legt
   für ein eingefügtes Rack **genau ein** `EquipmentItem` an (Kategorie `Rack`,
   ohne `deviceTypeId`); die enthaltenen Geräte leben nur im
@@ -722,14 +722,28 @@ ist selbst ein Ergebnis.
   Katalog-GUID; die Drum-Mikrofonierung hat stattdessen ihre **eigene, zweite**
   Materialliste (`lib/drumMicing.ts:198-229`, nur Zwischenablage, kein CSV,
   kein Lagerabgleich).
-* **DoD:** `deriveDemand` sieht Rack-Inhalte, `drumKit` und `wirelessRig`; die
-  zweite Materialliste in `drumMicing.ts` geht durch dieselbe Projektion oder
-  verschwindet.
+* **Was `cable#677` geschlossen hat:** `deriveDemand` sieht die Rack-Inhalte, in
+  einer zweiten Phase gegen die vorhandenen Zeilen (sonst hinge das Ergebnis an
+  der Array-Reihenfolge). Rack-Inhalte sind **Vorschläge**, weil der Snapshot
+  nur einen Namen trägt, und die Zeile nennt das Rack, aus dem sie stammt.
+* **Was offen bleibt — und warum es eine eigene Änderung ist:** `drumKit.mics`
+  und `wirelessRig.channels` tragen **echte Katalog-GUIDs**, ließen sich also
+  als *Tatsachen* zuordnen statt als Vorschläge. Das ist die bessere Lage als
+  beim Rack, verlangt aber eine neue Bedarfsquelle in `deriveDemand` und eine
+  Entscheidung, wie Positionen ohne Katalog-Typ erscheinen: `deriveDrumBom`
+  leitet zusätzlich **Stative, Kessel-Clamps und XLR-Kabel** ab
+  (`drumMicing.ts:198-222`), und die gibt es im Gerätekatalog nicht. Sie
+  einfach wegzulassen wäre derselbe stille Unterlauf noch einmal.
+* **DoD:** `deriveDemand` bekommt `drumKit` und `wirelessRig` als eigene
+  Bedarfsquellen; die abgeleiteten Verbrauchsmaterialien erscheinen als eigene,
+  als solche erkennbare Zeilen; `deriveDrumBom`/`drumBomToText` gehen durch
+  dieselbe Projektion oder verschwinden — heute sind sie eine zweite
+  Materialliste, die nur in die Zwischenablage geht und das Lager nie sieht.
 * **Aufwand:** mittel
 
 ### B-32 · Der Übergabe-Stempel deckt nur die halbe Seite
 
-* **Status:** offen
+* **Status:** erledigt (`cable#677`)
 * **Befund (2026-09-04, Gegenrunde, von zwei Prüfern unabhängig):** Der
   Fingerabdruck läuft über `handoverTable` = `assetRegisterTable` ∪
   `cableBomTable` (`handoverPackage.ts:38-44`). Gedruckt wird mehr: der
@@ -752,7 +766,7 @@ ist selbst ein Ergebnis.
 
 ### B-33 · Der Beleg für geratene Ports lässt sich durch eine Umsortierung löschen
 
-* **Status:** offen
+* **Status:** erledigt (`cable#677`)
 * **Befund (2026-09-04, Gegenrunde):** `PortsSection.tsx:33-47` (`applyPorts`)
   löscht bei **jeder** Port-Änderung `specSource.inputs` **und**
   `specSource.outputs`. Auslöser ist jede `PortList`-Änderung — ein Zeichen im
@@ -973,3 +987,8 @@ gehalten, nicht als Versäumnis:
 | Plan-PDF stand in keinem Dokument-Register | `cable#676` |
 | Netz-Budget zählte Link-Kapazität als Last | `cable#676` |
 | Zwei WON'T-Zeilen widersprachen ausgeliefertem Code | `suite#77` |
+| Vendoring cable#673-#676, vom Guard angeleitet | `suite#78` |
+| Übergabe-Stempel deckte nur die halbe Seite (B-32) | `cable#677` |
+| Umsortierung löschte den Port-Herkunftsbeleg (B-33) | `cable#677` |
+| Geräte in Reparatur zählten als gedeckt (B-30) | `cable#677` |
+| Rack-Inhalte fehlten in der Stückliste (B-31, Rack-Hälfte) | `cable#677` |

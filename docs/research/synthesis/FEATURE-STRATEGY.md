@@ -374,9 +374,32 @@ danach vor Prüfung.
 | Plan-PDF stand in keinem Dokument-Register | cable | `cable#676` |
 | Netz-Budget zählte Link-Kapazität als Last | cable | `cable#676` |
 | Vorgabe-Standard war der schmalste statt des breitesten | cable | `cable#676` |
+| Übergabe-Stempel deckte nur die halbe Seite | cable | `cable#677` |
+| Umsortierung löschte den Port-Herkunftsbeleg | cable | `cable#677` |
+| Geräte in Reparatur zählten als gedeckt | cable | `cable#677` |
+| Rack-Inhalte fehlten in der Stückliste | cable | `cable#677` |
+| Vendoring, vom Guard selbst angeleitet | Suite | `suite#78` |
 
-Fünf weitere Befunde sind zu groß für eine Reparatur und stehen als B-30 bis
-B-34 im Backlog, mit Datei und Zeile.
+**Dreizehn Befunde repariert, drei Reste im Backlog.** Was übrig bleibt, bleibt
+aus einem Grund: `drumKit`/`wirelessRig` außerhalb von `project.equipment`
+(Rest von B-31, verlangt eine Entscheidung über Positionen ohne Katalog-Typ),
+die fehlende Zeitachse (B-34) und die vier aus der Suite unerreichbaren Repos
+(B-35). Die letzten beiden hängen an E-18 und E-19 und werden nicht nebenbei
+entschieden.
+
+**Zwei Beobachtungen aus dem Reparieren selbst**, beide dieselbe Sorte wie der
+Befund, der sie ausgelöst hat:
+
+1. Beim Übergabe-Stempel sollten die As-Built-Zeilen mit in den Fingerabdruck.
+   **Ein bestehender Guard hat das gefangen** — und sein Kommentar hatte den
+   Fall wörtlich vorhergesagt: der Revisions-Vergleich spannt einen Snapshot
+   mit `revisions: []` auf, also hätte *jedes* Übergabe-Blatt sich als überholt
+   gemeldet. Der Guard war die einzige Stelle, die das wusste.
+2. Der erste Raum-Test für dieselbe Sache **bestand auch gegen den alten
+   Code**: ein Raum bei x/y = 0 umschließt das Gerät, `locationOf` ordnet es
+   zu, und die Asset-Zeile ändert sich dadurch von selbst. Dieselbe Falle wie
+   das `identityId: 'r1'`-Fixture aus Runde 10 — **eine Gegenprobe muss nicht
+   nur greifen, sie muss aus dem richtigen Grund greifen.**
 
 **Die drei Korpus-Durchgänge**, zum ersten Mal gegen den Korpus statt gegen die
 Roadmap:
