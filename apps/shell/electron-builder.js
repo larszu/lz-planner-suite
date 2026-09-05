@@ -32,6 +32,37 @@ export default {
   // (die Installer haengt die release-Job via action-gh-release ans Release).
   publish: [{ provider: 'github', owner: 'larszu', repo: 'av-planner-suite', releaseType: 'release' }],
   files: ['dist/**/*', 'electron/**/*', 'planners/**/*', 'package.json'],
+  // DIE VERPACKTE package.json DARF KEIN `type: module` TRAGEN.
+  //
+  // Gemessen an der ausgelieferten `v0.1.1`-App, die beim Start abstuerzt:
+  //
+  //   ReferenceError: exports is not defined in ES module scope
+  //   ... app.asar/package.json contains "type": "module"
+  //   at app.asar/index.js:5:23
+  //
+  // `index.js` ist nicht unser Code, sondern der Einsprung-Shim, den
+  // `@electron/universal` bei `mergeASARs: false` erzeugt: er waehlt zur
+  // Laufzeit zwischen `app-x64.asar` und `app-arm64.asar`. Der Shim ist
+  // CommonJS (`exports`, `require`), wird als `index.js` abgelegt -- und
+  // daneben legt @electron/universal eine KOPIE UNSERER package.json. Steht
+  // dort `type: module`, parst Node den Shim als ESM und die App ist tot,
+  // bevor eine Zeile eigener Code laeuft.
+  //
+  // `@electron/universal@3.x` behebt das (es schreibt dann `index.mjs`), ist
+  // hier aber nicht zu haben: `app-builder-lib` pinnt 2.0.3 exakt, und ein
+  // npm-`overrides` liesse sich nur mit einer vollstaendigen Neuaufloesung des
+  // Lockfiles anwenden -- die scheitert in diesem Workspace an einem
+  // npm-Bug (`Cannot read properties of null (reading 'edgesOut')`, npm
+  // 10.9.7, reproduzierbar auch ohne den Override).
+  //
+  // `extraMetadata` aendert NUR die verpackte package.json, nicht die im
+  // Repo: die Entwicklungs-Werkzeuge (eslint.config.js, postcss.config.js und
+  // diese Datei sind ESM) bleiben unangetastet.
+  //
+  // Was dadurch ESM verliert, bekommt es zurueck: `copy-planners.mjs` legt
+  // `planners/signal-main/package.json` mit `type: module` ab -- das ist der
+  // einzige Node-geladene ESM-Code im Paket.
+  extraMetadata: { type: 'commonjs' },
   // Die mitverpackten Planer-Renderer aus dem asar auspacken: der Hauptprozess
   // liefert sie via net.fetch('file://…') über die planner-*://-Protokolle aus,
   // und dynamische Imports/Worker der SPAs lesen zuverlässiger von echtem

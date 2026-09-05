@@ -4,7 +4,7 @@
 // sind bereits gebaut (npm run build:renderer / build im jeweiligen Workspace).
 //
 // Ziel-Layout:  apps/shell/planners/{signal,cameras,licht}/index.html + assets
-import { existsSync, rmSync, cpSync, mkdirSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -43,7 +43,23 @@ const cableMainSrc = join(appsDir, 'cable-planner', 'dist', 'main')
 if (existsSync(join(cableMainSrc, 'index.js'))) {
   const cableMainDest = join(outRoot, 'signal-main')
   cpSync(cableMainSrc, cableMainDest, { recursive: true })
-  console.log(`[copy-planners] signal-main: ${cableMainSrc} → ${cableMainDest}`)
+  // Cables Main-Prozess ist ESM: `.js`-Dateien mit `import`/`export`, geladen
+  // von `cableHost.cjs` über `import(pathToFileURL(...))`. Node entscheidet das
+  // an der NÄCHSTGELEGENEN package.json — bisher war das die der Shell, und die
+  // sagte `type: module`.
+  //
+  // Im Paket gilt das nicht mehr: dort steht `type: commonjs` (siehe
+  // `extraMetadata` in electron-builder.js — sonst stürzt der Einsprung-Shim
+  // des Universal-Builds ab). Ohne die eigene package.json hier würden Cables
+  // Module im Installer als CommonJS geparst und mit „Cannot use import
+  // statement outside a module" sterben — und zwar erst beim Nutzer, weil
+  // `registerCableIpc` pro Modul abfängt.
+  //
+  // Sie steht bewusst hier und nicht in cable-planner: dort ist sie unnötig
+  // (das Repo-Root sagt `type: module`), und der Drift-Guard würde sie als
+  // Abweichung führen.
+  writeFileSync(join(cableMainDest, 'package.json'), `${JSON.stringify({ type: 'module' }, null, 2)}\n`)
+  console.log(`[copy-planners] signal-main: ${cableMainSrc} → ${cableMainDest} (+ package.json type=module)`)
 } else {
   console.warn('[copy-planners] Cable-Main nicht gebaut (dist/main) — nativer Cable-Modus bleibt inaktiv.')
 }

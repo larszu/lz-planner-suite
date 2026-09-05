@@ -264,6 +264,44 @@ if (entpackt.length === 0) {
   )
 }
 
+// ── Teil 1c: bringt die verpackte package.json den Einsprung-Shim um? ──────
+
+// Die DRITTE Stufe, an der der Universal-Build reisst -- und sie entsteht erst
+// durch `mergeASARs: false`. Gemessen an der ausgelieferten App `v0.1.1`:
+//
+//   ReferenceError: exports is not defined in ES module scope
+//   ... app.asar/package.json contains "type": "module"
+//   at app.asar/index.js:5:23
+//
+// `index.js` ist nicht unser Code: `@electron/universal` legt bei
+// `mergeASARs: false` einen CommonJS-Shim unter diesem Namen ab und daneben
+// eine KOPIE unserer package.json. Sagt die `type: module`, parst Node den
+// Shim als ESM und die App stirbt vor der ersten eigenen Zeile.
+//
+// Ab `@electron/universal@3` schreibt es in dem Fall `index.mjs`; die Forderung
+// faellt dann von selbst weg, ohne dass jemand diese Datei anfassen muss.
+const universalPaket = JSON.parse(
+  readFileSync(join(ROOT, 'node_modules', '@electron', 'universal', 'package.json'), 'utf8'),
+)
+const universalMajor = Number(universalPaket.version.split('.')[0])
+
+if (universal && konfiguration.mac?.mergeASARs === false && universalMajor < 3) {
+  const shellPaket = JSON.parse(readFileSync(join(SHELL, 'package.json'), 'utf8'))
+  // `extraMetadata` gewinnt ueber die package.json im Repo -- genau dafuer ist
+  // es da, und genau das landet spaeter im Archiv.
+  const effektiv = konfiguration.extraMetadata?.type ?? shellPaket.type
+  if (effektiv === 'module') {
+    maengel.push(
+      `@electron/universal@${universalPaket.version} legt bei mergeASARs:false einen ` +
+        'CommonJS-Shim als `index.js` neben eine Kopie der verpackten package.json. Mit ' +
+        '`type: module` startet die App nicht -- "exports is not defined in ES module scope". ' +
+        "Abhilfe: `extraMetadata: { type: 'commonjs' }` in apps/shell/electron-builder.js; der " +
+        'ESM-Teil bekommt dann seine eigene package.json (copy-planners.mjs legt sie fuer ' +
+        'planners/signal-main an).',
+    )
+  }
+}
+
 // ── Teil 2: schreiben zwei Ziele auf dieselbe Datei? ───────────────────────
 
 /** Endung je Ziel -- so benennt electron-builder die Ausgabe. */
