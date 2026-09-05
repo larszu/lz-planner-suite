@@ -44,9 +44,18 @@ export default {
   // succeeded but the upload step found no *.exe to attach to the release).
   mac: {
     category: 'public.app-category.productivity',
+    // Universal-Build (arm64 + x64 in einer .app): läuft auf Apple Silicon
+    // nativ — kein Rosetta, keine „Intel-App"-Warnung auf neuen macOS-Versionen
+    // — und weiterhin auf Intel-Macs. Ein Download statt getrennter DMGs, damit
+    // niemand versehentlich den Intel-Build lädt.
+    // dmg = das, was der Nutzer herunterlaedt. zip = das, was der eingebaute
+    // Auto-Updater braucht: Squirrel.Mac (electron-updater) kann ein Update
+    // NUR aus einem zip einspielen, und `latest-mac.yml` zeigt auf genau diese
+    // Datei. Mit dmg allein laeuft `checkForUpdatesAndNotify()` in ein 404 --
+    // die Funktion ist eingebaut und im Release nicht bedienbar.
     target: [
-      { target: 'dmg', arch: 'x64' },
-      { target: 'dmg', arch: 'arm64' },
+      { target: 'dmg', arch: 'universal' },
+      { target: 'zip', arch: 'universal' },
     ],
     artifactName: '${productName}-${version}-${arch}.${ext}',
     icon: 'build/icon.png',
