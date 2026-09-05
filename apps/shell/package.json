@@ -11,6 +11,7 @@
   "type": "module",
   "main": "electron/main.cjs",
   "dependencies": {
+    "@avplan/lexware-core": "*",
     "atem-connection": "^3.9.0",
     "axios": "^1.18.1",
     "bonjour-service": "^1.4.2",
@@ -19,6 +20,7 @@
     "keytar": "^7.9.0",
     "qrcode": "^1.5.4",
     "uuid": "^14.0.1",
+    "ws": "^8.21.0",
     "yaml": "^2.9.0"
   },
   "scripts": {
@@ -31,7 +33,6 @@
   },
   "devDependencies": {
     "@avplan/inventory-core": "*",
-    "@avplan/lexware-core": "*",
     "@avplan/ui": "*",
     "@eslint/js": "^10.0.1",
     "@fontsource/inter": "^5.2.8",

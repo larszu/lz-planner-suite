@@ -1,10 +1,20 @@
 // electron-builder-Konfiguration der AV Planner Suite.
 //
-// Verpackt ausschließlich das gebündelte Vite-Ergebnis (dist/) plus den
-// Electron-Hauptprozess (electron/) und die package.json. Es gibt bewusst
-// KEINE Produktions-Dependencies (alle Libs landen via Vite gebündelt in
-// dist/), daher zieht electron-builder keine node_modules ins Paket — das
-// vermeidet die Symlink-Fallstricke der npm-Workspaces.
+// Verpackt das gebündelte Vite-Ergebnis (dist/), den Electron-Hauptprozess
+// (electron/), die mitgelieferten Planer-Renderer (planners/) und die
+// package.json.
+//
+// KORREKTUR 2026-09-05: hier stand „Es gibt bewusst KEINE Produktions-
+// Dependencies … daher zieht electron-builder keine node_modules ins Paket".
+// Das stimmt seit dem nativen Cable-Modus nicht mehr: `planners/signal-main/`
+// ist Cables Main-Prozess, und der macht zur Laufzeit echte `require`s
+// (keytar, atem-connection, ws, @avplan/lexware-core …). Die stehen deshalb in
+// `apps/shell/package.json` unter `dependencies`, und electron-builder packt
+// diesen Produktions-Baum sehr wohl mit ein.
+//
+// Der alte Satz war nicht bloß veraltet — er war die Begründung dafür, ein
+// fehlendes Paket nicht zu vermuten. `npm run deps:check` prüft die Liste
+// jetzt gegen die Quellen, statt sie hier zu behaupten.
 //
 // Kein eigenes App-Icon: ohne `icon` nutzt electron-builder das Standard-
 // Electron-Icon, statt an einem fehlenden .icns/.ico abzubrechen.

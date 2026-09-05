@@ -73,6 +73,13 @@ jobs:
       # Zuletzt und bewusst: dieser Lauf prueft, dass die Liste darueber
       # vollstaendig ist. In `light-planner` fehlte `mvr:check` genau so --
       # er existierte, war gruen, und lief bei keinem Merge.
+      # Der Suite-Installer verpackt Cables Main-Prozess mit; was der zur
+      # Laufzeit `require`t, muss in apps/shell/package.json stehen. Gemessen
+      # 2026-09-05 fehlten `ws` und `@avplan/lexware-core` -- beides waere erst
+      # beim Nutzer aufgefallen, im Log einer verschluckten Registrierung.
+      - name: Suite-Paket enthaelt jede Laufzeit-Abhaengigkeit
+        run: npm run deps:check
+
       - name: Jeder Pruef-Lauf steht auch im Workflow
         run: npm run ci:complete
 
