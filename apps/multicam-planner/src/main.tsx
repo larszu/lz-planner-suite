@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { connectShellTheme, declareNoHistory } from '@avplan/ui/embed';
+import { initShellSeed } from './utils/shellSeedBridge';
 import { initShellSettings } from './shellSettings';
 import App from './App';
 import './index.css';
@@ -34,6 +35,8 @@ connectShellTheme({
 // MultiCam hat keine eigene Undo/Redo-Historie — der Shell melden, damit sie
 // ihre Undo/Redo-Schalter ausblendet statt sie dauerhaft grau zu zeigen.
 declareNoHistory();
+// Projekt der Shell uebernehmen und eigene Aenderungen zurueckmelden.
+initShellSeed();
 // Suite-Einstellungen (FOV, Edit-Modus, Wand-Snap, Zoom …) von der Shell übernehmen.
 initShellSettings();
 

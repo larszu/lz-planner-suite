@@ -3,6 +3,7 @@ import { connectShellHistory, publishShellSetting } from '@avplan/ui/embed';
 import { alertDialog, confirmDialog } from '@avplan/ui';
 import type { PlacedFixture, Shape, Tool, Fixture, FloorPlan, ViewMode, Person, StageElement, ProjectMeta, ProjectData, FixtureGroup, Truss, Wall, Ceiling, Scene, SceneFixtureState, Layers, LayerKey, CameraView, FloorMaterial, SunSettings } from './types';
 import { DEFAULT_FLOOR } from './core/surfaceTextures';
+import { useShellSeed } from './core/useShellSeed';
 import { convexHull } from './core/geometry';
 import { resolveSun, defaultSunSettings } from './core/sun';
 import TopBar from './components/TopBar';
@@ -166,6 +167,10 @@ const App: React.FC = () => {
   const scene3DRef = useRef<Scene3DHandle>(null);
   const exportCounterRef = useRef(1);
   const defaultMountingHeight = 6;
+
+  // SUITE-OVERLAY: Projekt-Fluss Shell -> Light-Planer und zurueck. No-op im
+  // Standalone-Betrieb (dort ist `window.parent === window`).
+  useShellSeed({ fixtures, setFixtures, haengehoehe: defaultMountingHeight, eigene: customFixtures });
   const host = useHost(); // platform seam: files / export / AI
 
   // ── Undo / Redo ──

@@ -453,10 +453,23 @@ ist selbst ein Ergebnis.
 * **Zutreffend ist der andere Teil:** die Daten stammen aus
   `apps/shell/src/data/project.ts` — einem **shell-eigenen Parallelmodell**,
   nicht aus den eingebetteten Planern.
-* **Schadensweg:** Der Nutzer verkabelt im eingebetteten Cable-Planer, klickt
-  „Zur Übersicht" und sieht weiter die Demo-Verkabelung. Nichts an der
-  Oberfläche sagt, dass das ein anderes Datenmodell ist.
-* **Aufwand:** klein (kennzeichnen) / groß (zusammenführen)
+* **Schadensweg (bis `suite#98`):** Der Nutzer verkabelte im eingebetteten
+  Cable-Planer, klickte „Zur Übersicht" und sah weiter die Demo-Verkabelung.
+  Nichts an der Oberfläche sagte, dass das ein anderes Datenmodell ist.
+* **Verbindende Hälfte erledigt (`suite#98`, 2026-09-05).** Das Parallelmodell
+  ist nicht mehr abgeschnitten: die Shell schiebt es als neutralen
+  `suite-seed` (`packages/ui/src/seed.ts`) in den geöffneten Planer, jeder
+  Planer bildet es auf sein natives Modell ab, und was er daraus macht, meldet
+  er zurück. Gemessen am gebauten Stand: Signal 6 Geräte / 5 Kabel, Kameras
+  3 von 4 platziert (`Sony FR7 PTZ` löst nicht eindeutig auf), Licht 4 von 6
+  (`KL Panel XL`, `PAR 64 CP62` fehlen der Bibliothek) — und die Shell zeigt
+  danach **3 Kameras** und **4 Fixtures** statt weiter 4 und 6.
+* **Was offen bleibt:** die Shell führt weiter ein eigenes, einfacheres Modell.
+  Der Seed trägt nur, wofür sie eine Quelle hat; Ports, Datenblatt,
+  DMX-Universum, Rigging-Höhe bleiben beim Planer. Ein gemeinsames
+  Datenmodell ist das **nicht** — siehe B-39 für die Liste dessen, was der
+  Fluss noch nicht abdeckt.
+* **Aufwand:** ~~klein (kennzeichnen)~~ verbunden; groß (zusammenführen) bleibt
 
 ---
 
@@ -1102,6 +1115,34 @@ ist selbst ein Ergebnis.
 
 ---
 
+### B-39 · Was der Projekt-Fluss noch nicht trägt
+
+* **Status:** offen
+* **Woher der Eintrag kommt:** `suite#98` hat den Weg Shell → Planer → Shell
+  gebaut (siehe B-20). Damit ist der Befund „die Suite ist eine Hülle" erledigt,
+  aber nicht alles, was daran hing. Diese Liste steht hier, damit die Reste
+  nicht als erledigt durchgehen — gemessen am gebauten Stand vom 2026-09-05:
+
+  1. **Der Raum geht nur hin, nicht zurück.** `seedToVenue` setzt Maße und
+     Bühne im MultiCam-Planer; wer sie dort ändert, ändert sie nicht in der
+     Shell. Der Seed hat kein `venue`-Feld im Rückweg, weil zwei Planer
+     (MultiCam und Licht) denselben Raum bearbeiten und die Zusammenführung
+     eine Entscheidung braucht: wer gewinnt.
+  2. **Das Demo-Projekt ist weiter hartkodiert** (`apps/shell/src/data/project.ts`,
+     „Sommershow 2026" samt Crew, Budget, Tagesablauf). Es ist jetzt ein
+     *Seed*, kein Zierrat mehr — aber ein neues Projekt startet leer, und ein
+     leerer Seed befüllt keinen Planer.
+  3. **Persistenz bleibt `localStorage`** (`data/projectStore.ts`). Was der
+     Planer zurückmeldet, landet im Shell-Projekt und damit im Browser-Speicher
+     der Shell — nicht in einer Datei, die jemand weitergeben kann.
+  4. **Der Tab-Wechsel schaltet weiterhin nichts** (B-16). „3D-Vorschau" und
+     „Rack-Ansicht" markieren nur.
+  5. **Der Cross-Link hat weiter keinen Sender** (B-18). „Im Signal-Flow
+     zeigen" wechselt das Modul, die Auswahl bleibt zurück.
+* **Aufwand:** 1 mittel (Entscheidung nötig), 2+3 mittel, 4+5 klein
+
+---
+
 ## Nicht zu entscheiden ohne den Eigentümer
 
 Diese Punkte sind **bewusst offen** und werden nicht nebenbei entschieden. Sie
@@ -1120,6 +1161,7 @@ gehalten, nicht als Versäumnis:
 | E-8 | Soll importierte Rentman-Leistung (`powerWatts`) in die Stromrechnung eingehen? | B-15 — ändert die Gesamtlast bestehender Pläne von 0 W auf einen echten Wert |
 | E-9 | Werden die acht wirkungslosen Tabs **entfernt** oder **ausgebaut**? | B-16 — Ausbauen heißt acht neue Views (Rack, 3D ×2, Heatmap-Report, Plan-Checks, Moodboard, 2D-Plan) |
 | E-10 | Auf welcher Seite werden die Dev-Ports angeglichen? | B-17 — Planer auf 4181-4183 festnageln berührt cable-planners `dev:electron` und lights Screenshot-Skripte; die Shell umzustellen scheitert an der 5173-Kollision zweier Planer |
+| E-21 | Wer gewinnt, wenn **MultiCam und Licht denselben Raum** ändern? | B-39.1 — der Seed trägt den Raum bisher nur hin; ein Rückweg ohne diese Regel überschriebe die Änderung des jeweils anderen Planers |
 | E-11 | Soll der Cross-Link bis **in** die eingebetteten Planer reichen? | B-18 — braucht einen gemeinsamen Id-Raum zwischen Shell-Seed-Modell und den Planer-Projekten |
 | E-12 | Wo wohnt Lexware architektonisch — Shell oder Planer? | B-19 — eigene Shell-Domäne (dann braucht Cable es nicht mehr) vs. Preload für den eingebetteten Planer |
 | E-13 | Bleibt die Shell-Vorschau ein eigenständiges Übersichtsmodell? | B-20 — wenn ja, fehlt eine sichtbare Kennzeichnung; wenn nein, müssen die Modelle zusammengeführt werden |
@@ -1198,6 +1240,11 @@ gehalten, nicht als Versäumnis:
 | `drumKit`/`wirelessRig` fehlten in der Stückliste (B-31, Rest) | `cable#678` |
 | Arbeitsweise-Direktive in `cable-planner/CLAUDE.md` | `cable#678` |
 | `READS_DEVICE` traf nur Lese-Verben, `TOUCHES_PLAN` zu eng | `cable#679` |
+| Projekt-Fluss Shell -> Planer -> Shell (B-20, verbindende Haelfte) | `suite#98` |
+| Erststart-Dialog des Cable-Planers lag ueber dem eingebetteten Plan | `suite#98` |
+| Shell-Panels verdeckten den Planer (doppelte Liste + Inspector) | `suite#98` |
+| Smoke-Test war gruen, waehrend jeder Planer leer blieb | `suite#98` |
+| Pruefung 18 behauptete AI-Vorschlag als einzige Port-Quelle | `cable#700` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
 | `mvr:check` lief bei keinem Merge; berechneter Guard dagegen | `light#64` |
 | Vendoring cable#677-#680 + light#64 | `suite#80` |

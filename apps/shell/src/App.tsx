@@ -11,6 +11,8 @@ import {
 import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './modules/registry'
 import { PROJECT, type ShowDetails, type SuiteProject } from './data/project'
+import { applyPatchToSuite, suiteToSeed } from './data/seed'
+import type { SeedPatch } from '@avplan/ui/embed'
 import {
   downloadProject,
   parseProject,
@@ -88,6 +90,15 @@ export function App() {
   // Undo/Redo-Zustand des gerade geöffneten Planers (per Bridge gemeldet).
   const [plannerHistory, setPlannerHistory] = useState({ canUndo: false, canRedo: false, hasHistory: true })
 
+  // Revision des Projekt-Seeds, den die eingebetteten Planer bekommen. Sie
+  // zaehlt NICHT bei jeder Projekt-Aenderung hoch, sondern nur dort, wo die
+  // Aenderung aus der Shell kommt: Projektwechsel, Undo/Redo, Kopf-Aenderung.
+  // Eine Rueckmeldung aus einem Planer laesst sie ausdruecklich stehen — sonst
+  // schoebe die Shell den gerade gemeldeten Stand sofort wieder hinein und
+  // ueberschriebe die naechste Aenderung im Planer (Echo-Schleife).
+  const [seedRevision, setSeedRevision] = useState(0)
+  const bumpSeed = useCallback(() => setSeedRevision((r) => r + 1), [])
+
   // Transiente Rückmeldungen (Speichern-Bestätigung, Verwerfen mit Undo).
   const [toasts, setToasts] = useState<ToastMsg[]>([])
   const pushToast = useCallback((text: string, opts: Partial<Omit<ToastMsg, 'id' | 'text'>> = {}) => {
@@ -99,7 +110,8 @@ export function App() {
   // Projektwechsel mit Historie (assign/clear/neu/öffnen).
   const commitProject = useCallback((next: SuiteProject | null) => {
     setHistory((h) => ({ past: [...h.past, h.present], present: next, future: [] }))
-  }, [])
+    bumpSeed()
+  }, [bumpSeed])
   // Show-Details des Dashboards (Tagesablauf/Crew/Budget/Aufgaben/Logistik)
   // ändern: geht durch die Projekt-Historie (Undo/Redo) und markiert das Projekt
   // als ungespeichert, damit die „Speichern"-Aufforderung greift.
@@ -126,20 +138,36 @@ export function App() {
       }
       return { past: [...h.past, h.present], present: next, future: [] }
     })
-  }, [])
+    bumpSeed()
+  }, [bumpSeed])
   const undo = useCallback(() => {
     setHistory((h) =>
       h.past.length
         ? { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future] }
         : h,
     )
-  }, [])
+    bumpSeed()
+  }, [bumpSeed])
   const redo = useCallback(() => {
     setHistory((h) =>
       h.future.length
         ? { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) }
         : h,
     )
+    bumpSeed()
+  }, [bumpSeed])
+
+  // Seed = die Teilmenge des Projekts, die einen Planer etwas angeht.
+  const plannerSeed = useMemo(() => suiteToSeed(project, seedRevision), [project, seedRevision])
+  // Rueckweg: ein Planer meldet seine Domaene. Bewusst OHNE Eintrag in der
+  // Shell-Historie — die Aenderung ist im Planer passiert und hat dort schon
+  // ihr eigenes Undo; ein zweiter Eintrag hier hiesse zweimal zuruecknehmen.
+  const applySeedPatch = useCallback((patch: SeedPatch) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const next = applyPatchToSuite(h.present, patch)
+      return next === h.present ? h : { ...h, present: next }
+    })
   }, [])
 
   // Aktuelles Projekt im Hub-Store ablegen (Version hochzählen, wenn es
@@ -265,6 +293,14 @@ export function App() {
     licht: BUNDLED_PLANNERS,
     board: false,
   })
+  // Ist gerade ein echter Planer im Rahmen? Dann treten die Shell-eigenen
+  // Seitenpanels zurueck. Sie zeigen dieselben Dinge — Geraeteliste links,
+  // Eigenschaften rechts — die der Planer selbst mitbringt, und liessen ihm in
+  // einem 1280er Fenster rund 100 px Zeichenflaeche. Gemessen am gebauten
+  // Stand: dieselben zwei Listen standen doppelt nebeneinander, und der Plan
+  // dazwischen war nicht mehr zu erkennen.
+  const plannerMounted = mounted[moduleId] && !!MODULE_BY_ID[moduleId]?.planner
+
   const [libraryOpen, setLibraryOpen] = useState(true)
   // Eigenschaften-Panel als Overlay unter lg (inline erst ab lg sichtbar).
   const [propertiesOpen, setPropertiesOpen] = useState(false)
@@ -425,7 +461,7 @@ export function App() {
         {/* Bibliothek/Ebenen: eigenständige Spalte ab md. Unter md würde die
             feste 16rem-Breite den Hauptinhalt aus dem Viewport drängen, daher
             dort ausgeblendet (Navigation läuft über die Rail). */}
-        {libraryOpen && (
+        {libraryOpen && !plannerMounted && (
           <aside className="hidden w-64 flex-none flex-col border-r border-av-border-muted md:flex" aria-label={tt('config.aria.libraryLayers', 'Bibliothek und Ebenen')}>
             <LibraryPanel key={mod.id} module={mod} project={project} hiddenLayers={hiddenLayers} onToggleLayer={toggleLayer} selectedId={selected[moduleId]} onSelect={selectItem} />
           </aside>
@@ -454,12 +490,16 @@ export function App() {
             }
             onPlannerHistory={setPlannerHistory}
             hiddenLayers={hiddenLayers}
+            seed={plannerSeed}
+            onSeedPatch={applySeedPatch}
           />
         </main>
 
-        <aside className="hidden w-80 flex-none border-l border-av-border-muted lg:block" aria-label={tt('config.aria.properties', 'Eigenschaften')}>
-          <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} />
-        </aside>
+        {!plannerMounted && (
+          <aside className="hidden w-80 flex-none border-l border-av-border-muted lg:block" aria-label={tt('config.aria.properties', 'Eigenschaften')}>
+            <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} />
+          </aside>
+        )}
 
         {/* Eigenschaften als Schublade unter lg (Tablet/Mobil). */}
         <button

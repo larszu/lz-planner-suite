@@ -47,7 +47,7 @@
  * @avplan/shell && npm run build:planners`.
  */
 import { _electron as electron } from 'playwright-core'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -65,9 +65,16 @@ async function lauf(nativ) {
   const marke = nativ ? 'nativ' : 'default'
   console.log(`\n--- Durchlauf ${marke} (SUITE_NATIVE_CABLE=${nativ ? '1' : 'aus'}) ---`)
 
+  // Jeder Durchlauf bekommt ein FRISCHES Benutzerverzeichnis. Ohne das lag ein
+  // stiller Fehlbefund im Test: der Cable-Planer legt sein Projekt in
+  // localStorage ab, und die Pruefung „steht das Projekt im Planer" war beim
+  // zweiten Lauf schon durch den Rest des ersten erfuellt. Gegengeprobt, indem
+  // die Seed-Nachricht im gebauten Bundle unbrauchbar gemacht wurde: Kameras
+  // und Licht fielen, Signal blieb gruen -- aus Resten.
+  const profil = mkdtempSync(join(tmpdir(), 'suite-smoke-'))
   const app = await electron.launch({
     cwd: SHELL,
-    args: ['.', '--no-sandbox', '--disable-gpu'],
+    args: ['.', '--no-sandbox', '--disable-gpu', `--user-data-dir=${profil}`],
     env: { ...process.env, ...(nativ ? { SUITE_NATIVE_CABLE: '1' } : {}) },
   })
 
@@ -112,6 +119,91 @@ async function lauf(nativ) {
         if (r.status === 200 && r.laenge > 100 && r.script) melde(`planner-${name}: ${r.status}, ${r.laenge} Bytes, mit <script>`)
         else maengel.push(`${marke}: planner-${name} liefert nichts Brauchbares: ${JSON.stringify(r)}`)
       }
+    }
+
+    // 2b. Der Projekt-Fluss: kommt das Projekt der Shell in den Planern AN?
+    //
+    // WARUM DIESE PRUEFUNG DAZUGEHOERT. Punkt 2 sagt „das Protokoll liefert
+    // eine Seite aus" -- er waere gruen geblieben, waehrend der Nutzer im
+    // Signal-Modul einen leeren Cable-Planer mit Erststart-Dialog sah, links
+    // daneben die sechs Geraete des Shell-Projekts. Genau der Zustand, den
+    // `suite-seed` behebt, war fuer den Smoke-Test unsichtbar.
+    //
+    // Gemessen wird IM iframe, nicht in der Shell: `contentDocument` ist
+    // wegen der eigenen Protokoll-Herkunft nicht lesbar, der Frame aber sehr
+    // wohl ansprechbar. Und gemessen werden BEZEICHNUNGEN aus dem Projekt,
+    // nicht Textlaenge -- ein Planer mit leerem Plan zeigt auch Menues,
+    // Bibliothek und Tastaturhilfe und kaeme ueber jede Laengen-Schwelle.
+    const module = [
+      // Im nativen Modus ist Signal KEIN iframe, sondern eine WebContentsView
+      // (`NativeSignalRegion`) -- dort gibt es nichts zu finden, und die
+      // Abwesenheit des Rahmens waere ein falscher Befund.
+      ...(nativ ? [] : [{ klick: 'Signal', protokoll: 'planner-signal://', erwartet: ['CAM 2', 'Videohub'] }]),
+      { klick: 'Kameras', protokoll: 'planner-cameras://', erwartet: ['CAM 1'] },
+      // Licht zeichnet seinen Plan auf ein Canvas -- im DOM steht dort kein
+      // einziger Lampenname (nachgemessen: `svg text` leer, `textContent` nur
+      // Menue und Bibliothek). Der Blick in die Geraeteliste ist deshalb kein
+      // Umweg, sondern der einzige Ort, an dem der Bestand als Text steht --
+      // und derselbe Weg, den ein Nutzer nimmt, der wissen will, was im Plan
+      // haengt.
+      {
+        klick: 'Licht',
+        protokoll: 'planner-licht://',
+        erwartet: ['Source Four'],
+        imRahmen: 'Geräteliste',
+      },
+    ]
+    for (const m of module) {
+      const getroffen = await win.evaluate((name) => {
+        const el = [...document.querySelectorAll('button,[role="tab"],a')].find(
+          (e) => (e.textContent || '').trim().includes(name),
+        )
+        if (!el) return false
+        el.click()
+        return true
+      }, m.klick)
+      if (!getroffen) {
+        maengel.push(`${marke}: Modul „${m.klick}" ist in der Shell nicht anklickbar`)
+        continue
+      }
+      await win.waitForTimeout(4000)
+      const frame = win.frames().find((f) => f.url().startsWith(m.protokoll))
+      if (!frame) {
+        maengel.push(`${marke}: ${m.klick} -- kein Rahmen mit ${m.protokoll} gefunden`)
+        continue
+      }
+      if (m.imRahmen) {
+        try {
+          await frame.evaluate((name) => {
+            const el = [...document.querySelectorAll('button,[role="tab"],a')].find(
+              (e) => (e.textContent || '').trim().includes(name),
+            )
+            el?.click()
+          }, m.imRahmen)
+          await win.waitForTimeout(1500)
+        } catch {
+          /* der Klick ist Beiwerk -- der Befund kommt aus dem Text darunter */
+        }
+      }
+      let text = ''
+      try {
+        // `textContent`, nicht `innerText`: die Plaene sind SVG, und
+        // `innerText` gibt SVG-Text nicht zurueck -- der Licht-Plan waere
+        // damit auch dann leer, wenn jede Lampe drinsteht.
+        text = await frame.evaluate(() => document.body.textContent || '')
+      } catch (err) {
+        maengel.push(`${marke}: ${m.klick} -- Rahmen nicht lesbar: ${(err && err.message) || err}`)
+        continue
+      }
+      const fehlend = m.erwartet.filter((n) => !text.includes(n))
+      if (fehlend.length > 0) {
+        maengel.push(
+          `${marke}: ${m.klick} -- das Projekt der Shell steht nicht im Planer (fehlt: ${fehlend.join(', ')}; ${text.length} Zeichen im Rahmen)`,
+        )
+      } else {
+        melde(`${m.klick}: Projekt angekommen (${m.erwartet.join(', ')} im Planer sichtbar)`)
+      }
+      await win.screenshot({ path: join(OUT, `${marke}-03-${m.klick.toLowerCase()}.png`) })
     }
 
     // 3. Nativer Cable-Host: ist er da, und registrieren seine IPC-Module?

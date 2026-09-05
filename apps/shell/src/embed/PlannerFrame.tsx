@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Button,
   Icon,
-  onShellMessage,
-  postCommandToFrame,
-  postSettingsToFrame,
-  postThemeToFrame,
   type ResolvedTheme,
 } from '@avplan/ui'
+import {
+  onShellMessage,
+  postCommandToFrame,
+  postSeedToFrame,
+  postSettingsToFrame,
+  postThemeToFrame,
+  type SeedPatch,
+  type SuiteSeed,
+} from '@avplan/ui/embed'
 import { onPlannerCommand } from './plannerBridge'
 import { useT, format } from '../i18n'
 
@@ -38,6 +43,14 @@ export interface PlannerFrameProps {
   settings?: Record<string, unknown>
   /** Meldet den Undo/Redo-Zustand des eingebetteten Planers an die Shell. */
   onHistory?: (state: { canUndo: boolean; canRedo: boolean; hasHistory: boolean }) => void
+  /**
+   * Das Projekt der Shell als neutraler Seed. Wird beim `ready`-Handshake, auf
+   * Anfrage des Planers und bei jeder Aenderung hineingeschoben; der Planer
+   * uebernimmt ihn nur bei neuerer Revision.
+   */
+  seed?: SuiteSeed
+  /** Rueckweg: der Planer hat seine Domaene geaendert. */
+  onSeedPatch?: (patch: SeedPatch) => void
 }
 
 /**
@@ -51,7 +64,7 @@ export interface PlannerFrameProps {
  * Läuft der Planer gerade nicht (Preview-Server aus), zeigt der Host statt
  * eines toten Rahmens einen erklärenden Fallback mit „in neuem Tab öffnen".
  */
-export function PlannerFrame({ url, title, theme, settings, onHistory }: PlannerFrameProps) {
+export function PlannerFrame({ url, title, theme, settings, onHistory, seed, onSeedPatch }: PlannerFrameProps) {
   const t = useT()
   const ref = useRef<HTMLIFrameElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -71,9 +84,38 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
         setState('ready')
         postThemeToFrame(ref.current?.contentWindow, theme, readShellPalette(ref.current))
         if (settings) postSettingsToFrame(ref.current?.contentWindow, settings)
+        if (seed) postSeedToFrame(ref.current?.contentWindow, seed)
       }
     })
-  }, [theme, settings])
+  }, [theme, settings, seed])
+
+  // Projekt-Fluss Shell -> Planer. Zwei Ausloeser, weil einer nicht reicht:
+  // der `ready`-Handshake oben trifft den Planer erst, wenn er seinen Listener
+  // stehen hat — ein Planer, der ihn spaeter aufsetzt (Store-Hydration, lazy
+  // geladene Ansicht), fragt stattdessen selbst nach (`avplan:seedRequest`).
+  useEffect(() => {
+    if (!seed) return
+    return onShellMessage((msg, source) => {
+      if (source !== ref.current?.contentWindow) return
+      if (msg.type === 'avplan:seedRequest') postSeedToFrame(ref.current?.contentWindow, seed)
+    })
+  }, [seed])
+
+  // Rueckweg: der Planer meldet seine Domaene. Die Shell arbeitet sie in ihr
+  // Projekt ein, damit Uebersicht, Eigenschaften und Statusleiste zeigen, was
+  // im Planer wirklich steht — statt weiter den Ausgangsstand.
+  useEffect(() => {
+    if (!onSeedPatch) return
+    return onShellMessage((msg, source) => {
+      if (msg.type === 'avplan:seedPatch' && source === ref.current?.contentWindow) onSeedPatch(msg.patch)
+    })
+  }, [onSeedPatch])
+
+  // Neuer Seed (Projektwechsel, Undo, Kopf-Aenderung) in den offenen Rahmen.
+  useEffect(() => {
+    if (state !== 'ready' || !seed) return
+    postSeedToFrame(ref.current?.contentWindow, seed)
+  }, [seed, state])
 
   // Undo/Redo-Zustand des Planers empfangen und an die Shell melden.
   useEffect(() => {
@@ -127,6 +169,7 @@ export function PlannerFrame({ url, title, theme, settings, onHistory }: Planner
           // Rahmen erst mit dem avplan:ready-Handshake (siehe Effekt oben).
           postThemeToFrame(ref.current?.contentWindow, theme, readShellPalette(ref.current))
           if (settings) postSettingsToFrame(ref.current?.contentWindow, settings)
+          if (seed) postSeedToFrame(ref.current?.contentWindow, seed)
         }}
       />
       {state === 'loading' && (

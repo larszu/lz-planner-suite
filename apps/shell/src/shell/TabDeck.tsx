@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
+import type { SeedPatch, SuiteSeed } from '@avplan/ui/embed'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { emptyBoard, type ShowDetails, type SuiteProject } from '../data/project'
 import type { HeaderDraft } from './dashboardEditors'
@@ -53,6 +54,8 @@ export function TabDeck({
   plannerSettings,
   onPlannerHistory,
   hiddenLayers,
+  seed,
+  onSeedPatch,
 }: {
   module: ModuleDef
   activeTab: string
@@ -77,6 +80,10 @@ export function TabDeck({
   onPlannerHistory?: (state: { canUndo: boolean; canRedo: boolean; hasHistory: boolean }) => void
   /** Ausgeblendete Vorschau-Ebenen (aus der Bibliothek). */
   hiddenLayers?: Set<string>
+  /** Projekt der Shell als neutraler Seed fuer den eingebetteten Planer. */
+  seed?: SuiteSeed
+  /** Rueckweg: der Planer hat seine Domaene geaendert. */
+  onSeedPatch?: (patch: SeedPatch) => void
 }) {
   const t = useT()
   const isOverview = module.id === 'overview'
@@ -129,7 +136,7 @@ export function TabDeck({
             // IPC-Funktionalität. Nur aktiv, wenn der Suite-Host ihn bereitstellt.
             <NativeSignalRegion />
           ) : mounted && module.planner && module.plannerUrl ? (
-            <PlannerFrame url={module.plannerUrl} title={t(`config.mod.${module.id}.title`, module.title)} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} />
+            <PlannerFrame url={module.plannerUrl} title={t(`config.mod.${module.id}.title`, module.title)} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} seed={seed} onSeedPatch={onSeedPatch} />
           ) : (
             <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-bg">
               {/* schwebende Werkzeugleiste — nur echte Overlay-Toggles (FOV/Heatmap) */}

@@ -1,5 +1,6 @@
 import { connectShellSettings } from '@avplan/ui/embed'
 import { useUiStore } from '../store/uiStore'
+import { useSettingsStore } from '../store/settingsStore'
 
 /**
  * Suite-Shell-Bridge: die Shell schiebt die „Suite-Einstellungen" herein, hier
@@ -7,6 +8,20 @@ import { useUiStore } from '../store/uiStore'
  * Standalone-/Desktop-Betrieb (connectShellSettings prüft window.parent).
  */
 export function initShellSettings(): () => void {
+  // Eingebettet gehoert der Erststart der Suite, nicht diesem Planer. Der
+  // Modul-Dialog („wofuer nutzt du Cable-Planner?") legte sich sonst beim
+  // ersten Oeffnen des Signal-Moduls ueber den Plan, den die Shell gerade
+  // hineingeschoben hat — gemessen am gebauten Stand, nicht vermutet.
+  // Die Voreinstellungen bleiben dieselben wie beim Ueberspringen.
+  try {
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      const s = useSettingsStore.getState()
+      if (!s.onboardingDone) s.setOnboardingDone(true)
+    }
+  } catch {
+    /* Standalone/Desktop — kein Shell-Parent */
+  }
+
   return connectShellSettings((key, value) => {
     const s = useUiStore.getState()
     switch (key) {

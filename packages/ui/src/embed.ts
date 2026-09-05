@@ -5,6 +5,18 @@
  * genau der Grund, dass die Einbettung bestehende Funktionalität nicht bricht.
  */
 
+import { isSuiteSeed, type SeedDomain, type SeedPatch, type SuiteSeed } from './seed'
+
+export type { SeedCable, SeedCamera, SeedDevice, SeedDomain, SeedFixture, SeedPatch, SeedVenue, SuiteSeed } from './seed'
+export {
+  SUITE_SEED_KIND,
+  SUITE_SEED_VERSION,
+  applySeedPatch,
+  emptySeed,
+  isSuiteSeed,
+  seedContentCount,
+} from './seed'
+
 export type ResolvedTheme = 'dark' | 'light'
 
 export interface ThemeMessage {
@@ -90,6 +102,34 @@ export interface LexwareResultMessage {
   error?: string
 }
 
+/**
+ * Shell → iframe: das Projekt der Shell als neutraler Seed (`suite-seed`, siehe
+ * `seed.ts`). Der Planer bildet daraus sein eigenes Modell — die Abbildung
+ * gehoert ihm, nicht der Shell.
+ */
+export interface SeedMessage {
+  type: 'avplan:seed'
+  seed: SuiteSeed
+}
+
+/**
+ * iframe → Shell: „schick mir das Projekt". Noetig, weil die Shell den Seed
+ * beim `avplan:ready`-Handshake schiebt und ein Planer, der seinen Listener
+ * spaeter aufsetzt (Store-Hydration, lazy geladene Ansicht), ihn sonst
+ * verpasst. Der Planer darf das jederzeit erneut fragen.
+ */
+export interface SeedRequestMessage {
+  type: 'avplan:seedRequest'
+  app: string
+}
+
+/** iframe → Shell: der Planer meldet seine Domaene nach einer Aenderung zurueck. */
+export interface SeedPatchMessage {
+  type: 'avplan:seedPatch'
+  app: string
+  patch: SeedPatch
+}
+
 export type ShellMessage =
   | ThemeMessage
   | ReadyMessage
@@ -100,6 +140,9 @@ export type ShellMessage =
   | SettingChangedMessage
   | LexwareRequestMessage
   | LexwareResultMessage
+  | SeedMessage
+  | SeedRequestMessage
+  | SeedPatchMessage
 
 const isShellMessage = (data: unknown): data is ShellMessage =>
   !!data && typeof data === 'object' && typeof (data as { type?: unknown }).type === 'string' &&
@@ -351,6 +394,99 @@ export function connectShellLexware(
   }
   window.addEventListener('message', onMessage)
   return () => window.removeEventListener('message', onMessage)
+}
+
+/** Shell → iframe: das Projekt als neutralen Seed schieben. */
+export function postSeedToFrame(frame: Window | null | undefined, seed: SuiteSeed): void {
+  try {
+    frame?.postMessage({ type: 'avplan:seed', seed } satisfies SeedMessage, '*')
+  } catch {
+    /* iframe noch nicht bereit */
+  }
+}
+
+export interface ShellSeedHandlers {
+  /** Welche Domaene dieser Planer besitzt und zurueckmeldet. */
+  domain: SeedDomain
+  /**
+   * Den Seed in das eigene Modell uebernehmen. Wird nur mit einem Seed
+   * aufgerufen, dessen Revision neuer ist als die zuletzt uebernommene.
+   * Rueckgabe `false` heisst „nicht uebernommen" (z. B. weil der Nutzer eine
+   * eigene Datei offen hat) — dann bleibt die zuletzt uebernommene Revision
+   * stehen und ein spaeterer Seed wird erneut angeboten.
+   */
+  apply: (seed: SuiteSeed) => boolean | void
+  /** Den eigenen Teil aus dem eigenen Modell einsammeln (fuer `publish`). */
+  collect: () => Omit<SeedPatch, 'domain' | 'revision'>
+}
+
+/**
+ * Planer-Seite: am Projekt-Fluss der Shell teilnehmen. No-op im Standalone-
+ * Betrieb — dort bleibt der Planer genau die App, die er ohne Suite ist.
+ *
+ * Ablauf: beim Aufruf einmal `avplan:seedRequest` hoch (die Shell schiebt den
+ * Seed sonst beim `ready`-Handshake, den ein spaet aufgesetzter Listener
+ * verpasst), danach auf `avplan:seed` hoeren und `apply` rufen. `publish` meldet
+ * die eigene Domaene zurueck und sollte bei jeder Aenderung im Planer laufen —
+ * dass es nicht zu oft feuert, ist Sache des Aufrufers (Debounce).
+ *
+ * Die Echo-Schleife (Shell schiebt → Planer meldet → Shell schiebt erneut) ist
+ * ueber die Revision abgeschnitten und nicht ueber Zeitfenster: `apply` laeuft
+ * nur bei einer NEUEREN Revision, und `applySeedPatch` in der Shell laesst die
+ * Revision beim Einarbeiten stehen.
+ */
+export function connectShellSeed(h: ShellSeedHandlers): { publish: () => void; dispose: () => void } {
+  let embedded = false
+  try {
+    embedded = typeof window !== 'undefined' && window.parent !== window
+  } catch {
+    embedded = false
+  }
+  // -1, damit auch ein Seed mit Revision 0 (frisches Projekt) uebernommen wird.
+  let appliedRevision = -1
+  const app = () => document.title || 'planner'
+
+  const publish = () => {
+    if (!embedded || appliedRevision < 0) return
+    try {
+      const patch: SeedPatch = { domain: h.domain, revision: appliedRevision, ...h.collect() }
+      window.parent.postMessage({ type: 'avplan:seedPatch', app: app(), patch } satisfies SeedPatchMessage, '*')
+    } catch {
+      /* egal */
+    }
+  }
+  if (!embedded) return { publish, dispose: () => {} }
+
+  const onMessage = (e: MessageEvent) => {
+    if (!isShellMessage(e.data) || e.data.type !== 'avplan:seed') return
+    const { seed } = e.data
+    if (!isSuiteSeed(seed) || seed.revision <= appliedRevision) return
+    try {
+      const taken = h.apply(seed)
+      if (taken !== false) {
+        appliedRevision = seed.revision
+        // Sofort zurueckmelden, WAS der Planer uebernommen hat. Das ist nicht
+        // nur Bestaetigung: die Uebernahme ist verlustbehaftet (ein Modell, das
+        // der Katalog nicht kennt, wird nicht platziert), und ohne diese
+        // Meldung zeigte die Shell weiter ihre Ausgangszahl — im gebauten Stand
+        // „4 Kameras" neben drei platzierten.
+        //
+        // Der Aufruf gehoert hierher und nicht in die Store-Anbindung der
+        // Planer: deren `subscribe` feuert WAEHREND `apply`, also bevor
+        // `appliedRevision` steht, und `publish` verwirft dann still.
+        publish()
+      }
+    } catch {
+      /* ein fehlgeschlagenes Uebernehmen darf den Planer nicht abschiessen */
+    }
+  }
+  window.addEventListener('message', onMessage)
+  try {
+    window.parent.postMessage({ type: 'avplan:seedRequest', app: app() } satisfies SeedRequestMessage, '*')
+  } catch {
+    /* egal */
+  }
+  return { publish, dispose: () => window.removeEventListener('message', onMessage) }
 }
 
 /** Shell-Seite: Nachrichten aus den iframes abonnieren. */
