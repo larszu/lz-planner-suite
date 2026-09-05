@@ -59,7 +59,7 @@ Fehlerzeile gar nicht treffen konnte.)
 
 | Repo | build | typecheck | lint | Tests |
 | --- | --- | --- | --- | --- |
-| `cable-planner` | **0** | **0** (`tsc -p tsconfig.app.json`) | **0 Fehler** (10 Warnungen) | **0** — 1009 Tests in 103 Dateien |
+| `cable-planner` | **0** | **0** (`tsc -p tsconfig.app.json`) | **0 Fehler** (10 Warnungen) | **0** — 1011 Tests + 4 übersprungene in 104 Dateien (die vier laufen nur in der vendorierten Kopie) |
 | `multicam-planner` | **0** | in `build` enthalten | **0 Fehler** (49 Warnungen) | **0** — 396 Tests in 29 Dateien |
 | `light-planner` | **0** | in `build` enthalten | **0 Fehler** (49 Warnungen) | **0** — 12 Tests + 4 Format-Checks (`avplan`, `venue`, `mvr`, `spec`) |
 | `av-planner-suite` | **0** | in `build` enthalten | — | **0** — 36 Shell + 45 Pakete |
