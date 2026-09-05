@@ -169,6 +169,7 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | Dokument-Protokoll | `COMPLETE` | `services/documentLog.ts:105/111` atomar |
 | Geheimnis-Filter beim Export | `COMPLETE` | `util/stripSecrets.ts`, 10 Tests; `SECRET_KEYS` **und** `OPAQUE_KEYS` (Hersteller-Rohdokumente gehen als Ganzes nicht mit) |
 | Dokument-Stempel + Register | `COMPLETE` | `lib/documentStamp.ts`, `lib/documentRegistry.ts`; Aufbaustand im Fingerabdruck (`cable#654`) |
+| Dokument-Stempel in den anderen beiden Planern | `COMPLETE` | ADR-004 Inkrement 4. `light#70`: alle vier Ausdrucke (Instrument Schedule, Geraeteliste, Farbliste, Plan-PDF), Abweichung gegen den juengsten Versions-Schnappschuss, Guard `stamp:check`. `multicam#91`: Kamerakarte und Storyboard (PNG wie Druck), ohne Revisions-Behauptung, weil `projectVersion` Aenderungen zaehlt statt Staende festzuschreiben; 22 Tests. Die drei Kopien haelt `stamp:parity` in der Suite gegeneinander — ausgefuehrt, nicht textverglichen |
 | Änderungs-Auswirkung | `COMPLETE` | `lib/changeImpact.ts`, `lib/planDiff.ts`, Vergleich auch gegen festgeschriebene Revision (`cable#655`) |
 | Tally-Datenvertrag | `COMPLETE` | `lib/tallyMap.ts` + `tests/tallyMap.test.ts`; Felder decken sich mit `gpio_watcher.py:79` (`me` fällt bewusst weg, dort Default 1) |
 | Green-GO Round-Trip | `PARTIAL` | Preset überlebt den Export inkl. `ButtonFunctions` (`cable#653`); ein **herstellerneutrales** Austauschformat fehlt (B-8) |

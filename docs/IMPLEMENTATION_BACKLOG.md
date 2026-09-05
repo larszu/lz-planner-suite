@@ -1306,6 +1306,9 @@ gehalten, nicht als Versäumnis:
 | Shell-Panels verdeckten den Planer (doppelte Liste + Inspector) | `suite#98` |
 | Smoke-Test war gruen, waehrend jeder Planer leer blieb | `suite#98` |
 | Pruefung 18 behauptete AI-Vorschlag als einzige Port-Quelle | `cable#700` |
+| ADR-004 Inkrement 4: vier Licht-Ausdrucke tragen ihren Stand | `light#70` |
+| ADR-004 Inkrement 4: Kamerakarte und Storyboard tragen ihren Stand | `multicam#91` |
+| Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
 | `mvr:check` lief bei keinem Merge; berechneter Guard dagegen | `light#64` |
 | Vendoring cable#677-#680 + light#64 | `suite#80` |

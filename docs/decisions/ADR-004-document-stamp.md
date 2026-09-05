@@ -88,10 +88,45 @@ Aufrufer entscheidet; die Bauer bleiben pur.
 | 1 | `documentStamp` + fünf Installateur-CSVs + PDF-Titelblock + Übergabe-Dokument — erledigt in `cable-planner#612` | Die Ableitung und die Stellen, die heute etwas Falsches behaupten. Reine Ableitung, keine Persistenz |
 | 2 | Dokument-Code `cableplanner://doc/<id>?s=<stand>`, Register der Ableitungen, Standvergleich im Mobile-Viewer — erledigt in `cable-planner#613` | Braucht Inkrement 1 als Datenquelle; der Record-Rückweg existiert bereits und wird erweitert, nicht ersetzt |
 | 3 | Der Stand-Code auf den CSV-/Listen-Ausdrucken selbst (heute trägt nur das Plan-PDF einen QR; die Listen tragen die acht Zeichen als Text) | Erst wenn 2 steht, gibt es etwas zu drucken, das sich prüfen lässt |
-| 4 | `multicam-planner` / `light-planner`: Stand-Angabe auf deren Ausdrucke | Andere Apps, eigener Rhythmus — die Ableitung ist teilbar, die Dokumente sind es nicht |
+| 4 | `multicam-planner` / `light-planner`: Stand-Angabe auf deren Ausdrucke — erledigt in `light-planner#70` und `multicam-planner#91` | Andere Apps, eigener Rhythmus — die Ableitung ist teilbar, die Dokumente sind es nicht |
 
 Inkrement 2 bewusst nicht zuerst: ein QR-Code auf einem Dokument, dessen Stand niemand berechnen
 kann, wäre ein Bild ohne Inhalt.
+
+### Was Inkrement 4 dazugelernt hat
+
+**Die Ableitung ist teilbar, geteilt wird sie trotzdem nicht.** Drei getrennte Repos, drei Kopien von
+`documentStamp`. Jede trägt in ihrem eigenen Testlauf drei feste Ankerwerte, die mit der
+Implementierung des `cable-planners` gerechnet wurden — das fängt eine einseitige Änderung, ohne
+dass ein Repo das andere lesen muss. Die breite Probe über eine gemeinsame Eingabemenge braucht
+dagegen alle drei im selben Prozess: `scripts/document-stamp-parity.ts` in der Suite führt sie aus
+und vergleicht **Ergebnisse, nicht Quelltext** — Typnamen und Kommentare dürfen auseinandergehen,
+die acht Zeichen nicht.
+
+**Der Vergleichsstand muss aus dem Schnappschuss neu gerechnet werden**, nicht beim Festschreiben
+gespeichert. Sonst wäre jede spätere Änderung an der Spaltenauswahl eine flächendeckende
+Abweichungs-Meldung für Dokumente, die sich nicht geändert haben. Der `light-planner` rechnet
+deshalb dieselbe Tabellenfunktion zweimal: einmal über die aktuellen Leuchten, einmal über die des
+jüngsten Versions-Schnappschusses.
+
+**Übersetzte Ausdrucke brauchen eine kanonische Rechnung.** In der Suite sind die Kopfzeilen der
+Licht-CSVs übersetzt (`Kanal`/`Channel`), einzelne Zellen ebenfalls (`ja`/`yes`). Liefe der
+Fingerabdruck über die angezeigte Tabelle, hätten dieselben Leuchten auf Deutsch und auf Englisch
+verschiedene acht Zeichen — und genau der Vergleich, für den der Stempel da ist, wäre kaputt.
+Gedruckt wird übersetzt, gerechnet wird deutsch. Der Parity-Guard hält das fest; im Upstream-Repo
+kann er es nicht, weil es dort keine zweite Sprache auf dem Blatt gibt.
+
+**Ein Zähler ist kein Stand.** Der `multicam-planner` druckte längst `Project v47` auf jede
+Kamerakarte. `projectVersion` zählt aber Änderungen seit dem Laden: zwei Leute, die dieselbe Datei
+laden und unterschiedlich weiterarbeiten, kommen beide bei v47 an — mit verschiedenem Inhalt. Eine
+Zahl, die kollidieren kann, beantwortet die Frage nicht, für die sie dasteht.
+
+**Was nicht auf dem Blatt steht, gehört nicht in den Fingerabdruck — und umgekehrt.** Die
+Kamerakarte zeigt unten die Liste aller Kameras des Projekts; ändert dort ein Objektiv, ist es ein
+anderes Blatt, auch wenn die eigene Kamera unverändert blieb. Die Farbliste dagegen kennt keine
+Positionen: eine verschobene Leuchte darf sie nicht als veraltet melden. Beide Richtungen sind
+Fehler, und die zweite ist die gefährlichere — ein Hinweis, der falsch anschlägt, wird nach dem
+zweiten Mal ignoriert.
 
 ## Zum Verhältnis zu ADR-003
 

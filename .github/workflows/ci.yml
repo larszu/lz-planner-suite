@@ -52,6 +52,14 @@ jobs:
       - name: Herkunfts-Vokabular (beide Planer-Kopien)
         run: npm run spec:vocab
 
+      # Der Stand-Stempel (ADR-004) liegt in drei Kopien -- eine je Planer. Die
+      # acht Hex-Zeichen darauf sind nur zum Vergleichen da; rechnen zwei Apps
+      # sie verschieden, vergleicht jemand am Telefon zwei Zahlen, die nichts
+      # miteinander zu tun haben. Dieser Lauf fuehrt alle drei aus und haelt
+      # ihre Ergebnisse gegeneinander -- Verhalten, nicht Quelltext.
+      - name: Stand-Stempel rechnet in allen drei Planern gleich
+        run: npm run stamp:parity
+
       - name: Vendorte Features haben einen Bedienweg
         run: npm run features:reachable
 

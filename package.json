@@ -21,6 +21,7 @@
     "dev:multicam": "npm run dev --workspace multicam-planner",
     "dev:light": "npm run dev --workspace light-planner",
     "spec:vocab": "node scripts/spec-source-vocabulary.mjs",
+    "stamp:parity": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/document-stamp-parity.ts",
     "drift": "node scripts/planner-drift.mjs --upstream ..",
     "drift:check": "node scripts/planner-drift.mjs --upstream .. --check",
     "drift:report": "node scripts/planner-drift.mjs --upstream .. --report docs/research/repos/DRIFT-REPORT.md",

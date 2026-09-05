@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import type { PlacedFixture, Truss, Wall, Ceiling } from '../types';
 import { computePower, fixtureCounts, footprint, trussLoads, circuitBreakdown, colorCounts, nearestTrussId } from '../core/patch';
+import { documentFingerprint, stampForStand, type DocumentStamp } from '../core/documentStamp';
+import { colorTable, gelCodes, inventoryTable, scheduleOrder, scheduleTable, tableToCsv, type DocumentTable } from '../core/documentTables';
+import { versionsFor } from '../utils/versionStore';
 import { rigCheck, issueCounts } from '../core/rigCheck';
 import { photometricReport, type EvalArea } from '../core/photometrics';
 import { buildMvr } from '../core/mvrExport';
-import { gelLibrary } from '../core/gelLibrary';
 import { getFixtureCCT, cctToRgb } from '../core/colorTemp';
 import Icon from './Icon';
 import type { IconName } from './Icon';
@@ -17,6 +19,8 @@ interface Props {
   ceilings: Ceiling[];
   area: EvalArea | null;
   projectName: string;
+  /** Fuer den Stempel: unter dieser Kennung liegen die festgeschriebenen Staende. */
+  projectId: string;
   conflicts: Set<string>;
   onAutoNumber: () => void;
   onAutoPatch: () => void;
@@ -44,22 +48,15 @@ const gelSwatch = (type: string): string =>
   type === 'CTO' ? '#f0a35e' : type === 'CTB' ? '#7fb6f0'
     : (type === 'frost' || type === 'diffusion') ? '#e8ecf2' : '#9aa7b6';
 
-const gelCodes = (ids?: string[]) =>
-  (ids ?? []).map((id) => gelLibrary.find((g) => g.id === id)?.code ?? '').filter(Boolean).join('+');
-
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
-function downloadCsv(filename: string, rows: (string | number)[][]) {
-  const esc = (v: string | number) => {
-    const s = String(v ?? '');
-    return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const csv = rows.map((r) => r.map(esc).join(';')).join('\r\n');
-  triggerDownload(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), filename);
+/** Fertiges CSV als Datei anbieten. Die BOM haengt an der DATEI, nicht am Dokument. */
+function downloadCsv(filename: string, csv: string) {
+  triggerDownload(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }), filename);
 }
 
 const lx = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v).toString());
@@ -67,7 +64,7 @@ const utilClass = (u: number) => (u >= 1 ? 'util-over' : u >= 0.8 ? 'util-warn' 
 
 // A focused multi-tool hub for paperwork, validation, analysis and interchange.
 // Each tab is one job, so no single view is overloaded.
-const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, area, projectName, conflicts, onAutoNumber, onAutoPatch, onLocate, onUpdateFixture, onClose }) => {
+const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, area, projectName, projectId, conflicts, onAutoNumber, onAutoPatch, onLocate, onUpdateFixture, onClose }) => {
   const { t } = useTranslation();
   const TABS = buildTabs(t);
   const [tab, setTabState] = useState<Tab>(() => {
@@ -87,28 +84,64 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   const colors = colorCounts(fixtures);
   const checkBadge = ic.errors + ic.warnings;
 
-  const ordered = [...fixtures].sort((a, b) => (a.channel ?? 1e9) - (b.channel ?? 1e9) || a.y - b.y || a.x - b.x);
+  const ordered = scheduleOrder(fixtures);
   const safe = (projectName || 'lichtplan').replace(/[^\w.-]+/g, '_');
 
-  const exportSchedule = () => {
-    const header = ['Unit', t('dlg.sch.csv.channel', 'Kanal'), 'Universe', t('dlg.sch.csv.address', 'Adresse'), t('dlg.sch.csv.type', 'Typ'), t('dlg.sch.csv.manufacturer', 'Hersteller'), 'X (m)', 'Y (m)', t('dlg.sch.csv.height', 'Höhe (m)'), 'Gel', t('dlg.sch.csv.purpose', 'Zweck'), t('dlg.sch.csv.focused', 'Fokussiert'), t('dlg.sch.csv.focusNote', 'Fokus-Notiz'), 'W', 'kg'];
-    const rows = ordered.map((f) => [
+  /**
+   * Stempel fuer eine dieser Listen (ADR-004).
+   *
+   * DER FINGERABDRUCK LAEUFT UEBER DIE DEUTSCHE TABELLE, nicht ueber die
+   * angezeigte. In der Suite sind Kopfzeile und einzelne Zellen uebersetzt
+   * (`Kanal`/`Channel`, `ja`/`yes`) -- wuerde der Fingerabdruck darauf laufen,
+   * haetten dieselben Leuchten auf Deutsch und auf Englisch verschiedene acht
+   * Zeichen. Genau der Vergleich, fuer den der Stempel da ist, waere dann
+   * kaputt: zwei Leute halten dasselbe Blatt und lesen verschiedene Werte vor.
+   * Deshalb: gedruckt wird uebersetzt, gerechnet wird kanonisch.
+   *
+   * Der Vergleichsstand kommt aus den Versions-Schnappschuessen -- dieselbe
+   * Tabellenfunktion, einmal ueber die aktuellen Leuchten und einmal ueber die
+   * des Schnappschusses. Gibt es keinen, nennt der Stempel keine Revision und
+   * behauptet keine Abweichung (Regel 2).
+   */
+  const stempel = (kanonisch: (f: PlacedFixture[]) => DocumentTable): DocumentStamp => {
+    const stand = versionsFor(projectId)[0];
+    const fp = (t: DocumentTable) => documentFingerprint(t.header, t.rows);
+    return stampForStand({
+      project: projectName || 'Lichtplan',
+      current: fp(kanonisch(fixtures)),
+      committed: stand
+        ? { label: stand.label, fingerprint: fp(kanonisch(stand.doc.fixtures ?? [])) }
+        : undefined,
+      now: new Date(),
+    });
+  };
+
+  /** Uebersetzte Tabelle drucken, kanonische Tabelle stempeln. */
+  const exportTable = (
+    dateiname: string,
+    angezeigt: DocumentTable,
+    kanonisch: (f: PlacedFixture[]) => DocumentTable,
+  ) => downloadCsv(dateiname, tableToCsv(angezeigt, stempel(kanonisch)));
+
+  const exportSchedule = () => exportTable('instrument-schedule.csv', {
+    header: ['Unit', t('dlg.sch.csv.channel', 'Kanal'), 'Universe', t('dlg.sch.csv.address', 'Adresse'), t('dlg.sch.csv.type', 'Typ'), t('dlg.sch.csv.manufacturer', 'Hersteller'), 'X (m)', 'Y (m)', t('dlg.sch.csv.height', 'Höhe (m)'), 'Gel', t('dlg.sch.csv.purpose', 'Zweck'), t('dlg.sch.csv.focused', 'Fokussiert'), t('dlg.sch.csv.focusNote', 'Fokus-Notiz'), 'W', 'kg'],
+    rows: ordered.map((f) => [
       f.unitNumber ?? '', f.channel ?? '', f.universe ?? '', f.dmxAddress ?? '',
       f.fixture.name, f.fixture.manufacturer, f.x, f.y, f.mountingHeight,
       gelCodes(f.gelFilterIds), f.purpose ?? '', f.focused ? t('dlg.sch.csv.yes', 'ja') : '', f.focusNote ?? '', f.fixture.wattage, f.fixture.weight,
-    ]);
-    downloadCsv('instrument-schedule.csv', [header, ...rows]);
-  };
-  const exportInventory = () => {
-    const header = [t('dlg.sch.csv.count', 'Anzahl'), t('dlg.sch.csv.manufacturer', 'Hersteller'), t('dlg.sch.csv.type', 'Typ'), 'W/Stk', 'kg/Stk', t('dlg.sch.csv.wTotal', 'W gesamt'), t('dlg.sch.csv.kgTotal', 'kg gesamt')];
-    const rows = counts.map((c) => [c.count, c.manufacturer, c.name, c.watts, c.weight, c.count * c.watts, (c.count * c.weight).toFixed(1)]);
-    downloadCsv('geraeteliste.csv', [header, ...rows]);
-  };
-  const exportColors = () => {
-    const header = [t('dlg.sch.csv.count', 'Anzahl'), t('dlg.sch.csv.brand', 'Marke'), 'Code', 'Name', t('dlg.sch.csv.type', 'Typ')];
-    const rows = colors.map((c) => [c.count, c.brand, c.code, c.name, c.type]);
-    downloadCsv('farbliste.csv', [header, ...rows]);
-  };
+    ]),
+  }, scheduleTable);
+
+  const exportInventory = () => exportTable('geraeteliste.csv', {
+    header: [t('dlg.sch.csv.count', 'Anzahl'), t('dlg.sch.csv.manufacturer', 'Hersteller'), t('dlg.sch.csv.type', 'Typ'), 'W/Stk', 'kg/Stk', t('dlg.sch.csv.wTotal', 'W gesamt'), t('dlg.sch.csv.kgTotal', 'kg gesamt')],
+    rows: counts.map((c) => [c.count, c.manufacturer, c.name, c.watts, c.weight, c.count * c.watts, (c.count * c.weight).toFixed(1)]),
+  }, inventoryTable);
+
+  const exportColors = () => exportTable('farbliste.csv', {
+    header: [t('dlg.sch.csv.count', 'Anzahl'), t('dlg.sch.csv.brand', 'Marke'), 'Code', 'Name', t('dlg.sch.csv.type', 'Typ')],
+    rows: colors.map((c) => [c.count, c.brand, c.code, c.name, c.type]),
+  }, colorTable);
+
   const exportMvr = () => {
     const data = buildMvr(fixtures, trusses, projectName);
     triggerDownload(new Blob([data as BlobPart], { type: 'application/octet-stream' }), `${safe}.mvr`);
