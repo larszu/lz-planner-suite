@@ -80,6 +80,41 @@ export default {
     // FORM ab (per Pfad benannte Prebuild-Verzeichnisse), nicht das eine
     // Paket. `npm run release:check` haelt das fest.
     x64ArchFiles: '**/prebuilds/*darwin*/**',
+    // OHNE DIESE ZEILE BRICHT DER UNIVERSAL-BUILD EINE STUFE SPAETER AB.
+    // Genau daran ist `v0.1.1` gestorben (Lauf 33974015212, 2026-09-05),
+    // nachdem `x64ArchFiles` die erste Huerde geraeumt hatte:
+    //
+    //   ⨯ pattern is too long
+    //     at assertValidPattern (@electron/asar/.../minimatch.js:281)
+    //     at shouldUnpackPath   (@electron/asar/src/asar.ts:158)
+    //     at mergeASARs         (@electron/universal/src/asar-utils.ts:216)
+    //
+    // WARUM. `mergeASARs` baut fuer die entpackten Dateien EIN einziges
+    // Glob-Muster -- `{pfad1,pfad2,…}` mit absoluten Pfaden -- und reicht es
+    // an minimatch, das bei 64 KiB abriegelt.
+    //
+    // Entpackt wird hier viel, und der groessere Teil steht nicht einmal in
+    // `asarUnpack`: electron-builder nimmt bei einem nativen Modul das GANZE
+    // Paketverzeichnis aus dem Archiv (`unpackDetector.detectUnpackedDirs` ->
+    // `autoUnpackDirs.add(moduleRootPath)`). `@julusian/freetype2` bringt
+    // seinen kompletten C++-Quellbaum mit: 553 Dateien. Dazu kommen die 157
+    // Dateien aus `planners/**/*`, die hier wirklich auf der Platte liegen
+    // MUESSEN -- `main.cjs` liefert die Planer-Renderer ueber
+    // `net.fetch(pathToFileURL(...))` aus und `cableHost.cjs` laedt Cables
+    // IPC-Module ueber `import(pathToFileURL(...))`; beides liest nicht aus
+    // einem ASAR. Das Muster ist damit weit ueber der Grenze.
+    //
+    // Upstream ist das nicht behoben: auch `@electron/universal@3.0.6` baut
+    // dieselbe Glob (asar-utils.ts:241).
+    //
+    // `mergeASARs: false` umgeht den Aufruf. Sind die beiden Teil-Archive
+    // gleich -- und das sind sie hier, weil alles Arch-Spezifische entpackt
+    // neben dem Archiv liegt --, bleibt es bei EINEM `app.asar` wie bisher;
+    // unterscheiden sie sich, legt @electron/universal `app-x64.asar` und
+    // `app-arm64.asar` mit einem kleinen Einsprung-Archiv an. Der lipo-Lauf
+    // ueber die Mach-O-Dateien und `x64ArchFiles` laufen in beiden Faellen
+    // vorher. `npm run release:check` rechnet die Laenge nach.
+    mergeASARs: false,
     // Ad-hoc-Signatur ("-"), damit Gatekeeper auf Apple Silicon die Binary
     // strukturell akzeptiert (sonst „is damaged"). Kein bezahltes Apple-
     // Zertifikat nötig; beim ersten Start weiterhin Rechtsklick → Öffnen.

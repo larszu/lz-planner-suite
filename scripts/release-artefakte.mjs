@@ -197,6 +197,73 @@ for (const f of proArchGebaut.filter((f) => gedeckt(f))) {
   )
 }
 
+// ── Teil 1b: laesst sich der ASAR-Merge ueberhaupt aufrufen? ───────────────
+
+/**
+ * minimatch lehnt Muster ueber 64 KiB ab (`MAX_PATTERN_LENGTH = 1024 * 64`).
+ * Genau dagegen laeuft `mergeASARs`: es baut fuer ALLE entpackten Dateien EIN
+ * Glob -- `{pfad1,pfad2,…}` mit absoluten Pfaden -- und gibt es an minimatch.
+ * Daran ist `v0.1.1` gestorben.
+ */
+const MUSTER_GRENZE = 1024 * 64
+
+/**
+ * Das Praefix, das `mergeASARs` den Pfaden voranstellt:
+ * `fs.mkdtemp(path.join(os.tmpdir(), 'x64-'))`. Auf einem macOS-Runner ist
+ * `os.tmpdir()` ein `/var/folders/…`-Pfad; hier steht ein typischer, damit die
+ * Rechnung nicht vom lokalen `/tmp` abhaengt.
+ */
+const TEMP_PRAEFIX = '/var/folders/6t/1lqm9rgn7wl4b6q0d5x3z9_c0000gn/T/x64-AbCdEf/'
+
+/**
+ * Was electron-builder entpackt, OHNE dass es jemand hinschreibt: sobald eine
+ * Datei eines Moduls eine Bibliothek oder ausfuehrbar ist, wandert das GANZE
+ * Modulverzeichnis aus dem Archiv --
+ * `unpackDetector.detectUnpackedDirs` -> `autoUnpackDirs.add(moduleRootPath)`.
+ *
+ * Das Ergebnis ist eine UNTERGRENZE: die 157 Dateien aus `planners/**` kommen
+ * noch obendrauf, existieren aber erst nach `build:planners` und damit nicht
+ * beim CI-Lauf dieses Guards. Fuer eine Untergrenze reicht das -- wer sie
+ * schon reisst, reisst auch die echte Zahl.
+ */
+const istLibOderExe = (datei) => /\.(dll|exe|dylib|so|node)$/.test(datei)
+
+const entpackteDateien = () => {
+  const treffer = []
+  for (const verzeichnis of produktionsBaum()) {
+    const alle = []
+    const lauf = (d) => {
+      for (const eintrag of readdirSync(d)) {
+        const pfad = join(d, eintrag)
+        if (statSync(pfad).isDirectory()) {
+          if (eintrag !== 'node_modules') lauf(pfad)
+        } else alle.push(pfad)
+      }
+    }
+    lauf(verzeichnis)
+    if (alle.some(istLibOderExe)) treffer.push(...alle.map((p) => imBaum(p).join('/')))
+  }
+  return treffer
+}
+
+const entpackt = entpackteDateien()
+const musterLaenge = `{${entpackt.map((d) => TEMP_PRAEFIX + d).join(',')}}`.length
+
+if (entpackt.length === 0) {
+  maengel.push('Keine entpackten Dateien gefunden -- lief `npm install`?')
+} else if (musterLaenge >= MUSTER_GRENZE && konfiguration.mac?.mergeASARs !== false) {
+  // Nicht "weniger entpacken" verlangen -- das ist nicht steuerbar, die
+  // Dateien kommen aus der automatischen Native-Erkennung. Sondern: wenn das
+  // Muster zu lang WIRD, muss mergeASARs aus sein. Wird freetype2 eines Tages
+  // schlanker, faellt die Forderung von selbst weg.
+  maengel.push(
+    `Das Merge-Muster waere mindestens ${musterLaenge} Zeichen lang (${entpackt.length} entpackte ` +
+      `Dateien), minimatch riegelt bei ${MUSTER_GRENZE} ab. mac.mergeASARs MUSS deshalb false ` +
+      'bleiben, sonst bricht der Universal-Build mit "pattern is too long" ab -- und weil der ' +
+      'release-Job auf needs: build steht, faellt dann auch das Windows-Artefakt aus.',
+  )
+}
+
 // ── Teil 2: schreiben zwei Ziele auf dieselbe Datei? ───────────────────────
 
 /** Endung je Ziel -- so benennt electron-builder die Ausgabe. */
@@ -259,7 +326,8 @@ if (maengel.length === 0) {
   console.log(
     `OK: ${darwinPrebuilds.length} darwin-Prebuild(s) gedeckt, ${proArchGebaut.length} pro Arch ` +
       `gebaute Module bleiben fuer lipo, ${plattformen.flatMap(zieleVon).length} Ziel(e) mit ` +
-      'eigenem Dateinamen.',
+      `eigenem Dateinamen; Merge-Muster mind. ${musterLaenge} Zeichen bei ${entpackt.length} ` +
+      `entpackten Dateien (Grenze ${MUSTER_GRENZE}, mergeASARs=${konfiguration.mac?.mergeASARs}).`,
   )
   process.exit(0)
 }
