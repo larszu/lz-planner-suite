@@ -68,7 +68,7 @@ Fehlerzeile gar nicht treffen konnte.)
 | `tally-pi` | `py_compile` OK für alle 5 Module | — | — | **0** — 55 Tests (`python -m unittest discover -s tests`) |
 | `pi-media-station` | `py_compile` OK für alle 3 Module | — | — | **0** — 21 Tests (`python -m unittest discover -s tests`) |
 
-### Die fünf Suite-Guards
+### Die sechs Suite-Guards
 
 Alle mit Exit 0 gelaufen:
 
@@ -78,6 +78,7 @@ Alle mit Exit 0 gelaufen:
 | Feature-Erreichbarkeit | `npm run features:reachable` | 2 vendorte Kopien erreichbar |
 | Doku-Auffindbarkeit | `npm run docs:reachable` | 68 Dokumente, alle von einer Einstiegsseite aus erreichbar |
 | Native Dialoge | `npm run dialogs:native` | 663 Dateien, 0 Treffer — Muster seit B-1 vollständig |
+| Vollständigkeit der Guard-Liste | `npm run ci:complete` | 7 von 7 Prüf-Läufen stehen im Workflow |
 | Planer-Drift | `npm run drift:check` | unverändert gegen die Baseline (Zahlen: `scripts/planner-drift-baseline.json`) |
 
 ### `Broadcast-intercom`: der aussagekräftigste Einzelbefund

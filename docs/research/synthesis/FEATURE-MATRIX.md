@@ -125,6 +125,25 @@ none of them holds a technical specification of the show.
 > `cable-planner` nicht eingelöst; `pi-media-station` kommt dort als Gerät oder
 > Endpunkt nicht vor.
 
+> **Nachtrag, 2026-09-04 — wo diese vier Zeilen tatsächlich laufen (B-35).**
+> `Broadcast-intercom`, `sony-camera-bridge`, `tally-pi` und `pi-media-station`
+> sind **eigenständige Anwendungen und aus der Suite-Shell nicht erreichbar.**
+> Die Modul-Registry (`apps/shell/src/modules/registry.ts`) führt fünf Einträge
+> — Übersicht, Signal, Kameras, Licht, Board — und keinen davon.
+>
+> Ein `YES` in dieser Spalte heißt hier also „das Repo existiert und läuft",
+> nicht „die Suite kann es". Das ist derselbe Unterschied wie „Code existiert"
+> gegen „Code ist erreichbar", nur eine Ebene höher — und er gehört
+> ausgeschrieben, weil die Spalte sonst gegen die Incumbents etwas ins Feld
+> führt, das ein Nutzer der Suite nirgends findet.
+>
+> Die Entscheidung, ob sie verdrahtet werden oder eigenständig bleiben, steht
+> beim Eigentümer (Backlog B-35). Beides ist vertretbar: `tally-pi` und
+> `pi-media-station` laufen auf einem Raspberry Pi im Netz und sind keine
+> Panels im Planungsfenster; `Broadcast-intercom` und `sony-camera-bridge`
+> bringen eigene Web-Oberflächen mit und wären als Modul denkbar. Was nicht
+> vertretbar ist, ist beides gleichzeitig zu behaupten.
+
 ## F. Platform qualities
 
 | Quality | Typical cloud ERP | Typical broadcast tool | Open-source tier | AVP Today | AVP Target |

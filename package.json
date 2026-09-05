@@ -27,6 +27,7 @@
     "features:reachable": "node scripts/reachable-features.mjs",
     "dialogs:native": "node scripts/native-dialogs.mjs",
     "licence:check": "node scripts/licence-consistency.mjs",
-    "docs:reachable": "node scripts/docs-reachable.mjs"
+    "docs:reachable": "node scripts/docs-reachable.mjs",
+    "ci:complete": "node scripts/ci-runs-every-check.mjs"
   }
 }

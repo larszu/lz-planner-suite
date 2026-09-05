@@ -208,12 +208,25 @@ ist selbst ein Ergebnis.
 
 ### B-8 · Herstellerneutrales Intercom-Austauschformat
 
-* **Status:** offen
-* **Befund:** Der Green-GO-Round-Trip ist seit `cable#653` verlustfrei (Preset
-  überlebt inkl. `ButtonFunctions`). Ein **herstellerneutrales** Format fehlt —
-  die Lücke, die das Segment-Dossier als „no interchange format from anyone"
-  führt.
-* **Aufwand:** groß
+* **Status:** ~~offen~~ **erledigt 2026-09-04** (`cable#684`, in die Suite
+  vendoriert mit `suite#86`).
+* **Befund war:** Der Green-GO-Round-Trip ist seit `cable#653` verlustfrei
+  (Preset überlebt inkl. `ButtonFunctions`). Ein **herstellerneutrales** Format
+  fehlte — die Lücke, die das Segment-Dossier als „no interchange format from
+  anyone" führt.
+* **Was gebaut wurde:** `types/intercomExchange.ts` und
+  `lib/intercomExchange.ts` — Format `avplan-intercom`, Version 1, mit
+  Sprechstellen, Konferenzen und `IntercomMembership {channelId, talk, listen}`.
+  Talk und Listen getrennt, weil genau diese Trennung der Punkt eines
+  Intercom-Systems ist und ein Format, das sie zusammenwirft, den Plan nicht
+  abbilden kann. Export und Import sitzen im `GreenGoExportDialog` **neben**
+  dem `.gg5`-Knopf: der bleibt der Weg IN die Anlage, der neutrale ist der Weg
+  aus dem Haus, den auch jemand lesen kann, der Riedel oder Clear-Com aufbaut.
+  Ein Format, das nur im Code existiert, ist kein Austauschformat — deshalb
+  stehen beide Knöpfe nebeneinander.
+* **Versionsschutz:** `parseIntercomExchange` weist eine Datei mit höherer
+  `formatVersion` ab, statt sie halb zu lesen. Gedeckt von
+  `tests/intercomAustauschformat.test.ts`.
 
 ### B-9 · Plan ↔ As-built für die Verkabelung
 
@@ -237,6 +250,19 @@ ist selbst ein Ergebnis.
   und Impedanz, samt Netz-Budget und drei Plan-Prüfungen. **Was wirklich fehlt,
   ist die Delivery-Hälfte:** SRT, RTMP, HLS, CDN kommen im Quelltext nirgends
   vor.
+* **Erste Hälfte erledigt 2026-09-04** (`cable#683`): `SRT`, `RTMP` und `HLS`
+  sind `SignalStandard`-Mitglieder mit Richtwert-Bandbreiten (12 / 6 / 10 Mbps
+  für je EINEN 1080p50-Weg, im Kommentar ausdrücklich als Richtwert und nicht
+  als Messung markiert), es gibt die Katalog-Spec `stream-uplink-cat6`, und der
+  Ausspielweg zählt im Netz-Budget mit
+  (`tests/ausspielwegImNetzBudget.test.ts`). Bewusst **nicht** in
+  `linkCapacityMbpsForStandard`: ein Ausspielweg ist Last, keine Leitung — die
+  Verwechslung genau dieser beiden Begriffe war der Befund hinter
+  `tests/netzBudgetLastNichtKapazitaet.test.ts`.
+* **Was offen bleibt:** das **Ziel** jenseits des Hauses. Ein CDN oder ein
+  Streaming-Endpunkt ist kein Gerät im Raum, und der Plan hat heute keinen Ort
+  dafür. Das ist ein Datenmodell-Schritt (wo wohnt ein Ausspielziel, was steht
+  an ihm, wie erscheint es im Signalfluss) und keine weitere Bandbreitenzeile.
 * **Aufwand:** groß
 
 ### B-11 · Sechs Kataloge ohne Beleg
@@ -867,7 +893,18 @@ ist selbst ein Ergebnis.
   „Code ist erreichbar", nur eine Ebene höher.
 * **DoD:** Entweder in der Registry verdrahtet, oder in der Matrix als bewusst
   eigenständig ausgewiesen — nicht stillschweigend beides.
-* **Aufwand:** klein (Ausweisung) bis mittel (Verdrahtung)
+* **Stand 2026-09-04 — die Ausweisung ist erledigt, die Entscheidung nicht.**
+  `FEATURE-MATRIX.md` (Block E) sagt jetzt ausdrücklich, dass diese vier
+  eigenständige Anwendungen sind und aus der Shell nicht erreichbar; ein `YES`
+  dort heißt „das Repo läuft", nicht „die Suite kann es". Damit behauptet die
+  Matrix nicht länger beides gleichzeitig.
+* **Was offen bleibt (Eigentümer):** ob verdrahtet wird. Beides ist vertretbar
+  — `tally-pi` und `pi-media-station` laufen auf einem Pi im Netz und sind
+  keine Panels im Planungsfenster; `Broadcast-intercom` und
+  `sony-camera-bridge` bringen eigene Web-Oberflächen mit und wären als Modul
+  denkbar.
+* **Aufwand:** ~~klein (Ausweisung)~~ erledigt; mittel (Verdrahtung), falls
+  entschieden
 
 ---
 
@@ -1138,6 +1175,9 @@ gehalten, nicht als Versäumnis:
 | ADR-002: 444 statt gemessener 412 Katalog-Einträge | `suite` (dieser PR) |
 | `tally-pi`/`pi-media-station` galten als test- und CI-los (55/21 Tests) | `suite` (dieser PR) |
 | Doku-Auffindbarkeit: 67 von 67 Dokumenten verwaist (B-38) | `suite` (dieser PR) |
+| Herstellerneutrales Intercom-Format (B-8) | `cable#684`, `suite#86` |
+| Ausspielweg SRT/RTMP/HLS im Netz-Budget (B-10, erste Hälfte) | `cable#683` |
+| Vier eigenständige Repos in der Matrix ausgewiesen (B-35, Ausweisung) | `suite` (dieser PR) |
 | Erste CI + Tests für `pi-media-station` (B-12) | `pi-media-station#3` |
 | Tally-Id-Vertrag: jede echte `tally.json` wurde abgelehnt | `cable#674` |
 | Zehnte Messrunde: 6 von 12 Zeilen widerlegt | `suite#75` |
