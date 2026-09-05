@@ -68,7 +68,7 @@ Fehlerzeile gar nicht treffen konnte.)
 | `tally-pi` | `py_compile` OK für alle 5 Module | — | — | **0** — 55 Tests (`python -m unittest discover -s tests`) |
 | `pi-media-station` | `py_compile` OK für alle 3 Module | — | — | **0** — 21 Tests (`python -m unittest discover -s tests`) |
 
-### Die sechs Suite-Guards
+### Die neun Suite-Guards
 
 Alle mit Exit 0 gelaufen:
 
@@ -78,8 +78,20 @@ Alle mit Exit 0 gelaufen:
 | Feature-Erreichbarkeit | `npm run features:reachable` | 2 vendorte Kopien erreichbar |
 | Doku-Auffindbarkeit | `npm run docs:reachable` | 68 Dokumente, alle von einer Einstiegsseite aus erreichbar |
 | Native Dialoge | `npm run dialogs:native` | 663 Dateien, 0 Treffer — Muster seit B-1 vollständig |
-| Vollständigkeit der Guard-Liste | `npm run ci:complete` | 7 von 7 Prüf-Läufen stehen im Workflow |
+| Lizenz der vendorten Apps | `npm run licence:check` | alle Kopien tragen die Lizenz der Suite |
+| Laufzeit-Abhängigkeiten im Paket | `npm run deps:check` | jeder nackte Import des mitverpackten Main-Prozesses steht in `apps/shell/package.json` |
+| Baubare Release-Artefakte | `npm run release:check` | 2 darwin-Prebuilds gedeckt, keytar bleibt für `lipo`, 3 Ziele mit eigenem Dateinamen |
+| Vollständigkeit der Guard-Liste | `npm run ci:complete` | 9 von 9 Prüf-Läufen stehen im Workflow |
 | Planer-Drift | `npm run drift:check` | unverändert gegen die Baseline (Zahlen: `scripts/planner-drift-baseline.json`) |
+
+`release:check` ist am 2026-09-05 aus einem Schaden entstanden, nicht aus einer
+Vermutung: Tag `v0.1.0` hat **nichts** ans Release gehängt. Der
+macOS-Universal-Merge brach an einer in beiden Teil-Builds identischen
+Prebuild-Datei ab und riss über `needs: build` die längst fertige Windows-`.exe`
+mit; unabhängig davon schrieben NSIS und Portable auf denselben Dateinamen, so
+dass im Release ohnehin nur eine der beiden `.exe` gelegen hätte. Beides ist vor
+dem Bauen entscheidbar — deshalb entscheidet es jetzt die CI und nicht der
+nächste Tag.
 
 ### `Broadcast-intercom`: der aussagekräftigste Einzelbefund
 

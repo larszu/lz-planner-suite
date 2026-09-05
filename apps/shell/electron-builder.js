@@ -54,6 +54,32 @@ export default {
       { target: 'dmg', arch: 'universal' },
     ],
     artifactName: '${productName}-${version}-${arch}.${ext}',
+    // OHNE DIESE ZEILE GIBT ES KEIN macOS-ARTEFAKT. Gemessen an v0.1.0
+    // (Lauf 33970319571, 2026-09-05): der Universal-Build bricht ab mit
+    //   Detected file ".../@julusian/freetype2/prebuilds/
+    //   freetype2-darwin-arm64/node-napi-v7.node" that's the same in both
+    //   x64 and arm64 builds and not covered by the x64ArchFiles rule
+    // und da `release` auf `needs: build` steht, wurde danach auch die
+    // fertige Windows-.exe nie ans Release gehaengt: v0.1.0 blieb leer.
+    //
+    // WARUM. `@julusian/freetype2` baut nichts, es liefert fertige Binaries
+    // aus -- ein Verzeichnis je Plattform+Arch unter `prebuilds/`, zur
+    // Laufzeit ausgewaehlt von `pkg-prebuilds/bindings.js` ueber `os.arch()`.
+    // Beide Teil-Builds tragen deshalb denselben vollstaendigen Baum, Byte
+    // fuer Byte gleich. `@electron/universal` verlangt fuer eine in beiden
+    // Builds identische Mach-O-Datei eine ausdrueckliche Ansage -- sonst
+    // waere ein vergessenes Rebuild nicht von einer absichtlich geteilten
+    // Datei zu unterscheiden -- und bricht sonst ab. `lipo` waere hier auch
+    // falsch: die Auswahl passiert ueber den PFAD, nicht ueber eine
+    // Fat-Binary.
+    //
+    // Der Name der Option ist irrefuehrend („x64ArchFiles"), ihre Wirkung ist
+    // genau die richtige: „identisch ist in Ordnung, eine Kopie behalten".
+    // Sie greift ausschliesslich im Gleichheitsfall -- unterscheiden sich die
+    // beiden Dateien, laeuft weiterhin lipo. Das Muster deckt bewusst die
+    // FORM ab (per Pfad benannte Prebuild-Verzeichnisse), nicht das eine
+    // Paket. `npm run release:check` haelt das fest.
+    x64ArchFiles: '**/prebuilds/*darwin*/**',
     // Ad-hoc-Signatur ("-"), damit Gatekeeper auf Apple Silicon die Binary
     // strukturell akzeptiert (sonst „is damaged"). Kein bezahltes Apple-
     // Zertifikat nötig; beim ersten Start weiterhin Rechtsklick → Öffnen.
@@ -74,5 +100,17 @@ export default {
     oneClick: false,
     allowToChangeInstallationDirectory: true,
     perMachine: false,
+  },
+  // OHNE DIESEN BLOCK GIBT ES NUR EINE DER BEIDEN .exe. `win.artifactName`
+  // gilt sonst fuer NSIS UND Portable, und beide schreiben nach
+  // „AV Planner Suite-<version>-x64.exe". Im Lauf 33970319571 steht es
+  // woertlich:
+  //   • building  target=nsis     file=release\AV Planner Suite-0.1.0-x64.exe
+  //   • building  target=portable file=release\AV Planner Suite-0.1.0-x64.exe
+  // und `ls release/` zeigt danach EINE .exe -- der Portable-Build hat den
+  // Installer ueberschrieben. Kein Fehler, keine Warnung: electron-builder
+  // baut beide Ziele brav, das zweite legt sich auf das erste.
+  portable: {
+    artifactName: '${productName}-${version}-portable.${ext}',
   },
 }

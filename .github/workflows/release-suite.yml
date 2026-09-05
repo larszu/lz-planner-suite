@@ -116,6 +116,40 @@ jobs:
         with:
           path: artifacts
 
+      - name: Release-Vollstaendigkeit pruefen
+        # v0.1.0 hat NICHTS ans Release gehaengt: der macOS-Job brach ab, und
+        # weil dieser Job an `needs: build` haengt, blieb auch die fertig
+        # gebaute Windows-.exe liegen. Dieser Schritt prueft nicht, dass
+        # IRGENDWAS da ist (das tut `if-no-files-found: error` je Job), sondern
+        # dass JEDE Gattung da ist. Ein halbes Release ist schlimmer als keines:
+        # es sieht auf der Release-Seite vollstaendig aus.
+        #
+        # Zwei .exe sind Absicht -- NSIS-Installer und Portable. Bis heute
+        # trugen beide denselben Dateinamen, das Portable ueberschrieb den
+        # Installer und im Release lag nur eine Datei. Deshalb wird hier nach
+        # BEIDEN getrennt gesucht und nicht nur nach „*.exe".
+        shell: bash
+        run: |
+          set -eu
+          echo "--- heruntergeladene Artefakte ---"
+          find artifacts -type f | sort
+          echo "----------------------------------"
+          alleExe="$(find artifacts -type f -name '*.exe' | wc -l | tr -d ' ')"
+          portable="$(find artifacts -type f -name '*-portable.exe' | wc -l | tr -d ' ')"
+          installer="$(( alleExe - portable ))"
+          dmg="$(find artifacts -type f -name '*.dmg' | wc -l | tr -d ' ')"
+          fehlt=0
+          melde() { echo "FEHLT $1"; fehlt=1; }
+          [ "$installer" -ge 1 ] || melde 'NSIS-Installer (*.exe ohne -portable)'
+          [ "$portable"  -ge 1 ] || melde 'Portable (*-portable.exe)'
+          [ "$dmg"       -ge 1 ] || melde 'macOS-Download (*.dmg)'
+          echo "Installer=$installer Portable=$portable DMG=$dmg"
+          if [ "$fehlt" -ne 0 ]; then
+            echo
+            echo "Erst den fehlenden Build-Job reparieren, dann den Tag neu setzen."
+            exit 1
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
