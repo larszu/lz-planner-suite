@@ -10,12 +10,18 @@ export function StatusBar({
   project,
   zoom,
   onZoom,
+  moduleLabel,
+  plannerOffen,
   runtime,
 }: {
   module: ModuleId
   project: SuiteProject | null
   zoom: number
   onZoom: (zoom: number) => void
+  /** Anzeigename des aktiven Moduls (uebersetzt). */
+  moduleLabel: string
+  /** Steht gerade ein echter Planer im Rahmen? Dann zaehlt der seine Objekte selbst. */
+  plannerOffen?: boolean
   /**
    * Gesetzt, wenn das aktive Modul eine Anwendung im Netz zeigt. Die Adresse
    * gehoert dann in die Statusleiste: sie ist bei einem Geraet die
@@ -60,13 +66,22 @@ export function StatusBar({
       ) : runtime ? (
         <span className="av-status-item text-av-text-faint">{runtime.repo}</span>
       ) : (
-        <span className="av-status-item text-av-text-faint">{t('chrome.status.overview', 'Übersicht')}</span>
+        // Vorher stand hier auf JEDEM Nicht-Canvas-Modul fest „Uebersicht" --
+        // auch auf dem Board. Eine Statusleiste, die das falsche Modul nennt,
+        // ist schlimmer als eine leere.
+        <span className="av-status-item text-av-text-faint">{moduleLabel}</span>
       )}
 
       <span className="flex-1" />
 
       {runtime ? (
         <span className="av-status-item av-num text-av-text-secondary">{runtime.url}</span>
+      ) : plannerOffen ? (
+        // Steht der echte Planer im Rahmen, bringt er seine eigene
+        // Statusleiste mit -- und die zaehlt dasselbe. „6 Geraete 5 Kabel"
+        // stand dadurch zweimal untereinander im selben Fenster. Die Zahlen
+        // gehoeren dem Planer; die Shell nennt hier das Projekt.
+        <span className="av-status-item text-av-text-faint">{project?.meta.name ?? ''}</span>
       ) : !project ? (
         <span className="av-status-item text-av-text-faint">{t('chrome.status.noProject', 'Kein Projekt · Modul eigenständig')}</span>
       ) : module === 'signal' && counts ? (

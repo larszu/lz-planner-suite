@@ -40,17 +40,13 @@ export function SignalPreview({
   project,
   selectedId,
   onSelect,
-  hidden,
 }: {
   project: SuiteProject | null
   selectedId: string | null
   onSelect: (id: string) => void
-  /** Ausgeblendete Ebenen (stabile IDs aus der Bibliothek). */
-  hidden?: Set<string>
 }) {
   const t = useT()
   if (!project) return <StandaloneHint label={t('chrome.preview.signalLabel', 'Der Signal-Flow')} />
-  const hideSignal = !!hidden?.has('signal')
   const rects = new Map<string, Rect>(project.nodes.map((n) => [n.id, nodeRect(n)]))
 
   const link = (c: Cable): { d: string; mx: number; my: number } | null => {
@@ -74,7 +70,7 @@ export function SignalPreview({
       <text x={project.nodes[0].nx * VB_W} y={project.nodes[0].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">{t('chrome.preview.stageFloor', 'BÜHNE / FLOOR')}</text>
       <text x={project.nodes[3].nx * VB_W} y={project.nodes[3].ny * VB_H - 14} className="fill-[var(--av-text-faint)]" fontSize={13} fontWeight={600} letterSpacing="0.08em">{t('chrome.preview.regieOb', 'REGIE / OB')}</text>
 
-      {!hideSignal && project.cables.map((c) => {
+      {project.cables.map((c) => {
         const l = link(c)
         if (!l) return null
         const active = selectedId === c.id
@@ -121,7 +117,6 @@ export function PlanPreview({
   onSelect,
   showFov = true,
   showHeat = true,
-  hidden,
 }: {
   project: SuiteProject | null
   mode: 'cameras' | 'licht'
@@ -131,14 +126,9 @@ export function PlanPreview({
   showFov?: boolean
   /** Licht-Heatmap ein-/ausblenden. */
   showHeat?: boolean
-  /** Ausgeblendete Ebenen (stabile IDs aus der Bibliothek). */
-  hidden?: Set<string>
 }) {
   const t = useT()
   if (!project) return <StandaloneHint label={mode === 'cameras' ? t('chrome.preview.camerasLabel', 'Der Kamera-Plan') : t('chrome.preview.lichtLabel', 'Der Licht-Plan')} />
-  const hideRoom = !!hidden?.has('room')
-  const hideCameras = !!hidden?.has('cameras')
-  const hideLight = !!hidden?.has('light')
   const { hall, stage } = project
   const innerW = 1000 - PLAN_PAD * 2
   const scale = innerW / hall.w
@@ -165,8 +155,7 @@ export function PlanPreview({
         </radialGradient>
       </defs>
       {/* Raum-Ebene: Raster + Rahmen + Bühne */}
-      {!hideRoom && (
-        <>
+      <>
           {gridX.map((x) => (
             <line key={`gx${x}`} x1={mx(x)} y1={PLAN_PAD} x2={mx(x)} y2={PLAN_PAD + innerH} className="stroke-[var(--av-border-muted)]" strokeWidth={0.75} />
           ))}
@@ -176,12 +165,11 @@ export function PlanPreview({
           <rect x={PLAN_PAD} y={PLAN_PAD} width={innerW} height={innerH} rx={6} className="fill-none stroke-[var(--av-border)]" strokeWidth={1.4} />
           <rect x={mx(stage.x)} y={my(stage.y)} width={stage.w * scale} height={stage.h * scale} rx={4} fill="var(--av-warn-dim)" className="stroke-[var(--mod-licht)]" strokeWidth={1.2} />
           <text x={mx(stage.x) + 8} y={my(stage.y) + 18} className="fill-[var(--mod-licht)]" fontSize={12} fontWeight={600}>{t('chrome.preview.stage', 'Bühne')} {stage.w}×{stage.h} m</text>
-        </>
-      )}
+      </>
 
       {mode === 'cameras'
-        ? !hideCameras && project.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} showFov={showFov} />)
-        : !hideLight && project.fixtures.map((fx) => <FixtureMark key={fx.id} fx={fx} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={fx.id === selectedId} onSelect={onSelect} showHeat={showHeat} />)}
+        ? project.cameras.map((cam) => <CameraMark key={cam.id} cam={cam} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={cam.id === selectedId} onSelect={onSelect} showFov={showFov} />)
+        : project.fixtures.map((fx) => <FixtureMark key={fx.id} fx={fx} mx={mx} my={my} scale={scale} stageCx={stageCx} stageCy={stageCy} active={fx.id === selectedId} onSelect={onSelect} showHeat={showHeat} />)}
     </svg>
   )
 }

@@ -211,9 +211,12 @@ async function lauf(nativ) {
     // ein benanntes Modul mit einer Adresse und einer Erklaerung, nicht ein
     // toter Rahmen und nicht eine Attrappe. Der Weg selbst (`__suiteTally`)
     // muss bereitstehen, sonst faellt der Tally-Knopf im Signal-Modul aus.
+    // Die Namen stehen in `apps/shell/src/modules/runtimes.ts` (Feld `title`).
+    // Wer dort umbenennt, faellt hier auf -- so soll es sein: der Test prueft,
+    // dass das Modul SEINEN Namen zeigt, nicht irgendeinen.
     const geraete = [
       { taste: '6', name: 'Tally-Anlage' },
-      { taste: '7', name: 'Kamerasteuerung' },
+      { taste: '7', name: 'Kamerapult' },
       { taste: '8', name: 'Intercom' },
       { taste: '9', name: 'Medien-Station' },
     ]

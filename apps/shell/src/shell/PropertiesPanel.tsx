@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { Button, Icon } from '@avplan/ui'
-import { computeCounts, type SuiteProject } from '../data/project'
+import type { SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { useT, type TFunc } from '../i18n'
+import { RUNTIMES } from '../modules/runtimes'
+import type { RuntimeHealth } from './runtimeHealth'
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -38,6 +40,14 @@ function Header({ eyebrow, title, sub, accent }: { eyebrow: string; title: strin
   )
 }
 
+/** Die Produktionsphase als Wort. Vorher stand dort der rohe Enum-Wert („setup"). */
+const PHASE_DE: Record<string, string> = {
+  planning: 'Planung',
+  setup: 'Aufbau',
+  show: 'Show',
+  teardown: 'Abbau',
+}
+
 const typeLabel = (t: TFunc): Record<string, string> => ({
   heading: t('panels.board.type.heading', 'Überschriften'),
   note: t('panels.board.type.note', 'Notizen'),
@@ -55,11 +65,14 @@ export function PropertiesPanel({
   project,
   selectedId,
   onNavigate,
+  runtimeHealth,
 }: {
   module: ModuleDef
   project: SuiteProject | null
   selectedId: string | null
   onNavigate: (id: ModuleId) => void
+  /** Erreichbarkeit der vier Anlagen — gemessen in `useRuntimeHealth`. */
+  runtimeHealth?: RuntimeHealth
 }) {
   const t = useT()
   const accent = module.accent
@@ -82,16 +95,55 @@ export function PropertiesPanel({
   }
 
   if (module.id === 'overview') {
-    const c = computeCounts(project)
+    // WAS HIER FRUEHER STAND: derselbe Umfang (Geraete/Kabel/Kameras/Fixtures),
+    // den das Dashboard in der Mitte als Karten zeigt und die Bibliothek links
+    // noch einmal auflistet. Dreimal dieselbe Zahl auf einem Bildschirm ist
+    // keine Uebersicht, sondern Fuellung.
+    //
+    // Stattdessen steht hier, was NUR die Shell weiss und sonst niemand zeigt:
+    // welche Anlage im Netz gerade antwortet, und in welchem Zustand das
+    // Projekt selbst ist.
     return (
       <div className="flex h-full flex-col bg-av-surface-1">
         <Header eyebrow={t('panels.overview.eyebrow', 'Projekt · Übersicht')} title={project.meta.name} sub={`${project.meta.venue} · Version ${project.meta.version}`} accent={accent} />
         <div className="av-scroll flex-1 overflow-auto">
-          <Group title={t('panels.group.scope', 'Umfang')} icon="modules">
-            <Field label={t('panels.field.devices', 'Geräte')}>{c.devices}</Field>
-            <Field label={t('panels.field.cables', 'Kabel')}>{c.cables}</Field>
-            <Field label={t('panels.field.cameras', 'Kameras')}>{c.cameras}</Field>
-            <Field label={t('panels.field.fixtures', 'Fixtures')}>{c.fixtures}</Field>
+          <Group title={t('panels.group.anlagen', 'Anlagen im Netz')} icon="nodes">
+            {RUNTIMES.map((r) => {
+              const zustand = runtimeHealth?.[r.id] ?? 'unknown'
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  className="av-focus flex w-full items-center gap-2 rounded px-1 py-1.5 text-left hover:bg-av-surface-2"
+                  onClick={() => onNavigate(r.id)}
+                >
+                  <span
+                    className="h-2 w-2 flex-none rounded-full"
+                    style={{
+                      background: zustand === 'on' ? 'var(--av-ok)' : 'var(--av-text-faint)',
+                      opacity: zustand === 'on' ? 1 : zustand === 'off' ? 0.5 : 0.3,
+                    }}
+                  />
+                  <span className="flex-1 truncate text-[12.5px] text-av-text">{r.label}</span>
+                  <span className="av-num text-[11px] text-av-text-faint">
+                    {zustand === 'on'
+                      ? t('panels.anlagen.on', 'antwortet')
+                      : zustand === 'off'
+                        ? t('panels.anlagen.off', 'still')
+                        : t('panels.anlagen.unknown', '…')}
+                  </span>
+                </button>
+              )
+            })}
+          </Group>
+          <Group title={t('panels.group.projectState', 'Projekt')} icon="modules">
+            <Field label={t('panels.field.version', 'Version')}>{project.meta.version}</Field>
+            <Field label={t('panels.field.saved', 'Stand')}>
+              {project.meta.saved ? t('panels.saved.yes', 'gespeichert') : t('panels.saved.no', 'ungespeichert')}
+            </Field>
+            <Field label={t('panels.field.phase', 'Phase')}>
+              {t(`panels.phase.${project.show.phase}`, PHASE_DE[project.show.phase])}
+            </Field>
           </Group>
         </div>
       </div>

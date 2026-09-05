@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Fragment, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { Icon, type IconName } from './icons'
 
@@ -10,6 +10,25 @@ export interface RailModule {
   hotkey?: string
   /** Akzentfarbe (CSS-Wert/Variable) für aktiven Zustand + Indikator. */
   accent?: string
+  /**
+   * Überschrift der Gruppe, zu der dieser Eintrag gehört. Wechselt sie
+   * gegenüber dem vorigen Eintrag, zeichnet die Rail eine Trennlinie mit
+   * dieser Beschriftung.
+   *
+   * WARUM DAS NÖTIG WURDE: die Rail war eine flache Liste. Mit den vier
+   * Laufzeit-Anwendungen stehen darin neun Einträge, die zwei verschiedene
+   * Dinge sind — Module, in denen man PLANT, und Geräte, die man BEDIENT.
+   * Ohne Trennung liest sich „Kameras" (Plan) direkt neben „Kamerapult"
+   * (Steuerung) wie zweimal dasselbe.
+   */
+  group?: string
+  /**
+   * Erreichbarkeit, wenn hinter dem Eintrag ein Gerät im Netz steht:
+   * `on` antwortet, `off` antwortet nicht, `unknown` wird gerade gesucht.
+   * Ohne Angabe kein Punkt — ein mitgelieferter Planer ist immer da, und ein
+   * Punkt, der nichts misst, wäre eine Behauptung.
+   */
+  status?: 'on' | 'off' | 'unknown'
 }
 
 export interface ModuleRailProps {
@@ -42,6 +61,7 @@ const RailButton = ({
     onClick={() => onSelect(mod.id)}
   >
     {mod.hotkey && <span className="av-rail-hotkey">{mod.hotkey}</span>}
+    {mod.status && <span className="av-rail-dot" data-status={mod.status} aria-hidden="true" />}
     <Icon name={mod.icon} size={20} />
     <span className="av-rail-label">{mod.label}</span>
   </button>
@@ -79,8 +99,15 @@ export function ModuleRail({
 
   return (
     <nav className="av-rail" aria-label={ariaLabel}>
-      {modules.map((mod) => (
-        <RailButton key={mod.id} mod={mod} active={mod.id === active} onSelect={onSelect} />
+      {modules.map((mod, i) => (
+        <Fragment key={mod.id}>
+          {mod.group && mod.group !== modules[i - 1]?.group && (
+            <div className="av-rail-group" role="presentation">
+              {mod.group}
+            </div>
+          )}
+          <RailButton mod={mod} active={mod.id === active} onSelect={onSelect} />
+        </Fragment>
       ))}
       {footer && footer.length > 0 && (
         <>

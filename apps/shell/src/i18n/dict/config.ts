@@ -48,6 +48,8 @@ export const config: Record<string, string> = {
   'config.phase.teardown': 'Teardown',
   // App-Chrome
   'config.rail.library': 'Library',
+  'config.rail.group.planung': 'Planning',
+  'config.rail.group.betrieb': 'Operations',
   'config.aria.libraryLayers': 'Library and layers',
   'config.aria.properties': 'Properties',
   'config.toast.saved': 'Project saved',

@@ -356,7 +356,7 @@ ist selbst ein Ergebnis.
 
 ### B-16 · Acht von dreizehn Suite-Tabs schalten nichts
 
-* **Status:** offen (Entscheidung beim Eigentümer, siehe E-9)
+* **Status:** ~~offen~~ **erledigt 2026-09-05** (`suite#100`) — entfernt, nicht ausgebaut
 * **Befund (nachgeprüft 2026-09-04):** `registry.ts` definiert 13 Tabs über
   fünf Module. Die Shell hat sehr wohl **eigene** Views — `OverviewSurface`,
   `BoardCanvas`, `previews.tsx` sind Shell-Code, kein iframe. Der Befund liegt
@@ -375,7 +375,16 @@ ist selbst ein Ergebnis.
   (oder wählt es in der Befehlspalette). Die Markierung wandert, der Inhalt
   bleibt exakt derselbe 2D-SVG-Plan. Keine Fehlermeldung, kein Hinweis — es
   sieht aus, als sei die 3D-Ansicht kaputt, nicht als gäbe es sie nicht.
-* **Aufwand:** klein (entfernen) / groß (ausbauen)
+* **Entschieden: entfernt (`suite#100`).** Nachgezählt waren es nicht acht von
+  dreizehn, sondern **dreizehn von dreizehn** — auch „Zusammenfassung" und
+  „Plan-Checks" auf der Übersicht und „Board"/„Moodboard" schalteten nichts.
+  Ausbauen hätte geheißen, dreizehn Ansichten zu erfinden, von denen die drei
+  Planer-Module ihre eigenen schon mitbringen (der eingebettete Planer hat
+  seine Ansichtsleiste). Die Tab-Zeile ist deshalb weg; der Umschalter
+  „Zur Übersicht / Im Planer öffnen" bleibt, weil er wirklich umschaltet.
+  Damit fallen auch die Tab-Einträge aus der Befehlspalette, die dort dasselbe
+  Nichts taten.
+* **Aufwand:** ~~klein (entfernen) / groß (ausbauen)~~ erledigt
 
 ### B-17 · Die dokumentierte Dev-Einbettung trifft nie einen laufenden Planer
 
@@ -1203,7 +1212,7 @@ gehalten, nicht als Versäumnis:
 | E-6 | Was zählt als **Beleg** für einen Steckertyp / eine Funkkomponente? | B-11 |
 | E-7 | Liefert der Planer den Pi **direkt** oder bleibt die Datei der Weg? | B-6 |
 | E-8 | Soll importierte Rentman-Leistung (`powerWatts`) in die Stromrechnung eingehen? | B-15 — ändert die Gesamtlast bestehender Pläne von 0 W auf einen echten Wert |
-| E-9 | Werden die acht wirkungslosen Tabs **entfernt** oder **ausgebaut**? | B-16 — Ausbauen heißt acht neue Views (Rack, 3D ×2, Heatmap-Report, Plan-Checks, Moodboard, 2D-Plan) |
+| ~~E-9~~ | ~~Werden die acht wirkungslosen Tabs **entfernt** oder **ausgebaut**?~~ | **entschieden 2026-09-05** (`suite#100`): entfernt. Es waren dreizehn von dreizehn; die drei Planer bringen ihre Ansichtsleiste selbst mit, und für die übrigen hätte Ausbauen geheißen, Ansichten zu erfinden |
 | E-10 | Auf welcher Seite werden die Dev-Ports angeglichen? | B-17 — Planer auf 4181-4183 festnageln berührt cable-planners `dev:electron` und lights Screenshot-Skripte; die Shell umzustellen scheitert an der 5173-Kollision zweier Planer |
 | E-21 | Wer gewinnt, wenn **MultiCam und Licht denselben Raum** ändern? | B-39.1 — der Seed trägt den Raum bisher nur hin; ein Rückweg ohne diese Regel überschriebe die Änderung des jeweils anderen Planers |
 | E-11 | Soll der Cross-Link bis **in** die eingebetteten Planer reichen? | B-18 — braucht einen gemeinsamen Id-Raum zwischen Shell-Seed-Modell und den Planer-Projekten |
@@ -1284,6 +1293,11 @@ gehalten, nicht als Versäumnis:
 | `drumKit`/`wirelessRig` fehlten in der Stückliste (B-31, Rest) | `cable#678` |
 | Arbeitsweise-Direktive in `cable-planner/CLAUDE.md` | `cable#678` |
 | `READS_DEVICE` traf nur Lese-Verben, `TOUCHES_PLAN` zu eng | `cable#679` |
+| Dreizehn wirkungslose Tabs entfernt (B-16, E-9) | `suite#100` |
+| Ebenen-Schalter der Bibliothek erreichten im Paket nichts | `suite#100` |
+| Umfang stand dreimal auf einem Bildschirm | `suite#100` |
+| Statusleiste nannte auf jedem Nicht-Canvas-Modul „Uebersicht" | `suite#100` |
+| Rail: neun Eintraege flach, „Kameras" neben „Kamera" | `suite#100` |
 | Vier Laufzeit-Anwendungen als Module verdrahtet (B-35, E-19) | `suite#99` |
 | Tally-Karte geht aus dem Plan an den Pi statt in eine Datei (B-41) | `suite#99` |
 | Leere Tally-Sendung haette die Geraeteliste des Pi geleert | `suite#99` |

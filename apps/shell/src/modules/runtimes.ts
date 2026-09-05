@@ -71,8 +71,11 @@ export const RUNTIMES: RuntimeDef[] = [
   {
     id: 'kamera',
     repo: 'sony-camera-bridge',
-    label: 'Kamera',
-    title: 'Kamerasteuerung (RCP/PTZ)',
+    // "Kamerapult" statt "Kamera": in derselben Rail steht bereits das Modul
+    // "Kameras" (der Kamera-PLAN). Zwei Eintraege, deren Namen sich um ein
+    // "s" unterscheiden, sind keine Benennung, sondern eine Falle.
+    label: 'Kamerapult',
+    title: 'Kamerapult (RCP/PTZ)',
     icon: 'camera',
     accent: 'var(--mod-cameras)',
     hotkey: '7',

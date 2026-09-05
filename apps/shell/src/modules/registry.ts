@@ -9,11 +9,6 @@ export type ModuleId =
   | 'board'
   | RuntimeId
 
-export interface ModuleTab {
-  id: string
-  label: string
-}
-
 export interface ModuleDef {
   id: ModuleId
   /** Label in der Rail. */
@@ -36,7 +31,6 @@ export interface ModuleDef {
    * steht woanders und hat eine Adresse (`shell/runtimeHosts.ts`).
    */
   runtime?: RuntimeId
-  tabs: ModuleTab[]
   libraryTabs: string[]
   eyebrow: string
 }
@@ -67,10 +61,6 @@ export const MODULES: ModuleDef[] = [
     hotkey: '1',
     accent: 'var(--mod-overview)',
     dataModule: 'overview',
-    tabs: [
-      { id: 'summary', label: 'Zusammenfassung' },
-      { id: 'checks', label: 'Plan-Checks' },
-    ],
     libraryTabs: ['Projekt', 'Venue', 'Verlauf'],
     eyebrow: 'Projekt',
   },
@@ -84,11 +74,6 @@ export const MODULES: ModuleDef[] = [
     dataModule: 'signal',
     planner: 'cable',
     plannerUrl: plannerUrl('signal', env.VITE_PLANNER_SIGNAL, 'http://localhost:4181/'),
-    tabs: [
-      { id: 'flow', label: 'Signal-Flow' },
-      { id: 'plan2d', label: '2D-Plan' },
-      { id: 'rack', label: 'Rack-Ansicht' },
-    ],
     libraryTabs: ['Equipment', 'Kabel', 'Racks'],
     eyebrow: 'Kabel · Signal',
   },
@@ -102,11 +87,6 @@ export const MODULES: ModuleDef[] = [
     dataModule: 'cameras',
     planner: 'multicam',
     plannerUrl: plannerUrl('cameras', env.VITE_PLANNER_CAMERAS, 'http://localhost:4182/'),
-    tabs: [
-      { id: 'plan2d', label: '2D-Plan' },
-      { id: 'view3d', label: '3D-Vorschau' },
-      { id: 'preview', label: 'Kamera-Vorschau' },
-    ],
     libraryTabs: ['Kameras', 'Objektive', 'Templates'],
     eyebrow: 'Kamera · Venue',
   },
@@ -120,11 +100,6 @@ export const MODULES: ModuleDef[] = [
     dataModule: 'licht',
     planner: 'light',
     plannerUrl: plannerUrl('licht', env.VITE_PLANNER_LICHT, 'http://localhost:4183/'),
-    tabs: [
-      { id: 'plan2d', label: '2D-Plan' },
-      { id: 'view3d', label: '3D-Vorschau' },
-      { id: 'heatmap', label: 'Heatmap-Report' },
-    ],
     libraryTabs: ['Fixtures', 'Gels', 'Presets'],
     eyebrow: 'Fixture · Licht',
   },
@@ -136,10 +111,6 @@ export const MODULES: ModuleDef[] = [
     hotkey: '5',
     accent: 'var(--mod-board)',
     dataModule: 'board',
-    tabs: [
-      { id: 'board', label: 'Board' },
-      { id: 'moodboard', label: 'Moodboard' },
-    ],
     libraryTabs: ['Karten', 'Vorlagen'],
     eyebrow: 'Board · Kreativ',
   },
@@ -164,7 +135,6 @@ for (const r of RUNTIMES) {
     accent: r.accent,
     dataModule: r.id,
     runtime: r.id,
-    tabs: [{ id: 'app', label: 'Bedienoberfläche' }],
     libraryTabs: [],
     eyebrow: r.repo,
   })

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Badge, Icon } from '@avplan/ui'
+import { Icon } from '@avplan/ui'
 import type { SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { useT, format, type TFunc } from '../i18n'
@@ -27,21 +27,6 @@ const deriveGroups = (module: ModuleId, project: SuiteProject | null, t: TFunc):
   if (!project) return []
   const join = (...parts: (string | undefined)[]) => parts.filter(Boolean).join(' · ')
   switch (module) {
-    case 'overview': {
-      const client = project.show.contacts.find((c) => c.billTo)?.name ?? project.show.contacts[0]?.org
-      return [
-        { group: t('panels.lib.overview.project', 'Projekt'), entries: [
-          { name: project.meta.name, sub: join(project.meta.venue, `v${project.meta.version}`) },
-          ...(client ? [{ name: t('panels.lib.overview.client', 'Auftraggeber'), sub: client }] : []),
-        ] },
-        { group: t('panels.lib.overview.scope', 'Umfang'), entries: [
-          { name: t('panels.layer.cameras', 'Kameras'), sub: String(project.cameras.length) },
-          { name: t('panels.layer.light', 'Licht'), sub: String(project.fixtures.length) },
-          { name: t('panels.layer.signalCables', 'Signal / Kabel'), sub: String(project.cables.length) },
-          { name: t('panels.lib.overview.crew', 'Crew'), sub: String(project.show.crew.length) },
-        ] },
-      ]
-    }
     case 'signal':
       return [
         { group: t('panels.lib.signal.devices', 'Geräte'), entries: project.nodes.map((n) => ({ id: n.id, name: n.name, sub: n.sub })) },
@@ -68,35 +53,15 @@ const deriveGroups = (module: ModuleId, project: SuiteProject | null, t: TFunc):
   }
 }
 
-const layersFor = (project: SuiteProject | null, t: TFunc) => [
-  { id: 'room', name: t('panels.layer.roomWallsStage', 'Raum · Wände & Bühne'), count: project ? String(project.nodes.length) : '—', tone: 'raum' },
-  { id: 'people', name: t('panels.layer.people', 'Personen'), count: project ? String(project.show.crew.length) : '—', tone: 'warn' },
-  { id: 'cameras', name: t('panels.layer.cameras', 'Kameras'), count: project ? String(project.cameras.length) : '—', tone: 'cameras' },
-  { id: 'light', name: t('panels.layer.light', 'Licht'), count: project ? String(project.fixtures.length) : '—', tone: 'licht' },
-  { id: 'signal', name: t('panels.layer.signalCables', 'Signal / Kabel'), count: project ? String(project.cables.length) : '—', tone: 'signal' },
-]
-
-const DOT: Record<string, string> = {
-  raum: 'var(--mod-raum)',
-  warn: 'var(--av-warn)',
-  cameras: 'var(--mod-cameras)',
-  licht: 'var(--mod-licht)',
-  signal: 'var(--mod-signal)',
-}
-
 export function LibraryPanel({
   module,
   project,
-  hiddenLayers,
-  onToggleLayer,
   selectedId,
   onSelect,
 }: {
   module: ModuleDef
   project: SuiteProject | null
   /** Ausgeblendete Ebenen-IDs (suite-weit, treibt die Canvas-Vorschau). */
-  hiddenLayers: Set<string>
-  onToggleLayer: (id: string) => void
   /** Aktuell gewähltes Objekt (treibt die Hervorhebung, geteilt mit der Vorschau). */
   selectedId?: string | null
   onSelect?: (id: string) => void
@@ -107,7 +72,6 @@ export function LibraryPanel({
   const [tab, setTab] = useState(0)
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
-  const layers = layersFor(project, t)
 
   const shownGroups = tab === 0 ? groups : [groups[tab - 1]].filter(Boolean)
 
@@ -204,35 +168,6 @@ export function LibraryPanel({
         })}
       </div>
 
-      <div className="border-t border-av-border-muted p-2">
-        <div className="mb-1.5 flex items-center gap-2 px-1">
-          <Icon name="layers" size={13} style={{ color: 'var(--av-text-muted)' }} />
-          <span className="text-[10.5px] font-semibold uppercase tracking-wider text-av-text-muted">{t('panels.layers.title', 'Ebenen')}</span>
-          <Badge tone="accent" className="ml-auto">{t('panels.layers.focusOn', 'Fokus an')}</Badge>
-        </div>
-        <div className="flex flex-col">
-          {layers.map((l) => {
-            const hidden = hiddenLayers.has(l.id)
-            return (
-              <div key={l.name} className="flex items-center gap-2 rounded px-1 py-1 text-[12px] text-av-text-secondary" style={{ opacity: hidden ? 0.45 : 1 }}>
-                <span className="h-2 w-2 flex-none rounded-full" style={{ background: DOT[l.tone] }} />
-                <span className="flex-1 truncate" style={{ textDecoration: hidden ? 'line-through' : undefined }}>{l.name}</span>
-                <span className="av-num text-av-text-faint">{l.count}</span>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={!hidden}
-                  aria-label={format(t('panels.aria.layerToggle', 'Ebene {name} {action}'), { name: l.name, action: hidden ? t('panels.action.show', 'einblenden') : t('panels.action.hide', 'ausblenden') })}
-                  className="av-focus grid h-5 w-5 place-items-center rounded hover:bg-av-surface-3"
-                  onClick={() => onToggleLayer(l.id)}
-                >
-                  <Icon name="eye" size={13} style={{ color: hidden ? 'var(--av-text-faint)' : 'var(--av-text-muted)' }} />
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      </div>
     </div>
   )
 }

@@ -12,6 +12,7 @@ import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './modules/registry'
 import { RUNTIMES, type RuntimeId } from './modules/runtimes'
 import { loadAddresses, runtimeUrl, saveAddresses, type RuntimeAddresses } from './shell/runtimeHosts'
+import { useRuntimeHealth } from './shell/runtimeHealth'
 import { PROJECT, type ShowDetails, type SuiteProject } from './data/project'
 import { applyPatchToSuite, suiteToSeed } from './data/seed'
 import type { SeedPatch } from '@avplan/ui/embed'
@@ -48,18 +49,6 @@ import type { HeaderDraft } from './shell/dashboardEditors'
 import { StatusBar } from './shell/StatusBar'
 import { buildCommands } from './shell/buildCommands'
 import { LanguageProvider, translate } from './i18n'
-
-// Die vier Laufzeit-Module haben genau einen Tab („Bedienoberflaeche"); sie
-// stehen deshalb nicht einzeln hier, sondern werden aus der Registry ergaenzt.
-// So faellt niemand hinten runter, wenn ein fuenftes Geraet dazukommt.
-const DEFAULT_TAB: Record<ModuleId, string> = {
-  overview: 'summary',
-  signal: 'flow',
-  cameras: 'plan2d',
-  licht: 'plan2d',
-  board: 'board',
-  ...(Object.fromEntries(RUNTIMES.map((r) => [r.id, 'app'])) as Record<RuntimeId, string>),
-}
 
 /** Ein Satz je Modul, aus einem Wert fuer die Planer und einem fuer die Geraete. */
 const jeModul = <T,>(basis: Record<Exclude<ModuleId, RuntimeId>, T>, geraet: T): Record<ModuleId, T> => ({
@@ -286,7 +275,6 @@ export function App() {
   }, [currentProjectId, project, commitProject])
 
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
-  const [tabs, setTabs] = useState<Record<ModuleId, string>>(DEFAULT_TAB)
   const [selected, setSelected] = useState<Record<ModuleId, string | null>>(
     jeModul<string | null>({ overview: null, signal: 'v012', cameras: 'cam2', licht: 'lx3', board: null }, null),
   )
@@ -318,6 +306,8 @@ export function App() {
   // dazwischen war nicht mehr zu erkennen.
   const plannerMounted =
     mounted[moduleId] && (!!MODULE_BY_ID[moduleId]?.planner || !!MODULE_BY_ID[moduleId]?.runtime)
+  /** Gibt es auf diesem Modul ueberhaupt eine Bibliotheks-Spalte? */
+  const bibliothekMoeglich = !plannerMounted && moduleId !== 'overview'
 
   // Adressen der vier Laufzeit-Anwendungen. Bedienungs-Einstellung, kein
   // Projektinhalt -- siehe `shell/runtimeHosts.ts`.
@@ -333,16 +323,6 @@ export function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [billingOpen, setBillingOpen] = useState(false)
-  // Ausgeblendete Vorschau-Ebenen (Bibliothek steuert sie, Canvas-Vorschau folgt).
-  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(() => new Set())
-  const toggleLayer = useCallback((id: string) => {
-    setHiddenLayers((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
   // Zoom der Canvas-Vorschau (Signal/Kameras/Licht) — via Statusleiste steuerbar.
   const [zoom, setZoom] = useState(100)
   // Suite-weite App-Einstellungen (Quelle der Wahrheit) — persistiert und in den
@@ -358,6 +338,9 @@ export function App() {
   }, [])
 
   const mod = MODULE_BY_ID[moduleId]
+  // Erreichbarkeit der vier Geraete — einmal gemessen, in der Rail und in der
+  // Status-Ansicht gezeigt.
+  const runtimeHealth = useRuntimeHealth(runtimeAddresses)
   const RAIL = useMemo<RailModule[]>(
     () =>
       MODULES.map((m) => ({
@@ -366,12 +349,27 @@ export function App() {
         icon: m.icon,
         hotkey: m.hotkey,
         accent: m.accent,
+        // Zwei Gruppen, weil in der Rail zwei verschiedene Dinge stehen: Module,
+        // in denen geplant wird, und Geraete, die bedient werden. Flach
+        // nebeneinander las sich „Kameras" (Plan) wie eine Dublette von
+        // „Kamerapult" (Steuerung).
+        group: m.runtime
+          ? tt('config.rail.group.betrieb', 'Betrieb')
+          : tt('config.rail.group.planung', 'Planung'),
+        ...(m.runtime ? { status: runtimeHealth[m.runtime] } : {}),
       })),
-    [tt],
+    [tt, runtimeHealth],
   )
+  // Der Bibliotheks-Schalter steht nur dort, wo er auch etwas oeffnen kann.
+  // Auf der Uebersicht und hinter einem geoeffneten Planer/Geraet gibt es keine
+  // Spalte zum Aufklappen -- ein Schalter, der nichts tut, ist genau die Sorte
+  // Attrappe, die hier gerade verschwindet.
   const RAIL_FOOTER = useMemo<RailModule[]>(
-    () => [{ id: 'library', label: tt('config.rail.library', 'Bibliothek'), icon: 'library' }],
-    [tt],
+    () =>
+      bibliothekMoeglich
+        ? [{ id: 'library', label: tt('config.rail.library', 'Bibliothek'), icon: 'library' }]
+        : [],
+    [tt, bibliothekMoeglich],
   )
   // Ist gerade ein Planer-iframe offen? Dann zielt Undo/Redo auf ihn, sonst auf
   // die Projekt-Historie der Shell.
@@ -405,10 +403,6 @@ export function App() {
     })
   }, [changeAppSetting, moduleId])
 
-  const setTab = useCallback(
-    (id: string) => setTabs((t) => ({ ...t, [moduleId]: id })),
-    [moduleId],
-  )
   const selectItem = useCallback(
     (id: string) => setSelected((s) => ({ ...s, [moduleId]: id })),
     [moduleId],
@@ -421,13 +415,13 @@ export function App() {
 
   const commands = useMemo(
     () => buildCommands(mod, {
-      goToModule, setTab, selectItem, toggleTheme: toggle, toggleMount,
+      goToModule, selectItem, toggleTheme: toggle, toggleMount,
       openBilling: () => setBillingOpen(true),
       openSettings: () => setSettingsOpen(true),
       saveProject, newProject,
       hasProject: project !== null,
     }, tt),
-    [mod, goToModule, setTab, selectItem, toggle, toggleMount, saveProject, newProject, project, tt],
+    [mod, goToModule, selectItem, toggle, toggleMount, saveProject, newProject, project, tt],
   )
 
   // Globale Tastenkürzel: Speichern (⌘/Ctrl+S), Rückgängig/Wiederholen (⌘/Ctrl+Z / ⇧Z / Y).
@@ -487,17 +481,21 @@ export function App() {
         {/* Bibliothek/Ebenen: eigenständige Spalte ab md. Unter md würde die
             feste 16rem-Breite den Hauptinhalt aus dem Viewport drängen, daher
             dort ausgeblendet (Navigation läuft über die Rail). */}
-        {libraryOpen && !plannerMounted && (
+        {/* Auf der Uebersicht bleibt die Spalte zu: die Bibliothek zeigte dort
+            Projektname, Auftraggeber und dieselben vier Umfangs-Zahlen, die
+            das Dashboard in der Mitte als Karten bringt und (frueher) das
+            rechte Panel ein drittes Mal. Dreimal dieselbe Zahl ist keine
+            Uebersicht. Der Platz gehoert dem Dashboard, dessen untere Karten
+            vorher aus dem Fenster fielen. */}
+        {libraryOpen && bibliothekMoeglich && (
           <aside className="hidden w-64 flex-none flex-col border-r border-av-border-muted md:flex" aria-label={tt('config.aria.libraryLayers', 'Bibliothek und Ebenen')}>
-            <LibraryPanel key={mod.id} module={mod} project={project} hiddenLayers={hiddenLayers} onToggleLayer={toggleLayer} selectedId={selected[moduleId]} onSelect={selectItem} />
+            <LibraryPanel key={mod.id} module={mod} project={project} selectedId={selected[moduleId]} onSelect={selectItem} />
           </aside>
         )}
 
         <main className="flex min-w-0 flex-1 flex-col">
           <TabDeck
             module={mod}
-            activeTab={tabs[moduleId]}
-            onTab={setTab}
             mounted={mounted[moduleId]}
             onToggleMount={toggleMount}
             theme={theme}
@@ -515,7 +513,6 @@ export function App() {
                 : undefined
             }
             onPlannerHistory={setPlannerHistory}
-            hiddenLayers={hiddenLayers}
             seed={plannerSeed}
             onSeedPatch={applySeedPatch}
             runtimeUrl={mod.runtime ? runtimeUrl(mod.runtime, runtimeAddresses) : undefined}
@@ -526,7 +523,7 @@ export function App() {
 
         {!plannerMounted && (
           <aside className="hidden w-80 flex-none border-l border-av-border-muted lg:block" aria-label={tt('config.aria.properties', 'Eigenschaften')}>
-            <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} />
+            <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} runtimeHealth={runtimeHealth} />
           </aside>
         )}
 
@@ -551,7 +548,7 @@ export function App() {
               >
                 <Icon name="close" size={15} />
               </button>
-              <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} />
+              <PropertiesPanel module={mod} project={project} selectedId={selected[moduleId]} onNavigate={goToModule} runtimeHealth={runtimeHealth} />
             </aside>
           </div>
         )}
@@ -562,6 +559,8 @@ export function App() {
         project={project}
         zoom={zoom}
         onZoom={(z) => setZoom(Math.max(50, Math.min(200, z)))}
+        moduleLabel={tt(`config.mod.${mod.id}.title`, mod.title)}
+        plannerOffen={plannerActive}
         runtime={
           mod.runtime
             ? { repo: mod.eyebrow, url: runtimeUrl(mod.runtime, runtimeAddresses) }

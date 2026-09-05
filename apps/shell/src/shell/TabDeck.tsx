@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Button, Icon, Tabs, type ResolvedTheme } from '@avplan/ui'
+import { useState } from 'react'
+import { Button, Icon, type ResolvedTheme } from '@avplan/ui'
 import type { SeedPatch, SuiteSeed } from '@avplan/ui/embed'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { emptyBoard, type ShowDetails, type SuiteProject } from '../data/project'
@@ -41,8 +41,6 @@ const toolbars = (t: TFunc): Record<CanvasModuleId, ToolbarButton[]> => ({
 
 export function TabDeck({
   module,
-  activeTab,
-  onTab,
   mounted,
   onToggleMount,
   theme,
@@ -56,7 +54,6 @@ export function TabDeck({
   zoom,
   plannerSettings,
   onPlannerHistory,
-  hiddenLayers,
   seed,
   onSeedPatch,
   runtimeUrl,
@@ -64,8 +61,6 @@ export function TabDeck({
   tallyUrl,
 }: {
   module: ModuleDef
-  activeTab: string
-  onTab: (id: string) => void
   mounted: boolean
   onToggleMount: () => void
   theme: ResolvedTheme
@@ -84,8 +79,6 @@ export function TabDeck({
   plannerSettings?: Record<string, unknown>
   /** Undo/Redo-Zustand des eingebetteten Planers zurück an die Shell. */
   onPlannerHistory?: (state: { canUndo: boolean; canRedo: boolean; hasHistory: boolean }) => void
-  /** Ausgeblendete Vorschau-Ebenen (aus der Bibliothek). */
-  hiddenLayers?: Set<string>
   /** Projekt der Shell als neutraler Seed fuer den eingebetteten Planer. */
   seed?: SuiteSeed
   /** Rueckweg: der Planer hat seine Domaene geaendert. */
@@ -107,10 +100,6 @@ export function TabDeck({
   // Tab-Beschriftungen übersetzen: die Registry liefert deutsche Roh-Labels,
   // die Sprachumschaltung greift nur über die config.mod.*.tab.*-Keys (die die
   // Palette bereits nutzt). Ohne diese Zuordnung blieb die Tab-Leiste deutsch.
-  const localizedTabs = useMemo(
-    () => module.tabs.map((tab) => ({ ...tab, label: t(`config.mod.${module.id}.tab.${tab.id}`, tab.label) })),
-    [module, t],
-  )
 
   // Overlay-Zustand der Canvas-Vorschau (FOV / Heatmap).
   const [showFov, setShowFov] = useState(true)
@@ -120,7 +109,6 @@ export function TabDeck({
     <div className="flex min-w-0 flex-1 flex-col">
       {/* Tab-Kopf */}
       <div className="flex items-center gap-2 border-b border-av-border-muted bg-av-surface-1 px-3 py-2">
-        <Tabs items={localizedTabs} active={activeTab} onSelect={onTab} />
         <div className="ml-auto flex items-center gap-2">
           {module.planner && (
             <Button variant={mounted ? 'subtle' : 'primary'} size="sm" onClick={onToggleMount}>
@@ -211,7 +199,7 @@ export function TabDeck({
                   transformOrigin: 'center top',
                 }}
               >
-                {module.id === 'signal' && <SignalPreview project={project} selectedId={selectedId} onSelect={onSelect} hidden={hiddenLayers} />}
+                {module.id === 'signal' && <SignalPreview project={project} selectedId={selectedId} onSelect={onSelect} />}
                 {(module.id === 'cameras' || module.id === 'licht') && (
                   <PlanPreview
                     project={project}
@@ -220,7 +208,6 @@ export function TabDeck({
                     onSelect={onSelect}
                     showFov={showFov}
                     showHeat={showHeat}
-                    hidden={hiddenLayers}
                   />
                 )}
               </div>

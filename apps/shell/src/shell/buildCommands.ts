@@ -5,7 +5,6 @@ import { format, type TFunc } from '../i18n'
 
 export interface CommandActions {
   goToModule: (id: ModuleId) => void
-  setTab: (id: string) => void
   selectItem: (id: string) => void
   toggleTheme: () => void
   toggleMount: () => void
@@ -41,17 +40,6 @@ export function buildCommands(active: ModuleDef, actions: CommandActions, t: TFu
     })
   }
 
-  for (const tab of active.tabs) {
-    const tabLabel = t(`config.mod.${active.id}.tab.${tab.id}`, tab.label)
-    cmds.push({
-      id: `tab:${active.id}:${tab.id}`,
-      title: format(t('config.cmd.view', 'Ansicht: {label}'), { label: tabLabel }),
-      group: modTitle(t, active),
-      keywords: [tabLabel],
-      when: (ctx) => ctx.moduleId === active.id,
-      run: () => actions.setTab(tab.id),
-    })
-  }
 
   if (active.id === 'signal') {
     for (const c of PROJECT.cables) {
