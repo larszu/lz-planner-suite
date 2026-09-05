@@ -14,11 +14,12 @@ on:
 permissions:
   contents: write
 
-# actions/checkout@v5 + setup-node@v5 laufen nativ auf Node 24; upload-artifact,
-# download-artifact und action-gh-release haben (Stand 2026) noch keine Node-24-
-# Release — der Flag zwingt sie auf Node 24. Entfernen, sobald alle drei v5 sind.
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+# Kein FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 mehr. Hier stand, upload-artifact,
+# download-artifact und action-gh-release haetten "noch keine Node-24-Release" —
+# am 2026-09-05 hatten sie alle welche (v6/v7, v7/v8, v3). Der Satz war nicht
+# bloss veraltet, er war die Begruendung dafuer, nicht nachzusehen.
+# `npm run actions:check` fragt jetzt die action.yml jedes Pins, statt zu
+# behaupten, was es gibt.
 
 jobs:
   build:
@@ -95,7 +96,7 @@ jobs:
         run: ls -lh release/ || true
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: av-planner-suite-${{ matrix.name }}
           path: |
@@ -112,7 +113,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
@@ -151,7 +152,7 @@ jobs:
           fi
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             artifacts/**/*.exe

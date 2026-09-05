@@ -53,7 +53,7 @@
 // einen macOS-Runner, das zweite entscheidet der Workflow.
 // ───────────────────────────────────────────────────────────────────────────
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { dirname, join, relative, resolve, sep } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { minimatch } from 'minimatch'
 
@@ -127,11 +127,26 @@ const istPfadPrebuild = (segmente) =>
   segmente.includes('prebuilds') &&
   segmente.some((s, i) => i > segmente.indexOf('prebuilds') && /darwin|win32|linux/.test(s))
 
-const nodeModules = join(ROOT, 'node_modules')
+/**
+ * Der Pfad ab dem LETZTEN `node_modules`-Segment -- genau so adressiert
+ * electron-builder die Datei im Paket.
+ *
+ * Nicht `relative(<wurzel>/node_modules, …)`: das setzt voraus, dass die
+ * Abhaengigkeiten direkt neben der `package.json` liegen. Im Workspace sind
+ * sie gehoistet, und bei einer nicht gehoisteten (verschachtelten)
+ * Installation stimmt die Annahme ebenfalls nicht. Genau daran ist der
+ * Zwilling dieses Laufs in `apps/cable-planner/tests/macUniversalBuild.test.ts`
+ * beim ersten Lauf nach dem Vendoring gescheitert (2026-09-05).
+ */
+const imBaum = (pfad) => {
+  const teile = pfad.split(sep)
+  return teile.slice(teile.lastIndexOf('node_modules') + 1)
+}
+
 const alleNativen = produktionsBaum().flatMap((verzeichnis) =>
   nodeDateien(verzeichnis).map((pfad) => {
-    const rel = relative(nodeModules, pfad)
-    return { pfad: rel.split(sep).join('/'), segmente: rel.split(sep) }
+    const segmente = imBaum(pfad)
+    return { pfad: segmente.join('/'), segmente }
   }),
 )
 

@@ -68,7 +68,7 @@ Fehlerzeile gar nicht treffen konnte.)
 | `tally-pi` | `py_compile` OK für alle 5 Module | — | — | **0** — 55 Tests (`python -m unittest discover -s tests`) |
 | `pi-media-station` | `py_compile` OK für alle 3 Module | — | — | **0** — 21 Tests (`python -m unittest discover -s tests`) |
 
-### Die neun Suite-Guards
+### Die zehn Suite-Guards
 
 Alle mit Exit 0 gelaufen:
 
@@ -81,8 +81,37 @@ Alle mit Exit 0 gelaufen:
 | Lizenz der vendorten Apps | `npm run licence:check` | alle Kopien tragen die Lizenz der Suite |
 | Laufzeit-Abhängigkeiten im Paket | `npm run deps:check` | jeder nackte Import des mitverpackten Main-Prozesses steht in `apps/shell/package.json` |
 | Baubare Release-Artefakte | `npm run release:check` | 2 darwin-Prebuilds gedeckt, keytar bleibt für `lipo`, 3 Ziele mit eigenem Dateinamen |
-| Vollständigkeit der Guard-Liste | `npm run ci:complete` | 9 von 9 Prüf-Läufen stehen im Workflow |
+| Node-Version der Actions | `npm run actions:check` | 5 Action-Referenzen, alle node24 |
+| Vollständigkeit der Guard-Liste | `npm run ci:complete` | 10 von 10 Prüf-Läufen stehen im Workflow |
 | Planer-Drift | `npm run drift:check` | unverändert gegen die Baseline (Zahlen: `scripts/planner-drift-baseline.json`) |
+
+`actions:check` ist am selben Tag aus derselben Form entstanden: die Workflows
+liefen fast vollständig auf dem abgekündigten Node 20, und die Kommentare
+daneben begründeten das mit einem Stand von Mai 2026, den es nicht mehr gab —
+der Satz war nicht bloß veraltet, er war der Grund, nicht nachzusehen. Der Guard
+fragt deshalb die `action.yml` jedes Pins, statt eine Liste zu führen, und folgt
+eine Ebene in Composite-Actions hinein: `upload-pages-artifact@v3` trug node20
+nur im Inneren.
+
+Dabei fiel auf, dass `ci:complete` sich von einem **Kommentar** besänftigen
+ließ, der `npm run <lauf>` bloß erwähnte — der Lauf wäre bei keinem Merge
+gefahren. Der Text wird jetzt ohne reine Kommentarzeilen gelesen.
+
+Zwei weitere Funde kamen aus dem Vendoring selbst, und beide sind der Grund,
+warum die Guards mitwandern:
+
+- Der mitvendorierte `macUniversalBuild`-Test bildete den Paketpfad über
+  `relative(ROOT/node_modules, …)`. Im Monorepo sind die Abhängigkeiten an die
+  Wurzel gehoistet — der Pfad begann mit `../../..`, und der Guard meldete am
+  **selben** Code etwas anderes als upstream. Behoben upstream
+  (`cable-planner#696`) und nachvendoriert: der Pfad kommt jetzt vom letzten
+  `node_modules`-Segment an.
+- Die vendorierten `.github/workflows/` der drei Planer standen still. Sie
+  laufen im Monorepo nicht, und der Drift-Guard sieht `.github/` überhaupt
+  nicht an — deshalb hat es nie jemand gemerkt: `mac-build.yml` lag hier noch,
+  obwohl `cable#694` sie gelöscht hat, und alle drei `release.yml` waren auf
+  node20. Der erste Lauf des mitvendorierten `actions:check` hat genau das
+  gemeldet. Jetzt eins zu eins von upstream, `mac-build.yml` entfernt.
 
 `release:check` ist am 2026-09-05 aus einem Schaden entstanden, nicht aus einer
 Vermutung: Tag `v0.1.0` hat **nichts** ans Release gehängt. Der

@@ -23,10 +23,10 @@ jobs:
       CI: 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -86,6 +86,15 @@ jobs:
       - name: Release-Artefakte sind baubar und kollidieren nicht
         run: npm run release:check
 
+      # Fragt die action.yml jedes Pins nach ihrer Node-Version, statt sie in
+      # einem Kommentar zu behaupten. Am 2026-09-05 lief hier fast alles auf
+      # node20 -- und der Kommentar in `release-suite.yml` gab dazu einen Stand
+      # wieder, den es nicht mehr gab. Der Lauf folgt eine Ebene in
+      # Composite-Actions hinein: `upload-pages-artifact@v3` (im cable-planner)
+      # hatte node20 nur im Inneren, von aussen sah der Pin sauber aus.
+      - name: Actions laufen auf einer unterstuetzten Node-Version
+        run: npm run actions:check
+
       # Zuletzt und bewusst: dieser Lauf prueft, dass die Liste darueber
       # vollstaendig ist. In `light-planner` fehlte `mvr:check` genau so --
       # er existierte, war gruen, und lief bei keinem Merge.
@@ -109,12 +118,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout suite
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: suite
 
       - name: Checkout cable-planner
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         continue-on-error: true
         with:
           repository: larszu/cable-planner
@@ -130,7 +139,7 @@ jobs:
           fetch-depth: 0
 
       - name: Checkout multicam-planner
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         continue-on-error: true
         with:
           repository: larszu/multicam-planner
@@ -146,7 +155,7 @@ jobs:
           fetch-depth: 0
 
       - name: Checkout light-planner
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         continue-on-error: true
         with:
           repository: larszu/light-planner
@@ -162,7 +171,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -177,7 +186,7 @@ jobs:
 
       - name: Upload report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: planner-drift-report
           path: suite/drift-report.md
