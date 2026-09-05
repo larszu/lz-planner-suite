@@ -112,6 +112,15 @@ ipcMain.handle('suiteHost:cable:show', (_e, bounds) => cableHost?.show(bounds))
 ipcMain.handle('suiteHost:cable:setBounds', (_e, bounds) => { cableHost?.setBounds(bounds); return true })
 ipcMain.handle('suiteHost:cable:hide', () => { cableHost?.hide(); return true })
 
+// Tally-Karte aus dem Plan an einen tally-pi. Warum ueber den Main-Prozess und
+// nicht per fetch aus dem Renderer: `guide_server.py` schickt keine
+// CORS-Kopfzeilen -- siehe `tallyPush.cjs`.
+const tallyPush = require('./tallyPush.cjs')
+ipcMain.handle('suiteHost:tally:read', (_e, basisUrl) => tallyPush.lese(String(basisUrl)))
+ipcMain.handle('suiteHost:tally:write', (_e, basisUrl, devices) =>
+  tallyPush.schreibe(String(basisUrl), Array.isArray(devices) ? devices : []),
+)
+
 app.whenReady().then(() => {
   registerPlannerProtocols()
   createWindow()

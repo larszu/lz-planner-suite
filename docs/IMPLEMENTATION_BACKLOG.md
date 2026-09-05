@@ -895,7 +895,7 @@ ist selbst ein Ergebnis.
 
 ### B-35 · Vier der acht Repos sind aus der Suite nicht erreichbar
 
-* **Status:** offen
+* **Status:** ~~offen~~ **erledigt 2026-09-05** (`suite#99`)
 * **Befund (2026-09-04, Korpus-Durchgang):** Die Modul-Registry der Shell
   (`apps/shell/src/modules/registry.ts:48-134`) führt fünf Einträge.
   `Broadcast-intercom`, `tally-pi`, `sony-camera-bridge` und `pi-media-station`
@@ -911,13 +911,25 @@ ist selbst ein Ergebnis.
   eigenständige Anwendungen sind und aus der Shell nicht erreichbar; ein `YES`
   dort heißt „das Repo läuft", nicht „die Suite kann es". Damit behauptet die
   Matrix nicht länger beides gleichzeitig.
-* **Was offen bleibt (Eigentümer):** ob verdrahtet wird. Beides ist vertretbar
-  — `tally-pi` und `pi-media-station` laufen auf einem Pi im Netz und sind
-  keine Panels im Planungsfenster; `Broadcast-intercom` und
-  `sony-camera-bridge` bringen eigene Web-Oberflächen mit und wären als Modul
-  denkbar.
-* **Aufwand:** ~~klein (Ausweisung)~~ erledigt; mittel (Verdrahtung), falls
-  entschieden
+* **Verdrahtet (`suite#99`, 2026-09-05).** Alle vier stehen als Module in der
+  Rail (Hotkeys 6-9). Nicht mitgeliefert, sondern über eine **Adresse**: die
+  vier sind Geräte, keine Zeichenflächen — `tally-pi` und `pi-media-station`
+  laufen auf einem Pi und schalten echte Lampen und Sensoren,
+  `sony-camera-bridge` und `Broadcast-intercom` brauchen ihren eigenen Server
+  (Kamera-Protokolle, WebRTC-Audio). Ein mitgeliefertes Abbild wäre in beiden
+  Fällen eine Attrappe.
+  Host und Port stehen unter Einstellungen → „Geräte im Netz"; die Vorgaben
+  sind aus den Repos gelesen, nicht erinnert (`guide_server.py:16` = 8080,
+  `web-rcp/vite.config` = 3700, `server/src/index.ts` = 4001, `main.py:154` =
+  5000), und ein Test liest sie dort erneut nach, solange die Nachbar-Repos
+  ausgecheckt sind.
+  Läuft nichts, zeigt das Modul die versuchte Adresse, was dort laufen müsste
+  und wie man es startet — statt eines toten Rahmens. Erreichbarkeit wird
+  gemessen (`fetch`, `no-cors`), nicht am `load`-Ereignis geraten: ein iframe
+  auf einen toten Host feuert `load` genauso.
+* **Mehr als ein Lesezeichen:** die Tally-Karte aus dem Signal-Plan geht über
+  dieselbe Adresse an den Pi (siehe B-41).
+* **Aufwand:** ~~klein (Ausweisung)~~ erledigt; ~~mittel (Verdrahtung)~~ erledigt
 
 ---
 
@@ -1143,6 +1155,38 @@ ist selbst ein Ergebnis.
 
 ---
 
+### B-41 · Der Weg vom Plan auf die Geräte — was er trägt und was nicht
+
+* **Status:** offen (der Tally-Teil ist gebaut, die anderen drei nicht)
+* **Gebaut (`suite#99`):** die **Tally-Karte** geht aus dem Signal-Plan an den
+  `tally-pi` — `POST /tally-config` mit genau der Quellenliste, die der Plan
+  besitzt (Rollen-Id, Name, Mischer-Eingang). ATEM-Adresse und GPIO-Verdrahtung
+  gehören dem Pi und werden bewusst nicht mitgeschickt; `merge_tally_config`
+  drüben behält jedes Feld, das der POST nicht nennt.
+  Der Weg läuft über den **Main-Prozess**, nicht über `fetch` im Renderer:
+  `guide_server.py` schickt keine CORS-Kopfzeilen, ein Schreibvorgang aus dem
+  Renderer wäre entweder blockiert oder — mit `no-cors` — abgeschickt und
+  unlesbar. Ein Schreibvorgang, dessen Ergebnis man nicht erfährt, ist
+  schlimmer als keiner.
+  **Vor dem Senden steht der Abgleich:** neu / geändert / entfällt. Nötig,
+  weil Geräte, die der POST nicht nennt, auf dem Pi verschwinden — richtige
+  Semantik, aber keine, die jemand ungefragt auslösen soll. Ein **leerer Plan
+  kann gar nicht senden**: gemessen an einem Stub-Pi mit den echten
+  `merge_tally_config`/`validate_tally_config` aus `guide_server.py` leerte
+  eine Sendung mit null Quellen dessen Geräteliste, während die ATEM-Adresse
+  blieb — die Warnung stand da, der Knopf war trotzdem aktiv.
+* **Was der Weg noch nicht trägt:**
+  1. **Kamerasteuerung.** `sony-camera-bridge` kennt Kameras mit Modell und
+     IP; der Kamera-Plan kennt dieselben Kameras mit Modell und Position. Ein
+     Abgleich (welche geplante Kamera ist welches Gerät am Bus) fehlt.
+  2. **Intercom.** `cable-planner` exportiert seit `cable#684` ein
+     herstellerneutrales Intercom-Format; `Broadcast-intercom` liest es nicht.
+  3. **Medien-Station.** Kein Berührungspunkt mit dem Plan — vermutlich auch
+     keiner nötig; das gehört ausgewiesen statt offengelassen.
+* **Aufwand:** je mittel; 3 zuerst entscheiden statt bauen
+
+---
+
 ## Nicht zu entscheiden ohne den Eigentümer
 
 Diese Punkte sind **bewusst offen** und werden nicht nebenbei entschieden. Sie
@@ -1171,7 +1215,7 @@ gehalten, nicht als Versäumnis:
 | E-17 | Welche Sprache ist die Quellsprache von `sony-camera-bridge`? | B-26 — davon hängt ab, ob 32 Stellen übersetzt oder 140 umgeschrieben werden |
 | E-18 | Besetzt die Suite die **Zeitachse** — Ablauf/Rundown als Datenobjekt? | B-34 — fünf der zwölf P1-Bedarfe ohne Initiative hängen daran, und die Bedarfs-Datenbank nennt es selbst „the largest gap for AV Planner Suite specifically". Ein Ja ist ein neues Kern-Datenmodell quer durch alle Planer, ein Nein muss in der Feature-Matrix als WON'T stehen statt zu fehlen |
 | E-20 | Welche Sprache ist die **Quellsprache** von `multicam-planner`? | B-25 — die Suite-Kopie nutzt Englisch als Quelle mit deutschem Override (482 Schlüssel, 14 Dateien), `cable-planner` und `light-planner` umgekehrt. Der Rückweg upstream legt die Konvention fest; sie später zu drehen heißt, ~500 Zeichenketten erneut anzufassen. Verwandt mit E-17 (dieselbe Frage für `sony-camera-bridge`) |
-| E-19 | Sind die vier Runtime-Repos Teil der **Suite** oder bewusst eigenständig? | B-35 — die Matrix führt drei davon als `YES`, die Modul-Registry der Shell kennt sie nicht. Verdrahten oder ausweisen; stillschweigend beides ist der heutige Zustand |
+| ~~E-19~~ | ~~Sind die vier Runtime-Repos Teil der **Suite** oder bewusst eigenständig?~~ | **entschieden 2026-09-05** (`suite#99`): Teil der Suite, aber als Geräte über eine Adresse statt als mitgelieferte Ansicht. Beides zugleich — laufende Anwendung und Attrappe im Fenster — war die Variante, die es nicht gibt |
 
 ---
 
@@ -1240,6 +1284,9 @@ gehalten, nicht als Versäumnis:
 | `drumKit`/`wirelessRig` fehlten in der Stückliste (B-31, Rest) | `cable#678` |
 | Arbeitsweise-Direktive in `cable-planner/CLAUDE.md` | `cable#678` |
 | `READS_DEVICE` traf nur Lese-Verben, `TOUCHES_PLAN` zu eng | `cable#679` |
+| Vier Laufzeit-Anwendungen als Module verdrahtet (B-35, E-19) | `suite#99` |
+| Tally-Karte geht aus dem Plan an den Pi statt in eine Datei (B-41) | `suite#99` |
+| Leere Tally-Sendung haette die Geraeteliste des Pi geleert | `suite#99` |
 | Projekt-Fluss Shell -> Planer -> Shell (B-20, verbindende Haelfte) | `suite#98` |
 | Erststart-Dialog des Cable-Planers lag ueber dem eingebetteten Plan | `suite#98` |
 | Shell-Panels verdeckten den Planer (doppelte Liste + Inspector) | `suite#98` |

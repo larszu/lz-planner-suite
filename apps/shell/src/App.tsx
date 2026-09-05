@@ -10,6 +10,8 @@ import {
 } from '@avplan/ui'
 import { useEffect } from 'react'
 import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './modules/registry'
+import { RUNTIMES, type RuntimeId } from './modules/runtimes'
+import { loadAddresses, runtimeUrl, saveAddresses, type RuntimeAddresses } from './shell/runtimeHosts'
 import { PROJECT, type ShowDetails, type SuiteProject } from './data/project'
 import { applyPatchToSuite, suiteToSeed } from './data/seed'
 import type { SeedPatch } from '@avplan/ui/embed'
@@ -47,13 +49,23 @@ import { StatusBar } from './shell/StatusBar'
 import { buildCommands } from './shell/buildCommands'
 import { LanguageProvider, translate } from './i18n'
 
+// Die vier Laufzeit-Module haben genau einen Tab („Bedienoberflaeche"); sie
+// stehen deshalb nicht einzeln hier, sondern werden aus der Registry ergaenzt.
+// So faellt niemand hinten runter, wenn ein fuenftes Geraet dazukommt.
 const DEFAULT_TAB: Record<ModuleId, string> = {
   overview: 'summary',
   signal: 'flow',
   cameras: 'plan2d',
   licht: 'plan2d',
   board: 'board',
+  ...(Object.fromEntries(RUNTIMES.map((r) => [r.id, 'app'])) as Record<RuntimeId, string>),
 }
+
+/** Ein Satz je Modul, aus einem Wert fuer die Planer und einem fuer die Geraete. */
+const jeModul = <T,>(basis: Record<Exclude<ModuleId, RuntimeId>, T>, geraet: T): Record<ModuleId, T> => ({
+  ...basis,
+  ...(Object.fromEntries(RUNTIMES.map((r) => [r.id, geraet])) as Record<RuntimeId, T>),
+})
 
 // Monoton wachsende Toast-ID (nur Eindeutigkeit pro Sitzung nötig). Bewusst
 // modul-lokal statt useRef: so liest pushToast keinen Ref, wodurch der
@@ -275,31 +287,45 @@ export function App() {
 
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
   const [tabs, setTabs] = useState<Record<ModuleId, string>>(DEFAULT_TAB)
-  const [selected, setSelected] = useState<Record<ModuleId, string | null>>({
-    overview: null,
-    signal: 'v012',
-    cameras: 'cam2',
-    licht: 'lx3',
-    board: null,
-  })
+  const [selected, setSelected] = useState<Record<ModuleId, string | null>>(
+    jeModul<string | null>({ overview: null, signal: 'v012', cameras: 'cam2', licht: 'lx3', board: null }, null),
+  )
   // In der gepackten Desktop-Suite sind die echten Planer-Renderer mitverpackt
   // und werden lokal ausgeliefert — dann direkt den echten Planer einblenden
   // statt der statischen Vorschau. Im Browser/Dev bleibt die Vorschau Standard
   // (Dev-Server laufen evtl. nicht → kein toter „unerreichbar"-Rahmen).
-  const [mounted, setMounted] = useState<Record<ModuleId, boolean>>({
-    overview: false,
-    signal: BUNDLED_PLANNERS,
-    cameras: BUNDLED_PLANNERS,
-    licht: BUNDLED_PLANNERS,
-    board: false,
-  })
-  // Ist gerade ein echter Planer im Rahmen? Dann treten die Shell-eigenen
+  // Geraete-Module sind immer „gemountet": es gibt bei ihnen keine
+  // Shell-Vorschau, zwischen der man umschalten koennte -- entweder die
+  // Anwendung im Netz antwortet, oder der Rahmen sagt, dass sie es nicht tut.
+  const [mounted, setMounted] = useState<Record<ModuleId, boolean>>(
+    jeModul<boolean>(
+      {
+        overview: false,
+        signal: BUNDLED_PLANNERS,
+        cameras: BUNDLED_PLANNERS,
+        licht: BUNDLED_PLANNERS,
+        board: false,
+      },
+      true,
+    ),
+  )
+  // Ist gerade ein echter Planer ODER eine Laufzeit-Anwendung im Rahmen? Dann
+  // treten die Shell-eigenen
   // Seitenpanels zurueck. Sie zeigen dieselben Dinge — Geraeteliste links,
   // Eigenschaften rechts — die der Planer selbst mitbringt, und liessen ihm in
   // einem 1280er Fenster rund 100 px Zeichenflaeche. Gemessen am gebauten
   // Stand: dieselben zwei Listen standen doppelt nebeneinander, und der Plan
   // dazwischen war nicht mehr zu erkennen.
-  const plannerMounted = mounted[moduleId] && !!MODULE_BY_ID[moduleId]?.planner
+  const plannerMounted =
+    mounted[moduleId] && (!!MODULE_BY_ID[moduleId]?.planner || !!MODULE_BY_ID[moduleId]?.runtime)
+
+  // Adressen der vier Laufzeit-Anwendungen. Bedienungs-Einstellung, kein
+  // Projektinhalt -- siehe `shell/runtimeHosts.ts`.
+  const [runtimeAddresses, setRuntimeAddresses] = useState<RuntimeAddresses>(loadAddresses)
+  const updateRuntimeAddresses = useCallback((next: RuntimeAddresses) => {
+    setRuntimeAddresses(next)
+    saveAddresses(next)
+  }, [])
 
   const [libraryOpen, setLibraryOpen] = useState(true)
   // Eigenschaften-Panel als Overlay unter lg (inline erst ab lg sichtbar).
@@ -492,6 +518,9 @@ export function App() {
             hiddenLayers={hiddenLayers}
             seed={plannerSeed}
             onSeedPatch={applySeedPatch}
+            runtimeUrl={mod.runtime ? runtimeUrl(mod.runtime, runtimeAddresses) : undefined}
+            onOpenSettings={() => setSettingsOpen(true)}
+            tallyUrl={runtimeUrl('tally', runtimeAddresses)}
           />
         </main>
 
@@ -533,6 +562,11 @@ export function App() {
         project={project}
         zoom={zoom}
         onZoom={(z) => setZoom(Math.max(50, Math.min(200, z)))}
+        runtime={
+          mod.runtime
+            ? { repo: mod.eyebrow, url: runtimeUrl(mod.runtime, runtimeAddresses) }
+            : undefined
+        }
       />
 
       <CommandPalette
@@ -554,6 +588,8 @@ export function App() {
         onChangeAppSetting={changeAppSetting}
         language={language}
         onSetLanguage={setLanguage}
+        runtimeAddresses={runtimeAddresses}
+        onChangeRuntimeAddresses={updateRuntimeAddresses}
       />
 
       <BillingModal

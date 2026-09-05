@@ -5,6 +5,9 @@ import type { ModuleDef, ModuleId } from '../modules/registry'
 import { emptyBoard, type ShowDetails, type SuiteProject } from '../data/project'
 import type { HeaderDraft } from './dashboardEditors'
 import { PlannerFrame } from '../embed/PlannerFrame'
+import { RuntimeFrame } from '../embed/RuntimeFrame'
+import { TallyPushPanel } from './TallyPushPanel'
+import { RUNTIME_BY_ID } from '../modules/runtimes'
 import { NativeSignalRegion, hasNativeCable } from '../embed/NativeSignalRegion'
 import { PlanPreview, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
@@ -56,6 +59,9 @@ export function TabDeck({
   hiddenLayers,
   seed,
   onSeedPatch,
+  runtimeUrl,
+  onOpenSettings,
+  tallyUrl,
 }: {
   module: ModuleDef
   activeTab: string
@@ -84,10 +90,19 @@ export function TabDeck({
   seed?: SuiteSeed
   /** Rueckweg: der Planer hat seine Domaene geaendert. */
   onSeedPatch?: (patch: SeedPatch) => void
+  /** Adresse der Laufzeit-Anwendung dieses Moduls (nur fuer Geraete-Module). */
+  runtimeUrl?: string
+  /** Oeffnet die Einstellungen (Tab „Geraete im Netz"). */
+  onOpenSettings?: () => void
+  /** Adresse des tally-pi — fuer den Weg „Plan -> Pi" im Signal-Modul. */
+  tallyUrl?: string
 }) {
   const t = useT()
   const isOverview = module.id === 'overview'
   const isBoard = module.id === 'board'
+  const runtime = module.runtime ? RUNTIME_BY_ID[module.runtime] : undefined
+  // Fenster des geoeffneten Planers — der Tally-Weg fragt es direkt.
+  const [plannerWindow, setPlannerWindow] = useState<Window | null>(null)
 
   // Tab-Beschriftungen übersetzen: die Registry liefert deutsche Roh-Labels,
   // die Sprachumschaltung greift nur über die config.mod.*.tab.*-Keys (die die
@@ -117,7 +132,15 @@ export function TabDeck({
       </div>
 
       {/* Übersicht = scrollbares Dashboard (keine Canvas-Leiste) */}
-      {isOverview ? (
+      {runtime ? (
+        // Geraete-Modul: die Oberflaeche der Anwendung im Netz. Kein Fallback
+        // auf eine Shell-Vorschau -- es gibt nichts, was die Shell ueber ein
+        // laufendes Geraet wuesste, und eine Attrappe waere schlimmer als der
+        // ehrliche Nicht-erreichbar-Zustand.
+        <div className="min-h-0 flex-1 p-3">
+          <RuntimeFrame runtime={runtime} url={runtimeUrl ?? ''} onOpenSettings={onOpenSettings} />
+        </div>
+      ) : isOverview ? (
         <div className="av-scroll min-h-0 flex-1 overflow-auto p-5">
           <OverviewSurface project={project} onNavigate={onNavigate} onAssign={onAssign} onUpdateShow={onUpdateShow} onUpdateHeader={onUpdateHeader} />
         </div>
@@ -136,7 +159,18 @@ export function TabDeck({
             // IPC-Funktionalität. Nur aktiv, wenn der Suite-Host ihn bereitstellt.
             <NativeSignalRegion />
           ) : mounted && module.planner && module.plannerUrl ? (
-            <PlannerFrame url={module.plannerUrl} title={t(`config.mod.${module.id}.title`, module.title)} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} seed={seed} onSeedPatch={onSeedPatch} />
+            <div className="flex h-full min-h-0 flex-col gap-2">
+              {/* Der Weg vom Plan auf den Pi steht im SIGNAL-Modul, nicht im
+                  Tally-Modul: die Karte entsteht aus dem Kabelplan, und nur
+                  hier ist der Planer, der sie liefern kann, wirklich geoeffnet.
+                  Im Tally-Modul steht dafuer die Oberflaeche des Pi. */}
+              {module.id === 'signal' && tallyUrl && (
+                <TallyPushPanel url={tallyUrl} plannerFrame={plannerWindow} />
+              )}
+              <div className="min-h-0 flex-1">
+                <PlannerFrame url={module.plannerUrl} title={t(`config.mod.${module.id}.title`, module.title)} theme={theme} settings={plannerSettings} onHistory={onPlannerHistory} seed={seed} onSeedPatch={onSeedPatch} onFrameReady={setPlannerWindow} />
+              </div>
+            </div>
           ) : (
             <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-bg">
               {/* schwebende Werkzeugleiste — nur echte Overlay-Toggles (FOV/Heatmap) */}

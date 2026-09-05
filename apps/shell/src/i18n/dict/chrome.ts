@@ -132,6 +132,43 @@ export const chrome: Record<string, string> = {
   // Toast
   'chrome.toast.close': 'Close',
   // PlannerFrame
+  // Tally-Karte aus dem Plan an den Pi -- siehe shell/TallyPushPanel.tsx
+  'chrome.tally.title': 'Tally card from the plan',
+  'chrome.tally.badge': 'Signal plan → Pi',
+  'chrome.tally.prepare': 'Show comparison',
+  'chrome.tally.working': 'one moment …',
+  'chrome.tally.hint':
+    'The source list (name and switcher input per role) comes from the signal plan. The ATEM address and the GPIO wiring stay on the Pi.',
+  'chrome.tally.summary': '{neu} new · {geaendert} changed · {entfaellt} removed · {gleich} unchanged',
+  'chrome.tally.removalWarning':
+    'These entries are on the Pi but not in the plan — sending will remove them:',
+  'chrome.tally.issues': 'The plan could not resolve everything:',
+  'chrome.tally.send': 'Send {n} sources',
+  'chrome.tally.cancel': 'Cancel',
+  'chrome.tally.emptyPlan':
+    'The plan carries no tally source — there is nothing to send. An empty push would only clear the list on the Pi. Assign roles in the signal plan first (source → switcher input).',
+  'chrome.tally.done': 'Sent {n} sources to the Pi.',
+  'chrome.tally.noBridge': 'Sending runs through the desktop process and is not available in the browser.',
+  'chrome.tally.noMap': 'The plan did not return a tally card.',
+  'chrome.tally.readFailed': 'The Pi did not answer.',
+  'chrome.tally.writeFailed': 'The Pi rejected the card.',
+  // Geraete im Netz (Tally, Kamera, Intercom, Medien) -- siehe modules/runtimes.ts
+  'chrome.runtime.checking': 'Looking for {title} …',
+  'chrome.runtime.unreachable': '{title} is not reachable at {url}',
+  'chrome.runtime.repo': 'Repository',
+  'chrome.runtime.retry': 'Search again',
+  'chrome.runtime.changeAddress': 'Change address',
+  'chrome.runtime.openNewTab': 'Open in a new tab',
+  'chrome.settings.runtimes': 'Devices on the network',
+  'chrome.settings.runtimesBadge': 'Tally · Camera · Intercom · Media',
+  'chrome.settings.runtimesHint':
+    'These four applications run on their own — on a Pi on the network or as a separate service. The suite shows their interface as soon as the address is right.',
+  'chrome.settings.runtimeHost': 'Host',
+  'chrome.settings.runtimePort': 'Port',
+  'chrome.settings.runtimeTest': 'Search',
+  'chrome.settings.runtimeSearching': 'searching …',
+  'chrome.settings.runtimeFound': 'responds',
+  'chrome.settings.runtimeMissing': 'no answer — is the application running?',
   'chrome.frame.loading': '{title} is loading…',
   'chrome.frame.unreachable': '{title} is currently unreachable',
   'chrome.frame.hintPre': 'The planner runs as a standalone app. Start it with',

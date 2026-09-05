@@ -3,6 +3,8 @@ import { Badge, Icon, Modal, type ThemePreference } from '@avplan/ui'
 import { MODULES, type ModuleId } from '../modules/registry'
 import { useT, type TFunc } from '../i18n'
 import type { Language } from './language'
+import { RUNTIMES } from '../modules/runtimes'
+import { runtimeUrl, type RuntimeAddresses } from './runtimeHosts'
 import { loadBackendConfig, saveBackendConfig, type BackendConfig } from '../data/backendConfig'
 import { testConnection } from '../data/syncClient'
 import { syncNow } from '../data/projectStore'
@@ -34,6 +36,8 @@ export function SettingsModal({
   onChangeAppSetting,
   language,
   onSetLanguage,
+  runtimeAddresses,
+  onChangeRuntimeAddresses,
 }: {
   open: boolean
   onClose: () => void
@@ -45,6 +49,8 @@ export function SettingsModal({
   onChangeAppSetting: (app: AppModuleId, key: string, value: SettingValue) => void
   language: Language
   onSetLanguage: (lang: Language) => void
+  runtimeAddresses: RuntimeAddresses
+  onChangeRuntimeAddresses: (a: RuntimeAddresses) => void
 }) {
   const t = useT()
   return (
@@ -60,6 +66,8 @@ export function SettingsModal({
         onChangeAppSetting={onChangeAppSetting}
         language={language}
         onSetLanguage={onSetLanguage}
+        runtimeAddresses={runtimeAddresses}
+        onChangeRuntimeAddresses={onChangeRuntimeAddresses}
       />
     </Modal>
   )
@@ -73,6 +81,8 @@ function SettingsBody({
   onChangeAppSetting,
   language,
   onSetLanguage,
+  runtimeAddresses,
+  onChangeRuntimeAddresses,
 }: {
   preference: ThemePreference
   onSetPreference: (p: ThemePreference) => void
@@ -81,6 +91,8 @@ function SettingsBody({
   onChangeAppSetting: (app: AppModuleId, key: string, value: SettingValue) => void
   language: Language
   onSetLanguage: (lang: Language) => void
+  runtimeAddresses: RuntimeAddresses
+  onChangeRuntimeAddresses: (a: RuntimeAddresses) => void
 }) {
   const t = useT()
   // Standardmäßig das Accordion des aktuellen Planers öffnen.
@@ -90,6 +102,8 @@ function SettingsBody({
 
   return (
     <>
+      <RuntimeSection addresses={runtimeAddresses} onChange={onChangeRuntimeAddresses} t={t} />
+
       {/* Gemeinsame Einstellungen — gelten für Shell + alle Planer */}
       <section className="mb-5">
         <div className="mb-1 flex items-center gap-2">
@@ -507,5 +521,110 @@ function Segmented({
         )
       })}
     </div>
+  )
+}
+
+
+/**
+ * „Geraete im Netz" — die Adressen der vier Laufzeit-Anwendungen.
+ *
+ * Warum ein eigener Abschnitt und keine Eintraege in `APP_SETTINGS_SCHEMA`:
+ * dort stehen Anzeige-Optionen, die die Shell in einen mitgelieferten Planer
+ * schiebt. Hier steht, WO eine eigenstaendige Anwendung ueberhaupt laeuft --
+ * eine Voraussetzung, keine Option.
+ *
+ * „Suchen" prueft mit demselben `no-cors`-Griff wie `RuntimeFrame`: die
+ * Antwort ist opak, aber sie kommt nur von einem laufenden Server. Damit
+ * beantwortet der Knopf die Frage, die der Nutzer wirklich hat („stimmt die
+ * Adresse?"), statt nur den Text zu speichern.
+ */
+function RuntimeSection({
+  addresses,
+  onChange,
+  t,
+}: {
+  addresses: RuntimeAddresses
+  onChange: (a: RuntimeAddresses) => void
+  t: TFunc
+}) {
+  const [status, setStatus] = useState<Record<string, 'offen' | 'suche' | 'da' | 'weg'>>({})
+
+  const pruefen = async (id: string, url: string) => {
+    setStatus((s) => ({ ...s, [id]: 'suche' }))
+    const ctrl = new AbortController()
+    const frist = window.setTimeout(() => ctrl.abort(), 4000)
+    try {
+      await fetch(url, { mode: 'no-cors', signal: ctrl.signal, cache: 'no-store' })
+      setStatus((s) => ({ ...s, [id]: 'da' }))
+    } catch {
+      setStatus((s) => ({ ...s, [id]: 'weg' }))
+    } finally {
+      window.clearTimeout(frist)
+    }
+  }
+
+  return (
+    <section className="mb-5">
+      <div className="mb-1 flex items-center gap-2">
+        <span className="text-[12px] font-semibold uppercase tracking-wider text-av-text-muted">
+          {t('chrome.settings.runtimes', 'Geräte im Netz')}
+        </span>
+        <Badge tone="accent">{t('chrome.settings.runtimesBadge', 'Tally · Kamera · Intercom · Medien')}</Badge>
+      </div>
+      <p className="mt-1 text-[12px] text-av-text-muted">
+        {t(
+          'chrome.settings.runtimesHint',
+          'Diese vier Anwendungen laufen eigenständig — auf einem Pi im Netz oder als eigener Dienst. Die Suite zeigt ihre Oberfläche, sobald die Adresse stimmt.',
+        )}
+      </p>
+      <div className="mt-3 space-y-2">
+        {RUNTIMES.map((r) => {
+          const a = addresses[r.id]
+          const zustand = status[r.id] ?? 'offen'
+          return (
+            <div key={r.id} className="rounded-av-card border border-av-border bg-av-surface-2 px-3.5 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Icon name={r.icon} size={15} />
+                <span className="text-[13px] font-medium text-av-text">{r.title}</span>
+                <code className="text-[11px] text-av-text-faint">{r.repo}</code>
+                <div className="ml-auto flex items-center gap-2">
+                  <input
+                    className="av-focus w-44 rounded-av-control border border-av-border bg-av-surface-3 px-2.5 py-1 text-[12px] text-av-text"
+                    value={a.host}
+                    aria-label={t('chrome.settings.runtimeHost', 'Host')}
+                    onChange={(e) => onChange({ ...addresses, [r.id]: { ...a, host: e.target.value } })}
+                  />
+                  <input
+                    className="av-focus w-20 rounded-av-control border border-av-border bg-av-surface-3 px-2.5 py-1 text-[12px] text-av-text"
+                    type="number"
+                    min={1}
+                    max={65535}
+                    value={a.port}
+                    aria-label={t('chrome.settings.runtimePort', 'Port')}
+                    onChange={(e) =>
+                      onChange({ ...addresses, [r.id]: { ...a, port: Number(e.target.value) || a.port } })
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="av-btn text-[12px]"
+                    data-variant="subtle"
+                    onClick={() => void pruefen(r.id, runtimeUrl(r.id, addresses))}
+                  >
+                    {t('chrome.settings.runtimeTest', 'Suchen')}
+                  </button>
+                </div>
+              </div>
+              <div className="mt-1 text-[11px] text-av-text-faint">
+                {zustand === 'suche' && t('chrome.settings.runtimeSearching', 'wird gesucht …')}
+                {zustand === 'da' && t('chrome.settings.runtimeFound', 'antwortet')}
+                {zustand === 'weg' && t('chrome.settings.runtimeMissing', 'keine Antwort — läuft die Anwendung?')}
+                {zustand === 'offen' && r.was}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }

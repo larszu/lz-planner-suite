@@ -1,14 +1,14 @@
 {
   "cable-planner": {
     "only-upstream": 0,
-    "only-suite": 3,
+    "only-suite": 4,
     "two-way": 7,
     "upstream-ahead": 0,
     "suite-ahead": 9,
     "expected-overlay": 25,
     "dead-upstream": 0,
-    "drift": 19,
-    "total": 44,
+    "drift": 20,
+    "total": 45,
     "missingUpstream": false,
     "upstreamSha": "210c361747b0"
   },

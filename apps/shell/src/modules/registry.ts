@@ -1,6 +1,13 @@
 import type { IconName } from '@avplan/ui'
+import { RUNTIMES, type RuntimeId } from './runtimes'
 
-export type ModuleId = 'overview' | 'signal' | 'cameras' | 'licht' | 'board'
+export type ModuleId =
+  | 'overview'
+  | 'signal'
+  | 'cameras'
+  | 'licht'
+  | 'board'
+  | RuntimeId
 
 export interface ModuleTab {
   id: string
@@ -23,6 +30,12 @@ export interface ModuleDef {
   planner?: 'cable' | 'multicam' | 'light'
   /** iframe-URL des Planers (env-überschreibbar, sonst lokale Preview). */
   plannerUrl?: string
+  /**
+   * Welche Laufzeit-Anwendung im Netz dahintersteht (Tally, Kamera, Intercom,
+   * Medien). Schliesst `planner` aus: ein Planer wird mitgeliefert, ein Geraet
+   * steht woanders und hat eine Adresse (`shell/runtimeHosts.ts`).
+   */
+  runtime?: RuntimeId
   tabs: ModuleTab[]
   libraryTabs: string[]
   eyebrow: string
@@ -131,6 +144,31 @@ export const MODULES: ModuleDef[] = [
     eyebrow: 'Board · Kreativ',
   },
 ]
+
+/**
+ * Die vier Laufzeit-Anwendungen als Module. Sie stehen bewusst NACH den
+ * Planern: das Fenster plant links und bedient rechts.
+ *
+ * Kein `plannerUrl` — die Adresse kommt aus den Einstellungen und kann sich
+ * zwischen zwei Produktionen aendern; sie hier einzutragen hiesse, sie
+ * festzunageln. `libraryTabs` ist leer, weil die Bibliothek der Shell fuer ein
+ * Geraet nichts zu zeigen hat.
+ */
+for (const r of RUNTIMES) {
+  MODULES.push({
+    id: r.id,
+    label: r.label,
+    title: r.title,
+    icon: r.icon,
+    hotkey: r.hotkey,
+    accent: r.accent,
+    dataModule: r.id,
+    runtime: r.id,
+    tabs: [{ id: 'app', label: 'Bedienoberfläche' }],
+    libraryTabs: [],
+    eyebrow: r.repo,
+  })
+}
 
 export const MODULE_BY_ID: Record<ModuleId, ModuleDef> = MODULES.reduce(
   (acc, m) => {

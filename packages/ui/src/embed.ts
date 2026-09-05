@@ -130,6 +130,31 @@ export interface SeedPatchMessage {
   patch: SeedPatch
 }
 
+/**
+ * Shell → iframe: die Tally-Karte aus dem Plan anfordern.
+ *
+ * Warum ueber den Planer und nicht in der Shell gerechnet: die Karte entsteht
+ * aus Rollen, Mischer-Eingaengen und Routern des Kabelplans
+ * (`lib/tallyMap.ts`), und dieses Modell hat nur der Cable-Planer. Die Shell
+ * kennt weder Rollen noch Router — sie kennt die Adresse des Pi.
+ */
+export interface TallyRequestMessage {
+  type: 'avplan:tally'
+  requestId: string
+}
+
+/** iframe → Shell: die Tally-Karte, wie der Plan sie hergibt. */
+export interface TallyResultMessage {
+  type: 'avplan:tallyResult'
+  requestId: string
+  ok: boolean
+  /** Genau die Felder, die `tally-pi` vom Plan erwartet (id/name/input). */
+  devices?: { id: string; name: string; input: number }[]
+  /** Was der Plan nicht aufloesen konnte — gehoert vor den Nutzer, nicht in ein Log. */
+  issues?: { kind: string; message: string }[]
+  error?: string
+}
+
 export type ShellMessage =
   | ThemeMessage
   | ReadyMessage
@@ -143,6 +168,8 @@ export type ShellMessage =
   | SeedMessage
   | SeedRequestMessage
   | SeedPatchMessage
+  | TallyRequestMessage
+  | TallyResultMessage
 
 const isShellMessage = (data: unknown): data is ShellMessage =>
   !!data && typeof data === 'object' && typeof (data as { type?: unknown }).type === 'string' &&
@@ -487,6 +514,81 @@ export function connectShellSeed(h: ShellSeedHandlers): { publish: () => void; d
     /* egal */
   }
   return { publish, dispose: () => window.removeEventListener('message', onMessage) }
+}
+
+let tallyReqCounter = 0
+
+/**
+ * Shell-Seite: die Tally-Karte beim geoeffneten Cable-Planer anfordern.
+ * Promise-basiert wie `requestLexware`, mit Frist — ein Planer, der nicht
+ * antwortet, darf den Knopf nicht haengen lassen.
+ */
+export function requestTallyMap(
+  frame: Window | null | undefined,
+  timeoutMs = 8000,
+): Promise<{ ok: boolean; devices?: { id: string; name: string; input: number }[]; issues?: { kind: string; message: string }[]; error?: string }> {
+  return new Promise((resolve) => {
+    if (!frame) {
+      resolve({ ok: false, error: 'Der Signal-Planer ist nicht geöffnet.' })
+      return
+    }
+    const requestId = `tally-${++tallyReqCounter}`
+    let fertig = false
+    const schliesse = (r: Parameters<typeof resolve>[0]) => {
+      if (fertig) return
+      fertig = true
+      window.removeEventListener('message', onMessage)
+      clearTimeout(timer)
+      resolve(r)
+    }
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as Partial<TallyResultMessage> | undefined
+      if (!d || d.type !== 'avplan:tallyResult' || d.requestId !== requestId) return
+      schliesse({ ok: !!d.ok, devices: d.devices, issues: d.issues, error: d.error })
+    }
+    const timer = setTimeout(
+      () => schliesse({ ok: false, error: 'Zeitüberschreitung — der Planer hat nicht geantwortet.' }),
+      timeoutMs,
+    )
+    window.addEventListener('message', onMessage)
+    try {
+      frame.postMessage({ type: 'avplan:tally', requestId } satisfies TallyRequestMessage, '*')
+    } catch {
+      schliesse({ ok: false, error: 'Die Anfrage erreichte den Planer nicht.' })
+    }
+  })
+}
+
+/**
+ * Planer-Seite: auf Tally-Anfragen der Shell hoeren. No-op im Standalone.
+ */
+export function connectShellTally(
+  handler: () => { devices: { id: string; name: string; input: number }[]; issues: { kind: string; message: string }[] },
+): () => void {
+  try {
+    if (typeof window === 'undefined' || window.parent === window) return () => {}
+  } catch {
+    return () => {}
+  }
+  const onMessage = (e: MessageEvent) => {
+    if (!isShellMessage(e.data) || e.data.type !== 'avplan:tally') return
+    const { requestId } = e.data
+    const antwort = (msg: Omit<TallyResultMessage, 'type' | 'requestId'>) => {
+      try {
+        window.parent.postMessage({ type: 'avplan:tallyResult', requestId, ...msg } satisfies TallyResultMessage, '*')
+      } catch {
+        /* egal */
+      }
+    }
+    try {
+      const { devices, issues } = handler()
+      antwort({ ok: true, devices, issues })
+    } catch (err) {
+      antwort({ ok: false, error: err instanceof Error ? err.message : 'Unbekannter Fehler' })
+    }
+  }
+  window.addEventListener('message', onMessage)
+  return () => window.removeEventListener('message', onMessage)
 }
 
 /** Shell-Seite: Nachrichten aus den iframes abonnieren. */

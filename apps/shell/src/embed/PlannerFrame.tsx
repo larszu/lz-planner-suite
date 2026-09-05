@@ -51,6 +51,13 @@ export interface PlannerFrameProps {
   seed?: SuiteSeed
   /** Rueckweg: der Planer hat seine Domaene geaendert. */
   onSeedPatch?: (patch: SeedPatch) => void
+  /**
+   * Meldet das Fenster des Rahmens, sobald der Planer sich gemeldet hat
+   * (`avplan:ready`) -- und `null`, wenn er verschwindet. Gebraucht von
+   * Bedienelementen der Shell, die den geoeffneten Planer direkt fragen
+   * muessen, etwa der Tally-Karte (`TallyPushPanel`).
+   */
+  onFrameReady?: (win: Window | null) => void
 }
 
 /**
@@ -64,7 +71,7 @@ export interface PlannerFrameProps {
  * Läuft der Planer gerade nicht (Preview-Server aus), zeigt der Host statt
  * eines toten Rahmens einen erklärenden Fallback mit „in neuem Tab öffnen".
  */
-export function PlannerFrame({ url, title, theme, settings, onHistory, seed, onSeedPatch }: PlannerFrameProps) {
+export function PlannerFrame({ url, title, theme, settings, onHistory, seed, onSeedPatch, onFrameReady }: PlannerFrameProps) {
   const t = useT()
   const ref = useRef<HTMLIFrameElement>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -85,9 +92,14 @@ export function PlannerFrame({ url, title, theme, settings, onHistory, seed, onS
         postThemeToFrame(ref.current?.contentWindow, theme, readShellPalette(ref.current))
         if (settings) postSettingsToFrame(ref.current?.contentWindow, settings)
         if (seed) postSeedToFrame(ref.current?.contentWindow, seed)
+        onFrameReady?.(ref.current?.contentWindow ?? null)
       }
     })
-  }, [theme, settings, seed])
+  }, [theme, settings, seed, onFrameReady])
+
+  // Beim Entladen das Fenster wieder abmelden, damit niemand auf einen
+  // Rahmen zeigt, den es nicht mehr gibt.
+  useEffect(() => () => onFrameReady?.(null), [onFrameReady])
 
   // Projekt-Fluss Shell -> Planer. Zwei Ausloeser, weil einer nicht reicht:
   // der `ready`-Handshake oben trifft den Planer erst, wenn er seinen Listener

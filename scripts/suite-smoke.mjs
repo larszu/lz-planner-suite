@@ -206,6 +206,33 @@ async function lauf(nativ) {
       await win.screenshot({ path: join(OUT, `${marke}-03-${m.klick.toLowerCase()}.png`) })
     }
 
+    // 2c. Die vier Geraete-Module (B-35). Im CI laeuft keines der Geraete --
+    // geprueft wird deshalb der Zustand, den ein Nutzer OHNE Pi im Netz sieht:
+    // ein benanntes Modul mit einer Adresse und einer Erklaerung, nicht ein
+    // toter Rahmen und nicht eine Attrappe. Der Weg selbst (`__suiteTally`)
+    // muss bereitstehen, sonst faellt der Tally-Knopf im Signal-Modul aus.
+    const geraete = [
+      { taste: '6', name: 'Tally-Anlage' },
+      { taste: '7', name: 'Kamerasteuerung' },
+      { taste: '8', name: 'Intercom' },
+      { taste: '9', name: 'Medien-Station' },
+    ]
+    for (const g of geraete) {
+      await win.keyboard.press(g.taste)
+      await win.waitForTimeout(5000)
+      const text = await win.evaluate(() => document.body.innerText || '')
+      if (text.includes(g.name) && /nicht erreichbar|not reachable/.test(text)) {
+        melde(`${g.name}: Modul da, ehrlicher Zustand ohne Geraet`)
+      } else if (text.includes(g.name)) {
+        melde(`${g.name}: Modul da (Geraet antwortet offenbar)`)
+      } else {
+        maengel.push(`${marke}: Geraete-Modul „${g.name}" ist nicht erreichbar oder zeigt nichts`)
+      }
+    }
+    const tallyBruecke = await win.evaluate(() => typeof window.__suiteTally?.write === 'function')
+    if (tallyBruecke) melde('__suiteTally: Weg zum Pi steht bereit')
+    else maengel.push(`${marke}: __suiteTally fehlt -- der Tally-Weg aus dem Plan waere tot.`)
+
     // 3. Nativer Cable-Host: ist er da, und registrieren seine IPC-Module?
     const nativVerfuegbar = await win.evaluate(() => Boolean(window.__suiteNativeHost))
     melde(`__suiteNativeHost: ${nativVerfuegbar ? 'da' : 'nicht da'}`)

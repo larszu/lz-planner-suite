@@ -25,6 +25,16 @@ try {
   nativeCable = false
 }
 
+// Der Weg zum tally-pi steht IMMER bereit, nicht nur im nativen Cable-Modus:
+// die Tally-Karte kommt ueber den postMessage-Bus aus dem eingebetteten
+// Planer, und der laeuft in beiden Betriebsarten. Waere die Bruecke an
+// `nativeCable` gebunden, funktionierte der Knopf ausgerechnet in der
+// ausgelieferten Standard-Einstellung nicht.
+contextBridge.exposeInMainWorld('__suiteTally', {
+  read: (basisUrl) => ipcRenderer.invoke('suiteHost:tally:read', basisUrl),
+  write: (basisUrl, devices) => ipcRenderer.invoke('suiteHost:tally:write', basisUrl, devices),
+})
+
 if (nativeCable) {
   contextBridge.exposeInMainWorld('__suiteNativeHost', {
     cable: {

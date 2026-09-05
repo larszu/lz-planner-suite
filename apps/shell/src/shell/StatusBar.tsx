@@ -10,11 +10,19 @@ export function StatusBar({
   project,
   zoom,
   onZoom,
+  runtime,
 }: {
   module: ModuleId
   project: SuiteProject | null
   zoom: number
   onZoom: (zoom: number) => void
+  /**
+   * Gesetzt, wenn das aktive Modul eine Anwendung im Netz zeigt. Die Adresse
+   * gehoert dann in die Statusleiste: sie ist bei einem Geraet die
+   * wichtigste Angabe („welchen Pi bediene ich hier gerade?"), und ohne sie
+   * saehen zwei Anlagen im selben Fenster identisch aus.
+   */
+  runtime?: { repo: string; url: string }
 }) {
   const t = useT()
   const counts = project ? computeCounts(project) : null
@@ -49,13 +57,17 @@ export function StatusBar({
             <Icon name="plus" size={10} />
           </button>
         </span>
+      ) : runtime ? (
+        <span className="av-status-item text-av-text-faint">{runtime.repo}</span>
       ) : (
         <span className="av-status-item text-av-text-faint">{t('chrome.status.overview', 'Übersicht')}</span>
       )}
 
       <span className="flex-1" />
 
-      {!project ? (
+      {runtime ? (
+        <span className="av-status-item av-num text-av-text-secondary">{runtime.url}</span>
+      ) : !project ? (
         <span className="av-status-item text-av-text-faint">{t('chrome.status.noProject', 'Kein Projekt · Modul eigenständig')}</span>
       ) : module === 'signal' && counts ? (
         <>

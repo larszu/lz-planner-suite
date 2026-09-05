@@ -14,6 +14,7 @@ import { initShellSettings } from './lib/shellSettings'
 import { initShellHistory } from './lib/shellHistory'
 import { initShellLexware } from './lib/shellLexware'
 import { initShellSeed } from './lib/shellSeedBridge'
+import { initShellTally } from './lib/shellTally'
 import App from './App'
 import { ErrorBoundary } from './ErrorBoundary'
 import { cablePlannerApi } from './lib/bridge'
@@ -48,6 +49,8 @@ initShellHistory()
 initShellLexware()
 // Projekt der Shell uebernehmen und eigene Aenderungen zurueckmelden.
 initShellSeed()
+// Tally-Karte aus dem Plan auf Anfrage der Shell liefern (Weg zum Pi).
+initShellTally()
 // Eingebettet: das Canvas-Theme dem Shell-Theme folgen lassen, damit Cable
 // vollständig hell/dunkel mitschaltet (App.tsx setzt data-theme aus canvasTheme).
 try {
