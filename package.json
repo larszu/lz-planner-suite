@@ -31,9 +31,11 @@
     "ci:complete": "node scripts/ci-runs-every-check.mjs",
     "deps:check": "node scripts/shell-deps-complete.mjs",
     "release:check": "node scripts/release-artefakte.mjs",
-    "actions:check": "node scripts/actions-node-runtime.mjs"
+    "actions:check": "node scripts/actions-node-runtime.mjs",
+    "ui:smoke": "node scripts/suite-smoke.mjs"
   },
   "devDependencies": {
-    "minimatch": "^10.2.5"
+    "minimatch": "^10.2.5",
+    "playwright-core": "^1.61.1"
   }
 }

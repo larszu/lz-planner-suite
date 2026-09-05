@@ -102,6 +102,44 @@ jobs:
         run: npm run ci:complete
 
   # ---------------------------------------------------------------------------
+  # Headless-Smoke: startet die GEBAUTE Suite und prueft, was sich nur an der
+  # laufenden App pruefen laesst -- dass die `planner-*://`-Protokolle wirklich
+  # Inhalt liefern und dass Cables IPC-Module registrieren UND ihre lazy
+  # geladenen Pakete finden. Bis hierher hat zwischen `npm run build` und dem
+  # Installer nichts die App je gestartet; genau in dieser Luecke lagen die
+  # Release-Fehler dieser Woche.
+  #
+  # Eigener Job, weil er drei Dinge braucht, die der Haupt-Job nicht hat: das
+  # Electron-Binary (der Haupt-Job setzt ELECTRON_SKIP_BINARY_DOWNLOAD), einen
+  # X-Server und `libsecret` fuer keytar.
+  # ---------------------------------------------------------------------------
+  ui-smoke:
+    name: Headless-Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev libsecret-1-0 xvfb
+      - run: npm ci
+      - name: Build (Pakete, Shell, Planer)
+        run: |
+          npm run build:packages
+          npm run build --workspace @avplan/shell
+          npm run build:planners
+      - name: Headless-Smoke
+        run: xvfb-run -a npm run ui:smoke
+      - name: Screenshots bei Fehlschlag
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: suite-smoke-screenshots
+          path: /tmp/av-planner-suite-shots
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
   # Drift-Guard fuer die vendorten Planer-Kopien unter apps/.
   #
   # Die Suite enthaelt Kopien der drei Planer statt sie zu konsumieren, und

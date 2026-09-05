@@ -68,7 +68,7 @@ Fehlerzeile gar nicht treffen konnte.)
 | `tally-pi` | `py_compile` OK für alle 5 Module | — | — | **0** — 55 Tests (`python -m unittest discover -s tests`) |
 | `pi-media-station` | `py_compile` OK für alle 3 Module | — | — | **0** — 21 Tests (`python -m unittest discover -s tests`) |
 
-### Die zehn Suite-Guards
+### Die elf Suite-Guards
 
 Alle mit Exit 0 gelaufen:
 
@@ -82,8 +82,30 @@ Alle mit Exit 0 gelaufen:
 | Laufzeit-Abhängigkeiten im Paket | `npm run deps:check` | jeder nackte Import des mitverpackten Main-Prozesses steht in `apps/shell/package.json` |
 | Baubare Release-Artefakte | `npm run release:check` | 2 darwin-Prebuilds gedeckt, keytar bleibt für `lipo`, 3 Ziele mit eigenem Dateinamen |
 | Node-Version der Actions | `npm run actions:check` | 5 Action-Referenzen, alle node24 |
-| Vollständigkeit der Guard-Liste | `npm run ci:complete` | 10 von 10 Prüf-Läufen stehen im Workflow |
+| Headless-Smoke der App | `npm run ui:smoke` | Fenster öffnet, 3 Planer-Protokolle liefern, 12 IPC-Module registrieren |
+| Vollständigkeit der Guard-Liste | `npm run ci:complete` | 11 von 11 Prüf-Läufen stehen im Workflow |
 | Planer-Drift | `npm run drift:check` | unverändert gegen die Baseline (Zahlen: `scripts/planner-drift-baseline.json`) |
+
+`ui:smoke` ist der erste Lauf, der die Suite überhaupt **startet**. Zwischen
+`npm run build` und dem Installer hat das bis 2026-09-05 nichts getan — und
+genau in dieser Lücke lagen die Release-Fehler dieser Woche. Gemessen am
+laufenden Programm: das Fenster öffnet, alle drei `planner-*://`-Protokolle
+liefern Inhalt, und mit `SUITE_NATIVE_CABLE=1` registrieren alle zwölf
+IPC-Module von Cable.
+
+Der Lauf ruft zusätzlich `signaling:start` und `lexware:ping` über die echte
+Cable-View auf, und das ist kein Zierrat: die beiden Pakete aus dem
+`deps:check`-Befund verhalten sich verschieden. `@avplan/lexware-core` hängt an
+einem statischen Import und fehlt schon beim Registrieren; **`ws` nicht** —
+`signalingServer.js:133` lädt es erst beim Start des Relays. Gegengeprobt: mit
+entferntem `ws` registrieren alle zwölf Module klaglos, und der Fehler fällt
+erst beim Klick auf „Zusammenarbeit starten". Ohne den Aufruf wäre der Smoke-Test
+an genau der Lücke vorbeigelaufen, für die es ihn gibt.
+
+Nebenbefund aus demselben Lauf: der native Cable-Modus hängt an
+`SUITE_NATIVE_CABLE=1` und ist **per Default aus**. Im ausgelieferten Build
+läuft also weder `cableHost` noch irgendein Cable-IPC-Modul, solange die
+Variable nicht gesetzt ist — die Planer laufen dort über den iframe-Pfad.
 
 `actions:check` ist am selben Tag aus derselben Form entstanden: die Workflows
 liefen fast vollständig auf dem abgekündigten Node 20, und die Kommentare

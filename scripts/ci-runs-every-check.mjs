@@ -36,7 +36,7 @@ const skripte = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scr
 
 /** Was als Pruef-Lauf zaehlt — ueber die Form des Namens, nicht ueber eine Liste. */
 const istPruefung = (name) =>
-  name === 'lint' || name === 'test' || /(^|:)(check|vocab|native|reachable)$/.test(name)
+  name === 'lint' || name === 'test' || /(^|:)(check|vocab|native|reachable|smoke)$/.test(name)
 
 /**
  * Laeufe, die absichtlich NICHT in CI stehen. Der Text ist Pflicht — er ist der
