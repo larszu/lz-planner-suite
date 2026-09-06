@@ -1431,6 +1431,7 @@ gehalten, nicht als Versäumnis:
 | Bedarf 91: eine Vorlage weiss, aus welchem Haus sie kommt — und was NICHT mitgeht | `cable#725` |
 | Bedarf 78: welche Kiste den Plan-Platz fuellt — der Tausch am Ladetag wird sichtbar | `cable#726` |
 | Bedarf 84: woraus naechstes Jahr geplant wird — Bauzustand oder Angebot, und es steht drauf | `cable#727` |
+| Bedarf 71: Arbeits-Notizen aus der Probe — mehrfach, ortsgebunden, und sie bleiben im eigenen Projekt | `light#72` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |

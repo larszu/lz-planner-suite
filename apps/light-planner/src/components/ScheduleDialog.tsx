@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { PlacedFixture, Truss, Wall, Ceiling } from '../types';
+import type { PlacedFixture, Truss, Wall, Ceiling, WorkNote, WorkNoteTarget } from '../types';
 import { computePower, fixtureCounts, footprint, trussLoads, circuitBreakdown, colorCounts, nearestTrussId } from '../core/patch';
 import { documentFingerprint, stampForStand, type DocumentStamp } from '../core/documentStamp';
 import { colorTable, gelCodes, inventoryTable, scheduleOrder, scheduleTable, tableToCsv, type DocumentTable } from '../core/documentTables';
@@ -7,6 +7,7 @@ import { versionsFor } from '../utils/versionStore';
 import { rigCheck, issueCounts } from '../core/rigCheck';
 import { photometricReport, type EvalArea } from '../core/photometrics';
 import { buildMvr } from '../core/mvrExport';
+import { groupNotes, staleNotes } from '../core/workNotes';
 import { getFixtureCCT, cctToRgb } from '../core/colorTemp';
 import Icon from './Icon';
 import type { IconName } from './Icon';
@@ -26,21 +27,28 @@ interface Props {
   onAutoPatch: () => void;
   onLocate: (ids: string[]) => void;
   onUpdateFixture: (id: string, updates: Partial<PlacedFixture>) => void;
+  // ── Bedarf 71 — Arbeits-Notizen aus der Probe ──
+  workNotes: WorkNote[];
+  /** Legt eine Notiz an. Id und Zeitpunkt kommen vom Wirt, nicht von hier. */
+  onAddNote: (target: WorkNoteTarget, text: string) => void;
+  onToggleNote: (id: string) => void;
+  onRemoveNote: (id: string) => void;
   onClose: () => void;
 }
 
-type Tab = 'list' | 'magic' | 'focus' | 'check' | 'photo' | 'load' | 'export';
+type Tab = 'list' | 'magic' | 'focus' | 'notes' | 'check' | 'photo' | 'load' | 'export';
 type T = (key: string, de: string) => string;
 const buildTabs = (t: T): { id: Tab; label: string; icon: IconName }[] => [
   { id: 'list', label: t('dlg.sch.tab.list', 'Geräteliste & Patch'), icon: 'schedule' },
   { id: 'magic', label: t('dlg.sch.tab.magic', 'Magic Sheet'), icon: 'grid' },
   { id: 'focus', label: t('dlg.sch.tab.focus', 'Fokus'), icon: 'autolight' },
+  { id: 'notes', label: t('dlg.sch.tab.notes', 'Notizen'), icon: 'tag' },
   { id: 'check', label: t('dlg.sch.tab.check', 'Prüfung'), icon: 'check' },
   { id: 'photo', label: t('dlg.sch.tab.photo', 'Photometrie'), icon: 'heatmap' },
   { id: 'load', label: t('dlg.sch.tab.load', 'Last & Strom'), icon: 'truss' },
   { id: 'export', label: t('dlg.sch.tab.export', 'Export'), icon: 'export' },
 ];
-const TAB_IDS: Tab[] = ['list', 'magic', 'focus', 'check', 'photo', 'load', 'export'];
+const TAB_IDS: Tab[] = ['list', 'magic', 'focus', 'notes', 'check', 'photo', 'load', 'export'];
 
 const cssRgb = (rgb: [number, number, number]) => `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 // Representative swatch per gel family (the library has no per-gel RGB).
@@ -64,7 +72,7 @@ const utilClass = (u: number) => (u >= 1 ? 'util-over' : u >= 0.8 ? 'util-warn' 
 
 // A focused multi-tool hub for paperwork, validation, analysis and interchange.
 // Each tab is one job, so no single view is overloaded.
-const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, area, projectName, projectId, conflicts, onAutoNumber, onAutoPatch, onLocate, onUpdateFixture, onClose }) => {
+const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, area, projectName, projectId, conflicts, onAutoNumber, onAutoPatch, onLocate, onUpdateFixture, workNotes, onAddNote, onToggleNote, onRemoveNote, onClose }) => {
   const { t } = useTranslation();
   const TABS = buildTabs(t);
   const [tab, setTabState] = useState<Tab>(() => {
@@ -72,6 +80,14 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     return 'list';
   });
   const setTab = (t: Tab) => { setTabState(t); try { localStorage.setItem('lp-tool-tab', t); } catch { /* ignore */ } };
+
+  // BEDARF 71 — der Entwurf liegt lokal: waehrend der Probe wird getippt, und
+  // jeder Tastendruck durch den Wirt zu schicken machte die Eingabe zaeh.
+  const [noteDraft, setNoteDraft] = useState('');
+  // Ziel der naechsten Notiz. Vorbelegt auf den ganzen Plan — das ist das
+  // einzige Ziel, das es IMMER gibt; eine geratene Leuchte waere eine
+  // Zuordnung, die niemand getroffen hat.
+  const [noteTarget, setNoteTarget] = useState<WorkNoteTarget>({ kind: 'plan' });
 
   const counts = fixtureCounts(fixtures);
   const power = computePower(fixtures);
@@ -268,6 +284,135 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     </div>
   );
 
+  // ── BEDARF 71 — Arbeits-Notizen aus der Probe ────────────────────────────
+  //
+  // Neben der Fokus-Liste und nicht darin: eine Fokus-Notiz beschreibt den
+  // Fokus einer Leuchte, eine Arbeits-Notiz ist ein Vorgang. Es gibt mehrere
+  // davon, sie haben einen Zeitpunkt, und sie haengen auch an Traversen und am
+  // ganzen Plan.
+  const noteGroups = groupNotes(workNotes, fixtures, trusses, {
+    plan: t('dlg.sch.notes.plan', 'Ganzer Plan'),
+    truss: t('dlg.sch.notes.truss', 'Traverse'),
+  });
+  const verwaist = staleNotes(workNotes, fixtures, trusses);
+  const submitNote = () => {
+    const text = noteDraft.trim();
+    if (!text) return;
+    onAddNote(noteTarget, text);
+    setNoteDraft('');
+  };
+
+  const notesPanel = (
+    <div className="focus-tool">
+      <div className="focus-progress">
+        <span className="fp-label">
+          {workNotes.filter((n) => !n.done).length} {t('dlg.sch.ofN', 'von')} {workNotes.length}{' '}
+          {t('dlg.sch.notes.open', 'offen')}
+        </span>
+      </div>
+
+      <div className="focus-rows">
+        <div className="focus-row">
+          <select
+            className="focus-note"
+            aria-label={t('dlg.sch.notes.target', 'Ziel der Notiz')}
+            value={
+              noteTarget.kind === 'plan'
+                ? 'plan'
+                : noteTarget.kind === 'truss'
+                  ? `t:${noteTarget.trussId}`
+                  : `f:${noteTarget.fixtureId}`
+            }
+            onChange={(e) => {
+              const v = e.target.value;
+              setNoteTarget(
+                v === 'plan'
+                  ? { kind: 'plan' }
+                  : v.startsWith('t:')
+                    ? { kind: 'truss', trussId: v.slice(2) }
+                    : { kind: 'fixture', fixtureId: v.slice(2) },
+              );
+            }}
+          >
+            <option value="plan">{t('dlg.sch.notes.plan', 'Ganzer Plan')}</option>
+            {trusses.map((tr) => (
+              <option key={tr.id} value={`t:${tr.id}`}>{tr.label || t('dlg.sch.notes.truss', 'Traverse')}</option>
+            ))}
+            {ordered.map((f) => (
+              <option key={f.id} value={`f:${f.id}`}>
+                {f.channel != null ? `${f.channel} · ` : ''}{f.fixture.name}
+              </option>
+            ))}
+          </select>
+          <input
+            className="focus-note"
+            placeholder={t('dlg.sch.notes.ph', 'Notiz – z. B. zu heiß auf der SL-Wand, CTO rein…')}
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') submitNote(); }}
+          />
+          <button className="focus-locate" title={t('dlg.sch.notes.add', 'Notiz anlegen')} onClick={submitNote}>
+            <Icon name="check" size={15} />
+          </button>
+        </div>
+      </div>
+
+      {noteGroups.map((g) => (
+        <div key={g.label} className="focus-group">
+          <div className="schedule-subhead">{g.label} · {g.open}/{g.notes.length}</div>
+          <div className="focus-rows">
+            {g.notes.map((n) => (
+              <div key={n.id} className={`focus-row ${n.done ? 'done' : ''}`}>
+                <button className={`focus-tick ${n.done ? 'on' : ''}`} title={t('dlg.sch.notes.done', 'erledigt')}
+                  onClick={() => onToggleNote(n.id)}>
+                  {n.done && <Icon name="check" size={14} />}
+                </button>
+                <span className="focus-info">
+                  <b>{n.text}</b>
+                  <span>{[n.by, n.at.slice(0, 16).replace('T', ' ')].filter(Boolean).join(' · ')}</span>
+                </span>
+                {g.target.kind === 'fixture' && (
+                  <button className="focus-locate" title={t('dlg.sch.showInPlan', 'Im Plan zeigen')}
+                    onClick={() => onLocate([g.target.kind === 'fixture' ? g.target.fixtureId : ''])}>
+                    <Icon name="select" size={15} />
+                  </button>
+                )}
+                <button className="focus-locate" title={t('dlg.sch.notes.remove', 'Notiz entfernen')}
+                  onClick={() => onRemoveNote(n.id)}>
+                  <Icon name="trash" size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Verwaiste Notizen: das Ziel ist weg, die Beobachtung nicht. Sie
+          stehen hier, damit jemand sie durchgeht — nicht, damit sie
+          verschwinden. */}
+      {verwaist.length > 0 && (
+        <div className="focus-group">
+          <div className="schedule-subhead">{t('dlg.sch.notes.stale', 'Ziel entfernt')} · {verwaist.length}</div>
+          <div className="focus-rows">
+            {verwaist.map((n) => (
+              <div key={n.id} className="focus-row">
+                <span className="focus-info"><b>{n.text}</b><span>{n.at.slice(0, 16).replace('T', ' ')}</span></span>
+                <button className="focus-locate" title={t('dlg.sch.notes.remove', 'Notiz entfernen')}
+                  onClick={() => onRemoveNote(n.id)}>
+                  <Icon name="trash" size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="prop-derived">
+        {t('dlg.sch.notes.hint', 'Die Notizen bleiben in dieser Projektdatei. Sie gehen in keinen Fremdformat-Export (MVR, Venue-Austausch) — sie gehören dir, nicht der Show-Datei eines Pults.')}
+      </div>
+    </div>
+  );
+
   const focusPanel = (
     <div className="focus-tool">
       <div className="focus-progress">
@@ -436,7 +581,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     </div>
   );
 
-  const panels: Record<Tab, React.ReactNode> = { list: listPanel, magic: magicPanel, focus: focusPanel, check: checkPanel, photo: photoPanel, load: loadPanel, export: exportPanel };
+  const panels: Record<Tab, React.ReactNode> = { list: listPanel, magic: magicPanel, focus: focusPanel, notes: notesPanel, check: checkPanel, photo: photoPanel, load: loadPanel, export: exportPanel };
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>

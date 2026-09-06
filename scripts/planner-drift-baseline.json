@@ -30,12 +30,12 @@
     "only-suite": 5,
     "two-way": 15,
     "upstream-ahead": 0,
-    "suite-ahead": 0,
+    "suite-ahead": 1,
     "expected-overlay": 15,
     "dead-upstream": 2,
-    "drift": 20,
-    "total": 37,
+    "drift": 21,
+    "total": 38,
     "missingUpstream": false,
-    "upstreamSha": "b1d86ab69f80"
+    "upstreamSha": "4693ec553091"
   }
 }
