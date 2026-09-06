@@ -3757,6 +3757,127 @@ export const en: Dict = {
   'inventory.symBarcode': 'Barcode (Code128)',
   // Funkstrecken / Gesang (Wireless-Rig)
   'app.menu.tools.wirelessRig': 'Wireless / vocals…',
+  'app.menu.tools.delivery': 'Delivery (streaming destinations)…',
+  'app.menu.tools.reconcile': 'Plan vs. found…',
+
+  /* Bedarf 21 — Plan gegen Vorgefundenes. Keys: reconcile.* */
+  'reconcile.title': 'Plan vs. found',
+  'reconcile.intro':
+    'What came off the truck, under which names and with which addresses \u2014 against what the plan says. The plan asks no device: you supply a file (ARP/neighbour output or CSV) and the reconciliation computes the delta.',
+  'reconcile.load': 'Load file',
+  'reconcile.empty': 'No file loaded yet.',
+  'reconcile.error.empty':
+    'No readable device in that file. Expected an ARP/neighbour dump or a CSV with a name, IP or MAC column.',
+  // {source} und {when} werden vom Aufrufer ersetzt.
+  'reconcile.taken': '{source} \u00b7 {when}',
+  // {name} wird vom Aufrufer ersetzt.
+  'reconcile.foundAs': 'found as {name}',
+  // {basis} wird vom Aufrufer ersetzt.
+  'reconcile.matchedBy': 'via {basis}',
+  'reconcile.v.match': 'matches',
+  'reconcile.v.address': 'address differs',
+  'reconcile.v.name': 'name differs',
+  'reconcile.v.renamed': 'renamed (collision form)',
+  'reconcile.v.missing': 'not found',
+  'reconcile.v.unexpected': 'not in the plan',
+  'reconcile.v.ambiguous': 'not unique \u2014 no match made',
+
+  /* Initiative 9 — die Ausspielung. Keys: delivery.* */
+  'delivery.title': 'Delivery',
+  'delivery.intro':
+    'Where the show is sent, with which parameters, and which path is the fallback. The stream key lives in this machine\u2019s keychain, never in the project file \u2014 an .avplan travels by e-mail.',
+  'delivery.empty': 'No delivery destination yet. Add one.',
+  'delivery.add': 'Add destination',
+  'delivery.newName': 'New destination',
+  'delivery.remove': 'Remove destination',
+  'delivery.removeHint': 'Removes the destination and its stream key from the keychain',
+  'delivery.reveal': 'Show key',
+  'delivery.saveKey': 'Save key',
+  'delivery.keyStored': 'Key stored \u2014 type to replace',
+  'delivery.keyEmpty': 'Stream key',
+  'delivery.notABackup': '\u2014 own path \u2014',
+  // {name} wird vom Aufrufer ersetzt und muss stehen bleiben.
+  'delivery.backupOfOption': 'Backup of {name}',
+  'delivery.uplink': 'Uplink (Mbit/s)',
+  // {planned} und {usable} werden vom Aufrufer ersetzt.
+  'delivery.budget': '{planned} kbit/s planned, {usable} kbit/s usable',
+  // {n} und {i} werden vom Aufrufer ersetzt.
+  'delivery.summary': '{n} destinations, {i} findings',
+  'delivery.yes': 'yes',
+  'delivery.no': 'no',
+  'delivery.col.name': 'Destination',
+  'delivery.col.platform': 'Platform',
+  'delivery.col.transport': 'Transport',
+  'delivery.col.ingest': 'Ingest URL',
+  'delivery.col.key': 'Stream key',
+  'delivery.col.picture': 'Picture',
+  'delivery.col.video': 'Video',
+  'delivery.col.keyframe': 'Keyframe',
+  'delivery.col.audio': 'Audio',
+  'delivery.col.backupOf': 'Backup of',
+  'delivery.col.issues': 'Finding',
+  'delivery.enc.width': 'Width',
+  'delivery.enc.height': 'Height',
+  'delivery.enc.fps': 'fps',
+  'delivery.enc.videoBitrate': 'Video kbit/s',
+  'delivery.enc.keyframe': 'Keyframe s',
+  'delivery.enc.sampleRate': 'Audio Hz',
+  'delivery.enc.audioBitrate': 'Audio kbit/s',
+  'delivery.enc.videoCodec': 'Video codec',
+  'delivery.srt.mode': 'SRT mode',
+  'delivery.srt.rtt': 'measured RTT (ms)',
+  // {v}, {formula} und {source} werden vom Aufrufer ersetzt.
+  'delivery.srt.fromRtt': 'from RTT: {v} ms \u2014 {formula} ({source})',
+  // {low}, {high} und {source} werden vom Aufrufer ersetzt.
+  'delivery.srt.fixed': 'fixed practical value: {low}\u2013{high} ms ({source})',
+  // {field}, {actual} und {expected} werden vom Aufrufer ersetzt.
+  'delivery.issue.backupMismatch': 'Backup differs: {field} is {actual}, must be {expected}',
+  'delivery.issue.backupOrphan': 'Backup pointer leads nowhere',
+  'delivery.issue.backupCycle': 'Backup pointers form a cycle',
+  'delivery.issue.noBackup': 'No fallback path',
+  'delivery.issue.missingUrl': 'No ingest URL',
+  'delivery.issue.missingKey': 'No stream key stored',
+  // {actual} und {expected} werden vom Aufrufer ersetzt.
+  'delivery.issue.overBitrate': 'Bitrate {actual} above the platform limit {expected}',
+  'delivery.issue.keyframe': 'Keyframe interval {actual}, required is {expected}',
+  'delivery.issue.portForward': 'SRT listener: port forward required',
+
+  /* Bedarf 24 — die Switch-Port-Karte. Keys: analysis.switchPorts.* */
+  'analysis.switchPorts.title': 'Switch port map',
+  // {n} wird vom Aufrufer ersetzt.
+  'analysis.switchPorts.count': '{n} switches',
+  // {u} und {n} werden vom Aufrufer ersetzt.
+  'analysis.switchPorts.used': '{u} of {n} occupied',
+  'analysis.switchPorts.free': 'free',
+  'analysis.switchPorts.fromNic': 'interface',
+  'analysis.switchPorts.fromCable': 'cable',
+  // {name} wird vom Aufrufer ersetzt.
+  'analysis.switchPorts.conflict': 'cable says: {name}',
+  'analysis.switchPorts.descriptions': 'Descriptions',
+  'analysis.switchPorts.descHint':
+    'Vendor-neutral text to paste. The plan sends nothing to the switch \u2014 read what you paste.',
+
+  /* Bedarf 19 — weitere Netzwerk-Schnittstellen. Keys: nic.* */
+  'nic.title': 'Additional network interfaces',
+  'nic.add': 'Add',
+  'nic.none': 'No additional interfaces.',
+  'nic.hint':
+    'The fields above are the first interface. These are the further ones \u2014 Dante secondary, ST 2110 blue, separate control.',
+  'nic.primaryRole': 'Role of the first interface',
+  'nic.label': 'Label, e.g. \u201eDante Sec\u201c',
+  'nic.role': 'Role',
+  'nic.remove': 'Remove interface',
+  'nic.gateway': 'Gateway',
+  'nic.mac': 'MAC address',
+  'nic.vlan': 'VLAN',
+  'nic.switch': 'Switch',
+  'nic.switchPort': 'Port',
+  'nic.noSwitch': '\u2014 no switch \u2014',
+  'nic.role.mediaPrimary': 'Media primary',
+  'nic.role.mediaSecondary': 'Media secondary',
+  'nic.role.control': 'Control',
+  'nic.role.management': 'Management',
+  'nic.role.unspecified': 'not stated',
   'wireless.title': 'Wireless / vocals',
   'wireless.channel': 'Channel',
   'wireless.addChannel': 'Channel',

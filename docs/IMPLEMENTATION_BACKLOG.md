@@ -1386,6 +1386,11 @@ gehalten, nicht als Versäumnis:
 | Initiative 8: abgeleiteter Adressplan, mit Beleg je Zeile | `cable#701` |
 | ADR-004 Inkrement 3: Dokument-Code auf allen Listen-Ausdrucken | `cable#702` |
 | B-39.2: Vorlagen-Begriff — Projekt aus Vorlage, Kundendaten bleiben zurueck | `suite#105` |
+| Initiative 9: Ausspielung als Datenobjekt, Stream-Key im Schluesselbund | `cable#703` |
+| Bedarf 19: mehrere Netz-Schnittstellen je Geraet (Dante primaer/sekundaer, 2110 rot/blau) | `cable#704` |
+| Bedarf 24: erzeugte Switch-Port-Karte statt gepflegter Excel-Mappe | `cable#704` |
+| Bedarf 21: Plan gegen Vorgefundenes, Datei statt Live-Feed | `cable#704` |
+| `NETWORK_CONNECTORS` fuehrte Steckertypen, die es in `ConnectorType` nicht gibt | `cable#704` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
