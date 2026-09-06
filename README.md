@@ -26,6 +26,10 @@
   <sub>Kostenlos nutzbar, proprietär lizenziert · <code>.dmg</code> (Apple Silicon + Intel) and <code>.exe</code> installers attached to every release</sub>
 </p>
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="AV Planner Suite – Projekt-Dashboard mit Signal-, Kamera- und Licht-Plan, Tagesablauf, Crew und Budget" />
+</p>
+
 ---
 
 ## ✨ Overview
