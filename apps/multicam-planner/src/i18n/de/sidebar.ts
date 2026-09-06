@@ -1,6 +1,28 @@
 /** DE-Overrides: Sidebar, CustomCameraForm, Calculator, CalculationBreakdown,
  *  AiPlanAnalysis. Keys: sidebar.* */
 export const sidebar: Record<string, string> = {
+  // Bedarfe 59/60/61 — Rigging, Comms und Kit je Position.
+  'sidebar.rigging.title': 'Rigging & Comms',
+  'sidebar.rigging.openCount': '{n} offen',
+  'sidebar.rigging.riser': 'Podest',
+  'sidebar.rigging.riserPh': 'Podest / Praktikabel (4×4 ft Intellistage …)',
+  'sidebar.rigging.height': 'Podesthöhe in Metern',
+  'sidebar.rigging.heightPh': 'Höhe (m)',
+  'sidebar.rigging.load': 'Traglast in Kilogramm',
+  'sidebar.rigging.loadPh': 'Traglast (kg, vom Datenblatt)',
+  'sidebar.rigging.access': 'Zugang zur Position',
+  'sidebar.rigging.power': 'Stromversorgung',
+  'sidebar.rigging.powerPh': 'Strom (Kreis / Dose)',
+  'sidebar.rigging.channel': 'Comms-Kanal',
+  'sidebar.rigging.channelPh': 'Comms-Kanal',
+  'sidebar.rigging.beltpack': 'Beltpack',
+  'sidebar.rigging.beltpackPh': 'Beltpack-Nr.',
+  'sidebar.rigging.zone': 'Antennenzone',
+  'sidebar.rigging.zonePh': 'Antennenzone',
+  'sidebar.rigging.battery': 'Akku-Plan',
+  'sidebar.rigging.batteryPh': 'Akku-Plan',
+  'sidebar.rigging.kit': 'Kit an dieser Position',
+  'sidebar.rigging.kitPh': 'Kit an dieser Position — eine Zeile je Posten',
   // ── Calculator / CalculationBreakdown (sidebar.calc.*) ──
   'sidebar.calc.title': 'FOV- & Schärfentiefe-Rechner',
   'sidebar.calc.sensorSize': 'Sensorgröße',

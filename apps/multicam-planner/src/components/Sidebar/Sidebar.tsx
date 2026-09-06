@@ -4,9 +4,14 @@ import { LENSES, getLensById, getCompatibleLenses, pickInitialMountAndLens } fro
 import { computeFov, computeDof } from '../../utils/fov';
 import { checkPresets, presetRows, type PresetFinding } from '../../utils/ptzPresets';
 import { conflictsForCamera, conflictText } from '../../utils/sightline';
+import {
+  ACCESS_LABEL,
+  CARD_FINDING_LABEL,
+  cardFindings,
+} from '../../utils/cameraCardExtras';
 import { FiPlus, FiTrash2, FiCopy, FiChevronDown, FiChevronUp, FiEye, FiEyeOff, FiUpload, FiUser, FiMap, FiMaximize2, FiLock, FiUnlock, FiStar, FiEdit2, FiRotateCcw, FiHome, FiImage, FiColumns, FiUsers, FiVideo } from 'react-icons/fi';
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { BackgroundPlan, StageObjectType, Camera, CameraMountType, WallFit, WallPattern } from '../../types';
+import type { BackgroundPlan, StageObjectType, Camera, CameraMountType, VenueCamera, WallFit, WallPattern } from '../../types';
 import { MOUNT_TYPE_LABELS } from '../../types';
 import { rigsForType, trackSectionPlan } from '../../data/rigs';
 import { clampHeight, clampTrack, rigLimits } from '../../utils/rigLimits';
@@ -229,6 +234,19 @@ function CameraCard({
     { cameras: [cam], walls, persons, stages: venue.stages },
     cam.id,
   );
+
+  // Bedarfe 59/60/61 -- was auf der Kamerakarte fehlt und was mit einer
+  // anderen Position kollidiert. Aus demselben Grund hier und nicht in einem
+  // eigenen Dialog wie die Sichtlinien: die Luecke entsteht beim EINRICHTEN
+  // der Position, und dort steht auch das Feld, das sie schliesst.
+  const kartenBefunde = cardFindings(cam, cameras);
+  const feldCls =
+    'block w-full rounded border border-bc-border bg-bc-dark px-1.5 py-1 text-xs text-white';
+  /** Leeres Feld heisst „nicht angegeben", nicht null. */
+  const zahlOderNichts = (v: string): number | undefined => {
+    const n = Number(v.replace(',', '.'));
+    return v.trim() === '' || !Number.isFinite(n) ? undefined : n;
+  };
   const allLenses = [...LENSES, ...customLenses];
   // The active mount controls lens compatibility — when the user has swapped
   // the body's mount plate (e.g. URSA Broadcast B4 → EF), only lenses for
@@ -1263,6 +1281,174 @@ function CameraCard({
               </div>
             </Group>
           )}
+
+          {/* BEDARFE 59/60/61 — was der Operator vor Ort braucht und heute
+              muendlich bekommt. Zugeklappt: es sind Angaben, die einmal
+              eingetragen werden und dann stehen, nicht Regler, an denen man
+              waehrend der Planung dreht. Die Befunde stehen darin, damit sie
+              dort sichtbar sind, wo man sie beheben kann. */}
+          <Group
+            id="rigging"
+            title={t('sidebar.rigging.title', 'Rigging & comms')}
+            defaultOpen={false}
+            summary={
+              kartenBefunde.length > 0 ? format(t('sidebar.rigging.openCount', '{n} open'), { n: kartenBefunde.length }) : cam.comms?.channel
+            }
+          >
+            <div className="flex flex-col gap-1.5 text-xs">
+              <input
+                className={feldCls}
+                placeholder={t('sidebar.rigging.riserPh', 'Riser / platform (4×4 ft Intellistage …)')}
+                aria-label={t('sidebar.rigging.riser', 'Riser')}
+                value={cam.rigging?.riser ?? ''}
+                onChange={(e) =>
+                  updateCamera(cam.id, {
+                    rigging: { ...cam.rigging, riser: e.target.value || undefined },
+                  })
+                }
+              />
+              <div className="flex gap-1.5">
+                <input
+                  className={feldCls}
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  placeholder={t('sidebar.rigging.heightPh', 'Height (m)')}
+                  aria-label={t('sidebar.rigging.height', 'Riser height in metres')}
+                  value={cam.rigging?.riserHeightM ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      rigging: { ...cam.rigging, riserHeightM: zahlOderNichts(e.target.value) },
+                    })
+                  }
+                />
+                {/* Die Traglast wird NICHT gerechnet und nicht vorbelegt: die
+                    Zahl steht auf einem Blatt, nach dem sich jemand darauf
+                    stellt. Sie kommt vom Datenblatt des Podests. */}
+                <input
+                  className={feldCls}
+                  type="number"
+                  min={0}
+                  step={1}
+                  placeholder={t('sidebar.rigging.loadPh', 'Load limit (kg, from the data sheet)')}
+                  aria-label={t('sidebar.rigging.load', 'Load limit in kilograms')}
+                  value={cam.rigging?.loadLimitKg ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      rigging: { ...cam.rigging, loadLimitKg: zahlOderNichts(e.target.value) },
+                    })
+                  }
+                />
+              </div>
+              <div className="flex gap-1.5">
+                <select
+                  className={feldCls}
+                  aria-label={t('sidebar.rigging.access', 'Access to the position')}
+                  value={cam.rigging?.access ?? 'unstated'}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      rigging: {
+                        ...cam.rigging,
+                        access:
+                          e.target.value === 'unstated'
+                            ? undefined
+                            : (e.target.value as NonNullable<VenueCamera['rigging']>['access']),
+                      },
+                    })
+                  }
+                >
+                  {(Object.keys(ACCESS_LABEL) as (keyof typeof ACCESS_LABEL)[]).map((k) => (
+                    <option key={k} value={k}>
+                      {ACCESS_LABEL[k]}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  className={feldCls}
+                  placeholder={t('sidebar.rigging.powerPh', 'Power (circuit / outlet)')}
+                  aria-label={t('sidebar.rigging.power', 'Power drop')}
+                  value={cam.rigging?.powerDrop ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      rigging: { ...cam.rigging, powerDrop: e.target.value || undefined },
+                    })
+                  }
+                />
+              </div>
+              <div className="flex gap-1.5">
+                <input
+                  className={feldCls}
+                  placeholder={t('sidebar.rigging.channelPh', 'Comms channel')}
+                  aria-label={t('sidebar.rigging.channel', 'Comms channel')}
+                  value={cam.comms?.channel ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      comms: { ...cam.comms, channel: e.target.value || undefined },
+                    })
+                  }
+                />
+                <input
+                  className={feldCls}
+                  placeholder={t('sidebar.rigging.beltpackPh', 'Beltpack no.')}
+                  aria-label={t('sidebar.rigging.beltpack', 'Beltpack')}
+                  value={cam.comms?.beltpackId ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      comms: { ...cam.comms, beltpackId: e.target.value || undefined },
+                    })
+                  }
+                />
+              </div>
+              <div className="flex gap-1.5">
+                <input
+                  className={feldCls}
+                  placeholder={t('sidebar.rigging.zonePh', 'Antenna zone')}
+                  aria-label={t('sidebar.rigging.zone', 'Antenna zone')}
+                  value={cam.comms?.antennaZone ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      comms: { ...cam.comms, antennaZone: e.target.value || undefined },
+                    })
+                  }
+                />
+                <input
+                  className={feldCls}
+                  placeholder={t('sidebar.rigging.batteryPh', 'Battery plan')}
+                  aria-label={t('sidebar.rigging.battery', 'Battery plan')}
+                  value={cam.comms?.batteryPlan ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      comms: { ...cam.comms, batteryPlan: e.target.value || undefined },
+                    })
+                  }
+                />
+              </div>
+              <textarea
+                className={feldCls}
+                rows={2}
+                placeholder={t('sidebar.rigging.kitPh', 'Kit at this position — one line per item')}
+                aria-label={t('sidebar.rigging.kit', 'Kit at this position')}
+                value={(cam.kit ?? []).join('\n')}
+                onChange={(e) =>
+                  updateCamera(cam.id, {
+                    kit: e.target.value
+                      .split('\n')
+                      .map((x) => x.trim())
+                      .filter(Boolean),
+                  })
+                }
+              />
+              {kartenBefunde.length > 0 && (
+                <ul className="flex flex-col gap-1 text-[11px] text-amber-300/90">
+                  {kartenBefunde.map((f, i) => (
+                    <li key={`${f.kind}-${i}`}>
+                      <span className="font-medium">{CARD_FINDING_LABEL[f.kind]}</span> — {f.text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </Group>
 
           <Group id="note" title={t('sidebar.cam.notes', 'Notes')} defaultOpen={false} summary={cam.notes ? cam.notes.slice(0, 24) : undefined}>
             <textarea
