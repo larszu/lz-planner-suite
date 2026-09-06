@@ -3489,6 +3489,24 @@ export const en: Dict = {
   'channelList.view.stage': 'Stage (position)',
   'channelList.view.console': 'Console (names)',
   'channelList.view.monitor': 'Monitor paths',
+  // Bedarf 136 — eine Unterschrift je Container, auf BEIDEN Beinen.
+  'handover.signOut': 'Sign out',
+  'handover.signIn': 'Counter-sign return',
+  'handover.askOut': 'Handover signed by:',
+  'handover.askIn': 'Return counter-signed by:',
+  'handover.state.both': 'signed on both legs',
+  'handover.state.out-only': 'only handover signed',
+  'handover.state.in-only': 'only return signed',
+  'handover.state.none': 'not signed',
+  'inventory.checkout.signState': 'Signature block to print (both legs)',
+  // Bedarf 126 — „wie geplant“ gegen „wie gebaut“.
+  'asBuilt.title': 'As-built sheet (as planned / as built)',
+  'asBuilt.count': '{verified} of {total} entries verified',
+  'asBuilt.export': 'As-built',
+  // Bedarf 125 — das Multiviewer-Bild als Blatt.
+  'mv.sheet.title': 'Multiviewer layout (who is in which window)',
+  'mv.sheet.hint':
+    'The names come from the same roles as tally and UMD \u2014 not from a second, hand-kept list. The switcher stores its layout as a binary file; this sheet can be read by the camera crew too.',
   // Bedarf 121 — der Umbau-Zettel: nur was sich aendert.
   'salvo.changeover': 'Changeover from',
   'salvo.to': 'to',

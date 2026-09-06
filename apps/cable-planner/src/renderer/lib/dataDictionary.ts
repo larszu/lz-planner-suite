@@ -51,6 +51,31 @@ export const UNDESCRIBED = 'nicht beschrieben'
  * Datei, ohne dass sich am Plan etwas geaendert haette.
  */
 export const COLUMN_GLOSSARY: Readonly<Record<string, string>> = {
+  // Bedarf 136 — der Quittungs-Block (`lib/handoverSignature.ts`).
+  Vorgang: 'Welches Bein des Ausgabe-Vorgangs quittiert wird: die Ausgabe oder die Rückgabe.',
+  Datum:
+    'Der Tag, auf den sich die Zeile bezieht — bei einer geleisteten Unterschrift ihr Datum, sonst der Tag der Ausgabe bzw. der Rückgabe.',
+  Bemerkung: 'Was beim Unterschreiben gesagt wurde („unter Vorbehalt“, „Deckel fehlt“).',
+  Unterschrift:
+    'Die Strichlinie für den Stift. Sie steht nur da, wo NICHT unterschrieben ist — wo jemand quittiert hat, steht sein Name in der Spalte „Name“, und die Anwendung führt KEIN Bild der Unterschrift.',
+  // Bedarf 126 — das As-Built-Blatt (`lib/asBuilt.ts`).
+  Gegenstand:
+    'Worum die Zeile geht — ein Gerät, ein Anschluss oder ein Ausgang, so benannt, wie er im Plan heißt.',
+  'Wie geplant': 'Was der Plan für dieses Feld vorsieht. „keine Angabe“ heißt: der Plan sagt dazu nichts.',
+  'Wie gebaut':
+    'Was am Gerät ABGELESEN wurde. „keine Angabe“ heißt: niemand hat nachgesehen oder das Gerät hat dazu nichts gemeldet — nicht, dass es leer wäre.',
+  'Abgelesen von':
+    'Woher die Ablesung stammt (Netz-Scan, Mischer, Router, Vermietung, von Hand). Ohne Ablesung steht in der Urteils-Spalte „nicht nachgesehen“.',
+  'Abgelesen am':
+    'Der Tag der Ablesung. Fehlt er, gilt die Zeile als ungeprüft — ein Verify-Lauf von gestern ist kein Verify-Lauf.',
+  // Bedarf 125 — das Multiviewer-Bild (`lib/mvSheet.ts`).
+  Multiviewer:
+    'Welcher Multiviewer des Mischers gemeint ist — Gerätename plus laufende Nummer, ab 1 gezählt wie am Gerät.',
+  Fenster:
+    'Der interne Fenster-Index im Bild (große Fenster 0–3, kleine Zellen 10–43). Er steht auf dem Blatt, damit sich eine Zeile eindeutig einem Fenster zuordnen lässt — die POSITION ist die Angabe, nach der man auf dem Schirm sucht.',
+  'Größe': 'Ob das Fenster groß oder klein ist — im Multiviewer der Unterschied zwischen Haupt- und Neben-Bild.',
+  'Quelle (ATEM)':
+    'Die Quell-Nummer, wie der Mischer sie führt. Steht daneben „keine Rolle im Plan“, kennt der Plan zu dieser Nummer keine Signalquelle — meist eine interne Quelle des Mischers (Farbfläche, Media Player).',
   // Bedarf 121 — der Umbau-Zettel (`lib/salvoSheet.ts`).
   'Ziel (Beschriftung)':
     'Wie der Ausgang beschriftet ist — derselbe Text, den auch der Videohub bekommt (Rolle vor Port-Inhalt vor Portname). „ohne Beschriftung“ heißt: am Port steht nichts.',
@@ -258,7 +283,12 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, string>> = {
   Plattform: 'Die Zielplattform (YouTube, Twitch, eigenes Ziel …).',
   Platz: 'Der Platz im Rack oder Case, an dem die Einheit sitzt.',
   Port: 'Der Port am Switch oder am Gerät.',
-  Position: 'Die einzelne Zeile einer Liste oder Buchung.',
+  // Drei Lesarten. Die zweite kam mit Bedarf 105 (die Vor-Show-Liste fuehrt
+  // die KAMERA-Position), die dritte mit Bedarf 125 (das MV-Blatt fuehrt den
+  // Ort auf dem SCHIRM) — und der Eintrag beschrieb bis dahin weiter nur die
+  // Listenzeile. Genau die Art Erklaerung, die geglaubt wird und falsch ist.
+  Position:
+    'Je nach Blatt dreierlei: die Listenzeile einer Liste oder Buchung; die Kamera-Position (die Rolle, an der die Tally-Lampe haengt); oder der Ort auf dem Schirm („oben links, Zelle 2“).',
   Positionen: 'Wie viele Positionen der Container enthält.',
   Profil: 'Das PTP-Profil (ST 2059-2, AES67 …).',
   'Programm-Eingang': 'Der Eingang, an dem das Programm-Signal in den Ausspielweg eintritt.',
