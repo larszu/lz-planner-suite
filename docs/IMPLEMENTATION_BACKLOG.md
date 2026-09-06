@@ -1425,6 +1425,7 @@ gehalten, nicht als Versäumnis:
 | Bedarf 95: EIN Spektrum-Plan — vorher rechnete der Planer Intermodulation zweimal auf je der halben Senderliste | `cable#721` |
 | Bedarf 96: ein Preset darf nie still ueberschreiben (Schlagzeug-Technik) | `cable#721` |
 | Bedarf 86: die Tally-Seite luegt nicht, wenn sie die Verbindung verliert | `tally-pi#10` |
+| Bedarf 90: die Archiv-Aufzeichnung haengt nicht am selben Encoder wie der Upload | `cable#722` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |

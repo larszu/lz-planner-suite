@@ -170,6 +170,7 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 95 | EIN Spektrum-Plan statt zweier blinder Haelften (P2) | `cable#721` |
 | 96 | Ein Preset darf nie still ueberschreiben (P2) | `cable#721` |
 | 86 | Tally fuer entfernte Beitragende — die Seite luegt nicht, wenn die Strecke bricht (P2) | `tally-pi#10` |
+| 90 | Die Archiv-Aufzeichnung teilt nicht das Schicksal der Ausspielung (P2) | `cable#722` |
 
 **Zwei Berichtigungen an dieser Tabelle.** Die Zeile zu `cable#703` fuehrte
 „28 · 29 · 34". Gebaut wurden dort das Ziel-Register, die Paritaetspruefung und
