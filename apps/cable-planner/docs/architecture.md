@@ -5,7 +5,7 @@ Invarianten der App. Sie ist die Pflicht-Lektüre, bevor strukturelle Änderunge
 gemacht werden. Für die interaktive Modul-Übersicht siehe [`app-structure.html`](./app-structure.html),
 für einen Wettbewerber-Vergleich [`comparison.html`](./comparison.html).
 
-Stand: v8.2.1 · ~372 TS/TSX-Module · ~109.5k LOC
+Stand: v9.0.0 · ~474 TS/TSX-Module · ~140.5k LOC
 
 ---
 
@@ -54,11 +54,13 @@ Alle IPC-Channels sind nach Domäne präfixiert. Definitionen in
 | `project:*` | `projectIpc.ts` | `new`, `open`, `save`, `save-as`, `get-recent`, `export-viewer`, `import-annotations` |
 | `library:*` | `libraryIpc.ts` | `get-folder-path`, `reveal-folder`, `scan`, `write`, `delete` |
 | `rentman:*` | `rentmanIpc.ts` | `get-projects`, `get-project-equipment`, `get-equipment`, `add-project-equipment`, `add-project-file` |
+| `netbox:*` | `netboxIpc.ts` | `save-token`, `has-token`, `delete-token`, `normalize-url`, `test-connection`, `get-sites`, `get-racks`, `fetch-snapshot` |
 | `atem:*` | `atemIpc.ts` | `connect`, `disconnect`, `state`, `get-status`, `get-events`, `set-input-name`, `bulk-set-input-names`, `apply-mv-config`, `read-mv-config`, `apply-audio-config`, `discover`, plus `atem:event` (broadcast) |
 | `videohub:*` | `videohubIpc.ts` | `send` (TCP zu Blackmagic Videohub) |
 | `sync:*` | `syncIpc.ts` | `read-file`, `write-file`, `exists`, `acquire-lock`, `release-lock` |
 | `mobileShare:*` | `mobileShareIpc.ts` | `start`, `stop`, `status`, `setProject`, Events: `checksUpdate`, `cableAdded` |
 | `credentials:*` | `credentialsIpc.ts` | `get-token`, `save-token`, `delete-token`, `test-token` (via `keytar`) |
+| `streamKey:*` | `credentialsIpc.ts` | `get`, `has`, `save`, `delete` je Ausspielziel (Initiative 9). Eigener Namensraum neben `credentials:*`, weil ein Kanal eine Domäne ist: dort wohnen die Integrationen (Rentman, NetBox), hier die Ziele des Projekts. Ein Account je Ziel (`stream-key:<id>`) — ein gemeinsamer Blob nähme beim Löschen eines Ziels entweder alle Keys mit oder keinen. |
 | `graphml:*` | `graphmlIpc.ts` | `open-file` |
 | `print:*` | `printIpc.ts` | `pdf-bytes` |
 | `logs:*` | `logIpc.ts` | `renderer-error` (Renderer → Main, one-way) |
@@ -92,7 +94,7 @@ Vier Stores in `src/renderer/store/`. Jeder hat einen klar abgegrenzten Concern.
 
 #### 3.1.1 · Slice-Komposition (#308)
 
-`projectStore.ts` ist intern in **14 Slices** unter `src/renderer/store/slices/`
+`projectStore.ts` ist intern in **17 Slices** unter `src/renderer/store/slices/`
 zerlegt, die alle in den Haupt-Store komponiert werden:
 
 ```
@@ -123,7 +125,7 @@ isoliert testbar ist.
 
 ### 3.2 · Komponenten
 
-`src/renderer/components/` ist in 24 Subdomänen aufgeteilt:
+`src/renderer/components/` ist in 28 Subdomänen aufgeteilt:
 
 ```
 About/         Analysis/      Annotations/   Atem/          Cable/
@@ -209,6 +211,8 @@ CablePlannerProject
 ├── greengoConfig?: GreenGoConfig       # Intercom-Setup
 ├── checkState?                         # Mobile-View-Häkchen
 ├── mode: 'editing' | 'finalized' | 'viewer'
+├── sourceIdentities?: SourceIdentity[] # ADR-001 — Rollen („Kamera 1")
+├── deliveryDestinations?: DeliveryDestination[]  # Initiative 9 — OHNE Stream-Keys
 └── viewerSession?                      # Read-only-Hash
 ```
 
@@ -227,6 +231,49 @@ CablePlannerProject
 - `wireless`, `frequency`, `maxRange` (für Funk-Strecken)
 - `cableSpecId?` (Verweis auf eine eindeutige Kabel-Definition aus der
   Library für BOM-Aggregation)
+
+**DeliveryDestination** (Initiative 9, `types/delivery.ts`):
+- `platform`, `transport` (SRT/RTMP/HLS), `ingestUrl?`, `account?`
+- `encoding: EncodingProfile` — die sechs Felder, die zwischen Primär- und
+  Backup-Weg übereinstimmen **müssen**: Auflösung, Video-Codec, Bitrate,
+  Bildrate, Keyframe-Abstand, Audio-Abtastrate. Belegt bei YouTube und Castr;
+  driften sie auseinander, bricht der Failover.
+- `backupOfId?` — zeigt auf das Ziel, dessen Ausweichweg dieses ist. Die
+  Richtung ist Absicht: ein `backupId` am Primärziel liesse zwei Backups nicht
+  zu und würde bei gelöschtem Backup zum Fehlzeiger.
+- `hasStreamKey?` — eine **Tatsache über diesen Rechner**, kein Wert. Der Key
+  selbst liegt via `keytar` unter `stream-key:<id>`; er steht **nie** im
+  Projekt, weil eine `.avplan` per Mail wandert, in Dropbox liegt und in den
+  Mobile-/Web-Viewer geht. Beim Laden wird das Häkchen nachgefragt, nicht
+  geglaubt.
+- `encoderEquipmentId?` (Bedarf 32) — **die einzige Naht zwischen Ziel-Register
+  und Plan.** Zeigt auf das `EquipmentItem`, das dieses Ziel beliefert. Alles
+  Weitere ist abgeleitet und wird nicht gespeichert: der Programm-Eingang des
+  Encoders kommt aus seinen Anschlüssen, die Quelle aus der Rückwärtssuche im
+  Kabelgraph (`labelDerivation.resolveSignalSource`, ADR-001). Die Ableitung
+  steht in `lib/deliveryPath.ts` und erzeugt das Blatt `ausspielweg`.
+  - **Optional, und das bleibt es.** Ohne Angabe meldet die Kette `no-encoder`
+    statt sich einen Encoder auszusuchen. Ein Zeiger auf ein gelöschtes Gerät
+    wird beim Laden **nicht** stillschweigend geleert — `encoder-gone` ist die
+    ehrlichere Antwort als ein Feld, das kommentarlos leer wird.
+  - Die Encoder-Machbarkeit (`lib/encoderFeasibility.ts`) zählt seither **je
+    Gerät** statt über den ganzen Plan. Vier Ziele auf zwei Maschinen sind je
+    Maschine zwei; die frühere Summe meldete „vier gleichzeitige Ziele, vMix
+    führt drei" auf einem korrekten Aufbau.
+
+**NetworkInterface** (Bedarf 19, `types/network.ts`):
+- `role` (`media-primary` | `media-secondary` | `control` | `management` |
+  `unspecified`), `ipAddress?`, `subnetMask?`, `gateway?`, `macAddress?`,
+  `vlanId?`, `switchEquipmentId?`, `switchPort?`, `portId?`
+- **Die vier Netz-Felder am Gerät SIND Schnittstelle 0**; `networkInterfaces`
+  hält 1..n. Es gibt also je Adresse genau ein Zuhause — keine Spiegelung. Wer
+  ALLE Schnittstellen braucht, nimmt die Engstelle
+  `lib/networkInterfaces.ts#deviceInterfaces`, nicht `item.ipAddress`.
+  Der Grund für die Bauform steht in `types/network.ts`: `ipAddress` steht an
+  95 Stellen in 36 Dateien, und ein Umzug in einem Schritt hätte jede
+  übersehene Stelle still `undefined` lesen lassen.
+- `role` ist ohne Angabe `unspecified` — geraten wird nicht: ob die eine IP
+  einer Kamera ihre Steuerung oder ihr Medienweg ist, weiss der Plan nicht.
 
 **LocationFrame**:
 - `id`, `name`, `x`, `y`, `width`, `height`, `color`
@@ -275,6 +322,7 @@ gehören hier rein, nicht in einzelne Komponenten.
 | Settings | `localStorage[settings]` | JSON |
 | Window-Geometrie | `userData/window-geometry.json` | JSON |
 | Rentman-Token | OS-Credential-Store via `keytar` | OS-eigen |
+| Stream-Keys der Ausspielziele | OS-Credential-Store via `keytar`, Account `stream-key:<ziel-id>` | OS-eigen |
 | Sync-Lock | `<shared-pfad>/.cable-planner-sync.lock` | JSON (TTL 2h) |
 | Kategorie-Übersetzungen | `localStorage[categoryTranslations]` | JSON-Map |
 
@@ -304,24 +352,67 @@ verbundenen Switcher, `apply-mv-config` schreibt zurück.
 HTTP-API in `services/rentmanApiClient.ts`. Token im OS-Credential-Store.
 **Niemals Token loggen oder ins Projekt-File schreiben.**
 
-### 6.3 · GraphML-Import (yEd)
+### 6.3 · NetBox (DCIM, selbst gehostet, #597)
+
+Lesende REST-Anbindung an eine **eigene** NetBox-Instanz, um eine dort
+geplante Site oder ein Rack als Kabelplan zu übernehmen
+(`services/netboxApiClient.ts`, Referenz unter
+`<instanz>/api/schema/swagger-ui/`).
+
+Anders als bei Rentman gibt es keine feste Cloud-URL. Die Basis-URL lebt
+deshalb in den App-Settings (`settingsStore.netboxUrl`) und wird bei jedem
+IPC-Aufruf mitgegeben; **validiert wird sie immer in main**
+(`normalizeNetboxBaseUrl`: nur http/https, `/api…`-Suffix und Query werden
+abgeschnitten). Der Main-Prozess bleibt damit zustandslos. Das API-Token
+liegt via `keytar` unter dem Account `netbox-api-token` und wird — anders
+als der Rentman-Token — **nie an den Renderer zurückgegeben**; der fragt
+nur `has-token`.
+
+Genutzte Endpoints (alle nur lesend): `/api/status/`, `/api/dcim/sites/`,
+`/api/dcim/racks/`, `/api/dcim/devices/`, die sieben Komponenten-Endpoints
+(`interfaces`, `front-ports`, `rear-ports`, `console-ports`,
+`console-server-ports`, `power-ports`, `power-outlets`) und
+`/api/dcim/cables/`. Paginiert wird über `limit`/`offset` statt über die
+`next`-URL — hinter einem Reverse-Proxy zeigt die auf interne Hostnamen.
+
+**Mapping** (`lib/netboxMapping.ts`, rein und unit-getestet):
+- NetBox-Komponente → Cable-Planner-Port. Richtungslose Interfaces werden
+  als **gespiegeltes In/Out-Paar** angelegt (beide Ports tragen dieselbe
+  `netboxId`), damit jedes Kabel als Ausgang→Eingang zeichenbar bleibt.
+  Strom/Konsole/Patchfeld haben in NetBox eine echte Richtung und bekommen
+  genau einen Port.
+- Default `onlyConnectedPorts: true` — ein 48-Port-Switch brächte sonst 96
+  Handles auf den Knoten, von denen im Rack eine Handvoll gepatcht ist.
+- Layout: eine Spalte je Rack, innerhalb der Spalte nach Höheneinheit
+  absteigend gestapelt, optional ein `LocationFrame` je Rack. Der Block
+  landet rechts vom Bestand, überdeckt also nie einen vorhandenen Plan.
+
+**Der Abgleich ist per Konstruktion additiv.** NetBox ist die Wahrheit über
+die Verkabelung, der Cable Planner über die Darstellung (Positionen,
+Farben, Wegpunkte, Labels, Multicore-Bündel). Ein erneuter Lauf legt nur
+an, was über `netboxId` noch nicht im Plan ist, und ergänzt an bestehenden
+Geräten ausschliesslich neu hinzugekommene Ports. In NetBox gelöschte
+Elemente werden als `staleDeviceIds`/`staleCableIds` **gemeldet, nicht
+entfernt** — das Aufräumen bleibt beim Planer. Angewendet wird der Plan
+atomar über `applyNetboxImport` (`slices/netboxImportSlice.ts`), damit der
+Undo-Stack einen Import als einen Schritt sieht.
+
+Nicht zu verwechseln mit `lib/netboxImport.ts` — das ist der ältere
+Import einzelner Gerätetypen aus der öffentlichen
+`netbox-community/devicetype-library` auf GitHub (statische YAML), ohne
+eigene Instanz.
+
+### 6.4 · GraphML-Import (yEd)
 
 `fast-xml-parser` parst yEd-XML. **Sicher gegen XXE** —
 fast-xml-parser ignoriert DTDs/external entities per default.
 
-### 6.4 · Videohub (Blackmagic Router)
+### 6.5 · Videohub (Blackmagic Router)
 
 `videohubIpc.ts` öffnet eine TCP-Verbindung zum Videohub und sendet
 plain-text Routing-/Label-Blöcke. Smart-Routing erkennt Quellen anhand
 ihrer Namen (Fuzzy-Match mit AI-Provider-Fallback bei niedriger
 Score-Schwelle).
-
-### 6.5 · NetBox / DCIM
-
-`library.netbox.*`-Endpunkte importieren Device-Types aus einer NetBox-
-Instanz (oder dem öffentlichen device-type-library-Repo). Konflikt-
-Resolution bei vorhandenen Library-Einträgen über einen merge/replace/
-keep-local Dialog.
 
 ### 6.6 · Mobile-Share
 
@@ -373,7 +464,7 @@ nirgendwo hardcoded.
 3. GitHub Release mit Auto-Generated Notes + Installer-Artefakte.
 
 **Native Deps** (achten!):
-- `keytar` — OS-Credentials (Rentman-Token).
+- `keytar` — OS-Credentials (Rentman-Token, NetBox-Token, Stream-Keys).
 - `@julusian/freetype2` — **transitiv via `atem-connection`**, nicht via Three
   und nirgends direkt importiert (`grep -rn freetype src/` ist leer). Er steht
   hier trotzdem, weil `npmRebuild` ihn für die Electron-ABI neu bauen muss.
@@ -407,6 +498,13 @@ Das Wichtigste in Listenform. Niemals brechen ohne expliziten Architektur-Review
     `__APP_VERSION__` (Vite-Define).
 12. **Deutsche Strings sind Quell-Sprache** — Fallback in `t(key, fallback)`
     immer deutsch, EN-Übersetzungen im `en`-Dict.
+13. **Geheimnisse stehen nie im Projekt** — Rentman-Token, NetBox-Token und
+    die Stream-Keys der Ausspielziele liegen im OS-Credential-Store via
+    `keytar`. Das Projekt trägt höchstens die **Tatsache**, dass eines
+    hinterlegt ist, und die gilt für den Rechner, auf dem sie gelesen wird:
+    beim Laden wird sie nachgefragt, nicht aus der Datei geglaubt. Der Grund
+    ist der Weg der Datei — eine `.avplan` wandert per Mail, liegt in Dropbox
+    und geht in den Mobile- wie in den Web-Viewer.
 
 ---
 
@@ -417,7 +515,7 @@ Diese Themen sind diskutiert, aber noch nicht entschieden / umgesetzt.
 ### 9.1 · Store-Slicing — **erledigt** ✓ (#308)
 
 Implementiert. `projectStore.ts` von 2178 LOC auf ~1146 reduziert durch
-14 Slices unter `store/slices/`. Siehe §3.1.1.
+17 Slices unter `store/slices/`. Siehe §3.1.1.
 
 ### 9.2 · Komponenten-Splits — **teilweise** ✓ (#306, #307)
 
@@ -470,7 +568,7 @@ optionales Cloud-Backend (`y-websocket`, Auth/Permissions) bleiben offen.
 `vitest` ist eingerichtet (`npm test` / `npm run test:watch`); dazu kommen
 gezielte Node-Checks (`npm run test:crdt`, `npm run test:signaling`), ein
 UI-Smoke-Skript (`npm run ui:smoke`) und ein headless Drag-/Interaktions-Test
-(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~109.5k LOC
+(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~140.5k LOC
 bleibt der Ausbau der Abdeckung wichtig — empfohlene Schwerpunkte:
 - Snapshot-Tests auf `healProjectPositions` mit echten
   Beispiel-Projekt-JSONs.
@@ -504,3 +602,7 @@ standalone, keine Edits. Wird über `.github/workflows/pages.yml`
 | Neue UI-Texte | `t('domain.key', 'Deutsche Fallback')` + EN-Entry in `lib/i18n.ts` |
 | Neue Property-Section | `src/renderer/components/Properties/sections/` + Eintrag in `EquipmentProperties.tsx` Reihenfolge |
 | Neuer Settings-Tab | `src/renderer/components/Settings/tabs/` + Eintrag in `SettingsDialog.tsx` Sidebar |
+| Neues Geheimnis (Token, Key) | `credentialsService.ts` (`keytar`) + eigener IPC-Namensraum — **niemals** ein Feld im Projekt |
+| Neues gestempeltes Dokument | Tabelle in `lib/`, Eintrag in `DOCUMENT_STANDS` (`documentRegistry.ts`), Export via `csvFromTable(..., stamp, docId)` |
+| Alle Adressen eines Geräts lesen | `lib/networkInterfaces.ts#deviceInterfaces` — **nicht** `item.ipAddress` (das ist nur Schnittstelle 0) |
+| CSV lesen | `lib/csvParse.ts#parseCsv` — die eine Stelle; ein zweiter Parser antwortet beim ersten Semikolon im Feld anders |
