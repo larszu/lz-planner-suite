@@ -74,6 +74,22 @@ describe('COLUMN_GLOSSARY — ein Lexikon nach NAMEN, nicht nach Blatt', () => {
     for (const spalte of ['Ziel', 'Quelle', 'Art', 'Herkunft']) {
       expect(COLUMN_GLOSSARY[spalte], spalte).toMatch(/je nach|sonst|Auf anderen|Im /)
     }
+    // `Vorher`/`Nachher`/`Ausgang` sind erst mit Bedarf 101 und 121
+    // mehrdeutig geworden — und die Erklaerung blieb dabei stehen: sie
+    // beschrieb weiter NUR den Import-Vergleich, waehrend die Spalte laengst
+    // auch auf dem Umbenennungs-Blatt und dem Umbau-Zettel stand. Eine
+    // Erklaerung, die etwas anderes beschreibt als die Spalte, ist schlimmer
+    // als keine — sie wird geglaubt. Der Guard haelt jetzt fest, dass jede
+    // dieser drei Spalten ALLE ihre Lesarten nennt.
+    for (const [spalte, lesarten] of [
+      ['Vorher', ['Import', 'Zielsystem', 'Ausgang']],
+      ['Nachher', ['Import', 'Umbenennung', 'Ausgang']],
+      ['Ausgang', ['Pult', 'Router']],
+    ] as const) {
+      for (const lesart of lesarten) {
+        expect(COLUMN_GLOSSARY[spalte], `${spalte} nennt "${lesart}" nicht`).toContain(lesart)
+      }
+    }
   })
 
   it('verspricht bei „Stream-Key" ausdruecklich, dass kein Wert darin steht', () => {
@@ -158,7 +174,17 @@ describe('der Guard: jede Spalte, die irgendwo exportiert wird, ist erklaert', (
     const gefunden = new Map<string, string>()
     for (const [pfad, src] of Object.entries(quellen)) {
       if (pfad.includes('/lib/dataDictionary.ts')) continue
-      for (const m of src.matchAll(/headers:\s*\[([\s\S]*?)\]/g)) {
+      // Zwei Formen, und die zweite fehlte: `headers: [...]` direkt am Objekt
+      // UND `const X_HEADERS = [...]`, das erst per Spread hineingeht. Die
+      // zweite war fuer den Scan unsichtbar — der Spread traegt keine
+      // String-Literale —, und damit war jedes Blatt unsichtbar, dessen
+      // Spalten aus einer Konstanten kommen. Gefunden beim Anlegen von
+      // `PRE_SHOW_HEADERS` (Bedarf 105).
+      const listen = [
+        ...src.matchAll(/headers:\s*\[([\s\S]*?)\]/g),
+        ...src.matchAll(/_HEADERS(?::[^=]*)?\s*=\s*\[([\s\S]*?)\]/g),
+      ]
+      for (const m of listen) {
         for (const s of m[1].matchAll(/'((?:[^'\\]|\\.)*)'/g)) {
           const spalte = s[1].replace(/\\'/g, "'")
           if (!gefunden.has(spalte)) gefunden.set(spalte, pfad)

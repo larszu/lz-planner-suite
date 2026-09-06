@@ -51,6 +51,42 @@ export const UNDESCRIBED = 'nicht beschrieben'
  * Datei, ohne dass sich am Plan etwas geaendert haette.
  */
 export const COLUMN_GLOSSARY: Readonly<Record<string, string>> = {
+  // Bedarf 121 — der Umbau-Zettel (`lib/salvoSheet.ts`).
+  'Ziel (Beschriftung)':
+    'Wie der Ausgang beschriftet ist — derselbe Text, den auch der Videohub bekommt (Rolle vor Port-Inhalt vor Portname). „ohne Beschriftung“ heißt: am Port steht nichts.',
+  'Neue Quelle':
+    'Die Beschriftung des Eingangs, der nach dem Umbau auf diesem Ausgang liegt. Steht hier „nicht gesetzt“, sagt der Ziel-Satz zu diesem Ausgang nichts — dann ist beim Umbau ungeklärt, ob er bleiben oder sich ändern soll.',
+  // Bedarf 116 — die Segmente (`lib/networkSegments.ts`).
+  Segment:
+    'Der Name des VLAN im Haus („Dante Prim“, „Steuerung“). „ohne Namen“ heißt: die Id ist in Gebrauch, aber niemand hat gesagt, wofür.',
+  Zweck:
+    'Wofür das Segment da ist — dieselbe Vokabel wie die Rolle an der Schnittstelle (Medien primär/sekundär, Steuerung, Management). „nicht angegeben“ ist kein Fehler, sondern eine offene Entscheidung.',
+  'PTP-Domäne (geplant)':
+    'Die Zeit, die in diesem Segment laufen SOLL — der Entwurf, nicht die Messung am Gerät. Weicht ein Gerät davon ab, ist das ein Befund.',
+  'Weg hinein':
+    'Das Gerät, das in dieses Segment routet (das Mgmt-Gateway). „nur direkt am Segment“ ist eine Auskunft und keine Lücke: nicht jedes Segment soll von außen erreichbar sein.',
+  Schnittstellen: 'Wie viele Netz-Schnittstellen aus dem Plan in diesem Segment liegen.',
+  'Gerät':
+    'Das Gerät, dem die Zeile gehört — mit seinem Namen aus dem Plan, nicht mit einer Kurzform.',
+  // Bedarf 101 — die Vorschau auf eine Umbenennung (`lib/renameImpact.ts`).
+  Zielsystem:
+    'Das System, das den Namen speichert (ATEM, Videohub, TSL-UMD, Dante) — samt Feld, weil derselbe Name dort in mehreren Feldern mit verschiedenen Budgets landet.',
+  Ort:
+    'Wo im Plan der Text ankommt — Gerät und, wo es eines gibt, der Anschluss („ATEM 1 · In 3“).',
+  Hinweis:
+    'Was beim Zielsystem NICHT so ankommt wie gemeint: gekürzt, nicht darstellbare Zeichen, oder „kommt hier NICHT an“ — dann speichert das Ziel nach der Umbenennung denselben Text wie vorher.',
+  // Bedarf 105 — die Vor-Show-Liste fuer das Tally (`lib/tallyPosition.ts`).
+  Weg:
+    'Über welchen Weg das Tally an diese Position kommt (TSL UMD v3.1, GPIO, NDI, der Mischer selbst). „nicht festgelegt“ heißt: niemand hat es entschieden.',
+  Adresse:
+    'Adresse, Host oder Pin, wie es AM GERÄT eingetragen ist. Der Plan prüft den Wert nicht — was gültig ist, hängt am Weg; geprüft wird an der Lampe.',
+  Lampe: 'Wo die Lampe sitzt, die diese Position anzeigt („Kamerakopf“, „Box am Stativ“).',
+  Programm:
+    'Was an der Lampe zu sehen war, während die Position auf PROGRAMM lag. „nicht geprüft“ heißt: niemand hat hingesehen — nicht, dass sie aus war.',
+  Vorschau:
+    'Was an der Lampe zu sehen war, während die Position auf VORSCHAU lag. Rot ist hier ein Fehler: der Operator glaubt dann, er sei auf Sendung.',
+  'Geprüft am':
+    'Tag der letzten Sichtprüfung an dieser Lampe. Ohne Datum gilt die Position als ungeprüft — der Plan sagt nie von sich aus, dass ein Tally funktioniert.',
   Abweichung:
     'Ist minus Schätzung. „unbekannt“ heißt: eine der beiden Zahlen fehlt — nicht, dass die Abweichung null wäre.',
   'Abweichung %':
@@ -100,7 +136,8 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, string>> = {
     'Unter welcher Bedingung das Haus zugestimmt hat, oder welcher Umweg vereinbart wurde.',
   'Aus dem Plan':
     'Der Wert, den der Plan für diesen Punkt vorsieht — die Frage- oder Vergleichsseite.',
-  Ausgang: 'Der Ausgang am Pult, auf den dieser Kanal geht.',
+  Ausgang:
+    'Der Ausgang, auf den etwas geht — je nach Blatt der Pult-Ausgang eines Kanals oder der Router-Ausgang eines Kreuzpunkts. Auf dem Umbau-Zettel steht die Nummer, wie sie am Geraet aufgedruckt ist (ab 1), nicht die interne ab 0.',
   Ausgegeben: 'Wann der Container ausgegeben wurde.',
   'Ausgegeben an': 'An wen die beschädigte Einheit zuletzt ausgegeben war.',
   'Backup von': 'Für welches Ziel dieses Ziel der Ausweichweg ist.',
@@ -203,7 +240,8 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, string>> = {
   Menge: 'Die Stückzahl dieser Position.',
   Mischer: 'Der Bildmischer, auf den sich die Eingangsnummer bezieht.',
   Modell: 'Der Gerätetyp — nicht die einzelne Einheit.',
-  Nachher: 'Der Stand nach dem zweiten Import.',
+  Nachher:
+    'Der Stand NACH der Aenderung: beim Vergleich zweier Importe der zweite Stand, auf dem Umbenennungs-Blatt der Text nach der Umbenennung, auf dem Umbau-Zettel der Eingang, der auf diesen Ausgang kommt.',
   Name: 'Der Name, unter dem der Datensatz im Plan geführt wird.',
   'Neuer Name': 'Der Name, den die Regel für dieses Gerät ergibt.',
   'Name (Pult)': 'Der Name, den jemand am Pult eingetippt hat.',
@@ -262,7 +300,13 @@ export const COLUMN_GLOSSARY: Readonly<Record<string, string>> = {
   'UMD-Adresse': 'Die TSL-Adresse, unter der der Multiviewer diese Quelle beschriftet.',
   Video: 'Die geplanten Video-Parameter des Ziels.',
   VLAN: 'Das VLAN, in dem die Schnittstelle liegt.',
-  Vorher: 'Der Stand beim ersten Import.',
+  // Drei Lesarten, und der Eintrag nennt alle drei — genau dafuer geht das
+  // Lexikon nach NAMEN und nicht nach Blatt. Bis zum Bedarf 121 stand hier
+  // nur der Import, waehrend die Spalte laengst auch auf dem
+  // Umbenennungs-Blatt (Bedarf 101) stand: eine Erklaerung, die etwas anderes
+  // beschreibt als die Spalte, ist schlimmer als keine — sie wird geglaubt.
+  Vorher:
+    'Der Stand VOR der Aenderung: beim Vergleich zweier Importe der erste Stand, auf dem Umbenennungs-Blatt der Text, den das Zielsystem heute speichert, auf dem Umbau-Zettel der Eingang, der jetzt auf diesem Ausgang liegt.',
   Vorgefunden: 'Was vor Ort tatsächlich angetroffen wurde — die Ist-Seite des Abgleichs.',
   Wann: 'Wann die Angabe gemacht oder die Antwort gegeben wurde.',
   Was: 'Worum es in dieser Zeile geht.',

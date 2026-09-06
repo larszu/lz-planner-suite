@@ -78,6 +78,8 @@ import { normaliseTransmissionRecord } from '../lib/transmissionRecord'
 import { normaliseCostPlan } from '../lib/costComparison'
 import { normaliseNamingScheme } from '../lib/namingScheme'
 import { normaliseMicPlot } from '../lib/micAssignment'
+import { normaliseTallyPositions } from '../lib/tallyPosition'
+import { normaliseNetworkSegments } from '../lib/networkSegments'
 import { normaliseVenueAnswers } from '../lib/venueAnswers'
 import { isNetworkInterfaceRole, normaliseNetworkInterface } from '../lib/networkInterfaces'
 import type { NetworkInterface } from '../types/network'
@@ -498,10 +500,43 @@ export interface ProjectState {
   addSourceIdentity: (
     identity: Omit<import('../types/sourceIdentity').SourceIdentity, 'id'> & { id?: string },
   ) => string | undefined
+  /**
+   * Alles AUSSER dem Namen. Umbenannt wird ueber `renameSourceIdentity`
+   * (Bedarf 101): nur dort wird geprueft, ob schon eine andere Rolle so
+   * heisst, und zwei gleichnamige Rollen sind auf dem Multiviewer nicht mehr
+   * auseinanderzuhalten. Ein zweiter Weg an dieser Pruefung vorbei waere
+   * genau der Zustand, den die Pruefung verhindern soll.
+   */
   updateSourceIdentity: (
     id: string,
-    patch: Partial<Omit<import('../types/sourceIdentity').SourceIdentity, 'id'>>,
+    patch: Partial<Omit<import('../types/sourceIdentity').SourceIdentity, 'id' | 'name'>>,
   ) => void
+  /**
+   * Bedarf 101 — die EINE Aenderung. Liefert den Grund, wenn sie nicht
+   * ausgefuehrt wurde, statt still nichts zu tun: fuer den Bedienenden ist
+   * ein wortloses Nichts von einem kaputten Programm nicht zu unterscheiden.
+   */
+  /** Bedarf 116 — die Segmente setzen. Ein Setter fuer die ganze Liste:
+   *  die Befunde lesen alle Segmente gegeneinander. */
+  setNetworkSegments: (
+    segments: import('../types/networkSegment').NetworkSegment[],
+  ) => void
+  /** Bedarf 105 — Tally-Weg/Lampe einer Position setzen (Upsert). Liefert
+   *  `'unknown-role'`, wenn es die Rolle nicht gibt. */
+  setTallyPosition: (
+    identityId: string,
+    patch: Partial<Omit<import('../types/tallyPosition').TallyPosition, 'identityId' | 'checks'>>,
+  ) => 'unknown-role' | undefined
+  /** Bedarf 105 — eine Sichtpruefung anhaengen. Der Zeitpunkt kommt vom
+   *  Aufrufer; der Store nimmt keine Uhr. */
+  recordTallyCheck: (
+    identityId: string,
+    check: import('../types/tallyPosition').TallyCheck,
+  ) => 'unknown-role' | undefined
+  renameSourceIdentity: (
+    id: string,
+    newName: string,
+  ) => import('../lib/renameImpact').RenameRefusal | undefined
   removeSourceIdentity: (id: string) => void
   /** Geraet an eine Rolle binden; `undefined` loest die Bindung. */
   bindEquipmentToSourceIdentity: (equipmentId: string, identityId: string | undefined) => void
@@ -631,6 +666,23 @@ const healProjectPositions = (
   // sieht im Plan aus wie eine zugewiesene Tally-Adresse.
   const sourceIdentities = normaliseSourceIdentities(project.sourceIdentities, onDrop)
   const identityIds = sourceIdentityIdSet(sourceIdentities)
+  // Bedarf 105 — das Tally je Position. NACH den Rollen, weil es sie braucht:
+  // ein Datensatz auf eine geloeschte Rolle zeigt ins Leere und saehe auf dem
+  // Vor-Show-Blatt aus wie eine gepruefte Position. Dieselbe Entscheidung wie
+  // bei `clearDanglingIdentity` eine Zeile weiter unten.
+  const tallyPositions = normaliseTallyPositions(project.tallyPositions).filter((p) =>
+    identityIds.has(p.identityId),
+  )
+  // Bedarf 116 — die Segmente. Der Gateway-Zeiger wird gegen die Geraete
+  // gehalten: ein Zeiger ins Leere saehe auf dem Blatt aus wie ein Weg in das
+  // Segment hinein, und genau danach sucht jemand vor Ort. Das SEGMENT selbst
+  // ueberlebt — es ist der Entwurf, und der gilt auch ohne Gateway.
+  const geraeteIds = new Set(project.equipment.map((e) => e.id))
+  const networkSegments = normaliseNetworkSegments(project.networkSegments).map((s) =>
+    s.gatewayEquipmentId && !geraeteIds.has(s.gatewayEquipmentId)
+      ? (({ gatewayEquipmentId: _weg, ...rest }) => rest)(s)
+      : s,
+  )
   // Initiative 9 — Ausspielziele. Dieselbe Bauform wie die Rollen darueber:
   // normalisieren, Verworfenes melden, Backup-Zeiger ins Leere entfernen.
   const deliveryDestinations = normaliseDeliveryDestinations(project.deliveryDestinations, onDrop)
@@ -833,6 +885,12 @@ const healProjectPositions = (
     changelog: project.changelog ?? [],
     // ADR-001 — Rollen sind optional; alte Projekte heilen zu [].
     sourceIdentities,
+    // Bedarf 105 — dito. Leere Liste und nicht `undefined`: „keine Position
+    // hinterlegt" und „Liste leer" sind hier dasselbe, und ein `undefined`
+    // zwaenge jeden Leser zu einer zweiten Fallunterscheidung.
+    tallyPositions,
+    // Bedarf 116 — dito.
+    networkSegments,
     deliveryDestinations,
     // Bedarf 72 — `undefined` heisst „kein Adressplan", nicht „leerer".
     multicast,
