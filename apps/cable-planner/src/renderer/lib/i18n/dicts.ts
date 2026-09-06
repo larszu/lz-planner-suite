@@ -3489,6 +3489,53 @@ export const en: Dict = {
   'channelList.view.stage': 'Stage (position)',
   'channelList.view.console': 'Console (names)',
   'channelList.view.monitor': 'Monitor paths',
+  // Bedarf 115 — der Unterlagen-Stapel.
+  'packet.paper': 'Paper',
+  'packet.colour': 'Colour',
+  'packet.colour.colour': 'colour',
+  'packet.colour.mono': 'black and white',
+  'packet.colourHint':
+    'Colour swatches are printed in colour mode only. The name of the group is shown in BOTH modes \u2014 a grey box on a photocopy no longer tells two groups apart.',
+  'packet.glossary': 'Print column glossary',
+  'packet.print': 'Print packet',
+  'packet.undescribed': '\u201C{sheet}\u201D: {cols} not explained in the glossary.',
+  // Bedarf 112 — der Scan vor Ort, gegen den Plan gehalten.
+  'scan.title': 'Spectrum scan from the analyser',
+  'scan.import': '📈 Read scan',
+  'scan.points': '{n} measurement points',
+  'scan.threshold': 'occupied from (dBm)',
+  'scan.thresholdHint':
+    'What \u201Coccupied\u201D means depends on antenna, preamp and distance \u2014 none of which is in the file. That is why the threshold is a field, not a fixed value.',
+  'scan.exportCheck': 'Comparison',
+  'scan.what': 'What transmits',
+  'scan.freq': 'MHz',
+  'scan.verdict': 'Verdict',
+  'scan.peak': 'Peak (dBm)',
+  // Bedarf 114 — wer traegt in welcher Vorstellung welche Strecke.
+  'micPlot.title': 'Mic plot — who wears which channel',
+  'micPlot.session': 'Session',
+  'micPlot.noSession': '— no session —',
+  'micPlot.addSession': 'Session',
+  'micPlot.carry': 'Carry over from previous',
+  'micPlot.carryHint':
+    'Take the previous session\u2019s assignments as a proposal. The battery timestamp is NOT carried over \u2014 yesterday\u2019s is the one value that is certainly wrong.',
+  'micPlot.export': 'Session sheet',
+  'micPlot.empty':
+    'No session yet. The channel plan above belongs to the production; who wears which channel changes per performance \u2014 that is what this section is for.',
+  'micPlot.person': 'Person',
+  'micPlot.role': 'Role',
+  'micPlot.rolePh': 'e.g. presenter',
+  'micPlot.channel': 'Channel',
+  'micPlot.channelGone': 'Channel removed',
+  'micPlot.pack': 'Transmitter',
+  'micPlot.packNone': '— not named —',
+  'micPlot.packGone': 'Unit removed',
+  'micPlot.battery': 'Battery fitted',
+  'micPlot.batterySet': 'now',
+  'micPlot.addPerson': 'Person',
+  'micPlot.needChannel': 'Create a channel in the rig plan first \u2014 the assignment points at it.',
+  // Bedarf 110 — wem welche Spalte gehoert.
+  'channelList.view.owner': 'Venue / band (who owns what)',
   'channelList.export': '🎚 Channel list',
   // Bedarf 92 — die Szenendatei des Pults lesen und zwei Staende vergleichen.
   'scene.import': '\u{1F39B} Read scene file',
