@@ -74,6 +74,31 @@ export const dialogs: Record<string, string> = {
   'dlg.fx.save': 'Save',
 
   // ── ScheduleDialog: tabs ──
+  // Bedarf 137 — der Rueckweg vom Pult.
+  'dlg.sch.tab.return': 'Return from console',
+  'dlg.sch.return.load': 'Load console patch export (CSV)',
+  'dlg.sch.return.export': 'List as CSV',
+  'dlg.sch.return.hint':
+    'The console\u2019s patch export (channel, address, type, label) is held against the plan. Nothing is taken over \u2014 the list is there to be walked through.',
+  'dlg.sch.return.compared': 'channels compared',
+  'dlg.sch.return.changed': 'changed',
+  'dlg.sch.return.onlyConsole': 'console only',
+  'dlg.sch.return.onlyPlan': 'plan only',
+  'dlg.sch.return.ambiguous': 'channel used more than once',
+  'dlg.sch.return.noChannel': 'no channel number',
+  'dlg.sch.return.columns': 'Columns read',
+  'dlg.sch.return.ignored': 'not interpreted',
+  'dlg.sch.return.none': 'none',
+  'dlg.sch.return.line': 'Line',
+  'dlg.sch.return.clean': 'The plan matches the console.',
+  'dlg.sch.return.channel': 'Channel',
+  'dlg.sch.return.what': 'What',
+  'dlg.sch.return.label': 'Name',
+  'dlg.sch.return.field': 'Field',
+  'dlg.sch.return.inPlan': 'In the plan',
+  'dlg.sch.return.atConsole': 'At the console',
+  'dlg.sch.return.oneWay':
+    'One-way street: none of this is written into the plan. The plan carries the intent, the console the state after load-in.',
   'dlg.sch.tab.list': 'Instrument schedule & patch',
   'dlg.sch.tab.magic': 'Magic sheet',
   'dlg.sch.tab.focus': 'Focus',
