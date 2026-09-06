@@ -165,6 +165,11 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 76 | Nachschlagen mitten in der Show — Adresse rein, ganze Antwort raus (P2, `widespread`) | `cable#720` |
 | 85 | Die Antwort des Hauses neben der Frage, mit dem Haus dazu (P2, zweite Haelfte) | `cable#720` |
 | 70 | Etiketten mit lesbarem Code, acht Geometrien, Tippen als Hauptweg (P2) | frueher gebaut, nachgewiesen |
+| 73 | PTP im Modell — „a rule a human violates blind and a tool enforces for free" (P2) | `cable#721` |
+| 77 | Das Netz-Merkblatt fuer die Crew, als Dokument mit Stand statt als WhatsApp-Nachricht (P2) | `cable#721` |
+| 95 | EIN Spektrum-Plan statt zweier blinder Haelften (P2) | `cable#721` |
+| 96 | Ein Preset darf nie still ueberschreiben (P2) | `cable#721` |
+| 86 | Tally fuer entfernte Beitragende — die Seite luegt nicht, wenn die Strecke bricht (P2) | `tally-pi#10` |
 
 **Zwei Berichtigungen an dieser Tabelle.** Die Zeile zu `cable#703` fuehrte
 „28 · 29 · 34". Gebaut wurden dort das Ziel-Register, die Paritaetspruefung und

@@ -1420,6 +1420,11 @@ gehalten, nicht als Versäumnis:
 | Bedarf 76: die Suche findet Adressen und antwortet, statt nur zu springen | `cable#720` |
 | Bedarf 85 (2. Haelfte): die Antwort des Hauses steht neben der Frage | `cable#720` |
 | Bedarf 70: Etiketten mit lesbarem Code, acht Geometrien, Tippen als Hauptweg | frueher gebaut, 2026-09-06 nachgewiesen |
+| Bedarf 73: PTP im Modell, der Domaenen-Widerspruch benannt | `cable#721` |
+| Bedarf 77: das Netz-Merkblatt fuer die Crew, als Dokument mit Stand | `cable#721` |
+| Bedarf 95: EIN Spektrum-Plan — vorher rechnete der Planer Intermodulation zweimal auf je der halben Senderliste | `cable#721` |
+| Bedarf 96: ein Preset darf nie still ueberschreiben (Schlagzeug-Technik) | `cable#721` |
+| Bedarf 86: die Tally-Seite luegt nicht, wenn sie die Verbindung verliert | `tally-pi#10` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
