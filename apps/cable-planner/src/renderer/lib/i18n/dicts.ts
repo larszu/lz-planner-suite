@@ -3914,6 +3914,23 @@ export const en: Dict = {
     'The plan asks for per-destination quality \u2014 whether this tool can do that is unresolved',
   // {field} und {values} werden vom Aufrufer ersetzt.
   'delivery.encoder.mustMatch': '{field} must match across all destinations, but is {values}',
+  // Bedarf 32 — der Ausspielweg.
+  'delivery.encoder.onDevice': 'on {device}',
+  'delivery.path.title': 'Delivery path',
+  'delivery.path.hint':
+    'The path from the programme feed to the platform — source, encoder, transport, destination',
+  'delivery.path.encoder': 'Encoder in the plan',
+  'delivery.path.encoderHint':
+    'Which device of the plan feeds this destination — the delivery path is derived from it',
+  'delivery.path.noEncoder': '— no encoder named —',
+  'delivery.path.encoderGoneOption': '(device no longer in the plan)',
+  'delivery.path.hops': '(via {n})',
+  'delivery.chain.noEncoder': 'No encoder named in the plan',
+  'delivery.chain.encoderGone': 'The named device is no longer in the plan',
+  'delivery.chain.encoderUnfed': '{device} has no cable on any programme input',
+  'delivery.chain.feedAmbiguous': 'Several cabled programme inputs: {ports}',
+  'delivery.chain.backupSharesEncoder':
+    'Backup runs through the same device as the primary path ({device})',
 
   /* Bedarf 24 — die Switch-Port-Karte. Keys: analysis.switchPorts.* */
   'analysis.switchPorts.title': 'Switch port map',
@@ -4214,7 +4231,11 @@ export const en: Dict = {
   'analysis.rf.conflictChannel': '{a} ↔ {b}: same channel {ch}',
   // CSV-Import (#354)
   'csvImport.title': 'Import equipment from CSV',
-  'csvImport.intro': 'Paste CSV or pick a file. First row = column headers. Recognized columns: name, category, power (W), weight (kg), serial number, IP, RU, subtitle/manufacturer. Import creates library templates (no overwrite).',
+  'csvImport.intro':
+    'Paste CSV or pick a file. First row = column headers. Recognized columns: name, category, ' +
+    'power (W), weight (kg), serial number, IP, RU, subtitle/manufacturer. Every other column is ' +
+    'carried into the notes — nothing is dropped silently. Import creates library templates ' +
+    '(no overwrite).',
   'csvImport.pickFile': 'Choose CSV file…',
   'csvImport.detected': 'Detected: {rows} row(s), mapped columns: {fields}',
   'csvImport.fallbackCategory': 'Imported',
@@ -4222,7 +4243,17 @@ export const en: Dict = {
   'csvImport.col.category': 'Category',
   'csvImport.importBtn': 'Import {n}',
   'csvImport.doneTitle': 'CSV imported',
-  'csvImport.doneBody': 'Added {n} device(s) as library templates (existing names unchanged).',
+  'csvImport.doneBody':
+    'Created {n} new device(s). Left unchanged: {vorhanden} name(s) that already existed. ' +
+    'Skipped: {ohneName} row(s) without a name.',
+  // Bedarf 29 — was NICHT ankommt, hat einen Namen.
+  'csvImport.whatHappens': 'What happens to the rest',
+  'csvImport.unmapped': 'Not recognised as a field, carried into the notes: {cols}',
+  'csvImport.duplicateCols':
+    'Second column on the same field — the first one wins, this one becomes a note: {cols}',
+  'csvImport.noName': '{n} row(s) without a name will be skipped: {rows}',
+  'csvImport.existing':
+    '{n} name(s) already exist — they stay unchanged, nothing is overwritten: {names}',
   'app.mobileShare.title': 'Phone access: a small LAN server + QR code so a phone can open the mobile viewer.',
   'app.mobileShare.ariaLabel': 'Phone access',
   'app.redo': 'Redo (Ctrl+Y)',

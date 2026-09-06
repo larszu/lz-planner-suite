@@ -134,7 +134,7 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 22 | Netz-Dokumente aus EINEM Modell: Rack-Tuer-Blatt, VLAN-Tabelle | `cable#705` |
 | 23 | Haus-IT-Anforderungsblatt — „the role's most-cited organisational blocker" | `cable#705` |
 | 24 | Switch-Port-Karte erzeugt statt gepflegt; **kein** Konfigurationskanal | `cable#704` |
-| 28 · 29 · 34 | Ziel-Register, Primaer/Backup-Paritaet, Transport-Rechner mit Quelle | `cable#703` |
+| 30 · 31 · 34 | Ziel-Register, Primaer/Backup-Paritaet, Transport-Rechner mit Quelle | `cable#703` |
 | 37 | Eine Kanalliste, fuenf Sichten — „PROJECTIONS, NOT MORE FIELDS" | `cable#706` |
 | 38 | Stage-Plot als Ein-Seiten-Lieferung mit Eingangsliste darauf | `cable#706` |
 | 12 | Sichtlinien-Konflikte im Plan statt in der Probe — „cheap geometry, prevents a re-rig" | `multicam#92` |
@@ -148,6 +148,35 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 26 | Die vergessenen Blätter (Tally, Port-Karte, MV-Layout) stehen in der Impact-Liste | `cable#709` |
 | 27 | Der Rückweg vom Papier: „gilt dieses Blatt noch?" — war gebaut und unerreichbar | `cable#709` |
 | 28 | Plan gegen ERP-Reservierung, in BEIDE Richtungen — „the valuable increment is the diff" | `cable#709` |
+| 32 | Der Ausspielweg: Quelle → Encoder → Transport → Ziel, aus dem Kabelgraph abgeleitet | `cable#710` |
+| 29 | Kein stiller Verlust beim CSV-Import — was nicht ankommt, hat einen Namen | `cable#711` |
+| 3 | Companion-Tasten aus dem Plan statt „52 times a year" abgetippt | `Broadcast-intercom#10` |
+| 5 · 9 | Eine Quellen-Identitaet, viele Zielsysteme — ADR-001 (`sourceIdentity` + `labelDerivation`) | `cable#601`–`#640` |
+| 18 | Netz-Facetten AM Geraet statt zweites IP-Modul — „one device, one identity, many facets" | `cable#704` |
+| 25 | Die kaufmaennische Stueckliste aus dem technischen Plan (`planBom`, ADR-002 Inkrement 4) | frueher, ohne Bedarfs-Bezug |
+
+**Zwei Berichtigungen an dieser Tabelle.** Die Zeile zu `cable#703` fuehrte
+„28 · 29 · 34". Gebaut wurden dort das Ziel-Register, die Paritaetspruefung und
+der Transport-Rechner — das sind die Bedarfe **30 · 31 · 34**. Bedarf 28 (ERP-Diff)
+kam erst mit `cable#709`, Bedarf 29 (stiller Verlust beim Import) erst mit
+`cable#711`. Stehengelassen haette die Zeile behauptet, beide seien seit Monaten
+erledigt — und der naechste Leser haette sie nicht mehr gesucht.
+
+Die drei Zeilen darunter (5 · 9, 18, 25) sind **nicht neu gebaut**, sondern beim
+Durchgehen der offenen P1-Bedarfe als bereits gebaut nachgewiesen worden. Sie
+fehlten hier aus demselben Grund, aus dem der Abschnitt ueberhaupt entstanden
+ist: sie hatten keine Initiative. Bedarf 5 und 9 verlangen ausdruecklich MEHR
+Felder an der Kamera-Identitaet (Basisstation, RCP-Seite, ISO-Kanal); ADR-001
+haelt das Schema bewusst klein und loest diese Felder ueber den Kabelgraph auf
+statt sie zu speichern — das ist eine getroffene Entscheidung, keine Luecke, und
+sie steht in `types/sourceIdentity.ts` begruendet.
+
+**Bedarf 35 bleibt bewusst ungebaut.** Er verlangt den Sendezustand (Stream auf /
+Stream ab) als Vokabel der Show-Control-Oberflaeche — und sagt im selben Atemzug:
+„do NOT build a live monitoring dashboard, which would make the suite responsible
+for a false all-clear". Die Suite hat keine Telemetrie-Quelle fuer diesen Zustand;
+eine zu bauen WAERE das Dashboard, das der Bedarf ausschliesst. Wer ihn spaeter
+angeht, braucht zuerst eine belegte Quelle (Encoder-API), nicht eine Anzeige.
 
 **Was diese Runde ueber die Roadmap selbst sagt.** Die zwoelf Initiativen sind eine
 Zusammenfassung der Bedarfe, keine Obermenge. Wer nur sie abarbeitet, laesst die Haelfte
@@ -473,6 +502,16 @@ Roadmap:
    werden geschätzt, aber nur per Knopf und als Luftlinie; Shotlisten liegen in
    `localStorage` statt in der Projektdatei; Container bewegen ihren Inhalt, aber
    es gibt keine Aus-/Einbuchung).
+
+   **Stand 2026-09-06 — die zweite Haelfte ist gebaut.** Der Cluster „das Modell
+   steht, die Handlung fehlt" ist abgearbeitet: Kabellaengen tragen ihre Herkunft
+   und melden das stille Veralten (Bedarf 13, `cable#708`), PTZ-Presets sind
+   Projekt-Dokumentation statt Geraetespeicher (Bedarf 14, `multicam#92`),
+   Container werden aus- und eingebucht (Bedarf 15, `cable#707`). Der
+   Zeitachsen-Cluster (4, 6, 7, 8, 10, 11) steht unveraendert — er haengt an
+   E-18 und damit an einer Eigentuemer-Entscheidung, nicht an Arbeit. Die
+   Aufzaehlung oben bleibt als Befund vom Tag ihrer Erhebung stehen; sie hier
+   umzuschreiben liesse nicht erkennen, was sich seither bewegt hat.
 2. **23 Matrix-Zeilen mit Target über Today:** 6 geschlossen, 10 teilweise, 5
    unverändert offen — und **zwei Zellen der Matrix selbst falsch**, beide zu
    pessimistisch (RF-Koordination und Show-Control-SDK; siehe die Korrektur in

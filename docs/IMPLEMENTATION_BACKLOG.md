@@ -1406,6 +1406,9 @@ gehalten, nicht als Versäumnis:
 | Bedarf 26: die vergessenen Blaetter in der Impact-Liste, benannt statt weggelassen | `cable#709` |
 | Bedarf 27: „gilt dieses Blatt noch?" — war gebaut, jetzt erreichbar | `cable#709` |
 | Bedarf 28: Plan gegen ERP-Reservierung, in beide Richtungen | `cable#709` |
+| Bedarf 32: der Ausspielweg als Signalfluss — Quelle, Encoder, Transport, Ziel | `cable#710` |
+| Bedarf 29: kein stiller Verlust beim CSV-Import — was faellt, hat einen Namen | `cable#711` |
+| Bedarf 3: Companion-Tasten aus dem Plan statt 52-mal im Jahr abgetippt | `Broadcast-intercom#10` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
