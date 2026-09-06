@@ -7,6 +7,8 @@ import {
   renameProjectById,
   type ProjectListEntry,
 } from '../data/projectStore'
+import { TemplatePanel } from './TemplatePanel'
+import type { SuiteProject } from '../data/project'
 import { useT, format } from '../i18n'
 
 /**
@@ -23,6 +25,8 @@ export function ProjectHubModal({
   onOpen,
   onNew,
   onChanged,
+  project,
+  onCreateFromTemplate,
 }: {
   open: boolean
   onClose: () => void
@@ -30,8 +34,15 @@ export function ProjectHubModal({
   onOpen: (id: string) => void
   onNew: () => void
   onChanged: () => void
+  /** Das aktive Projekt — Quelle fuer „als Vorlage speichern". */
+  project: SuiteProject | null
+  onCreateFromTemplate: (templateId: string, name: string) => void
 }) {
   const t = useT()
+  // Zwei Reiter statt zweier Modale: es ist dieselbe Frage („womit fange ich
+  // an?"), und ein zweiter Dialog daneben haette den Weg von der Vorlage zum
+  // Projekt ueber zwei Fenster gefuehrt.
+  const [tab, setTab] = useState<'projects' | 'templates'>('projects')
   // Liste aus dem Store; ein Zähler erzwingt Neuladen nach Mutationen.
   const [rev, setRev] = useState(0)
   // eslint-disable-next-line react-hooks/exhaustive-deps -- rev triggert bewusst das Neuladen
@@ -67,11 +78,30 @@ export function ProjectHubModal({
       footer={
         <>
           <Button variant="subtle" onClick={onClose}>{t('hub.close', 'Schließen')}</Button>
-          <Button variant="primary" onClick={onNew}><Icon name="plus" size={15} /> {t('hub.new', 'Neues Projekt')}</Button>
+          {tab === 'projects' && (
+            <Button variant="primary" onClick={onNew}><Icon name="plus" size={15} /> {t('hub.new', 'Neues Projekt')}</Button>
+          )}
         </>
       }
     >
-      {projects.length === 0 ? (
+      <div className="mb-3 flex items-center gap-1 border-b border-av-border">
+        {(['projects', 'templates'] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`av-focus -mb-px border-b-2 px-3 py-1.5 text-[12.5px] font-medium ${
+              tab === id ? 'border-av-accent text-av-text' : 'border-transparent text-av-text-muted hover:text-av-text'
+            }`}
+          >
+            {id === 'projects' ? t('hub.tab.projects', 'Projekte') : t('hub.tab.templates', 'Vorlagen')}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'templates' ? (
+        <TemplatePanel project={project} onCreate={onCreateFromTemplate} />
+      ) : projects.length === 0 ? (
         <p className="py-6 text-center text-sm text-av-text-muted">{t('hub.empty', 'Noch keine Projekte. Lege eins an.')}</p>
       ) : (
         <ul className="flex flex-col gap-2">

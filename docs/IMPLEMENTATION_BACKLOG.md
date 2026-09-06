@@ -1138,7 +1138,7 @@ ist selbst ein Ergebnis.
 
 ### B-39 · Was der Projekt-Fluss noch nicht trägt
 
-* **Status:** offen (Punkte 1 und 5; 2 teilweise, 3 und 4 erledigt)
+* **Status:** offen (Punkte 1 und 5; 2, 3 und 4 erledigt)
 * **Woher der Eintrag kommt:** `suite#98` hat den Weg Shell → Planer → Shell
   gebaut (siehe B-20). Damit ist der Befund „die Suite ist eine Hülle" erledigt,
   aber nicht alles, was daran hing. Diese Liste steht hier, damit die Reste
@@ -1149,12 +1149,39 @@ ist selbst ein Ergebnis.
      Shell. Der Seed hat kein `venue`-Feld im Rückweg, weil zwei Planer
      (MultiCam und Licht) denselben Raum bearbeiten und die Zusammenführung
      eine Entscheidung braucht: wer gewinnt (E-21). **Weiter offen.**
-  2. **Das Demo-Projekt ist weiter hartkodiert** (`apps/shell/src/data/project.ts`,
-     „Sommershow 2026" samt Crew, Budget, Tagesablauf). Es ist ein *Seed*, kein
-     Zierrat — aber ein neues Projekt startet leer, und ein leerer Seed befüllt
-     keinen Planer. **Teilweise entschärft:** seit `suite#103` lässt sich eine
-     bestehende Show als Datei öffnen, also ist das Demo-Projekt nicht mehr der
-     einzige Weg zu befülltem Inhalt. Ein Vorlagen-Begriff fehlt weiter.
+  2. ~~**Das Demo-Projekt ist weiter hartkodiert.**~~ **Erledigt (`suite#105`).**
+     Der Befund war zweiteilig: das Demo-Projekt ist der einzige Weg zu
+     befülltem Inhalt, und ein neues Projekt startet leer — ein leerer Seed
+     befüllt keinen Planer. Die erste Hälfte hat `suite#103` genommen (eine
+     bestehende Show als Datei öffnen), die zweite nimmt der **Vorlagen-Begriff**:
+     `data/projectTemplate.ts` leitet aus einem Projekt eine Vorlage ab,
+     `data/templateStore.ts` legt sie ab, und der Projekt-Hub bekommt einen
+     zweiten Reiter, aus dem heraus ein Projekt **befüllt** entsteht.
+     Das Demo-Projekt bleibt im Code — es ist der Startwert eines frischen
+     Speichers und als solcher richtig. Was weg ist, ist seine Sonderstellung.
+
+     Der Bedarf dahinter ist P1 und steht in der Bedarfs-Datenbank als Nr. 2
+     („opening last year's file as this year's starting point. This is the
+     freelancer's only compounding asset"), dazu Nr. 75 für den Truck und
+     Nr. 91 für das Haus. Zwei Regeln kommen aus der Recherche, nicht aus dem
+     Bauchgefühl:
+
+     - **Abgezogen, nicht aufgezählt.** `TEMPLATE-FIELD-MEASUREMENT.md` hat im
+       `cable-planner` drei Vorlagen-Bauer mit 37 / 23 / 15 aufgezählten
+       Feldern gefunden, von denen einer seit `#335` unbemerkt abgedriftet
+       war. `templateFromProject` kopiert deshalb das ganze Projekt und zieht
+       eine benannte Liste ab; ein neues Feld an `SuiteProject` fährt per
+       Vorgabe mit. Ein Test spritzt ein unbekanntes Feld ein und fällt um,
+       sobald jemand auf Aufzählung zurückbaut.
+     - **Was nicht mitfährt, wird genannt.** Design-Frage 5 („Zugangsdaten in
+       geteilten Vorlagen") ist mit *beim Export fragen* entschieden. Hier
+       hängt dasselbe an Kundendaten: an `Contact` hängen USt-IdNr.,
+       Kundennummer und die Lexware-Kontakt-Id, an `ShowDetails` die
+       ausgestellten Belege und die Steuer-Voreinstellung. Eine Vorlage, die
+       den Kunden des letzten Jahres stillschweigend mitbringt, fällt erst in
+       dessen Rechnung auf. `templateFromProject` liefert deshalb `omitted`
+       mit Anzahl zurück, und der Dialog zeigt die Liste, **bevor** die
+       Vorlage entsteht.
   3. ~~**Persistenz bleibt `localStorage`.**~~ **Erledigt (`suite#103`).**
      Projekte lassen sich im Desktop-Fenster über native Dialoge speichern und
      öffnen; „Speichern" schreibt still an dieselbe Stelle weiter, sobald das
@@ -1172,7 +1199,7 @@ ist selbst ein Ergebnis.
   5. **Der Cross-Link hat weiter keinen Sender** (B-18). „Im Signal-Flow
      zeigen" wechselt das Modul, die Auswahl bleibt zurück. **Weiter offen**,
      hängt an E-11 (gemeinsamer Id-Raum).
-* **Aufwand:** 1 mittel (Entscheidung nötig), 2 mittel, 5 klein
+* **Aufwand:** 1 mittel (Entscheidung nötig), 5 klein
 
 ---
 
@@ -1358,6 +1385,7 @@ gehalten, nicht als Versäumnis:
 | B-39.3: Projekte als Dateien statt nur `localStorage` | `suite#103` |
 | Initiative 8: abgeleiteter Adressplan, mit Beleg je Zeile | `cable#701` |
 | ADR-004 Inkrement 3: Dokument-Code auf allen Listen-Ausdrucken | `cable#702` |
+| B-39.2: Vorlagen-Begriff — Projekt aus Vorlage, Kundendaten bleiben zurueck | `suite#105` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |

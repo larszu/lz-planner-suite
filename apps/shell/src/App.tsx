@@ -32,6 +32,7 @@ import {
   setCurrentProjectId as persistCurrentId,
 } from './data/projectStore'
 import { ProjectHubModal } from './shell/ProjectHubModal'
+import { projectFromTemplateId } from './data/templateStore'
 import { sendPlannerCommand } from './embed/plannerBridge'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
@@ -351,6 +352,23 @@ export function App() {
     setHubOpen(false)
   }, [warnIfUnsaved, commitProject])
   const newProjectFromHub = useCallback(() => { newProject(); setHubOpen(false) }, [newProject])
+  // B-39.2 — neues Projekt aus einer Vorlage. Geht denselben Weg wie
+  // `importProjectRecord`, nicht denselben wie `createProjectRecord`: das
+  // Projekt kommt schon befuellt an und darf nicht erst leer angelegt und dann
+  // ueberschrieben werden — dazwischen stuende ein leerer Seed in den Planern.
+  const newProjectFromTemplate = useCallback(
+    (templateId: string, name: string) => {
+      const built = projectFromTemplateId(templateId, name)
+      if (!built) return
+      warnIfUnsaved()
+      const id = importProjectRecord(built)
+      setCurrentProjectId(id)
+      persistCurrentId(id)
+      commitProject(built)
+      setHubOpen(false)
+    },
+    [warnIfUnsaved, commitProject],
+  )
   // Nach Umbenennen/Löschen im Hub den aktiven Zustand nachziehen.
   const hubChanged = useCallback(() => {
     const list = listProjects()
@@ -700,6 +718,8 @@ export function App() {
         onOpen={openProject}
         onNew={newProjectFromHub}
         onChanged={hubChanged}
+        project={project}
+        onCreateFromTemplate={newProjectFromTemplate}
       />
     </div>
    </LanguageProvider>
