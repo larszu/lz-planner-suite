@@ -252,6 +252,27 @@ export interface CablePlannerProject {
    * einer einzelnen Ausspielung. Zwei Ziele teilen sich dieselbe Aufzeichnung.
    */
   archiveRecording?: import('./delivery').ArchiveRecording
+  /**
+   * Bedarf 72 — der Multicast-Adressplan: aus welchem Pool vergeben wird und
+   * welche Gruppe welcher Sende-Port belegt.
+   *
+   * Nur die VERGABEN stehen hier. Welche Flüsse es gibt, leitet
+   * `collectFlows` aus dem Kabelgraph ab — ein zweites Feld dafür wäre ab dem
+   * ersten umgesteckten Kabel falsch. Die Adresse dagegen muss stehen
+   * bleiben: sie ist verteilt worden, und eine, die sich beim nächsten Öffnen
+   * neu berechnet, sieht aus wie die alte und ist es nicht.
+   */
+  multicast?: import('./multicast').MulticastConfig
+  /**
+   * Bedarf 89 — das Sicherheitsnetz: Schwellen, Szenennamen, welches Ziel
+   * geschützt wird, und wo der Wächter läuft.
+   *
+   * Am Projekt und nicht am Ziel: die Szenenliste des Encoders und die
+   * Maschine, auf der der Wächter steht, gelten für die ganze Show. Ein Feld
+   * je Ziel müsste sie vervielfachen — und der Namensabgleich verglich dann
+   * gegen die falsche Kopie.
+   */
+  fallback?: import('./fallback').FallbackPlan
 }
 
 /** #412 — Ein festgeschriebener Projekt-Stand. */

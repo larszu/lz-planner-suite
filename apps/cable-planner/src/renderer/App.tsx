@@ -1492,7 +1492,11 @@ export default function App() {
                   ? t('app.loadReport.deliveryDestination', 'Ausspielziel')
                   : d.kind === 'venue-answer'
                     ? t('app.loadReport.venueAnswer', 'Antwort der Haus-IT')
-                    : t('app.loadReport.sourceIdentity', 'Signalquelle')}
+                    : d.kind === 'multicast-assignment'
+                      ? t('app.loadReport.multicastAssignment', 'Multicast-Vergabe')
+                      : d.kind === 'fallback-rule'
+                        ? t('app.loadReport.fallbackRule', 'Ausweich-Regel')
+                        : t('app.loadReport.sourceIdentity', 'Signalquelle')}
                 {d.label ? ` „${d.label}"` : ''}
                 {' — '}
                 {d.reason === 'duplicate-id'

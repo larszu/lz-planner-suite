@@ -31,6 +31,8 @@ export type MetaSlice = Pick<
   | 'updateGreenGoConfig'
   | 'setDrumKit'
   | 'setWirelessRig'
+  | 'setMulticastConfig'
+  | 'setFallbackPlan'
 >
 
 export const createMetaSlice: StateCreator<ProjectState, [], [], MetaSlice> = (set) => ({
@@ -103,6 +105,30 @@ export const createMetaSlice: StateCreator<ProjectState, [], [], MetaSlice> = (s
   setWirelessRig: (plan) =>
     set((state) => {
       const updated = { ...state.project, wirelessRig: plan }
+      scheduleProjectAutosave(updated)
+      return { project: updated }
+    }),
+  // BEDARF 72 — Pool, Port und die vergebenen Gruppen.
+  //
+  // Ein Setter fuer das ganze Objekt und keiner je Vergabe: der Aufrufer ist
+  // `allocateMulticast`, das die vollstaendige Liste zurueckgibt. Ein
+  // Einzel-Setter verfuehrte dazu, in einer Schleife zu vergeben — und jede
+  // Zwischenstufe waere ein Zustand, in dem die Alias-Pruefung die eigenen
+  // frisch vergebenen Adressen noch nicht kennt.
+  setMulticastConfig: (config) =>
+    set((state) => {
+      const updated = { ...state.project, multicast: config }
+      scheduleProjectAutosave(updated)
+      return { project: updated }
+    }),
+  // BEDARF 89 — das Sicherheitsnetz. Wieder ein Setter fuer das ganze Objekt:
+  // Szenenliste, Waechter und Regeln haengen aneinander, und ein Einzel-Setter
+  // je Regel liesse einen Zustand zu, in dem eine Regel auf eine Szene zeigt,
+  // die die Liste noch nicht kennt — genau der Zustand, den die Pruefung
+  // meldet, nur diesmal von der Oberflaeche selbst erzeugt.
+  setFallbackPlan: (plan) =>
+    set((state) => {
+      const updated = { ...state.project, fallback: plan }
       scheduleProjectAutosave(updated)
       return { project: updated }
     }),
