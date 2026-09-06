@@ -111,6 +111,8 @@ export function Topbar({
   onSave,
   onSaveAs,
   onImport,
+  onOpenFile,
+  projectPath,
   onUndo,
   onRedo,
   canUndo,
@@ -129,6 +131,15 @@ export function Topbar({
   onSave: () => void
   onSaveAs: () => void
   onImport: (text: string) => void
+  /**
+   * Echter Oeffnen-Dialog, wenn die Shell im Desktop-Fenster laeuft (B-39.3).
+   * Fehlt er, bleibt es beim Datei-Eingabefeld des Browsers -- ein und
+   * derselbe Menuepunkt, damit nicht zwei nebeneinander stehen, von denen
+   * einer je nach Umgebung nichts tut.
+   */
+  onOpenFile?: () => void
+  /** Pfad der Datei hinter dem Projekt, wenn es eine gibt. Nur zur Anzeige. */
+  projectPath?: string | null
   onUndo: () => void
   onRedo: () => void
   canUndo: boolean
@@ -180,9 +191,14 @@ export function Topbar({
           {(close) => (
             <>
               <MenuItem icon={<Icon name="plus" size={15} />} onClick={() => { onNew(); close() }}>{t('chrome.topbar.file.new', 'Neues Projekt')}</MenuItem>
-              <MenuItem icon={<Icon name="external" size={15} />} onClick={() => { close(); openFileDialog() }}>{t('chrome.topbar.file.open', 'Projekt öffnen…')}</MenuItem>
+              <MenuItem icon={<Icon name="external" size={15} />} onClick={() => { close(); if (onOpenFile) onOpenFile(); else openFileDialog() }}>{t('chrome.topbar.file.open', 'Projekt öffnen…')}</MenuItem>
               <MenuSeparator />
-              <MenuItem icon={<Icon name="check" size={15} />} disabled={!project} onClick={() => { onSave(); close() }}>{t('chrome.topbar.file.save', 'Speichern')}</MenuItem>
+              <MenuItem icon={<Icon name="check" size={15} />} disabled={!project} onClick={() => { onSave(); close() }}>
+                {t('chrome.topbar.file.save', 'Speichern')}
+                {/* Wohin — solange es eine Datei gibt. Ohne die Angabe ist
+                    „Speichern" zweierlei und man sieht nicht, welches. */}
+                {projectPath && <span className="ml-2 truncate text-[11px] text-av-text-faint" title={projectPath}>{projectPath.split(/[\\/]/).pop()}</span>}
+              </MenuItem>
               <MenuItem icon={<Icon name="library" size={15} />} disabled={!project} onClick={() => { onSaveAs(); close() }}>{t('chrome.topbar.file.saveAs', 'Speichern unter…')}</MenuItem>
               <MenuSeparator />
               <MenuItem icon={<Icon name="library" size={15} />} disabled={!project} onClick={() => { onOpenBilling(); close() }}>{t('billing.menu.open', 'Beleg erstellen (Lexware)…')}</MenuItem>

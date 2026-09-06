@@ -1138,29 +1138,41 @@ ist selbst ein Ergebnis.
 
 ### B-39 · Was der Projekt-Fluss noch nicht trägt
 
-* **Status:** offen
+* **Status:** offen (Punkte 1 und 5; 2 teilweise, 3 und 4 erledigt)
 * **Woher der Eintrag kommt:** `suite#98` hat den Weg Shell → Planer → Shell
   gebaut (siehe B-20). Damit ist der Befund „die Suite ist eine Hülle" erledigt,
   aber nicht alles, was daran hing. Diese Liste steht hier, damit die Reste
-  nicht als erledigt durchgehen — gemessen am gebauten Stand vom 2026-09-05:
+  nicht als erledigt durchgehen — nachgezogen am Stand vom 2026-09-05:
 
   1. **Der Raum geht nur hin, nicht zurück.** `seedToVenue` setzt Maße und
      Bühne im MultiCam-Planer; wer sie dort ändert, ändert sie nicht in der
      Shell. Der Seed hat kein `venue`-Feld im Rückweg, weil zwei Planer
      (MultiCam und Licht) denselben Raum bearbeiten und die Zusammenführung
-     eine Entscheidung braucht: wer gewinnt.
+     eine Entscheidung braucht: wer gewinnt (E-21). **Weiter offen.**
   2. **Das Demo-Projekt ist weiter hartkodiert** (`apps/shell/src/data/project.ts`,
-     „Sommershow 2026" samt Crew, Budget, Tagesablauf). Es ist jetzt ein
-     *Seed*, kein Zierrat mehr — aber ein neues Projekt startet leer, und ein
-     leerer Seed befüllt keinen Planer.
-  3. **Persistenz bleibt `localStorage`** (`data/projectStore.ts`). Was der
-     Planer zurückmeldet, landet im Shell-Projekt und damit im Browser-Speicher
-     der Shell — nicht in einer Datei, die jemand weitergeben kann.
-  4. **Der Tab-Wechsel schaltet weiterhin nichts** (B-16). „3D-Vorschau" und
-     „Rack-Ansicht" markieren nur.
+     „Sommershow 2026" samt Crew, Budget, Tagesablauf). Es ist ein *Seed*, kein
+     Zierrat — aber ein neues Projekt startet leer, und ein leerer Seed befüllt
+     keinen Planer. **Teilweise entschärft:** seit `suite#103` lässt sich eine
+     bestehende Show als Datei öffnen, also ist das Demo-Projekt nicht mehr der
+     einzige Weg zu befülltem Inhalt. Ein Vorlagen-Begriff fehlt weiter.
+  3. ~~**Persistenz bleibt `localStorage`.**~~ **Erledigt (`suite#103`).**
+     Projekte lassen sich im Desktop-Fenster über native Dialoge speichern und
+     öffnen; „Speichern" schreibt still an dieselbe Stelle weiter, sobald das
+     Projekt eine Datei kennt. Geschrieben wird **atomar** (Nachbardatei →
+     `rename`) — ein abgebrochener Vorgang hinterlässt sonst eine halbe
+     JSON-Datei, und die hält jeder Leser für ein kaputtes Projekt statt für
+     einen abgebrochenen Vorgang. Der lokale Speicher bleibt der Arbeitsstand:
+     eine Datei ist der Weg nach draußen, nicht der Ersatz für „die Suite
+     öffnet dort, wo ich aufgehört habe". Im Browser bleibt es beim Download
+     und beim Datei-Eingabefeld — das ist keine Notlösung, sondern der einzige
+     Weg, den ein Browser hat.
+  4. ~~**Der Tab-Wechsel schaltet weiterhin nichts.**~~ **Erledigt (`suite#100`):**
+     es waren dreizehn wirkungslose Tabs, und sie sind entfernt statt ausgebaut
+     (E-9).
   5. **Der Cross-Link hat weiter keinen Sender** (B-18). „Im Signal-Flow
-     zeigen" wechselt das Modul, die Auswahl bleibt zurück.
-* **Aufwand:** 1 mittel (Entscheidung nötig), 2+3 mittel, 4+5 klein
+     zeigen" wechselt das Modul, die Auswahl bleibt zurück. **Weiter offen**,
+     hängt an E-11 (gemeinsamer Id-Raum).
+* **Aufwand:** 1 mittel (Entscheidung nötig), 2 mittel, 5 klein
 
 ---
 
@@ -1343,6 +1355,7 @@ gehalten, nicht als Versäumnis:
 | B-41.1: Kamera-Plan gegen die Kameras am Bus, mit Beleg je Zuordnung | `sony-camera-bridge#14` |
 | B-41.2: `avplan-intercom` wird gelesen, zusammengefuehrt statt ersetzt | `Broadcast-intercom#9` |
 | B-41.3: Medien-Station ausgewiesen — Bestand statt Konfigurationsziel | (Befund, kein Code) |
+| B-39.3: Projekte als Dateien statt nur `localStorage` | `suite#103` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
 | `mvr:check` lief bei keinem Merge; berechneter Guard dagegen | `light#64` |

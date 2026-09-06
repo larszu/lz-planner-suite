@@ -121,6 +121,20 @@ ipcMain.handle('suiteHost:tally:write', (_e, basisUrl, devices) =>
   tallyPush.schreibe(String(basisUrl), Array.isArray(devices) ? devices : []),
 )
 
+// Projekte als Dateien. Native Speichern-/Oeffnen-Dialoge und Schreibzugriff
+// gibt es nur im Main-Prozess -- siehe `projectFiles.cjs`.
+const projectFiles = require('./projectFiles.cjs')
+ipcMain.handle('suiteHost:project:save', (e, args) =>
+  projectFiles.speichere(BrowserWindow.fromWebContents(e.sender), {
+    pfad: typeof args?.path === 'string' && args.path ? args.path : undefined,
+    name: String(args?.name ?? 'Projekt'),
+    inhalt: String(args?.content ?? ''),
+  }),
+)
+ipcMain.handle('suiteHost:project:open', (e) =>
+  projectFiles.oeffne(BrowserWindow.fromWebContents(e.sender)),
+)
+
 app.whenReady().then(() => {
   registerPlannerProtocols()
   createWindow()

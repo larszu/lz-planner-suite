@@ -56,6 +56,8 @@ export const config: Record<string, string> = {
   'config.toast.exported': 'Project exported & saved',
   'config.toast.discarded': 'Unsaved changes discarded',
   'config.toast.loadFailed': 'Could not load project',
+  'config.toast.savedTo': 'Saved to',
+  'config.toast.saveFailed': 'Could not write project file',
   'config.error.unknown': 'Unknown error',
   'config.action.undo': 'Undo',
   'config.action.showProperties': 'Show properties',

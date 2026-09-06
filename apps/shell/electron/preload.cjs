@@ -35,6 +35,13 @@ contextBridge.exposeInMainWorld('__suiteTally', {
   write: (basisUrl, devices) => ipcRenderer.invoke('suiteHost:tally:write', basisUrl, devices),
 })
 
+// Projekte als Dateien (B-39.3). Wie der Tally-Weg an keine Betriebsart
+// gebunden: die Frage "wo liegt meine Show" stellt sich in beiden.
+contextBridge.exposeInMainWorld('__suiteProjectFiles', {
+  save: (args) => ipcRenderer.invoke('suiteHost:project:save', args),
+  open: () => ipcRenderer.invoke('suiteHost:project:open'),
+})
+
 if (nativeCable) {
   contextBridge.exposeInMainWorld('__suiteNativeHost', {
     cable: {

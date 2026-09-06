@@ -80,6 +80,29 @@ const sanitize = (s: string): string =>
   s.trim().replace(/[^\p{L}\p{N}\-_ ]/gu, '').replace(/\s+/g, '-').toLowerCase() || 'projekt'
 
 /** „Speichern unter" — Projekt als .avsuite.json herunterladen. */
+/**
+ * Der Weg zu echten Dateien, wenn die Shell im Desktop-Fenster laeuft
+ * (B-39.3). Im Browser gibt es ihn nicht — dort bleibt es beim Download und
+ * beim Datei-Eingabefeld, und das ist keine Notloesung, sondern der einzige
+ * Weg, den ein Browser hat.
+ */
+interface ProjectFileHost {
+  save: (args: { path?: string; name: string; content: string }) => Promise<{
+    ok: boolean; path?: string; canceled?: boolean; error?: string
+  }>
+  open: () => Promise<{ ok: boolean; path?: string; content?: string; canceled?: boolean; error?: string }>
+}
+
+/** Der Host, oder `null` im Browser. Nie werfen: die Shell laeuft in beidem. */
+export function projectFileHost(): ProjectFileHost | null {
+  try {
+    const h = (window as unknown as { __suiteProjectFiles?: ProjectFileHost }).__suiteProjectFiles
+    return h && typeof h.save === 'function' && typeof h.open === 'function' ? h : null
+  } catch {
+    return null
+  }
+}
+
 export function downloadProject(p: SuiteProject): void {
   const blob = new Blob([serializeProject(p)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)

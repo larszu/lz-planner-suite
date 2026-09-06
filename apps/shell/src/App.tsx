@@ -18,6 +18,8 @@ import { applyPatchToSuite, suiteToSeed } from './data/seed'
 import type { SeedPatch } from '@avplan/ui/embed'
 import {
   downloadProject,
+  projectFileHost,
+  serializeProject,
   parseProject,
 } from './data/projectFile'
 import {
@@ -109,8 +111,24 @@ export function App() {
   const dismissToast = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), [])
 
   // Projektwechsel mit Historie (assign/clear/neu/öffnen).
+  /**
+   * Der Pfad der zuletzt geschriebenen/geoeffneten Datei fuer DIESES Projekt.
+   * Er lebt neben dem Projekt und nicht darin: derselbe Inhalt kann auf zwei
+   * Rechnern an zwei Stellen liegen, und ein Pfad im Projekt-Datensatz waere
+   * auf dem zweiten Rechner eine Falschaussage.
+   */
+  const [projectPath, setProjectPath] = useState<string | null>(null)
+  // Einmal ermittelt: laeuft die Shell im Desktop-Fenster, gibt es echte
+  // Datei-Dialoge. Im Browser nicht -- dort bleibt es beim Download und beim
+  // Datei-Eingabefeld.
+  const desktopFiles = useMemo(() => projectFileHost() !== null, [])
+
   const commitProject = useCallback((next: SuiteProject | null) => {
     setHistory((h) => ({ past: [...h.past, h.present], present: next, future: [] }))
+    // Der Dateipfad gehoert dem GEOEFFNETEN Projekt. Wer ihn ueber einen
+    // Wechsel hinweg stehen liesse, schriebe beim naechsten „Speichern" das
+    // neue Projekt in die Datei des alten -- und zwar still.
+    setProjectPath(null)
     bumpSeed()
   }, [bumpSeed])
   // Show-Details des Dashboards (Tagesablauf/Crew/Budget/Aufgaben/Logistik)
@@ -190,19 +208,65 @@ export function App() {
   }, [currentProjectId])
 
   // Datei-Operationen (Topbar „Datei"-Menü).
-  const saveProject = useCallback(() => {
+  const saveProject = useCallback(async () => {
     if (!project) return
     const saved = persistProject(project)
     setHistory((h) => ({ ...h, present: saved }))
+    // Kennt das Projekt eine Datei, geht der Stand auch dorthin — sonst waere
+    // „Speichern" zweierlei, je nachdem ob jemand vorher „Speichern unter"
+    // gedrueckt hat, und die Datei veraltete still.
+    const host = projectFileHost()
+    if (host && projectPath) {
+      const r = await host.save({ path: projectPath, name: saved.meta.name, content: serializeProject(saved) })
+      if (!r.ok) {
+        pushToast(
+          `${tt('config.toast.saveFailed', 'Projekt konnte nicht geschrieben werden')}: ${r.error ?? ''}`,
+          { tone: 'warn' },
+        )
+        return
+      }
+      pushToast(`${tt('config.toast.savedTo', 'Gespeichert nach')} ${projectPath}`, { tone: 'ok' })
+      return
+    }
     pushToast(tt('config.toast.saved', 'Projekt gespeichert'), { tone: 'ok' })
-  }, [project, persistProject, pushToast, tt])
-  const saveProjectAs = useCallback(() => {
+  }, [project, persistProject, pushToast, tt, projectPath])
+  /**
+   * „Speichern unter" (B-39.3).
+   *
+   * Im Desktop-Fenster ein echter Speichern-Dialog samt Pfad, den das Projekt
+   * behaelt — „Speichern" schreibt danach still an dieselbe Stelle. Im Browser
+   * bleibt es beim Download; das ist keine Notloesung, sondern der einzige
+   * Weg, den ein Browser hat.
+   *
+   * Der lokale Speicher bleibt in BEIDEN Faellen der Arbeitsstand: eine Datei
+   * ist der Weg nach draussen, nicht der Ersatz fuer „die Suite oeffnet dort,
+   * wo ich aufgehoert habe".
+   */
+  const saveProjectAs = useCallback(async () => {
     if (!project) return
-    downloadProject(project)
+    const host = projectFileHost()
+    if (!host) {
+      downloadProject(project)
+      const saved = persistProject(project)
+      setHistory((h) => ({ ...h, present: saved }))
+      pushToast(tt('config.toast.exported', 'Projekt exportiert & gespeichert'), { tone: 'ok' })
+      return
+    }
+    const r = await host.save({ name: project.meta.name, content: serializeProject(project) })
+    if (r.canceled) return
+    if (!r.ok) {
+      pushToast(
+        `${tt('config.toast.saveFailed', 'Projekt konnte nicht geschrieben werden')}: ${r.error ?? ''}`,
+        { tone: 'warn' },
+      )
+      return
+    }
+    if (r.path) setProjectPath(r.path)
     const saved = persistProject(project)
     setHistory((h) => ({ ...h, present: saved }))
-    pushToast(tt('config.toast.exported', 'Projekt exportiert & gespeichert'), { tone: 'ok' })
+    pushToast(`${tt('config.toast.savedTo', 'Gespeichert nach')} ${r.path ?? ''}`, { tone: 'ok' })
   }, [project, persistProject, pushToast, tt])
+
 
   // Bei ungespeichertem Stand eine „verworfen"-Rückmeldung mit „Rückgängig".
   const warnIfUnsaved = useCallback(() => {
@@ -214,6 +278,35 @@ export function App() {
       })
     }
   }, [project, pushToast, undo, tt])
+
+  /**
+   * Eine Projektdatei oeffnen (Desktop) — dieselbe Einarbeitung wie beim
+   * Import per Datei-Eingabefeld, nur mit Pfad.
+   */
+  const openProjectFile = useCallback(async () => {
+    const host = projectFileHost()
+    if (!host) return
+    const r = await host.open()
+    if (r.canceled || !r.ok || !r.content) {
+      if (r.error) pushToast(`${tt('config.toast.loadFailed', 'Projekt konnte nicht geladen werden')}: ${r.error}`, { tone: 'warn' })
+      return
+    }
+    try {
+      const parsed = parseProject(r.content)
+      warnIfUnsaved()
+      const id = importProjectRecord(parsed)
+      setCurrentProjectId(id)
+      persistCurrentId(id)
+      commitProject(parsed)
+      if (r.path) setProjectPath(r.path)
+    } catch (e) {
+      pushToast(
+        `${tt('config.toast.loadFailed', 'Projekt konnte nicht geladen werden')}: ${e instanceof Error ? e.message : tt('config.error.unknown', 'Unbekannter Fehler')}`,
+        { tone: 'warn' },
+      )
+    }
+  }, [warnIfUnsaved, commitProject, pushToast, tt])
+
   const switchProject = useCallback(
     (next: SuiteProject | null) => {
       warnIfUnsaved()
@@ -461,6 +554,8 @@ export function App() {
         onSave={saveProject}
         onSaveAs={saveProjectAs}
         onImport={importProject}
+        onOpenFile={desktopFiles ? openProjectFile : undefined}
+        projectPath={projectPath}
         onUndo={undoRedo.onUndo}
         onRedo={undoRedo.onRedo}
         canUndo={undoRedo.canUndo}
