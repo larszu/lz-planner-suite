@@ -1409,6 +1409,11 @@ gehalten, nicht als Versäumnis:
 | Bedarf 32: der Ausspielweg als Signalfluss — Quelle, Encoder, Transport, Ziel | `cable#710` |
 | Bedarf 29: kein stiller Verlust beim CSV-Import — was faellt, hat einen Namen | `cable#711` |
 | Bedarf 3: Companion-Tasten aus dem Plan statt 52-mal im Jahr abgetippt | `Broadcast-intercom#10` |
+| Bedarf 1 (2. Inkrement): der geteilte Plan nennt seinen Stand | `cable#712` |
+| Bedarf 65: jede Mengen-Operation sagt, was sie ausgelassen hat | `cable#713` |
+| Bedarf 69: Wake-Lock beim Scannen, kein Formular-Absenden | `cable#714` |
+| Bedarf 80: „Bestand" ist nicht „verfuegbar" — offene Ausgaben zaehlen | `cable#715` |
+| Bedarfe 67 + 82: Herkunft und Rueckgabedatum bis aufs Blatt | `cable#716` · `multicam-planner#93` · `light-planner#71` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |

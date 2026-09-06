@@ -154,6 +154,11 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 5 · 9 | Eine Quellen-Identitaet, viele Zielsysteme — ADR-001 (`sourceIdentity` + `labelDerivation`) | `cable#601`–`#640` |
 | 18 | Netz-Facetten AM Geraet statt zweites IP-Modul — „one device, one identity, many facets" | `cable#704` |
 | 25 | Die kaufmaennische Stueckliste aus dem technischen Plan (`planBom`, ADR-002 Inkrement 4) | frueher, ohne Bedarfs-Bezug |
+| 1 | Der geteilte Plan nennt seinen Stand — „the live document, not a PDF fork" | `cable#712` |
+| 65 | Jede Mengen-Operation sagt, was sie ausgelassen hat (P2, „cheapest reliability win") | `cable#713` |
+| 69 | Wake-Lock beim Scannen; kein Formular-Absenden (P2) | `cable#714` |
+| 80 | „Bestand" ist nicht „verfuegbar" — offene Ausgaben zaehlen mit (P2) | `cable#715` |
+| 67 · 82 | Herkunft und Rueckgabedatum bis auf Packliste, Etikett und Ausgabeschein (P2) | `cable#716` · `multicam#93` · `light#71` |
 
 **Zwei Berichtigungen an dieser Tabelle.** Die Zeile zu `cable#703` fuehrte
 „28 · 29 · 34". Gebaut wurden dort das Ziel-Register, die Paritaetspruefung und
@@ -170,6 +175,14 @@ Felder an der Kamera-Identitaet (Basisstation, RCP-Seite, ISO-Kanal); ADR-001
 haelt das Schema bewusst klein und loest diese Felder ueber den Kabelgraph auf
 statt sie zu speichern — das ist eine getroffene Entscheidung, keine Luecke, und
 sie steht in `types/sourceIdentity.ts` begruendet.
+
+**Die P1-Ebene ist damit abgearbeitet.** Von 38 P1-Bedarfen sind 30 gebaut
+oder als bereits gebaut nachgewiesen. Die restlichen acht sind KEINE offene
+Arbeit, sondern zwei benannte Sperren und eine bewusste Nicht-Entscheidung:
+Bedarfe 4, 6, 7, 8, 10 und 11 haengen an der Zeitachse (E-18,
+Eigentuemer-Entscheidung), Bedarf 20 an der Subnetz-Vergabe (E-5), und
+Bedarf 35 steht unten. Die Arbeit ist seither in die P2-Ebene gewandert;
+die letzten fuenf Zeilen der Tabelle oben sind ihre ersten Ergebnisse.
 
 **Bedarf 35 bleibt bewusst ungebaut.** Er verlangt den Sendezustand (Stream auf /
 Stream ab) als Vokabel der Show-Control-Oberflaeche — und sagt im selben Atemzug:

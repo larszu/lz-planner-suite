@@ -268,6 +268,9 @@ export const en: Dict = {
   'settings.project.libImport.okTitle': 'Library imported',
   'settings.project.libImport.okBody':
     'Only new entries were added — existing templates remain unchanged.',
+  'settings.project.libImport.skipped':
+    'Not created: {n} name(s) that already existed{namen}{ohneName}',
+  'settings.project.libImport.unnamed': ' · {n} without a name',
   'settings.project.libImport.templatesWord': 'device templates',
   'settings.project.libImport.presetsWord': 'group presets',
   'settings.project.libImport.failTitle': 'Import failed',
@@ -1530,6 +1533,11 @@ export const en: Dict = {
   'graphml.dialog.pickOther': 'Pick another file',
   'graphml.dialog.file': 'File',
   'graphml.dialog.nodes': 'nodes',
+  // Bedarf 65 — der Library-Zweig meldete gar nichts.
+  'graphml.dialog.libDoneTitle': 'Added to the library',
+  'graphml.dialog.libDoneBody':
+    'Created {n} device(s). Not created: {vorhanden} name(s) that already existed{namen}{ohneName}',
+  'graphml.dialog.libUnnamed': ' · {n} without a name',
   'graphml.dialog.edges': 'edges',
   'graphml.dialog.otherFile': '↻ Another file',
   'graphml.dialog.devices': 'Devices',
@@ -2289,6 +2297,8 @@ export const en: Dict = {
   'export.devicebom.noTypeTitle':
     'No catalogue type — the model name here is only the device name. Assigning a catalogue type turns the coverage into a fact.',
   'export.devicebom.short': '— {n} missing',
+  // Bedarf 80 — die Zahl traegt ihre Qualifizierung mit.
+  'export.devicebom.committed': '(of {stock} · {n} checked out)',
   'export.devicebom.confirm': 'Confirm',
   'export.devicebom.confirmTitle':
     'Writes the catalogue identity permanently onto this inventory position. The coverage is then a fact and never has to be guessed from the name again.',
@@ -3639,6 +3649,15 @@ export const en: Dict = {
   'inventory.stockLocation': 'Stock location',
   'inventory.stockLocationPh': 'e.g. Shelf A3',
   'inventory.supplier': 'Supplier',
+  // Bedarfe 67 + 82 — fremdes Material traegt bis aufs Blatt.
+  'inventory.returnDue': 'Return by',
+  'inventory.overdueSince': '· due back since {d}',
+  'inventory.noReturnDate': '· no return date',
+  'inventory.returnsTitle': 'Third-party gear: {n} item(s) to return',
+  'inventory.returnOverdue': '{qty}× {model} → {supplier} · due back since {due}',
+  'inventory.returnNoDate': '{qty}× {model} → {supplier} · no return date',
+  'inventory.returnsMore': '… and {n} more',
+  'inventory.supplierUnknown': 'supplier unknown',
   'inventory.notes': 'Note',
   'inventory.empty': 'No inventory items yet. Add some or import them from the plan.',
   'inventory.noMatch': 'No items match the search.',
