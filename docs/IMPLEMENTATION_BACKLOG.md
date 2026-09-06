@@ -1428,6 +1428,7 @@ gehalten, nicht als Versäumnis:
 | Bedarf 90: die Archiv-Aufzeichnung haengt nicht am selben Encoder wie der Upload | `cable#722` |
 | Bedarf 72: EIN Multicast-Adressplan — Adresse+Port eindeutig, und der 32-zu-1-L2-Alias benannt | `cable#723` |
 | Bedarf 89: das Sicherheitsnetz einmal erklaert, mit Namensabgleich gegen die Szenen des Encoders | `cable#724` |
+| Bedarf 91: eine Vorlage weiss, aus welchem Haus sie kommt — und was NICHT mitgeht | `cable#725` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
