@@ -260,6 +260,51 @@ function isExpectedOverlay(suiteEx, upstreamEx) {
          upstreamEx.every((l) => isImport(l))
 }
 
+/**
+ * Ein Import auf ein package-ersetztes Modul, auf einen Vergleichsnamen
+ * gebracht.
+ *
+ * Die „uncarried"-Pruefung unten vergleicht Zeilen TEXTUELL. Damit meldet sie
+ * eine Zeile als fehlend, die in Wahrheit getragen ist und nur anders
+ * geschrieben steht: upstream `import { unitLabel } from './portable'`, in der
+ * Suite `import { unitLabel } from '@avplan/inventory-core'`. Genau diese
+ * Umschrift ist der Sinn von REPLACED_BY_PACKAGE — sie als fehlende Arbeit zu
+ * melden, ist ein Falschalarm, der bei JEDEM Vendoring wiederkehrt.
+ *
+ * Und ein wiederkehrender Falschalarm ist hier nicht bloss laestig: die
+ * einzige Antwort darauf waere `--write-baseline --force`, und das begraebt
+ * neben dem Falschalarm auch alles daneben, was WIRKLICH fehlt. Der Guard
+ * verliert also genau dann seine Schaerfe, wenn man ihn am noetigsten braucht.
+ *
+ * BEWUSST ENG: normalisiert wird nur der Modul-Pfad, nie die importierten
+ * Namen. Holt upstream einen NEUEN Namen aus dem ersetzten Modul und die Suite
+ * nicht, bleiben die Zeilen verschieden und die Meldung steht — das ist der
+ * Fall, in dem der Guard recht hat.
+ */
+const ERSETZTE_MODULE = [
+  './portable', './types',
+  '../types/inventory', '../../types/inventory',
+  '../lib/inventoryPortable', '../../lib/inventoryPortable',
+  '../inventory/portable', '../inventory/types',
+]
+function normaliseErsetzteImporte(line) {
+  if (!isImport(line)) return line
+  for (const m of ERSETZTE_MODULE) {
+    if (line.includes(`'${m}'`)) return line.replace(`'${m}'`, "'@avplan/inventory-core'")
+  }
+  return line
+}
+
+/** Wie `lineBagOf`, aber mit normalisierten Paket-Importen. */
+function paketBag(bag) {
+  const out = new Map()
+  for (const [line, n] of bag) {
+    const k = normaliseErsetzteImporte(line)
+    out.set(k, (out.get(k) ?? 0) + n)
+  }
+  return out
+}
+
 function classify(suiteFile, upstreamFile) {
   const s = lineBag(suiteFile)
   const u = lineBag(upstreamFile)
@@ -402,11 +447,28 @@ function uncarried(app, baseUpstreamSha) {
     const now = blobAt(upDir, 'HEAD', f)
     if (now === null) continue // upstream geloescht
     const before = blobAt(upDir, baseUpstreamSha, f)
-    const added = excessLines(lineBagOf(now), lineBagOf(before ?? ''))
+    const roh = excessLines(lineBagOf(now), lineBagOf(before ?? ''))
       .filter((l) => !isTrivialLine(l))
-    if (!added.length) continue // reine Loeschung / Whitespace / nur Klammern
+    if (!roh.length) continue // reine Loeschung / Whitespace / nur Klammern
     const suiteBag = lineBag(suiteFile)
     const nowBag = lineBagOf(now)
+    // Zeilen aussortieren, die die Suite NUR anders schreibt: den Import auf
+    // ein package-ersetztes Modul. Aussortiert wird hier und nicht in den
+    // Zaehl-Bags weiter unten, und das ist der Unterschied, auf den es
+    // ankommt: normalisierte Bags machten aus „nichts angekommen" ein
+    // „teilweise angekommen", und teilweise angekommene Aenderungen laesst
+    // die Regel darunter (`missing.length !== added.length`) still
+    // durchgehen. Eine echte Auslassung neben einer umgeschriebenen
+    // Import-Zeile waere damit unsichtbar geworden — der Guard haette an
+    // genau der Stelle geschwiegen, an der er reden soll.
+    const suitePaket = paketBag(suiteBag)
+    const nowPaket = paketBag(nowBag)
+    const added = roh.filter((l) => {
+      const k = normaliseErsetzteImporte(l)
+      if (k === l) return true // keine Umschrift im Spiel — echte Zeile
+      return (suitePaket.get(k) ?? 0) < (nowPaket.get(k) ?? 0) // fehlt auch so
+    })
+    if (!added.length) continue // nur Paket-Umschriften, alle getragen
     // ZAEHLEND vergleichen, nicht nur "kommt vor". Die erste Fassung fragte
     // `suiteBag.has(l)` -- und uebersah damit die haeufigste Form eines
     // nachgezogenen Fixes: das DUPLIZIEREN eines Blocks, den die Suite-Kopie

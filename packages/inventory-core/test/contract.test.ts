@@ -18,6 +18,7 @@ import {
   serializeInventory,
   parseInventory,
   resolveInventoryCode,
+  unitLabel,
   type InventorySnapshot,
   type InventoryItem,
   type StorageNode,
@@ -28,12 +29,12 @@ import {
 // Eingefrorener Contract — Aenderung nur mit Versionssprung.
 const CONTRACT = {
   format: 'avplan-inventory',
-  version: 2,
+  version: 3,
   envelopeKeys: ['app', 'exportedAt', 'format', 'items', 'nodes', 'sets', 'units', 'version'],
   itemKeys: ['category', 'code', 'codeType', 'createdAt', 'deviceTypeId', 'dimensions', 'id', 'locationId', 'manufacturer', 'materialKinds', 'model', 'notes', 'ownership', 'quantity', 'rentPricePerDay', 'returnDue', 'stockLocation', 'supplier', 'updatedAt'],
   nodeKeys: ['code', 'codeType', 'createdAt', 'dimensions', 'id', 'kind', 'name', 'notes', 'parentId', 'updatedAt'],
   setKeys: ['components', 'createdAt', 'id', 'name', 'notes', 'updatedAt'],
-  unitKeys: ['code', 'codeType', 'condition', 'createdAt', 'history', 'id', 'itemId', 'locationId', 'notes', 'serial', 'updatedAt'],
+  unitKeys: ['code', 'codeType', 'condition', 'createdAt', 'history', 'houseRef', 'id', 'itemId', 'locationId', 'notes', 'serial', 'updatedAt'],
 } as const
 
 // Voll besetzte Muster-Entitaeten (jedes Feld gesetzt) — TS erzwingt, dass sie
@@ -56,7 +57,7 @@ const set: InventorySet = {
   notes: 'x', createdAt: 't', updatedAt: 't',
 }
 const unit: InventoryUnit = {
-  id: 'u1', itemId: 'i1', serial: 'SN-1', code: 'UNI-1', codeType: 'qr', locationId: 'n1',
+  id: 'u1', itemId: 'i1', serial: 'SN-1', houseRef: 'AV-0421', code: 'UNI-1', codeType: 'qr', locationId: 'n1',
   condition: 'ok', notes: 'x', history: [{ at: 't', kind: 'created', detail: 'x' }],
   createdAt: 't', updatedAt: 't',
 }
@@ -89,6 +90,24 @@ describe('avplan-inventory Wire-Contract (Drift-Guard)', () => {
     expect(back).toEqual(snapshot)
   })
 
+  it('unitLabel: die Haus-Sicht, mit benannter Ersatz-Nummer (Bedarf 107)', () => {
+    // Die beiden anderen Planer zeigen Einheiten nur intern, also steht dort
+    // durchgehend die Hausreferenz vorne.
+    expect(unitLabel(unit)).toBe('AV-0421')
+    // Springt die Herstellernummer ein, wird sie BENANNT: nackt saehe sie aus
+    // wie eine Hausnummer, und das waere eine Verwechslung statt einer
+    // Auskunft.
+    expect(unitLabel({ ...unit, houseRef: undefined })).toBe('SN-1 (Herstellernummer)')
+    // Leerzeichen sind kein Wert.
+    expect(unitLabel({ ...unit, houseRef: '  ' })).toBe('SN-1 (Herstellernummer)')
+    // Der Etiketten-Code ist eine Scan-Kennung, keine Identitaet — dritte Wahl.
+    expect(unitLabel({ ...unit, houseRef: undefined, serial: undefined })).toBe('UNI-1')
+    // Und ohne jede Nummer steht ein benanntes Ergebnis da, keine id-Haelfte.
+    const nackt = { ...unit, id: 'f47ac10b-58cc', houseRef: undefined, serial: undefined, code: undefined }
+    expect(unitLabel(nackt)).toBe('ohne Nummer')
+    expect(unitLabel(nackt)).not.toContain('f47ac1')
+  })
+
   it('parse lehnt fremdes Format und hoehere Version ab', () => {
     expect(parseInventory(JSON.stringify({ format: 'something-else', version: 1 }))).toBeNull()
     expect(parseInventory(JSON.stringify({ format: CONTRACT.format, version: CONTRACT.version + 1 }))).toBeNull()
@@ -99,6 +118,10 @@ describe('avplan-inventory Wire-Contract (Drift-Guard)', () => {
     const src = { items: [item], nodes: [node], units: [unit] }
     expect(resolveInventoryCode('uni-1', src)).toEqual({ kind: 'unit', unit })
     expect(resolveInventoryCode('SN-1', src)).toEqual({ kind: 'unit', unit })
+    // Bedarf 107 — die Hausreferenz ist die wahrscheinlichste Eingabe von
+    // allen: sie klebt auf dem Case und wird abgetippt, wenn der Aufkleber
+    // unlesbar geworden ist.
+    expect(resolveInventoryCode('av-0421', src)).toEqual({ kind: 'unit', unit })
     expect(resolveInventoryCode(' loc-1 ', src)).toEqual({ kind: 'node', node })
     expect(resolveInventoryCode('ITM-1', src)).toEqual({ kind: 'item', item })
     expect(resolveInventoryCode('', src)).toBeNull()

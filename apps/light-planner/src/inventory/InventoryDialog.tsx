@@ -5,7 +5,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { useTranslation } from '../i18n';
 import { useInventoryStore, type InventoryItemInput } from './store';
-import { serializeInventory, parseInventory, resolveInventoryCode } from '@avplan/inventory-core';
+import { serializeInventory, parseInventory, resolveInventoryCode, unitLabel } from '@avplan/inventory-core';
 import type { InventoryItem } from '@avplan/inventory-core';
 import { confirmDialog } from '@avplan/ui';
 
@@ -89,7 +89,7 @@ const InventoryDialog: React.FC<Props> = ({ onClose }) => {
       setMsg(`${t('inventory.item', 'Artikel')}: ${m.item.model}`);
       setForm({ ...m.item });
     } else if (m.kind === 'node') setMsg(`${t('inventory.location', 'Lagerort')}: ${m.node.name}`);
-    else setMsg(`${t('inventory.unit', 'Einheit')}: ${m.unit.serial || m.unit.code || m.unit.id.slice(0, 6)}`);
+    else setMsg(`${t('inventory.unit', 'Einheit')}: ${unitLabel(m.unit)}`);
     setScan('');
   };
 

@@ -20,7 +20,17 @@ export const INVENTORY_FORMAT = 'avplan-inventory';
 // deviceTypeId. Dafuer ist jetzt in jeder App ein Merge-Helfer da (cable:
 // renderer/lib/inventoryMerge.ts, light und multicam: inventory/merge.ts).
 // Aeltere Dateien lesen wir unveraendert weiter.
-export const INVENTORY_FORMAT_VERSION = 2;
+//
+// Version 3 (Bedarf 107): `InventoryUnit.houseRef` — die haus-eigene Referenz
+// neben der Hersteller-Seriennummer. Auch hier sitzt der Verlust, den die
+// Version verhindert, nicht in diesem Paket, sondern im cable-planner:
+// `healUnit` baut jede Einheit Feld fuer Feld neu auf, ein Stand ohne
+// `houseRef` wuerde eine Datei mit Hausreferenzen still ohne sie
+// zurueckschreiben — und die Nummer, die auf dem Case klebt, waere weg. Mit
+// der erhoehten Version weigert er sich stattdessen zu lesen. Aeltere Dateien
+// (v1/v2) lesen wir unveraendert weiter; ihre Einheiten haben schlicht keine
+// Hausreferenz.
+export const INVENTORY_FORMAT_VERSION = 3;
 
 export interface InventorySnapshot {
   items: InventoryItem[];
@@ -85,11 +95,42 @@ export function resolveInventoryCode(
 ): ScanMatch | null {
   const needle = norm(raw);
   if (!needle) return null;
-  const unit = src.units.find((u) => norm(u.code) === needle || norm(u.serial) === needle);
+  // Bedarf 107 — die Hausreferenz gehoert ausdruecklich dazu, und zwar als die
+  // wahrscheinlichste Eingabe von allen: sie klebt auf dem Case und wird
+  // abgetippt, wenn der Aufkleber unlesbar geworden ist. Ein Identitaets-Feld,
+  // das die Suche nicht kennt, ist fuer den Lageristen nicht vorhanden.
+  const unit = src.units.find(
+    (u) => norm(u.code) === needle || norm(u.houseRef) === needle || norm(u.serial) === needle,
+  );
   if (unit) return { kind: 'unit', unit };
   const node = src.nodes.find((n) => norm(n.code) === needle);
   if (node) return { kind: 'node', node };
   const item = src.items.find((it) => norm(it.code) === needle);
   if (item) return { kind: 'item', item };
   return null;
+}
+
+/**
+ * Wie eine Einheit auf einem Blatt heisst, wenn nur die HAUS-Sicht gebraucht
+ * wird (Bedarf 107).
+ *
+ * multicam- und light-planner zeigen Einheiten nur intern — Scan-Treffer,
+ * Bestandsliste —, also gilt dort durchgehend die Hausreferenz vorne, weil sie
+ * die Nummer ist, die auf dem Case klebt. Fehlt sie, wird die Herstellernummer
+ * genommen und BENANNT: „S0134-77 (Herstellernummer)" ist eine Auskunft,
+ * dieselbe Nummer nackt waere eine Verwechslung.
+ *
+ * Die volle Regel mit beiden Lese-Richtungen (`house` gegen `external`) steht
+ * im cable-planner (`renderer/lib/unitIdentity.ts`); nur dort werden auch
+ * Versicherungs- und Sub-Hire-Blaetter gedruckt. Hier steht bewusst die
+ * Haelfte, die die beiden anderen Planer brauchen.
+ */
+export function unitLabel(unit: InventoryUnit): string {
+  const house = unit.houseRef?.trim();
+  if (house) return house;
+  const serial = unit.serial?.trim();
+  if (serial) return `${serial} (Herstellernummer)`;
+  const code = unit.code?.trim();
+  if (code) return code;
+  return 'ohne Nummer';
 }

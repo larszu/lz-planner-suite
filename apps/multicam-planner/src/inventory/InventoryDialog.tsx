@@ -5,7 +5,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { FiX, FiPlus, FiTrash2, FiDownload, FiUpload, FiSearch } from 'react-icons/fi';
 import { useInventoryStore, type InventoryItemInput } from './store';
-import { serializeInventory, parseInventory, resolveInventoryCode } from '@avplan/inventory-core';
+import { serializeInventory, parseInventory, resolveInventoryCode, unitLabel } from '@avplan/inventory-core';
 import type { InventoryItem } from '@avplan/inventory-core';
 import { confirmDialog } from '@avplan/ui';
 import { useTranslation, format } from '../i18n';
@@ -94,7 +94,7 @@ export function InventoryDialog({ open, onClose }: Props) {
       setScanResult(format(t('inventory.scan.item', 'Item: {model}'), { model: m.item.model }));
       setForm({ ...m.item });
     } else if (m.kind === 'node') setScanResult(format(t('inventory.scan.node', 'Location: {name}'), { name: m.node.name }));
-    else setScanResult(format(t('inventory.scan.unit', 'Unit: {label}'), { label: m.unit.serial || m.unit.code || m.unit.id.slice(0, 6) }));
+    else setScanResult(format(t('inventory.scan.unit', 'Unit: {label}'), { label: unitLabel(m.unit) }));
     setScan('');
   };
 
