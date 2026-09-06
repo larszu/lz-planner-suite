@@ -1429,6 +1429,7 @@ gehalten, nicht als Versäumnis:
 | Bedarf 72: EIN Multicast-Adressplan — Adresse+Port eindeutig, und der 32-zu-1-L2-Alias benannt | `cable#723` |
 | Bedarf 89: das Sicherheitsnetz einmal erklaert, mit Namensabgleich gegen die Szenen des Encoders | `cable#724` |
 | Bedarf 91: eine Vorlage weiss, aus welchem Haus sie kommt — und was NICHT mitgeht | `cable#725` |
+| Bedarf 78: welche Kiste den Plan-Platz fuellt — der Tausch am Ladetag wird sichtbar | `cable#726` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
