@@ -175,6 +175,7 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 89 | Ausweichverhalten einmal erklaert — Szenennamen, Schwellen, wo der Waechter laeuft (P2) | `cable#724` |
 | 91 | Vorlagen, die das Haus mitnehmen — und die Adressen einer fremden Show nicht (P2) | `cable#725` |
 | 78 | Lager-Einheit und Netz-Identitaet aneinander — der unsichtbare Tausch (P2) | `cable#726` |
+| 84 | Die Uebergabe sagt, ob sie den Bauzustand traegt oder den Angebotsstand (P2) | `cable#727` |
 
 **Zwei Berichtigungen an dieser Tabelle.** Die Zeile zu `cable#703` fuehrte
 „28 · 29 · 34". Gebaut wurden dort das Ziel-Register, die Paritaetspruefung und
