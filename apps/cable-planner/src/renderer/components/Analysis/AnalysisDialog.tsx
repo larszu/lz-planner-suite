@@ -30,6 +30,8 @@ import {
   type SwitchPortMap,
 } from '../../lib/switchPortMap'
 import { csvFromTable } from '../../lib/documentStamp'
+import { cableRunFindings, cableRunTable, type RunFinding } from '../../lib/cableRunChecks'
+import { lookUpSheet, type SheetLookup } from '../../lib/sheetLookup'
 import {
   buildVenueNetworkRequest,
   rackDoorSheetTable,
@@ -38,7 +40,7 @@ import {
 } from '../../lib/venueNetworkRequest'
 import { RF_BANDS, bandsForFrequency, bandLabel } from '../../lib/rfBands'
 
-type Tab = 'weight' | 'network' | 'redundancy' | 'rf'
+type Tab = 'weight' | 'network' | 'redundancy' | 'rf' | 'runs' | 'sheet'
 
 const WATT_TO_BTU = 3.412
 
@@ -1125,11 +1127,224 @@ const RfTab = ({ projectName }: { projectName: string }) => {
 
 /* ------------------------------------------------------------- Container -- */
 
+// ───────────────────────────────────────────────────────────────────────────
+// Bedarf 13 — die Kabelwege. Was die Laenge behauptet, und ob sie noch gilt.
+//
+// Der Befund nennt das stille Veralten beim Namen: „a moved position SILENTLY
+// invalidates the cable call". Diese Ansicht macht es laut — und nennt bei
+// einem Hybrid-Kamerakabel dazu, wie viele Dienste an dem einen Strang
+// haengen: „one wrong SMPTE run kills video, return, comms, tally and power
+// at once."
+// ───────────────────────────────────────────────────────────────────────────
+const RunsTab = ({ projectName }: { projectName: string }) => {
+  const t = useTranslation()
+  const cables = useProjectStore((s) => s.project.cables)
+  const equipment = useProjectStore((s) => s.project.equipment)
+
+  const findings = useMemo(() => cableRunFindings(cables, equipment), [cables, equipment])
+
+  // Ausgeschriebener switch, ein Schluessel je Fall. Einen Schluessel aus dem
+  // kind-Feld zusammenzusetzen waere fuer den i18n-Deckungs-Guard unsichtbar
+  // und fiele im EN-Betrieb still auf den nackten Slug zurueck. (Die verbotene
+  // Form steht hier bewusst NICHT als Beispiel: sie stuende dann im Quelltext,
+  // und der Guard, der sie sucht, findet den Kommentar.)
+  const text = (f: RunFinding): string => {
+    const kern = (() => {
+      switch (f.kind) {
+        case 'derived-length-stale':
+          return format(
+            t(
+              'analysis.runs.stale',
+              'Länge {alt} m wurde geschätzt; seither um {px} px verschoben, die Schätzung ergäbe jetzt {neu} m',
+            ),
+            { alt: f.values[0], neu: f.values[1], px: f.values[2] },
+          )
+        case 'over-max-length':
+          return format(
+            t('analysis.runs.overMax', 'Länge {laenge} m über der Reichweite von {max} m ({typ})'),
+            { laenge: f.values[0], max: f.values[1], typ: f.values[2] },
+          )
+        case 'endpoint-missing':
+          return t(
+            'analysis.runs.endpointMissing',
+            'Abgeleitete Länge, aber ein Endgerät fehlt — sie lässt sich nicht mehr nachrechnen',
+          )
+      }
+    })()
+    return f.services
+      ? `${kern} — ${format(t('analysis.runs.bundled', 'ein Strang, {n} Dienste: {liste}'), {
+          n: f.services.length,
+          liste: f.services.join(', '),
+        })}`
+      : kern
+  }
+
+  const exportCsv = () => {
+    downloadBlob(
+      buildExportFilenameWithSuffix(projectName, 'kabelwege', 'csv'),
+      csvFromTable(cableRunTable(cables, equipment)),
+      'text/csv',
+    )
+  }
+
+  return (
+    <div className="space-y-3 p-4 text-cp-base">
+      <p className="text-cp-xs text-[var(--cp-text-muted)]">
+        {t(
+          'analysis.runs.intro',
+          'Geschätzte Längen tragen ihre Herkunft. Wird ein Gerät verschoben, veraltet die Schätzung — hier steht es, statt still zu bleiben. Von Hand eingetragene Längen werden NICHT gegen die Luftlinie gehalten: ein echter Kabelweg wird verlegt, nicht gespannt.',
+        )}
+      </p>
+
+      {findings.length === 0 ? (
+        <p className="text-cp-xs text-[var(--cp-text-muted)]">
+          {t('analysis.runs.none', 'Keine Befunde: keine überholte Schätzung, keine Länge über der Reichweite.')}
+        </p>
+      ) : (
+        <>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={exportCsv}
+              className="rounded border border-cp-border px-2 py-1 text-cp-xs text-cp-text-secondary hover:text-cp-text"
+            >
+              CSV
+            </button>
+          </div>
+          <ul className="space-y-1">
+            {findings.map((f) => (
+              <li
+                key={`${f.kind}-${f.cableId}`}
+                className={
+                  f.kind === 'over-max-length'
+                    ? 'rounded border border-red-700/60 bg-red-900/30 p-2 text-cp-xs text-red-200'
+                    : 'rounded border border-amber-700/60 bg-amber-900/30 p-2 text-cp-xs text-amber-200'
+                }
+              >
+                <span className="font-semibold">{f.cableLabel}</span> — {text(f)}
+                {f.source && <span className="ml-1 opacity-70">({f.source})</span>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Bedarf 27 — der Rueckweg vom Papier.
+//
+// „Gilt dieses Blatt noch?" konnte `documentRegistry` seit ADR-004
+// beantworten, und niemand konnte fragen: `docStandStatus` und `findByStand`
+// waren gebaut, getestet und von KEINEM Knopf erreichbar. Hier ist der Knopf.
+//
+// Der Bedarf nennt die Frist: „Must complete in under ten seconds or it will
+// not be used in the last two hours before doors." Deshalb ein Feld und kein
+// Formular — acht Zeichen abtippen, Enter.
+// ───────────────────────────────────────────────────────────────────────────
+const SheetTab = () => {
+  const t = useTranslation()
+  const project = useProjectStore((s) => s.project)
+  const [draft, setDraft] = useState('')
+  const [treffer, setTreffer] = useState<SheetLookup | null>(null)
+
+  const pruefen = () => setTreffer(lookUpSheet(draft, project))
+
+  // Ausgeschriebener switch, ein Schluessel je Fall — ein aus dem `kind`
+  // gebauter waere fuer den i18n-Deckungs-Guard unsichtbar.
+  const text = (r: SheetLookup): string => {
+    switch (r.kind) {
+      case 'identified':
+        switch (r.status) {
+          case 'current':
+            return format(t('analysis.sheet.current', '{label}: Stand {stand} — aktuell'), {
+              label: r.label ?? '',
+              stand: r.stand ?? '',
+            })
+          case 'stale':
+            return format(
+              t('analysis.sheet.stale', '{label}: Stand {stand} — ÜBERHOLT, der Plan ist seither weiter'),
+              { label: r.label ?? '', stand: r.stand ?? '' },
+            )
+          default:
+            return format(
+              t('analysis.sheet.unknown', '{label}: Stand {stand} — nicht beurteilbar ({grund})'),
+              { label: r.label ?? '', stand: r.stand ?? '', grund: r.reason ?? '' },
+            )
+        }
+      case 'matched-by-stand':
+        return format(t('analysis.sheet.matched', '{label}: aktuell (Stand {stand})'), {
+          label: r.label ?? '',
+          stand: r.stand ?? '',
+        })
+      case 'stale-or-foreign':
+        return format(
+          t(
+            'analysis.sheet.foreign',
+            'Stand {stand} gehört zu keinem Dokument dieses Plans — vermutlich ein überholter Ausdruck',
+          ),
+          { stand: r.stand ?? '' },
+        )
+      case 'unreadable':
+        return t(
+          'analysis.sheet.unreadable',
+          'Kein Dokument-Code und kein Stand — acht Zeichen vom Fuß des Blatts oder der ganze Code',
+        )
+    }
+  }
+
+  const ton = (r: SheetLookup): string => {
+    if (r.kind === 'identified' && r.status === 'current') return 'text-cp-text-secondary'
+    if (r.kind === 'matched-by-stand') return 'text-cp-text-secondary'
+    if (r.kind === 'unreadable') return 'text-cp-text-muted'
+    // „Ueberholt" und „gehoert zu keinem Dokument" sind dieselbe Nachricht in
+    // zwei Schaerfen: das Blatt in der Hand stimmt nicht mehr.
+    return 'text-cp-warn'
+  }
+
+  return (
+    <div className="space-y-3 p-4 text-cp-base">
+      <p className="text-cp-xs text-[var(--cp-text-muted)]">
+        {t(
+          'analysis.sheet.intro',
+          'Ein Blatt in der Hand: den Stand vom Fuß abtippen (acht Zeichen) oder den ganzen Dokument-Code einlesen. Die Antwort sagt, welches Dokument es ist und ob der Plan seither weiter ist.',
+        )}
+      </p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') pruefen()
+          }}
+          placeholder={t('analysis.sheet.placeholder', '1a2b3c4d oder cableplanner://doc/…')}
+          aria-label={t('analysis.sheet.placeholder', '1a2b3c4d oder cableplanner://doc/…')}
+          className="min-w-[16rem] flex-1 rounded border border-cp-border bg-cp-surface-3 p-1.5"
+        />
+        <button
+          type="button"
+          onClick={pruefen}
+          disabled={!draft.trim()}
+          className="rounded border border-cp-border px-2.5 py-1 text-cp-text-secondary hover:text-cp-text disabled:opacity-40"
+        >
+          {t('analysis.sheet.check', 'Prüfen')}
+        </button>
+      </div>
+
+      {treffer && <div className={`text-cp-sm ${ton(treffer)}`}>{text(treffer)}</div>}
+    </div>
+  )
+}
+
 const TABS: { id: Tab; labelKey: string; fallback: string }[] = [
   { id: 'weight', labelKey: 'analysis.tab.weight', fallback: 'Gewicht & Wärme' },
   { id: 'network', labelKey: 'analysis.tab.network', fallback: 'Netzwerk' },
   { id: 'redundancy', labelKey: 'analysis.tab.redundancy', fallback: 'Redundanz' },
   { id: 'rf', labelKey: 'analysis.tab.rf', fallback: 'RF / Funk' },
+  { id: 'runs', labelKey: 'analysis.tab.runs', fallback: 'Kabelwege' },
+  { id: 'sheet', labelKey: 'analysis.tab.sheet', fallback: 'Blatt prüfen' },
 ]
 
 export const AnalysisDialog = () => {
@@ -1169,6 +1384,8 @@ export const AnalysisDialog = () => {
       {active === 'network' && <NetworkTab projectName={projectName} />}
       {active === 'redundancy' && <RedundancyTab projectName={projectName} />}
       {active === 'rf' && <RfTab projectName={projectName} />}
+      {active === 'runs' && <RunsTab projectName={projectName} />}
+      {active === 'sheet' && <SheetTab />}
     </ModalShell>
   )
 }

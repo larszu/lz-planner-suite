@@ -1400,6 +1400,12 @@ gehalten, nicht als Versäumnis:
 | Bedarf 15: Container ausgeben statt Artikel, Differenz bei Rueckgabe berichtet | `cable#707` |
 | Bedarf 14: PTZ-Presets als Dokument, Standort beim Speichern mitgeschrieben | `multicam#92` |
 | Bedarf 12: Sichtlinien-Konflikte dreidimensional, nicht als 2D-Schnitt | `multicam#92` |
+| Bedarf 13: geschaetzte Laengen tragen ihre Herkunft, ein Strang traegt fuenf Dienste | `cable#708` |
+| Bedarf 16: Etiketten-Codes auf dem Ausgabeschein, Scan-Rueckweg | `cable#709` |
+| Bedarf 17: Kabel und Adapter in derselben Bedarfsliste | `cable#709` |
+| Bedarf 26: die vergessenen Blaetter in der Impact-Liste, benannt statt weggelassen | `cable#709` |
+| Bedarf 27: „gilt dieses Blatt noch?" — war gebaut, jetzt erreichbar | `cable#709` |
+| Bedarf 28: Plan gegen ERP-Reservierung, in beide Richtungen | `cable#709` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |

@@ -142,6 +142,12 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 15 | Den Container ausgeben, nicht den Artikel — „a good half hour of repetitive clicking" | `cable#707` |
 | 33 | Ablaufblatt fuer den Showtag, Stream-Key als VERWEIS („secrets as references") | `cable#707` |
 | 36 | Encoder-Machbarkeit aus belegten Herstellerangaben statt aus Erfahrung | `cable#707` |
+| 13 | Geschätzte Längen tragen ihre Herkunft; ein SMPTE-Strang trägt fünf Dienste | `cable#708` |
+| 16 | Der Ausgabeschein trägt Etiketten-Codes statt interner IDs — „scannable back in" | `cable#709` |
+| 17 | Kabel und die vom Plan verlangten Adapter in DERSELBEN Bedarfsliste | `cable#709` |
+| 26 | Die vergessenen Blätter (Tally, Port-Karte, MV-Layout) stehen in der Impact-Liste | `cable#709` |
+| 27 | Der Rückweg vom Papier: „gilt dieses Blatt noch?" — war gebaut und unerreichbar | `cable#709` |
+| 28 | Plan gegen ERP-Reservierung, in BEIDE Richtungen — „the valuable increment is the diff" | `cable#709` |
 
 **Was diese Runde ueber die Roadmap selbst sagt.** Die zwoelf Initiativen sind eine
 Zusammenfassung der Bedarfe, keine Obermenge. Wer nur sie abarbeitet, laesst die Haelfte
