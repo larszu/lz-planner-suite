@@ -1395,6 +1395,11 @@ gehalten, nicht als Versäumnis:
 | Bedarf 23: Haus-IT-Anforderungsblatt — abgeleitet vs. Frage, IGMP-Widerspruch benannt | `cable#705` |
 | Bedarf 37: eine Kanalliste, fuenf Sichten statt fuenf Abschriften | `cable#706` |
 | Bedarf 38: Stage-Plot als Ein-Seiten-Lieferung, Nummer = Kanal | `cable#706` |
+| Bedarf 36: Encoder-Machbarkeit — zwei belegte Encoder, „unbeantwortet" als eigener Zustand | `cable#707` |
+| Bedarf 33: Ablaufblatt fuer den Showtag, Stream-Key nur als Verweis | `cable#707` |
+| Bedarf 15: Container ausgeben statt Artikel, Differenz bei Rueckgabe berichtet | `cable#707` |
+| Bedarf 14: PTZ-Presets als Dokument, Standort beim Speichern mitgeschrieben | `multicam#92` |
+| Bedarf 12: Sichtlinien-Konflikte dreidimensional, nicht als 2D-Schnitt | `multicam#92` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |

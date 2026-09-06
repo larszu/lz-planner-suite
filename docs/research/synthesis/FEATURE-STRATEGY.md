@@ -137,6 +137,11 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 28 · 29 · 34 | Ziel-Register, Primaer/Backup-Paritaet, Transport-Rechner mit Quelle | `cable#703` |
 | 37 | Eine Kanalliste, fuenf Sichten — „PROJECTIONS, NOT MORE FIELDS" | `cable#706` |
 | 38 | Stage-Plot als Ein-Seiten-Lieferung mit Eingangsliste darauf | `cable#706` |
+| 12 | Sichtlinien-Konflikte im Plan statt in der Probe — „cheap geometry, prevents a re-rig" | `multicam#92` |
+| 14 | PTZ-Presets als Dokument statt Geraetespeicher: Nummer → Shot → Segment | `multicam#92` |
+| 15 | Den Container ausgeben, nicht den Artikel — „a good half hour of repetitive clicking" | `cable#707` |
+| 33 | Ablaufblatt fuer den Showtag, Stream-Key als VERWEIS („secrets as references") | `cable#707` |
+| 36 | Encoder-Machbarkeit aus belegten Herstellerangaben statt aus Erfahrung | `cable#707` |
 
 **Was diese Runde ueber die Roadmap selbst sagt.** Die zwoelf Initiativen sind eine
 Zusammenfassung der Bedarfe, keine Obermenge. Wer nur sie abarbeitet, laesst die Haelfte
