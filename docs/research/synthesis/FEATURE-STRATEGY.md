@@ -380,12 +380,22 @@ danach vor Prüfung.
 | Rack-Inhalte fehlten in der Stückliste | cable | `cable#677` |
 | Vendoring, vom Guard selbst angeleitet | Suite | `suite#78` |
 
-**Dreizehn Befunde repariert, drei Reste im Backlog.** Was übrig bleibt, bleibt
-aus einem Grund: `drumKit`/`wirelessRig` außerhalb von `project.equipment`
-(Rest von B-31, verlangt eine Entscheidung über Positionen ohne Katalog-Typ),
-die fehlende Zeitachse (B-34) und die vier aus der Suite unerreichbaren Repos
-(B-35). Die letzten beiden hängen an E-18 und E-19 und werden nicht nebenbei
-entschieden.
+**Dreizehn Befunde repariert, drei Reste im Backlog** — davon sind zwei
+inzwischen abgearbeitet. `drumKit`/`wirelessRig` außerhalb von
+`project.equipment` (Rest von B-31) steht seit `cable#678` in der Stückliste.
+Die vier aus der Suite unerreichbaren Repos (B-35) hingen an E-19, und die
+Frage ist seit `suite#99` entschieden: Teil der Suite, aber als **Geräte über
+eine Adresse** statt als mitgelieferte Ansicht — beides zugleich, laufende
+Anwendung und Attrappe im Fenster, war die Variante, die es nicht gibt. Der
+Weg vom Plan auf diese Geräte (B-41) ist seitdem in allen vier Richtungen
+gebaut oder ausgewiesen: Tally (`suite#99`), Kamerasteuerung
+(`sony-camera-bridge#14`), Intercom (`Broadcast-intercom#9`) und die
+Medien-Station, für die der Befund lautet: Bestand statt Konfigurationsziel —
+welches Video in welcher Sensor-Zone läuft, ist Ausstellungs-Inhalt, keine
+Signalführung.
+
+Was übrig bleibt, bleibt aus einem Grund: die fehlende Zeitachse (B-34) hängt
+an E-18 und wird nicht nebenbei entschieden.
 
 **Zwei Beobachtungen aus dem Reparieren selbst**, beide dieselbe Sorte wie der
 Befund, der sie ausgelöst hat:

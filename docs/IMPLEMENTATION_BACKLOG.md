@@ -1166,8 +1166,8 @@ ist selbst ein Ergebnis.
 
 ### B-41 · Der Weg vom Plan auf die Geräte — was er trägt und was nicht
 
-* **Status:** offen (der Tally-Teil ist gebaut, die anderen drei nicht)
-* **Gebaut (`suite#99`):** die **Tally-Karte** geht aus dem Signal-Plan an den
+* **Status:** erledigt (alle drei Wege gebaut oder ausgewiesen)
+* **Tally (`suite#99`):** die **Tally-Karte** geht aus dem Signal-Plan an den
   `tally-pi` — `POST /tally-config` mit genau der Quellenliste, die der Plan
   besitzt (Rollen-Id, Name, Mischer-Eingang). ATEM-Adresse und GPIO-Verdrahtung
   gehören dem Pi und werden bewusst nicht mitgeschickt; `merge_tally_config`
@@ -1184,15 +1184,47 @@ ist selbst ein Ergebnis.
   `merge_tally_config`/`validate_tally_config` aus `guide_server.py` leerte
   eine Sendung mit null Quellen dessen Geräteliste, während die ATEM-Adresse
   blieb — die Warnung stand da, der Knopf war trotzdem aktiv.
-* **Was der Weg noch nicht trägt:**
-  1. **Kamerasteuerung.** `sony-camera-bridge` kennt Kameras mit Modell und
-     IP; der Kamera-Plan kennt dieselben Kameras mit Modell und Position. Ein
-     Abgleich (welche geplante Kamera ist welches Gerät am Bus) fehlt.
-  2. **Intercom.** `cable-planner` exportiert seit `cable#684` ein
-     herstellerneutrales Intercom-Format; `Broadcast-intercom` liest es nicht.
-  3. **Medien-Station.** Kein Berührungspunkt mit dem Plan — vermutlich auch
-     keiner nötig; das gehört ausgewiesen statt offengelassen.
-* **Aufwand:** je mittel; 3 zuerst entscheiden statt bauen
+
+* **B-41.1 Kamerasteuerung (`sony-camera-bridge#14`):** die Brücke liest die
+  `camera-list` des MultiCam-Planners und hält sie gegen ihre Slots. Am Pult
+  steht danach „CAM 3 — Bühne links" statt einer nackten Nummer.
+  **Der Kern ist der Beleg, nicht die Zuordnung.** Bei TCP und seriell kennt
+  die Brücke einen Host und einen Port, kein Gerät — ein Abgleich, der dort
+  trotzdem etwas behauptet, wäre geraten. Jede Zuordnung trägt deshalb
+  `matchedBy`: `model` (Modell gemessen, aus USB-Erkennung oder
+  MNC-Discovery), `number` (die Zahl in der Beschriftung — Konvention, auf der
+  Kachel mit `?` gekennzeichnet), `manual` (ein Mensch, überschreibt alles und
+  überlebt den nächsten Abgleich). **Eindeutig oder gar nicht:** zwei FX9 im
+  Rack ergeben keinen Vorschlag, und wo es keinen Beleg gibt, steht der Grund
+  im Klartext statt eines Schweigens.
+
+* **B-41.2 Intercom (`Broadcast-intercom#9`):** `Broadcast-intercom` liest das
+  herstellerneutrale `avplan-intercom` aus `cable#684` — zwei Endpunkte
+  (`/api/plan/preview`, `/api/plan/apply`) und ein Reiter unter Setup.
+  **Zusammengeführt wird über den Namen**, nicht über die Id aus der Datei:
+  `ch-3` bedeutet auf der Anlage nichts, „PGM" schon, und über die Datei-Id zu
+  gehen hieße, beim zweiten Import alles zu verdoppeln. **Gelöscht wird nie** —
+  die umgekehrte Entscheidung zum Tally-Weg, und sie fällt anders, weil dieser
+  Server Geräte, Antennen, Zuordnungen und Sitzungen besitzt, die ein Plan
+  nicht wiederherstellen kann. talk und listen bleiben getrennt; `derivedFrom`
+  wird angezeigt, weil eine aus Green-GO abgeleitete Datei beide gesetzt hat
+  und das die ärmere Quelle ist, keine Messung.
+
+* **B-41.3 Medien-Station — ausgewiesen, nicht offengelassen.** Nachgesehen in
+  `pi-media-station` (README, API-Übersicht, `web_ui.py`): die Station ordnet
+  Medien zwei Sensor-Zonen (NAH/FERN) zu und spielt sie ab. Ihr Datenmodell
+  sind Zonen, Dateien, GPIO-Pins und Netzwerk. **Es gibt keinen Inhalt, den ein
+  AV-Plan ihr geben könnte** — welches Video in welcher Zone läuft, ist
+  Ausstellungs-Inhalt, keine Signalführung, und der Plan weiß es nicht und soll
+  es nicht wissen.
+  Damit ist der Befund aber **nicht „kein Berührungspunkt"**, sondern „ein
+  anderer als bei den drei übrigen". Die Station ist ein Gerät im
+  Produktionsnetz mit Namen, IP und Dienst auf Port 5000; sie gehört in den
+  Plan wie jedes andere Netzgerät — als **Bestand**, nicht als Ziel einer
+  Konfiguration. Die Richtung ist umgekehrt: Gerät → Plan statt Plan → Gerät.
+  `GET /api/identity` liefert Station-Id und Version und wäre genau der
+  Ansatzpunkt, wenn der IP-Plan (Initiative 8) gebaut wird. **Bis dahin ist
+  hier nichts zu tun**, und das ist jetzt aufgeschrieben statt vermutet.
 
 ---
 
@@ -1308,6 +1340,9 @@ gehalten, nicht als Versäumnis:
 | Pruefung 18 behauptete AI-Vorschlag als einzige Port-Quelle | `cable#700` |
 | ADR-004 Inkrement 4: vier Licht-Ausdrucke tragen ihren Stand | `light#70` |
 | ADR-004 Inkrement 4: Kamerakarte und Storyboard tragen ihren Stand | `multicam#91` |
+| B-41.1: Kamera-Plan gegen die Kameras am Bus, mit Beleg je Zuordnung | `sony-camera-bridge#14` |
+| B-41.2: `avplan-intercom` wird gelesen, zusammengefuehrt statt ersetzt | `Broadcast-intercom#9` |
+| B-41.3: Medien-Station ausgewiesen — Bestand statt Konfigurationsziel | (Befund, kein Code) |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
 | `mvr:check` lief bei keinem Merge; berechneter Guard dagegen | `light#64` |
