@@ -1391,6 +1391,10 @@ gehalten, nicht als Versäumnis:
 | Bedarf 24: erzeugte Switch-Port-Karte statt gepflegter Excel-Mappe | `cable#704` |
 | Bedarf 21: Plan gegen Vorgefundenes, Datei statt Live-Feed | `cable#704` |
 | `NETWORK_CONNECTORS` fuehrte Steckertypen, die es in `ConnectorType` nicht gibt | `cable#704` |
+| Bedarf 22: Rack-Tuer-Blatt und VLAN-Tabelle aus demselben Modell | `cable#705` |
+| Bedarf 23: Haus-IT-Anforderungsblatt — abgeleitet vs. Frage, IGMP-Widerspruch benannt | `cable#705` |
+| Bedarf 37: eine Kanalliste, fuenf Sichten statt fuenf Abschriften | `cable#706` |
+| Bedarf 38: Stage-Plot als Ein-Seiten-Lieferung, Nummer = Kanal | `cable#706` |
 | Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |

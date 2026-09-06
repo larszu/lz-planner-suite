@@ -115,6 +115,34 @@ Die Begründungen stehen dort, wo die Fragen gestellt wurden:
 **Alle sieben sind entschieden UND gebaut.** Damit ist zum ersten Mal seit dem Anlegen dieses
 Papiers **keine Initiative durch eine offene Frage blockiert.** Was bleibt, ist Arbeit.
 
+### 3f. Was gebaut ist, ohne je eine Initiative gewesen zu sein (2026-09-06)
+
+Die Tabelle in 3b fuehrt zwoelf Initiativen. Die Bedarfs-Datenbank fuehrt 145 Bedarfe, und
+**der Backlog-Eintrag B-34 hat schon einmal darauf hingewiesen**, dass ein Bedarf ohne
+Initiative in dieser Tabelle gar nicht auftaucht — „das ist eine Eigenschaft der Tabelle,
+nicht des Bedarfs".
+
+Genau derselbe blinde Fleck wirkt jetzt in die andere Richtung: seit dem 2026-09-06 sind
+mehrere P1-Bedarfe **gebaut**, die keiner Initiative zugeordnet waren. Ohne diese Liste
+staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noch einmal.
+
+| Bedarf | Was er verlangte | Gebaut in |
+| --- | --- | --- |
+| 2 · 75 · 91 | „opening last year's file as this year's starting point" — Vorlagen | `suite#105` |
+| 19 | 2–4 NICs je Geraet statt einer IP-Spalte; **„expensive to fix later"** | `cable#704` |
+| 21 | Plan gegen Vorgefundenes — „the highest-value item in the dossier" | `cable#704` |
+| 22 | Netz-Dokumente aus EINEM Modell: Rack-Tuer-Blatt, VLAN-Tabelle | `cable#705` |
+| 23 | Haus-IT-Anforderungsblatt — „the role's most-cited organisational blocker" | `cable#705` |
+| 24 | Switch-Port-Karte erzeugt statt gepflegt; **kein** Konfigurationskanal | `cable#704` |
+| 28 · 29 · 34 | Ziel-Register, Primaer/Backup-Paritaet, Transport-Rechner mit Quelle | `cable#703` |
+| 37 | Eine Kanalliste, fuenf Sichten — „PROJECTIONS, NOT MORE FIELDS" | `cable#706` |
+| 38 | Stage-Plot als Ein-Seiten-Lieferung mit Eingangsliste darauf | `cable#706` |
+
+**Was diese Runde ueber die Roadmap selbst sagt.** Die zwoelf Initiativen sind eine
+Zusammenfassung der Bedarfe, keine Obermenge. Wer nur sie abarbeitet, laesst die Haelfte
+dessen liegen, was die Rollen-Berichte als P1 fuehren — und merkt es nicht, weil die Tabelle
+schweigt. Wer kuenftig einen Bedarf ohne Initiative baut, traegt ihn hier ein.
+
 ### Was die Neu-Ableitung danach ergeben hat
 
 Abschnitt 25 verlangt Neu-Ableitung statt Flickwerk, und die erste nach den sieben Antworten

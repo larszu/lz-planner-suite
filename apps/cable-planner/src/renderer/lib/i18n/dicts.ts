@@ -3442,12 +3442,18 @@ export const en: Dict = {
   'patchList.labelCsv.brother': 'Brother P-touch (TXT)',
   'patchList.labelCsv.dymo': 'Dymo (CSV)',
   // #353 Audio input list
-  'patchList.exportInputList': '🎚 Input list',
-  'inputList.col.ch': 'Ch',
-  'inputList.col.source': 'Source',
-  'inputList.col.port': 'Port',
-  'inputList.col.connector': 'Connector',
-  'inputList.col.toDevice': 'To device',
+  /* Bedarf 37 — eine Kanalliste, fuenf Sichten. Keys: channelList.*
+     Die alten `patchList.exportInputList` und `inputList.col.*` sind weg: die
+     Eingangsliste war EINE Sicht von fuenf und baute ihre Spalten im Dialog. */
+  'channelList.view': 'View of the channel list',
+  'channelList.view.band': 'Band (rider)',
+  'channelList.view.venue': 'Venue (patch)',
+  'channelList.view.stage': 'Stage (position)',
+  'channelList.view.console': 'Console (names)',
+  'channelList.view.monitor': 'Monitor paths',
+  'channelList.export': '🎚 Channel list',
+  'channelList.exportHint':
+    'The same channel list, cut for this reader. The monitor view shows paths, not mix contents \u2014 the plan does not know those.',
   // #314 Replace device section
   'replaceDevice.title': 'Replace device',
   'replaceDevice.subtitle': 'Preserve cabling',
@@ -4045,6 +4051,26 @@ export const en: Dict = {
   'analysis.address.coverage': '{done} of {total} networked devices addressed',
   'analysis.address.clean': 'Nothing open: every networked device has an address, a mask and a gateway that fits.',
   'analysis.address.export': 'Address plan as CSV',
+
+  /* Bedarfe 22/23 — Netz-Dokumente aus einem Modell. Keys: analysis.venue.* */
+  'analysis.venue.title': 'Request to the venue IT',
+  'analysis.venue.intro':
+    'The design literature prescribes the content and a joint test session, but no document. What the plan knows is stated with a number; what it cannot know is stated as a question.',
+  // {audio} und {video} werden vom Aufrufer ersetzt.
+  'analysis.venue.igmpConflict':
+    'The plan carries both: {audio} (audio vendors\u2019 field advice: turn IGMP snooping off) and {video} (does not work without multicast management). On a shared network those two pieces of advice are mutually exclusive \u2014 that belongs before the build, not into the night.',
+  'analysis.venue.rackDoor': 'Rack-door sheet',
+  'analysis.venue.vlanTable': 'VLAN table',
+  'analysis.venue.item.vlans': 'VLANs',
+  'analysis.venue.item.subnets': 'Address ranges',
+  'analysis.venue.item.ports': 'Network ports',
+  'analysis.venue.item.bandwidth': 'Media bandwidth',
+  'analysis.venue.item.multicast': 'Multicast standards',
+  'analysis.venue.item.poe': 'PoE',
+  'analysis.venue.item.igmpQuerier': 'IGMP querier',
+  'analysis.venue.item.dhcp': 'DHCP',
+  'analysis.venue.item.qos': 'QoS / DSCP',
+  'analysis.venue.item.jointTest': 'Joint test session',
   'analysis.address.mask': 'Mask',
   'analysis.address.evidence': 'Evidence',
   'analysis.address.finding': 'Finding',
