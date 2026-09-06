@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Plus,
   Pencil,
@@ -49,7 +49,10 @@ import type {
 } from '@avplan/inventory-core'
 import { useCheckoutStore } from '../../store/checkoutStore'
 import { ownershipNote, overdueSubhire, subhireStatus } from '../../lib/ownership'
-import type { CheckoutRecord } from '../../types/checkout'
+import type { CheckoutDamage, CheckoutRecord } from '../../types/checkout'
+import { damageEntries, damageTable, damageTally } from '../../lib/damageRegister'
+import { AUDIT_LABEL, auditRelocations, auditScan, auditTable, type AuditHit } from '../../lib/inventoryAudit'
+import { keepScreenAwake } from '../../lib/wakeLock'
 import {
   containerContents,
   checkoutSheet,
@@ -811,8 +814,63 @@ const LocationsTab = ({ dimsEditor, formatDims, codeCell }: LocationsTabProps) =
   const updateNode = useInventoryStore((s) => s.updateNode)
   const moveNode = useInventoryStore((s) => s.moveNode)
   const removeNode = useInventoryStore((s) => s.removeNode)
+  const updateItem = useInventoryStore((s) => s.updateItem)
+  // `moveUnit` statt `updateUnit`: ein Ortswechsel gehoert in die Historie der
+  // Einheit. Ein stilles Feld-Schreiben liesse die Frage „wann kam die
+  // hierher?" unbeantwortet — und genau die stellt jemand drei Wochen spaeter.
+  const moveUnit = useInventoryStore((s) => s.moveUnit)
   // Der Stichtag kommt EINMAL aus der Uhr und wird durchgereicht.
   const heuteIso = new Date().toISOString().slice(0, 10)
+
+  // ── BEDARF 66 + die Restreibung aus Bedarf 69 ────────────────────────────
+  //
+  // Der Ort steht FEST, bevor der erste Artikel gescannt wird -- „the scan
+  // resolves to the company default warehouse rather than where the stock is"
+  // ist genau der Fehler, den das verhindert.
+  const [auditNode, setAuditNode] = useState('')
+  const [auditDraft, setAuditDraft] = useState('')
+  const [auditHits, setAuditHits] = useState<AuditHit[]>([])
+
+  // Bedarf 69: waehrend inventiert wird, bleibt der Bildschirm an. Die Sperre
+  // haengt am geoeffneten Panel und endet mit ihm.
+  useEffect(() => {
+    if (!auditNode) return
+    const awake = keepScreenAwake()
+    return () => awake.release()
+  }, [auditNode])
+
+  const auditScanNow = () => {
+    const roh = auditDraft.trim()
+    if (!roh || !auditNode) return
+    const hit = auditScan(roh, auditNode, { items, nodes, units })
+    // Ein Lagerort-Etikett wechselt den KONTEXT, statt als Fehltreffer zu
+    // gelten: wer das Case-Etikett scannt, meint fast immer „ich stehe jetzt
+    // hier". Das ist die location-context-first-Regel im Betrieb.
+    if (hit.outcome === 'is-a-location') {
+      const ziel = nodes.find((n) => (n.code ?? '').trim().toLowerCase() === roh.toLowerCase())
+      if (ziel) {
+        setAuditNode(ziel.id)
+        setAuditHits([])
+        setAuditDraft('')
+        return
+      }
+    }
+    // Neueste oben: wer scannt, schaut auf die letzte Zeile.
+    setAuditHits((h) => [hit, ...h])
+    setAuditDraft('')
+  }
+
+  /** Den TATSAECHLICHEN Ort uebernehmen — der Beleg verlangt genau das.
+   *  Schreibend, deshalb ein eigener Klick und nicht automatisch. */
+  const auditAdopt = () => {
+    for (const r of auditRelocations(auditHits)) {
+      if (r.itemId) updateItem(r.itemId, { locationId: auditNode })
+      if (r.unitId) moveUnit(r.unitId, auditNode, nodePathLabel(nodes, auditNode))
+    }
+    // Nach dem Uebernehmen stimmt die Liste nicht mehr: sie behauptete einen
+    // Widerspruch, den es nicht mehr gibt.
+    setAuditHits([])
+  }
 
   const handlePackList = async (node: StorageNode) => {
     const list = derivePackList(node.id, { items, nodes, units }, heuteIso)
@@ -934,6 +992,17 @@ const LocationsTab = ({ dimsEditor, formatDims, codeCell }: LocationsTabProps) =
                 </button>
               </>
             )}
+            {/* BEDARF 66 — „verify this rack". Der Knopf sitzt an JEDER
+                Lagerstelle, nicht nur an Containern: ein Regal wird genauso
+                inventiert wie ein Case, und die Frage ist dieselbe. */}
+            <button
+              type="button"
+              onClick={() => setAuditNode(auditNode === node.id ? '' : node.id)}
+              className="rounded p-1 text-cp-text-muted hover:bg-cp-surface-4 hover:text-cp-text"
+              title={t('inventory.auditStart', 'Inventur an diesem Ort')}
+            >
+              <ScanLine size={13} />
+            </button>
             <button
               type="button"
               onClick={() => setForm({ name: '', kind: container ? 'case' : 'shelf', parentId: node.id })}
@@ -950,6 +1019,89 @@ const LocationsTab = ({ dimsEditor, formatDims, codeCell }: LocationsTabProps) =
             </button>
           </div>
         </div>
+
+        {/* BEDARF 66 — die Inventur an DIESEM Ort. Zwei Farben („im Bestand /
+            nicht im Bestand") beantworten die Frage nicht, die im Lager
+            gestellt wird: fast alles ist im Bestand, und „am falschen Ort" ist
+            nach jedem Load-out der Normalfall, nicht die Ausnahme. */}
+        {auditNode === node.id && (
+          <div
+            style={{ marginLeft: depth * 16 + 22 }}
+            className="mb-1 mt-1 rounded border border-cp-accent/40 bg-cp-surface-2 p-2"
+          >
+            <div className="mb-1.5 flex flex-wrap items-center gap-2">
+              <span className="font-medium text-cp-text">
+                {format(t('inventory.auditTitle', 'Inventur: {name}'), { name: node.name })}
+              </span>
+              <input
+                value={auditDraft}
+                onChange={(e) => setAuditDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter scannt weiter, statt ein Formular abzuschicken
+                  // (Bedarf 69, snipe-it#17057). Das Feld leert sich selbst —
+                  // der naechste Code kann sofort kommen.
+                  if (e.key === 'Enter') auditScanNow()
+                }}
+                autoFocus
+                placeholder={t('inventory.auditPh', 'Code scannen — Lagerort-Etikett wechselt den Ort')}
+                className="min-w-[14rem] flex-1 rounded border border-cp-border bg-cp-surface-3 px-2 py-1"
+              />
+              <button
+                type="button"
+                disabled={auditHits.length === 0}
+                onClick={() => {
+                  const t2 = auditTable(auditHits, nodes, node.id)
+                  downloadBlob(`inventur-${node.name}.csv`, toCsv(t2.headers, t2.rows), 'text/csv')
+                }}
+                className="flex items-center gap-1 text-cp-text-secondary hover:text-cp-text disabled:opacity-40"
+              >
+                <Download size={12} /> CSV
+              </button>
+              <button
+                type="button"
+                disabled={auditRelocations(auditHits).length === 0}
+                onClick={auditAdopt}
+                title={t(
+                  'inventory.auditAdoptHint',
+                  'Schreibt diesen Ort auf alle am falschen Ort gefundenen Objekte — der Bestand folgt damit dem, was tatsächlich hier liegt',
+                )}
+                className="rounded border border-cp-border px-2 py-1 text-cp-text-secondary hover:text-cp-text disabled:opacity-40"
+              >
+                {format(t('inventory.auditAdopt', 'Ort übernehmen ({n})'), {
+                  n: auditRelocations(auditHits).length,
+                })}
+              </button>
+            </div>
+            {auditHits.length === 0 ? (
+              <div className="text-cp-text-muted">
+                {t('inventory.auditEmpty', 'Noch nichts gescannt.')}
+              </div>
+            ) : (
+              <ul className="flex max-h-56 flex-col gap-0.5 overflow-y-auto">
+                {auditHits.map((h, i) => (
+                  <li
+                    key={`${h.code}-${i}`}
+                    className={
+                      h.outcome === 'expected-here'
+                        ? 'text-cp-text-secondary'
+                        : h.outcome === 'wrong-place'
+                          ? 'text-cp-warn'
+                          : 'text-cp-danger'
+                    }
+                  >
+                    {/* Modell UND Ort in jeder Zeile — beides verlangt der
+                        Beleg ausdruecklich, und ohne beides „finds nothing
+                        actionable". */}
+                    {AUDIT_LABEL[h.outcome]} · {h.label || h.code}
+                    {h.model && h.model !== h.label ? ` (${h.model})` : ''}
+                    {h.expected ? ` — ${format(t('inventory.auditExpected', 'erwartet in {ort}'), { ort: h.expected })}` : ''}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {directItems.length > 0 && (
           <div style={{ marginLeft: depth * 16 + 22 }} className="mt-0.5 mb-0.5 flex flex-wrap gap-1">
             {directItems.map((it) => (
@@ -1658,6 +1810,10 @@ const CheckoutTab = () => {
   // Bedarf 16 — der Papierweg zurueck. Der Code vom Blatt wird gegen die
   // Ausgabeliste gehalten; das Abhaken auf Papier wird damit zur EINGABE fuer
   // den Datensatz statt zu einem zweiten, der ihm widerspricht.
+  // Bedarf 68 — Schaeden, aufgenommen in dem Moment, in dem das Objekt in der
+  // Hand ist. Schluessel: `recordId` → `kind:refId` → Text.
+  const [damageDraft, setDamageDraft] = useState<Record<string, Record<string, string>>>({})
+  const [damageOpen, setDamageOpen] = useState<Record<string, boolean>>({})
   const [scanDraft, setScanDraft] = useState<Record<string, string>>({})
   const [scanEcho, setScanEcho] = useState<Record<string, { text: string; ok: boolean }>>({})
 
@@ -1665,6 +1821,9 @@ const CheckoutTab = () => {
   const container = useMemo(() => nodes.filter((n) => isContainerKind(n.kind)), [nodes])
   const offen = useMemo(() => records.filter((r) => !r.in), [records])
   const zurueck = useMemo(() => records.filter((r) => r.in), [records])
+  // Bedarf 68 — die aufgenommenen Schaeden mit ihrer abgeleiteten Zuordnung.
+  const schaeden = useMemo(() => damageEntries(records), [records])
+  const haeufung = useMemo(() => damageTally(records, 'person'), [records])
   // Der Stichtag kommt EINMAL aus der Uhr und wird durchgereicht — sonst
   // beantwortet dieselbe Zeile in zwei Zellen zwei verschiedene Tage.
   const heute = new Date().toISOString().slice(0, 10)
@@ -1691,6 +1850,22 @@ const CheckoutTab = () => {
       setProjectName('')
       setDueBack('')
     }
+  }
+
+  /** Die aufgenommenen Schaeden eines Vorgangs, als Belegzeilen. */
+  const damageOf = (r: CheckoutRecord): CheckoutDamage[] => {
+    const entwurf = damageDraft[r.id] ?? {}
+    return r.contents
+      .map((line) => ({ line, note: (entwurf[`${line.kind}:${line.refId}`] ?? '').trim() }))
+      .filter((d) => d.note.length > 0)
+  }
+
+  const bucheZurueck = (r: CheckoutRecord) => {
+    checkIn(snap, r.id, undefined, damageOf(r))
+    // Der Entwurf ist verbraucht: er steht jetzt im Beleg, und ein
+    // stehengebliebener Text landete beim naechsten Vorgang im falschen.
+    setDamageDraft((d) => ({ ...d, [r.id]: {} }))
+    setDamageOpen((o) => ({ ...o, [r.id]: false }))
   }
 
   const scanBack = (r: CheckoutRecord) => {
@@ -1862,9 +2037,21 @@ const CheckoutTab = () => {
                     >
                       {t('inventory.checkout.sheet', 'Schein')}
                     </button>
+                    {/* Bedarf 68: der Schaden wird aufgenommen, BEVOR
+                        zurueckgebucht wird — danach ist der Beleg zu, und ein
+                        Beleg darf nicht nachtraeglich anders lauten. */}
                     <button
                       type="button"
-                      onClick={() => checkIn(snap, r.id)}
+                      onClick={() => setDamageOpen((o) => ({ ...o, [r.id]: !o[r.id] }))}
+                      className="mr-2 text-cp-text-secondary hover:text-cp-text"
+                    >
+                      {format(t('inventory.checkout.damageBtn', 'Schaden ({n})'), {
+                        n: damageOf(r).length,
+                      })}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => bucheZurueck(r)}
                       className="mr-2 text-cp-text-secondary hover:text-cp-text"
                     >
                       {t('inventory.checkout.doIn', 'Zurückbuchen')}
@@ -1880,6 +2067,46 @@ const CheckoutTab = () => {
                   </td>
                 </tr>
               ))}
+              {/* Bedarf 68 — die Aufnahme selbst. Eine Zeile je Position des
+                  Vorgangs; wer nichts eintraegt, hat keinen Schaden gemeldet.
+                  KEIN Ankreuzfeld: „beschaedigt" ohne Angabe hilft weder der
+                  Werkstatt noch der Rechnung. */}
+              {offen
+                .filter((r) => damageOpen[r.id])
+                .map((r) => (
+                  <tr key={`${r.id}-damage`} className="border-t border-cp-border-muted">
+                    <td colSpan={3} className="bg-cp-surface-2 px-2 py-1.5">
+                      <div className="mb-1 text-cp-text-secondary">
+                        {format(t('inventory.checkout.damageTitle', 'Schaden aufnehmen — {name}'), {
+                          name: r.nodeLabel,
+                        })}
+                      </div>
+                      <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
+                        {r.contents.map((line) => {
+                          const key = `${line.kind}:${line.refId}`
+                          return (
+                            <li key={key} className="flex items-center gap-2">
+                              <span className="min-w-[9rem] flex-none truncate text-cp-text-muted">
+                                {line.label}
+                              </span>
+                              <input
+                                value={damageDraft[r.id]?.[key] ?? ''}
+                                onChange={(e) =>
+                                  setDamageDraft((d) => ({
+                                    ...d,
+                                    [r.id]: { ...(d[r.id] ?? {}), [key]: e.target.value },
+                                  }))
+                                }
+                                placeholder={t('inventory.checkout.damagePh', 'Was ist kaputt?')}
+                                className="flex-1 rounded border border-cp-border bg-cp-surface-3 px-1.5 py-1"
+                              />
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         )}
@@ -1970,6 +2197,59 @@ const CheckoutTab = () => {
                 </li>
               ))}
           </ul>
+        </div>
+      )}
+
+      {/* BEDARF 68 — Schaden MIT ZUORDNUNG. Der Bedarf nennt sie „the valuable
+          field" (job, person, time, container) und das Foto ausdruecklich
+          nicht. Die Zuordnung steht nicht am Schaden, sondern wird aus dem
+          Vorgang abgeleitet — vier gespeicherte Felder waeren von der ersten
+          Korrektur am Vorgang an falsch.
+
+          Die Haeufungs-Zeile ist der Wunsch aus dem Beleg (snipe-it#13153):
+          „to see whether particular people/locations tend to break devices
+          more often". Sie ZAEHLT und urteilt nicht — ein Werkzeug, das aus
+          drei Vorfaellen eine Schuld macht, wird beim vierten nicht mehr
+          gefuettert. */}
+      {schaeden.length > 0 && (
+        <div className="rounded border border-cp-danger/40">
+          <div className="flex items-center justify-between border-b border-cp-border-muted bg-cp-surface-2 px-2 py-1">
+            <span className="flex items-center gap-1.5 font-medium">
+              <AlertTriangle size={13} />
+              {format(t('inventory.checkout.damageTitleList', 'Schäden ({n})'), { n: schaeden.length })}
+            </span>
+            <button
+              type="button"
+              onClick={() => csv('schaeden.csv', damageTable(records))}
+              className="flex items-center gap-1 text-cp-text-secondary hover:text-cp-text"
+            >
+              <Download size={12} /> CSV
+            </button>
+          </div>
+          <ul className="flex flex-col gap-0.5 px-2 py-1.5">
+            {schaeden.slice(0, 12).map((e, i) => (
+              <li key={`${e.recordId}-${e.label}-${i}`} className="text-cp-text-secondary">
+                {format(
+                  t('inventory.checkout.damageLine', '{at} · {label}: {note} — {job}, an {person} ({container})'),
+                  {
+                    at: e.at.slice(0, 10),
+                    label: e.label,
+                    note: e.note,
+                    job: e.job,
+                    person: e.person,
+                    container: e.container,
+                  },
+                )}
+              </li>
+            ))}
+          </ul>
+          {haeufung.length > 1 && (
+            <div className="border-t border-cp-border-muted px-2 py-1.5 text-cp-text-muted">
+              {format(t('inventory.checkout.damageTally', 'Häufung nach Ausgabe an: {list}'), {
+                list: haeufung.map((h) => `${h.key} (${h.count})`).join(', '),
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
