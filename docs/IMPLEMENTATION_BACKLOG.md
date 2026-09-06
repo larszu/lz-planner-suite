@@ -1356,6 +1356,9 @@ gehalten, nicht als Versäumnis:
 | B-41.2: `avplan-intercom` wird gelesen, zusammengefuehrt statt ersetzt | `Broadcast-intercom#9` |
 | B-41.3: Medien-Station ausgewiesen — Bestand statt Konfigurationsziel | (Befund, kein Code) |
 | B-39.3: Projekte als Dateien statt nur `localStorage` | `suite#103` |
+| Initiative 8: abgeleiteter Adressplan, mit Beleg je Zeile | `cable#701` |
+| ADR-004 Inkrement 3: Dokument-Code auf allen Listen-Ausdrucken | `cable#702` |
+| Kundenname im vendorten `miscCatalog.ts`, upstream laengst anonymisiert | `suite#104` |
 | Drei Stempel-Kopien nur per Ankerwert gesichert; Verhaltens-Guard fehlte | `suite#101` |
 | Inline-Typ-Import liess einen Test als Suite-Abweichung dastehen | `cable#680` |
 | `mvr:check` lief bei keinem Merge; berechneter Guard dagegen | `light#64` |

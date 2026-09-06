@@ -87,11 +87,39 @@ Aufrufer entscheidet; die Bauer bleiben pur.
 | --- | --- | --- |
 | 1 | `documentStamp` + fünf Installateur-CSVs + PDF-Titelblock + Übergabe-Dokument — erledigt in `cable-planner#612` | Die Ableitung und die Stellen, die heute etwas Falsches behaupten. Reine Ableitung, keine Persistenz |
 | 2 | Dokument-Code `cableplanner://doc/<id>?s=<stand>`, Register der Ableitungen, Standvergleich im Mobile-Viewer — erledigt in `cable-planner#613` | Braucht Inkrement 1 als Datenquelle; der Record-Rückweg existiert bereits und wird erweitert, nicht ersetzt |
-| 3 | Der Stand-Code auf den CSV-/Listen-Ausdrucken selbst (heute trägt nur das Plan-PDF einen QR; die Listen tragen die acht Zeichen als Text) | Erst wenn 2 steht, gibt es etwas zu drucken, das sich prüfen lässt |
+| 3 | Der Stand-Code auf den CSV-/Listen-Ausdrucken selbst — erledigt in `cable-planner#702`, als **Text** statt als QR | Erst wenn 2 steht, gibt es etwas zu drucken, das sich prüfen lässt |
 | 4 | `multicam-planner` / `light-planner`: Stand-Angabe auf deren Ausdrucke — erledigt in `light-planner#70` und `multicam-planner#91` | Andere Apps, eigener Rhythmus — die Ableitung ist teilbar, die Dokumente sind es nicht |
 
 Inkrement 2 bewusst nicht zuerst: ein QR-Code auf einem Dokument, dessen Stand niemand berechnen
 kann, wäre ein Bild ohne Inhalt.
+
+### Was Inkrement 3 dazugelernt hat
+
+**Das Medium entscheidet die Form, nicht der Wunsch.** Das Inkrement war als „QR
+auf den Listen" gedacht — analog zum Plan-PDF. Ein CSV trägt aber kein Bild, und
+der Listen-Ausdruck entsteht aus Excel: jeder dort erzeugte QR überlebte den Weg
+nicht. Der Code steht deshalb als **Text** in der Fußnote. Er ist abtippbar, und
+wenn jemand das Blatt fotografiert, findet ihn dieselbe Suche wie einen
+gescannten — `parseDocQrPayload` war schon auf diese Toleranz gebaut.
+
+**Was der Code über die acht Zeichen hinaus kann**, und nur das rechtfertigt
+ihn: die acht Zeichen allein beantworten im Mobile-Viewer „aktuell" oder „gehört
+zu keinem aktuellen Blatt". Der Code nennt zusätzlich das Dokument — aus
+„unbekannt" wird „Pull-Liste: VERALTET, aktueller Stand #xyz". Auf der Baustelle
+ist das der Unterschied zwischen „irgendwas stimmt nicht" und „hol dir die neue
+Pull-Liste".
+
+**Eine Kennung außerhalb des Registers wäre schlimmer als keine.** Der Viewer
+antwortet darauf „Stand nicht prüfbar" — ein Code, der Genauigkeit vortäuscht
+und keine liefert. Ein Test prüft jede der sechs Kennungen einzeln gegen
+`currentStand`.
+
+**Die geteilte Zeile bleibt geteilt.** `stampLine` ist das Format, das alle drei
+Planer tragen, und `stamp:parity` hält es Zeichen für Zeichen gegeneinander. Der
+Code hängt dahinter statt darin; light- und multicam-planner haben kein
+Dokument-Register und bekommen ihn nicht. Eine Erweiterung, die an einer
+geteilten Stelle ansetzt, hätte den Guard entweder gebrochen oder ihn dazu
+gezwungen, drei Apps zu etwas zu verpflichten, das nur eine braucht.
 
 ### Was Inkrement 4 dazugelernt hat
 
