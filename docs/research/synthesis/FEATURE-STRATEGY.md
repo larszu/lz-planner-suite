@@ -256,6 +256,7 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 149 | Eigene Datei, offline, ohne Abo oder Dongle — als Positionsaussage, siehe Abschnitt 1b (P4) | Abschnitt 1b |
 | 62 | Die Uebergabe an die Post: Position → Mischer-Eingang → ISO-/Aufnahmekanal → Karten-Praefix (P2) | `cable#748` |
 | 63 | Der Bildzustand gehoert zur Position — Szenendatei, Datum, Urheber, Referenz (P2) | `multicam#98` |
+| 50 | Das Blatt fuer die Schicht: Bildzustand, Bedienfeld, Fehler und Befunde je Position (P2) | `multicam#99` |
 
 **Nachtrag 2026-09-07 — diese Tabelle war neunundzwanzig Zeilen im Rueckstand.**
 Sie endete bei `cable#727` und `light#72`, obwohl seither in drei Repos

@@ -23,7 +23,7 @@
     "drift": 24,
     "total": 40,
     "missingUpstream": false,
-    "upstreamSha": "0e3aa2143721"
+    "upstreamSha": "eb244aaaaf73"
   },
   "light-planner": {
     "only-upstream": 0,

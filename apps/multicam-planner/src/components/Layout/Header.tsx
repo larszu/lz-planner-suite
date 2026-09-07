@@ -12,6 +12,9 @@ import { useTranslation, format } from '../../i18n';
 import { isEmbedded } from '../../hooks/useIsEmbedded';
 import { alertDialog } from '@avplan/ui';
 import ZoomControl from './ZoomControl';
+import { buildShiftReport, printShiftReport } from '../../utils/shiftReport';
+import { shiftReportFingerprint } from '../../utils/documentContent';
+import { buildStamp } from '../../utils/documentStamp';
 
 type TFn = (key: string, en: string) => string;
 
@@ -153,6 +156,21 @@ export default function Header({
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [loadProject]);
+
+  // Bedarf 50 — das Uebergabe-Blatt. Der Stempel kommt aus DERSELBEN
+  // Ableitung wie der Bericht (`shiftReportFingerprint`), sonst stempelt er
+  // etwas anderes, als gedruckt wird — die Regel von ADR-004.
+  const handlePrintShift = useCallback(() => {
+    setExportMenuOpen(false);
+    const s = useStore.getState();
+    const bericht = buildShiftReport(s.cameras);
+    const stamp = buildStamp({
+      project: s.venue.name,
+      current: shiftReportFingerprint(bericht),
+      now: new Date(),
+    });
+    printShiftReport(bericht, s.venue.name, stamp);
+  }, []);
 
   const handleExport = useCallback((mode: ExportMode = 'current') => {
     setExportMenuOpen(false);
@@ -557,6 +575,19 @@ export default function Header({
               >
                 <div className="font-medium">{t('header.export.allWidetele', 'All — wide + tele')}</div>
                 <div className="text-[10px] text-gray-500">{t('header.export.allWidetele.desc', 'Two PNGs per camera (lens min and max)')}</div>
+              </button>
+              {/* Bedarf 50 — die Schicht-Uebergabe. Sie steht hier und nicht
+                  bei den Kamerakarten, weil sie kein Bild ist: ein Blatt ueber
+                  ALLE Positionen, das jemand ausdruckt und weiterreicht. */}
+              <button
+                type="button"
+                onClick={handlePrintShift}
+                className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-bc-border hover:text-white transition-colors border-t border-bc-border"
+              >
+                <div className="font-medium">{t('header.export.shift', 'Print shift handover')}</div>
+                <div className="text-[10px] text-gray-500">
+                  {t('header.export.shift.desc', 'Paint, panel, faults and findings per position')}
+                </div>
               </button>
             </div>
           )}

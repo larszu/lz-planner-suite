@@ -66,6 +66,9 @@ export const header: Record<string, string> = {
   'header.export.widetele.desc': 'Ausgewählte Kamera bei minimaler und maximaler Brennweite',
   'header.export.allWidetele': 'Alle — Weit + Tele',
   'header.export.allWidetele.desc': 'Zwei PNGs pro Kamera (Brennweite min und max)',
+  // Bedarf 50 — die Schicht-Uebergabe.
+  'header.export.shift': 'Schicht-Übergabe drucken',
+  'header.export.shift.desc': 'Bildzustand, Bedienfeld, Fehler und Befunde je Position',
 
   // ── App: Panels / Sidebar ──
   'header.panel.unknown': 'Unbekanntes Panel: {component}',
