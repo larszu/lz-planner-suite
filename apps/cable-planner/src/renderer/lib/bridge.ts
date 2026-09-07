@@ -1,5 +1,6 @@
 import type { CablePlannerProject } from '../types/project'
 import type { NetboxRack, NetboxSite, NetboxSnapshot } from '../types/netbox'
+import type { AttachResult, ReceiptContent } from '../types/receipt'
 import { downloadBlob } from './downloadBlob'
 
 /**
@@ -171,6 +172,17 @@ type CablePlannerApi = {
     read: () => Promise<DocumentLogFile>
     append: (entry: DocumentLogRecord) => Promise<DocumentLogFile>
     clear: () => Promise<DocumentLogFile>
+  }
+  /**
+   * Bedarf 97 — Belegdateien an Auslagenzeilen. Im Browser gibt es keinen Ort
+   * neben dem Projekt; der Fallback lehnt deshalb benannt ab („noch nicht
+   * gespeichert") statt so zu tun, als haette er den Beleg genommen.
+   */
+  receipt: {
+    pick: (projectPath?: string) => Promise<{ canceled: boolean; results: AttachResult[] }>
+    attach: (projectPath: string | undefined, sourcePath: string) => Promise<AttachResult>
+    read: (projectPath: string | undefined, storedAs: string) => Promise<ReceiptContent>
+    reveal: (projectPath: string | undefined, storedAs: string) => Promise<boolean>
   }
   project: {
     newProject: () => Promise<void>
@@ -371,6 +383,8 @@ type CablePlannerApi = {
     stop: () => Promise<{ ok: boolean }>
     status: () => Promise<MobileShareInfo & { running: boolean }>
     setProject: (project: unknown) => Promise<{ ok: boolean }>
+    /** Bedarf 39 — der fertige Crew-Kalender fuer den abonnierbaren Feed. */
+    setCrewCalendar: (ics: string | null) => Promise<{ ok: boolean }>
     /**
      * BEDARF 133 — Adressen ueber das LAN hinaus freigeben.
      *
@@ -730,6 +744,12 @@ const webFallbackApi: CablePlannerApi = {
       }
     },
   },
+  receipt: {
+    pick: async () => ({ canceled: false, results: [{ ok: false as const, reason: 'no-project-path' as const }] }),
+    attach: async () => ({ ok: false as const, reason: 'no-project-path' as const }),
+    read: async () => ({ ok: false as const, reason: 'no-project-path' as const }),
+    reveal: async () => false,
+  },
   documentLog: (() => {
     // Sitzungs-Register: im Browser gibt es kein userData-Verzeichnis. Es
     // verhaelt sich sonst gleich, damit die Oberflaeche nicht zwei Faelle
@@ -966,6 +986,7 @@ const webFallbackApi: CablePlannerApi = {
     stop: async () => ({ ok: true }),
     status: async () => ({ running: false, port: 0, urls: [], hasProject: false, withheld: [] }),
     setProject: async () => ({ ok: true }),
+    setCrewCalendar: async () => ({ ok: true }),
     setAllowBeyondLan: async () => {
       throw new Error('Handy-Zugriff erfordert die Desktop-App.')
     },

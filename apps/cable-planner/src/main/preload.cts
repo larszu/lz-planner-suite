@@ -247,6 +247,18 @@ contextBridge.exposeInMainWorld('cablePlanner', {
       ipcRenderer.invoke('documentLog:append', entry) as Promise<unknown>,
     clear: () => ipcRenderer.invoke('documentLog:clear') as Promise<unknown>,
   },
+  // Bedarf 97 — die Belegdatei haengt an der Auslagenzeile. Der Renderer
+  // reicht nur Zeichenketten hin; jede Pfadpruefung passiert in main.
+  receipt: {
+    pick: (projectPath?: string) =>
+      ipcRenderer.invoke('receipt:pick', projectPath) as Promise<unknown>,
+    attach: (projectPath: string | undefined, sourcePath: string) =>
+      ipcRenderer.invoke('receipt:attach', projectPath, sourcePath) as Promise<unknown>,
+    read: (projectPath: string | undefined, storedAs: string) =>
+      ipcRenderer.invoke('receipt:read', projectPath, storedAs) as Promise<unknown>,
+    reveal: (projectPath: string | undefined, storedAs: string) =>
+      ipcRenderer.invoke('receipt:reveal', projectPath, storedAs) as Promise<boolean>,
+  },
   logs: {
     rendererError: (payload: { message: string; stack?: string; source?: string }) =>
       ipcRenderer.send('logs:renderer-error', payload),
@@ -363,6 +375,9 @@ contextBridge.exposeInMainWorld('cablePlanner', {
       }>,
     setProject: (project: unknown) =>
       ipcRenderer.invoke('mobileShare:setProject', project) as Promise<{ ok: boolean }>,
+    /** Bedarf 39 — der fertige Crew-Kalender fuer den abonnierbaren Feed. */
+    setCrewCalendar: (ics: string | null) =>
+      ipcRenderer.invoke('mobileShare:setCrewCalendar', ics) as Promise<{ ok: boolean }>,
     // v7.9.3 — Subscriber für Mobile-Check-State-Updates. Main schickt
     // 'mobileShare:checksUpdate' wenn POST /checks reinkommt; Renderer
     // updated daraufhin project.checkState im Store.

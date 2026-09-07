@@ -66,6 +66,7 @@ Alle IPC-Channels sind nach Domäne präfixiert. Definitionen in
 | `logs:*` | `logIpc.ts` | `renderer-error` (Renderer → Main, one-way) |
 | `signaling:*` | `signalingIpc.ts` | LAN-Signaling-Relay für die Yjs/WebRTC-Kollaboration (#413) |
 | `collabDiscovery:*` | `collabDiscoveryIpc.ts` | Bonjour/mDNS-Discovery von Kollaborations-Peers im LAN |
+| `receipt:*` | `receiptIpc.ts` | `pick`, `attach`, `read`, `reveal` — die Belegdatei einer Auslagenzeile (Bedarf 97). Die Datei liegt in `Belege/` **neben** dem Projekt und nicht im Projekt-File: ein Foto von zwei Megabyte in jeder `.avplan` verteuerte jede Speicherung und jeden Versand. Gespeichert wird unter dem SHA-256 des Inhalts, damit derselbe Beleg nur einmal liegt. Der Dateidialog läuft in main, der gewählte absolute Pfad erreicht den Renderer gar nicht; `reveal` zeigt den Ordner (`showItemInFolder`) statt die Datei zu öffnen — sie kommt von außen. |
 | `documentLog:*` | `documentLogIpc.ts` | `append`, `read`, `clear` — das Register der ausgegebenen Dokumente (ADR-004). Es überdauert die Sitzung und gehört damit auf die Platte. |
 | `lexware:*` | `lexwareIpc.ts` | **Nur in der Suite-Kopie** (`av-planner-suite/apps/cable-planner`): Brücke zwischen Renderer/Shell und dem Lexware-Office-Client. Der API-Key bleibt in `main` (keytar), der Renderer sieht ihn nie. Diese Domäne gibt es upstream nicht — sie ist Teil des Suite-Overlays. |
 
