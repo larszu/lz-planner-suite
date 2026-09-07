@@ -360,7 +360,13 @@ export function parseDelimited(text: string): { headers: string[]; rows: string[
       } else feld += c
       continue
     }
-    if (c === '"') inQ = true
+    // Ein Anfuehrungszeichen oeffnet nur am FELD-ANFANG. Steht es mitten in
+    // einem unquotierten Feld, ist es ein Zeichen wie jedes andere — so
+    // schreibt es RFC 4180, und so kommt es aus der Praxis: ein
+    // Programmpunkt heisst `Panel "Zukunft der Halle"`, und ein Leser, der
+    // hier den Quote-Modus anschaltet, frisst die Anfuehrungszeichen und
+    // haengt sich am naechsten Trennzeichen auf.
+    if (c === '"' && feld === '') inQ = true
     else if (c === delim) {
       zeile.push(feld)
       feld = ''
@@ -539,8 +545,8 @@ export function rundownFindings(rundown: Rundown, seed: SuiteSeed): RundownFindi
         severity: 'warning',
         itemId: item.id,
         message: item.startText
-          ? `„${item.title}" traegt die Zeit „${item.startText}", die nicht zu lesen war.`
-          : `„${item.title}" hat keine Zeit — der Punkt laesst sich nicht einordnen.`,
+          ? `„${item.title}" trägt die Zeit „${item.startText}", die nicht zu lesen war.`
+          : `„${item.title}" hat keine Zeit — der Punkt lässt sich nicht einordnen.`,
       })
     }
   }

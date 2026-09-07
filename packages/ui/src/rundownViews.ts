@@ -104,8 +104,8 @@ const COLUMN_HEADER: Readonly<Record<ViewColumn, string>> = {
  * gedruckte Exemplar als veraltet.
  */
 const COLUMN_LEGEND: Readonly<Record<ViewColumn, string>> = {
-  cue: 'Die Cue-Nummer aus der Tabelle des Kunden, unveraendert uebernommen.',
-  time: 'Der geplante Beginn. Steht dort ein Text statt einer Uhrzeit, war die Angabe nicht als Zeit lesbar und wird unveraendert gezeigt statt gedeutet.',
+  cue: 'Die Cue-Nummer aus der Tabelle des Kunden, unverändert übernommen.',
+  time: 'Der geplante Beginn. Steht dort ein Text statt einer Uhrzeit, war die Angabe nicht als Zeit lesbar und wird unverändert gezeigt statt gedeutet.',
   title: 'Der Programmpunkt, wie er im Ablauf des Kunden heisst.',
   duration: 'Die geplante Dauer in Minuten.',
   gear: 'Das Material aus dem technischen Plan, das an diesem Punkt haengt. Der Name kommt aus dem Plan von heute — wurde etwas umbenannt, steht hier der neue Name. Steht „(nicht mehr im Plan)" dabei, ist das Objekt entfernt worden und der Punkt ist offen.',

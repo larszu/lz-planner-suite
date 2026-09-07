@@ -210,3 +210,22 @@ describe('Eine Quelle, N Sichten', () => {
     expect(quelle).not.toContain('Date.now')
   })
 })
+
+describe('Meldungstexte in richtigem Deutsch', () => {
+  it('benutzt keinen ASCII-Ersatz in String-Literalen', () => {
+    // AUFGEFALLEN AM SCREENSHOT (2026-09-07), nicht am Test: auf der Karte
+    // stand „traegt die Zeit". Die KOMMENTARE dieser Codebasis sind bewusst
+    // ASCII; die STRINGS stehen im Dialog, auf der Karte und im CSV-Blatt
+    // und werden dort neben richtig gesetzten Umlauten gelesen.
+    const ohneKommentare = quelle
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^[ \t]*\/\/.*$/gm, '')
+    const literale = [...ohneKommentare.matchAll(/'((?:[^'\\\n]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g)]
+      .map((m) => m[1] ?? m[2])
+      .filter(Boolean)
+    const ersatz =
+      /(Geraet|gehoert|ueber|waere|wuerde|fuer |Schluessel|laesst|traegt|aeuss|fuehrt|koenn|muess|naechst|loesch|groess|zurueck|Laenge|Groesse|Aenderung|unveraendert)/
+    const schlecht = literale.filter((l) => ersatz.test(l))
+    expect(schlecht, `ASCII-Ersatz in Texten: ${schlecht.join(' | ')}`).toEqual([])
+  })
+})

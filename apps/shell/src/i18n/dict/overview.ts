@@ -73,7 +73,7 @@ export const overview: Record<string, string> = {
   'rundown.import.hint':
     'CSV, TSV or a range copied out of the spreadsheet. Columns are suggested \u2014 anything that does not fit is assigned here. Nothing is taken over until you confirm.',
   'rundown.import.ignore': 'do not import',
-  'rundown.import.count': '{n} items, {s} rows skipped, {u} mentions unresolved',
+  'rundown.import.count': 'Items: {n} · skipped: {s} · unresolved mentions: {u}',
   'rundown.import.skipped': 'Row {row}: {reason}',
   'rundown.import.unknown': 'Row {row}: \u201C{text}\u201D does not exist in the plan',
   'rundown.import.ambiguous': 'Row {row}: \u201C{text}\u201D matches {n} objects in the plan',

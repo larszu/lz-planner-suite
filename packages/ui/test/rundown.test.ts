@@ -81,6 +81,15 @@ describe('parseDelimited', () => {
     expect(rows[0]).toEqual(['14:20', 'Panel, vier Handhelds'])
   })
 
+  it('laesst ein Anfuehrungszeichen MITTEN im Feld stehen', () => {
+    // `Panel "Zukunft der Halle"` ist ein Programmpunkt und kein quotiertes
+    // Feld. Wer hier den Quote-Modus anschaltet, frisst die
+    // Anfuehrungszeichen und haengt sich am naechsten Trennzeichen auf.
+    const { rows } = parseDelimited('Nr;Punkt\n3;Panel "Zukunft der Halle";x')
+    expect(rows[0][1]).toBe('Panel "Zukunft der Halle"')
+    expect(rows[0][2]).toBe('x')
+  })
+
   it('versteht verdoppelte Anfuehrungszeichen und CRLF', () => {
     const { headers, rows } = parseDelimited('a,b\r\n1,"er sagte ""ja"""\r\n')
     expect(headers).toEqual(['a', 'b'])
@@ -369,5 +378,24 @@ describe('E-18 — nur lesen', () => {
 
   it('kennt genau die Felder, die die Zuordnung anbieten darf', () => {
     expect(RUNDOWN_FIELDS).toEqual(['cue', 'title', 'start', 'duration', 'note', 'refs'])
+  })
+})
+
+describe('Meldungstexte in richtigem Deutsch', () => {
+  it('benutzt keinen ASCII-Ersatz in String-Literalen', () => {
+    // AUFGEFALLEN AM SCREENSHOT (2026-09-07), nicht am Test: auf der Karte
+    // stand „traegt die Zeit". Die KOMMENTARE dieser Codebasis sind bewusst
+    // ASCII; die STRINGS stehen im Dialog, auf der Karte und im CSV-Blatt
+    // und werden dort neben richtig gesetzten Umlauten gelesen.
+    const ohneKommentare = quelle
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^[ \t]*\/\/.*$/gm, '')
+    const literale = [...ohneKommentare.matchAll(/'((?:[^'\\\n]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g)]
+      .map((m) => m[1] ?? m[2])
+      .filter(Boolean)
+    const ersatz =
+      /(Geraet|gehoert|ueber|waere|wuerde|fuer |Schluessel|laesst|traegt|aeuss|fuehrt|koenn|muess|naechst|loesch|groess|zurueck|Laenge|Groesse|Aenderung|unveraendert)/
+    const schlecht = literale.filter((l) => ersatz.test(l))
+    expect(schlecht, `ASCII-Ersatz in Texten: ${schlecht.join(' | ')}`).toEqual([])
   })
 })

@@ -18,6 +18,7 @@ import {
   type RundownField,
   type RundownAudience,
   type RundownPreview,
+  type RowSkipReason,
 } from '@avplan/ui'
 // `SuiteSeed` kommt aus dem Bruecken-Eintrag und nicht aus dem Haupt-Eintrag:
 // dort ist es zuhause (`@avplan/ui/embed` re-exportiert `seed.ts`), und es
@@ -269,7 +270,7 @@ function RundownImportDialog({
                     <option value="">{t('rundown.import.ignore', 'nicht übernehmen')}</option>
                     {RUNDOWN_FIELDS.map((f) => (
                       <option key={f} value={f}>
-                        {t(`rundown.field.${f}`, f)}
+                        {t(`rundown.field.${f}`, FIELD_LABEL[f])}
                       </option>
                     ))}
                   </select>
@@ -281,7 +282,13 @@ function RundownImportDialog({
               <>
                 <p className="text-av-text">
                   {format(
-                    t('rundown.import.count', '{n} Punkte, {s} Zeilen übersprungen, {u} Nennungen ohne Zuordnung'),
+                    t(
+                      'rundown.import.count',
+                      // Plural-frei formuliert: „1 Zeilen übersprungen" stand
+                      // so im Dialog. Drei Zählwörter mit je zwei Formen wären
+                      // sechs Strings; die Doppelpunkt-Form braucht keine.
+                      'Punkte: {n} · übersprungen: {s} · Nennungen ohne Zuordnung: {u}',
+                    ),
                     {
                       n: preview.items.length,
                       s: preview.skipped.length,
@@ -295,7 +302,7 @@ function RundownImportDialog({
                       <li key={`s${s.row}`}>
                         {format(t('rundown.import.skipped', 'Zeile {row}: {reason}'), {
                           row: s.row,
-                          reason: t(`rundown.skip.${s.reason}`, s.reason),
+                          reason: t(`rundown.skip.${s.reason}`, SKIP_LABEL[s.reason]),
                         })}
                       </li>
                     ))}
@@ -369,6 +376,29 @@ function RundownImportDialog({
  * Beiblatt geht auf dem Weg zum Empfaenger verloren, und der Bedarf verlangt
  * „self-explaining" als Eigenschaft der Datei.
  */
+/**
+ * Deutsche Beschriftungen fuer die Feld-Zuordnung und die Ueberspring-Gruende.
+ *
+ * WARUM SIE HIER STEHEN UND NICHT ALS FALLBACK DIE ID: `t(key, fallback)`
+ * nimmt den Fallback als DEUTSCHE Quell-Sprache. Stand dort die Id, las ein
+ * deutscher Nutzer „cue", „refs" und „empty-row" im Dialog — aufgefallen am
+ * Screenshot, nicht am Test, denn die englischen Eintraege waren vollstaendig
+ * und der Erreichbarkeits-Guard prueft genau die.
+ */
+const FIELD_LABEL: Record<RundownField, string> = {
+  cue: 'Cue',
+  title: 'Titel',
+  start: 'Beginn',
+  duration: 'Dauer',
+  note: 'Notiz',
+  refs: 'Technik',
+}
+
+const SKIP_LABEL: Record<RowSkipReason, string> = {
+  'no-title': 'kein Titel',
+  'empty-row': 'leere Zeile',
+}
+
 const AUDIENCE_LABEL: Record<RundownAudience, string> = {
   client: 'Kunde',
   crew: 'Crew',

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { RUNDOWN_AUDIENCES } from '@avplan/ui'
+import { RUNDOWN_AUDIENCES, RUNDOWN_FIELDS } from '@avplan/ui'
 import { ALL_WIDGETS, DEFAULT_CARD_ORDER, WIDGET_LABEL } from '../src/shell/dashboardPrefs'
 import { translate } from '../src/i18n'
 
@@ -88,6 +88,28 @@ describe('Ablauf-Karte — erreichbar von der Uebersicht', () => {
     // Die Blaetter werden nicht hier gerechnet, sondern geholt.
     expect(karte).toContain('rundownView(')
     expect(karte).toContain('rundownViewCsv(')
+  })
+
+  it('hat fuer jedes Feld und jeden Ueberspring-Grund ein deutsches Wort', () => {
+    // AUFGEFALLEN AM SCREENSHOT (2026-09-07): im Import-Dialog stand „cue",
+    // „refs" und „empty-row". `t(key, fallback)` nimmt den Fallback als
+    // DEUTSCHE Quell-Sprache — dort die Id zu setzen heisst, dem deutschen
+    // Nutzer die Id zu zeigen. Der Erreichbarkeits-Guard darueber prueft nur
+    // die ENGLISCHEN Eintraege und war deshalb gruen.
+    const karte = lies('shell/RundownCard.tsx')
+    for (const f of RUNDOWN_FIELDS) {
+      expect(karte, `deutsches Wort fuer Feld ${f}`).toMatch(
+        new RegExp(`^\\s*${f}: '[^']+'`, 'm'),
+      )
+    }
+    for (const r of ['no-title', 'empty-row']) {
+      expect(karte, `deutsches Wort fuer Ueberspring-Grund ${r}`).toMatch(
+        new RegExp(`'${r}': '[^']+'`),
+      )
+    }
+    // Und keine Id steht mehr als Fallback am t()-Aufruf.
+    expect(karte).not.toContain('rundown.field.${f}`, f)')
+    expect(karte).not.toContain('rundown.skip.${s.reason}`, s.reason)')
   })
 
   it('nimmt die Uhrzeit in der Oberflaeche und nicht im Modell', () => {
