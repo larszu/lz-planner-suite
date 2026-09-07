@@ -33,9 +33,13 @@ export const inventory: Record<string, string> = {
   'inventory.extras': '+ {nodes} Lagerorte/Cases · {units} serialisierte Einheiten (aus Import, verlustfrei erhalten)',
   'inventory.import.invalid': 'Keine gültige Lager-Datei (avplan-inventory).',
   'inventory.import.replaceTitle': 'Bestehenden Bestand ersetzen?',
-  'inventory.import.replaceBody': 'Abbrechen behält beide Bestände und führt sie zusammen (merge).',
+  // B-22: der Satz beschreibt jetzt, was die Gesten WIRKLICH tun. „Abbrechen"
+  // gibt es als Knopf gar nicht — er heisst „Zusammenführen", und Escape bzw.
+  // ein Klick daneben importiert seit dem Fix nichts mehr.
+  'inventory.import.replaceBody': '„Zusammenführen" behält beide Bestände. Escape oder ein Klick daneben ändert nichts.',
   'inventory.import.replace': 'Ersetzen',
   'inventory.import.merge': 'Zusammenführen',
+  'inventory.import.cancelled': 'Import abgebrochen — nichts geändert.',
   'inventory.import.done': '{count} Objekte importiert.',
   'inventory.scan.noMatch': 'Kein Treffer für „{code}".',
   'inventory.scan.item': 'Artikel: {model}',

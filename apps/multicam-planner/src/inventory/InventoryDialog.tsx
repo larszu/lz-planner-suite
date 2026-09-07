@@ -7,7 +7,7 @@ import { FiX, FiPlus, FiTrash2, FiDownload, FiUpload, FiSearch } from 'react-ico
 import { useInventoryStore, type InventoryItemInput } from './store';
 import { serializeInventory, parseInventory, resolveInventoryCode, unitLabel } from '@avplan/inventory-core';
 import type { InventoryItem } from '@avplan/inventory-core';
-import { confirmDialog } from '@avplan/ui';
+import { choiceDialog } from '@avplan/ui';
 import { useTranslation, format } from '../i18n';
 
 interface Props {
@@ -75,13 +75,24 @@ export function InventoryDialog({ open, onClose }: Props) {
       setScanResult(t('inventory.import.invalid', 'Not a valid inventory file (avplan-inventory).'));
       return;
     }
-    const replace = await confirmDialog(t('inventory.import.replaceTitle', 'Replace the existing inventory?'), {
-      body: t('inventory.import.replaceBody', 'Cancel keeps both and merges them.'),
+    // B-22: Escape und der Klick neben den Dialog importieren NICHT.
+    //
+    // Der Zweitknopf heisst hier „Merge" und ist damit selbst eine Handlung —
+    // anders als bei jeder anderen Frage in dieser App, wo er „nein" heisst.
+    // Solange `confirmDialog` beides als `false` lieferte, schrieben zwei
+    // Gesten, die ueberall sonst „nichts tun" bedeuten, fremde Artikel in den
+    // Bestand. Ein Undo fuer den Lager-Store gibt es nicht.
+    const wahl = await choiceDialog(t('inventory.import.replaceTitle', 'Replace the existing inventory?'), {
+      body: t('inventory.import.replaceBody', 'Merge keeps both. Escape or a click outside changes nothing.'),
       okLabel: t('inventory.import.replace', 'Replace'),
       cancelLabel: t('inventory.import.merge', 'Merge'),
       destructive: true,
     });
-    const n = importSnapshot(snap, replace ? 'replace' : 'merge');
+    if (wahl === 'dismissed') {
+      setScanResult(t('inventory.import.cancelled', 'Import cancelled — nothing changed.'));
+      return;
+    }
+    const n = importSnapshot(snap, wahl === 'ok' ? 'replace' : 'merge');
     setScanResult(format(t('inventory.import.done', '{count} objects imported.'), { count: n }));
   };
 

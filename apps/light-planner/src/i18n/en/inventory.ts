@@ -59,6 +59,8 @@ export const inventory: Record<string, string> = {
   'inventory.importConfirm': 'Replace the existing inventory?',
   'inventory.importReplace': 'Replace',
   'inventory.importMerge': 'Merge',
+  'inventory.importBody': 'Merge keeps both. Escape or a click outside changes nothing.',
+  'inventory.importCancelled': 'Import cancelled — nothing changed.',
   // Der Platzhalter {n} wird vom Aufrufer ersetzt und muss stehen bleiben.
   'inventory.importDone': '{n} items imported.',
   'inventory.export': 'Export',

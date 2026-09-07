@@ -509,7 +509,7 @@ ist selbst ein Ergebnis.
 
 ### B-22 · Der Lager-Import kennt kein Abbrechen
 
-* **Status:** offen (Entscheidung beim Eigentümer, siehe E-15)
+* **Status:** offen (Entscheidung beim Eigentümer, siehe E-15) — **das Zwischenmaß ist umgesetzt** (`suite#154`, 2026-09-07): Escape und Hintergrund-Klick importieren nicht mehr. Der dritte Ausgang (eigener Drei-Wege-Dialog, Vorschau-Schritt oder Undo für den Lager-Store) bleibt die Entscheidung.
 * **Befund (nachgeprüft 2026-09-04, beide Kopien):** `doImport`
   (`apps/light-planner/src/inventory/InventoryDialog.tsx:69-81`) fragt nach dem
   Einlesen der Datei genau **eine** Ja/Nein-Frage. `true` heißt ersetzen,
@@ -533,9 +533,29 @@ ist selbst ein Ergebnis.
   Drei-Wege-Dialog ist, ein vorgeschalteter Vorschau-Schritt („X Artikel, Y
   Lagerorte — übernehmen?") oder ein Undo für den Lager-Store, ist eine
   Produktentscheidung mit sehr unterschiedlichem Aufwand.
-* **Ehrliches Zwischenmaß, falls die Entscheidung wartet:** Escape und
-  Hintergrund-Klick dürfen nicht importieren. Solange es keinen dritten
-  Ausgang gibt, ist „nichts tun" die richtige Bedeutung für beide Gesten.
+* **Ehrliches Zwischenmaß — umgesetzt (`suite#154`).** Escape und
+  Hintergrund-Klick importieren nicht mehr. Solange es keinen dritten Ausgang
+  gibt, ist „nichts tun" die richtige Bedeutung für beide Gesten.
+
+  Die Ursache lag nicht beim Aufrufer, sondern im **Rückgabetyp**: `boolean`
+  kann „hat nein gesagt" und „hat gar nichts gesagt" nicht auseinanderhalten.
+  `packages/ui/src/dialog.tsx` hat deshalb ein `choiceDialog` bekommen, das
+  `'ok' | 'cancel' | 'dismissed'` liefert; `confirmDialog` ist ein
+  Einzeiler darüber (`=== 'ok'`) und damit für alle zehn vorhandenen
+  Aufrufer unverändert — für „Wirklich löschen?" heißt `dismissed` weiter
+  dasselbe wie `cancel`, und genau deshalb musste dort nichts angefasst
+  werden.
+
+  Die beiden Lager-Importe brechen bei `dismissed` ab, ohne zu schreiben; der
+  Zweitknopf („Zusammenführen") bleibt eine Absicht und führt weiter zusammen.
+  Der Erklärsatz im Dialog beschreibt jetzt, was die Gesten wirklich tun —
+  er nannte vorher einen Knopf „Abbrechen", den es nicht gibt.
+
+* **Upstream unverändert:** dort fragt `window.confirm`, dessen Escape
+  ebenfalls „zusammenführen" bedeutet. Das lässt sich in einem
+  `window.confirm` nicht trennen; der deutsche Text sagt es dort wenigstens
+  ausdrücklich. Der Unterschied ist als Suite-Overlay gewollt und im Code
+  begründet.
 * **Aufwand:** klein (Escape/Backdrop entschärfen) / mittel (dritter Ausgang)
 
 ### B-23 · Zwölf Dialoge der Suite sind gar nicht erst gewickelt

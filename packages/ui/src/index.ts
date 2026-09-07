@@ -18,10 +18,12 @@ export {
 export { ModuleRail, type RailModule, type ModuleRailProps } from './ModuleRail'
 export { Modal, type ModalProps } from './Modal'
 export {
+  choiceDialog,
   confirmDialog,
   alertDialog,
   promptDialog,
   type ConfirmDialogOptions,
+  type DialogChoice,
   type AlertDialogOptions,
   type PromptDialogOptions,
 } from './dialog'

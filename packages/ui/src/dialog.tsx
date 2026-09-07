@@ -107,31 +107,62 @@ export interface ConfirmDialogOptions {
   destructive?: boolean
 }
 
-export function confirmDialog(title: string, options: ConfirmDialogOptions = {}): Promise<boolean> {
-  return mountDialog<boolean>((done) => <ConfirmView title={title} options={options} onDone={done} />)
+/**
+ * Wie der Dialog verlassen wurde — die Frage, die `Promise<boolean>` nicht
+ * beantworten kann (B-22).
+ *
+ * Fuer die allermeisten Fragen genuegt ja/nein, weil der zweite Knopf und die
+ * Weggeh-Gesten dasselbe meinen: „nichts tun". Genau ein Aufrufer bricht mit
+ * dieser Annahme — der Lager-Import, wo der zweite Knopf „Zusammenfuehren"
+ * heisst und damit selbst eine Handlung ist. Dort schrieben Escape und der
+ * Klick neben den Dialog fremde Artikel in den Bestand, und ein Undo fuer den
+ * Lager-Store gibt es nicht.
+ *
+ *   ok         der Primaerknopf,
+ *   cancel     der Zweitknopf — eine ABSICHT, nicht bloss ein Abbruch,
+ *   dismissed  Escape oder Klick daneben: der Nutzer hat nichts gewaehlt.
+ *
+ * Wer nicht unterscheiden muss, nimmt weiter `confirmDialog`.
+ */
+export type DialogChoice = 'ok' | 'cancel' | 'dismissed'
+
+export function choiceDialog(title: string, options: ConfirmDialogOptions = {}): Promise<DialogChoice> {
+  return mountDialog<DialogChoice>((done) => <ConfirmView title={title} options={options} onDone={done} />)
 }
 
-function ConfirmView({ title, options, onDone }: { title: string; options: ConfirmDialogOptions; onDone: (v: boolean) => void }) {
+/**
+ * Ja/nein — `dismissed` faellt hier bewusst mit `cancel` zusammen.
+ *
+ * Das ist fuer jeden vorhandenen Aufrufer richtig: „Wirklich loeschen?",
+ * „Vorlage laden?", „Alles leeren?" — dort heisst weder der Zweitknopf noch
+ * Escape etwas anderes als „nein". Die Unterscheidung kostet nur dort
+ * Aufmerksamkeit, wo sie gebraucht wird.
+ */
+export async function confirmDialog(title: string, options: ConfirmDialogOptions = {}): Promise<boolean> {
+  return (await choiceDialog(title, options)) === 'ok'
+}
+
+function ConfirmView({ title, options, onDone }: { title: string; options: ConfirmDialogOptions; onDone: (v: DialogChoice) => void }) {
   const okRef = useRef<HTMLButtonElement>(null)
   const isTop = useTopOfStack()
   useEffect(() => {
     okRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
       if (!isTop()) return
-      if (e.key === 'Escape') onDone(false)
-      else if (e.key === 'Enter') onDone(true)
+      if (e.key === 'Escape') onDone('dismissed')
+      else if (e.key === 'Enter') onDone('ok')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onDone, isTop])
   const p = palette()
   return (
-    <Shell label={title} onBackdrop={() => onDone(false)}>
+    <Shell label={title} onBackdrop={() => onDone('dismissed')}>
       <div style={{ marginBottom: options.body ? 8 : 16, fontSize: 14, fontWeight: 600 }}>{title}</div>
       {options.body && <div style={{ marginBottom: 16, fontSize: 13, color: p.textMuted }}>{options.body}</div>}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button type="button" onClick={() => onDone(false)} style={btn('secondary')}>{options.cancelLabel ?? 'Abbrechen'}</button>
-        <button ref={okRef} type="button" onClick={() => onDone(true)} style={btn(options.destructive ? 'danger' : 'primary')}>{options.okLabel ?? 'OK'}</button>
+        <button type="button" onClick={() => onDone('cancel')} style={btn('secondary')}>{options.cancelLabel ?? 'Abbrechen'}</button>
+        <button ref={okRef} type="button" onClick={() => onDone('ok')} style={btn(options.destructive ? 'danger' : 'primary')}>{options.okLabel ?? 'OK'}</button>
       </div>
     </Shell>
   )

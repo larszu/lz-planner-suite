@@ -7,7 +7,7 @@ import { useTranslation } from '../i18n';
 import { useInventoryStore, type InventoryItemInput } from './store';
 import { serializeInventory, parseInventory, resolveInventoryCode, unitLabel } from '@avplan/inventory-core';
 import type { InventoryItem } from '@avplan/inventory-core';
-import { confirmDialog } from '@avplan/ui';
+import { choiceDialog } from '@avplan/ui';
 
 interface Props {
   onClose: () => void;
@@ -72,11 +72,23 @@ const InventoryDialog: React.FC<Props> = ({ onClose }) => {
       setMsg(t('inventory.importErr', 'Keine gültige Lager-Datei (avplan-inventory).'));
       return;
     }
-    const replace = await confirmDialog(t('inventory.importConfirm', 'Bestehenden Bestand ersetzen?'), {
+    // B-22: Escape und der Klick neben den Dialog importieren NICHT.
+    //
+    // Der Zweitknopf heisst hier „Zusammenfuehren" und ist damit selbst eine
+    // Handlung — anders als bei jeder anderen Frage in dieser App, wo er
+    // „nein" heisst. Solange `confirmDialog` beides als `false` lieferte,
+    // schrieben zwei Gesten, die ueberall sonst „nichts tun" bedeuten, fremde
+    // Artikel in den Bestand. Ein Undo fuer den Lager-Store gibt es nicht.
+    const wahl = await choiceDialog(t('inventory.importConfirm', 'Bestehenden Bestand ersetzen?'), {
+      body: t('inventory.importBody', '„Zusammenführen" behält beide Bestände. Escape oder ein Klick daneben ändert nichts.'),
       okLabel: t('inventory.importReplace', 'Ersetzen'),
       cancelLabel: t('inventory.importMerge', 'Zusammenführen'),
     });
-    const n = importSnapshot(snap, replace ? 'replace' : 'merge');
+    if (wahl === 'dismissed') {
+      setMsg(t('inventory.importCancelled', 'Import abgebrochen — nichts geändert.'));
+      return;
+    }
+    const n = importSnapshot(snap, wahl === 'ok' ? 'replace' : 'merge');
     setMsg(t('inventory.importDone', '{n} Objekte importiert.').replace('{n}', String(n)));
   };
 
