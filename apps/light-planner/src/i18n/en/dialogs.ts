@@ -110,6 +110,37 @@ export const dialogs: Record<string, string> = {
   'dlg.sch.groups.locate': 'Show in plan',
   'dlg.sch.groups.hint':
     'The MVR format has no groups \u2014 this sheet is how they reach the console, the visualiser and the media server.',
+  // Bedarf 147 - ein Universe ist keine blosse Zahl.
+  'dlg.sch.uni.head': 'Universes',
+  'dlg.sch.uni.csv': 'Universe sheet (CSV)',
+  'dlg.sch.uni.protocol': 'The universe numbers in this plan are',
+  'dlg.sch.uni.none':
+    'Nothing patched yet \u2014 once universes are assigned, both readings appear here side by side.',
+  'dlg.sch.uni.note': 'Note',
+  'dlg.sch.uni.diverge':
+    'From here Art-Net and sACN read differently \u2014 at the node, Net and Sub-Net are no longer 0.',
+  'dlg.sch.uni.hint':
+    'The setting belongs to the project and travels with the file: the number on the fixture was never wrong, it was undetermined.',
+  // Bedarf 143 - zwoelf Blaetter, ein Modell.
+  'dlg.sch.tab.papers': 'Paperwork',
+  'dlg.sch.rep.pick': 'Sheet',
+  'dlg.sch.rep.csv': 'This sheet (CSV)',
+  'dlg.sch.rep.empty': 'No rows.',
+  'dlg.sch.rep.gaps': 'Not producible from this model:',
+  'dlg.sch.rep.hint':
+    'Every sheet reads the same fields. Change a column once \u2014 not twelve times.',
+  // Bedarf 141 - Kreise, Phasen und Steckreihenfolge.
+  'dlg.sch.pwr.peak': 'heaviest phase',
+  'dlg.sch.pwr.assumed': 'assumed balanced',
+  'dlg.sch.pwr.phases': 'Phases & circuits',
+  'dlg.sch.pwr.csv': 'Circuit list (CSV)',
+  'dlg.sch.pwr.template': 'The service carries',
+  'dlg.sch.pwr.hCircuits': 'Circuits',
+  'dlg.sch.pwr.hCircuit': 'Circuit',
+  'dlg.sch.pwr.hPhase': 'Phase',
+  'dlg.sch.pwr.understated':
+    'Unbalanced: the heaviest phase carries {d} A more than the balanced assumption ({a} A). Difference between heaviest and lightest phase: {i} A.',
+  'dlg.sch.pwr.balanced': 'Evenly distributed \u2014 the balanced assumption holds here.',
   'dlg.sch.exp.groups': 'Group sheet (CSV)',
   'dlg.sch.exp.groupsNote':
     'One row per group member with channel, unit, type and position \u2014 what otherwise gets rebuilt by hand on the console, in the visualiser and in the media server.',

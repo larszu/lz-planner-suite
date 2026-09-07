@@ -3,6 +3,8 @@ import { connectShellHistory, publishShellSetting } from '@avplan/ui/embed';
 import { alertDialog, confirmDialog } from '@avplan/ui';
 import type { PlacedFixture, Shape, Tool, Fixture, FloorPlan, ViewMode, Person, StageElement, ProjectMeta, ProjectData, FixtureGroup, Truss, Wall, Ceiling, Scene, SceneFixtureState, Layers, LayerKey, CameraView, FloorMaterial, SunSettings , WorkNote, WorkNoteTarget } from './types';
 import { addNote, normalizeWorkNotes, removeNote, toggleNote } from './core/workNotes';
+import { DEFAULT_PROTOCOL, type DmxProtocol } from './core/universeIdentity';
+import { DEFAULT_TEMPLATE, type PhaseTemplate } from './core/powerDistribution';
 import { DEFAULT_FLOOR } from './core/surfaceTextures';
 import { useShellSeed } from './core/useShellSeed';
 import { convexHull } from './core/geometry';
@@ -164,6 +166,16 @@ const App: React.FC = () => {
   // BEDARF 71 — Arbeits-Notizen aus der Probe. Sie gehoeren in die EIGENE
   // Projektdatei, nicht in die Show-Datei eines Pults (cue-note #11/#7).
   const [workNotes, setWorkNotes] = useState<WorkNote[]>([]);
+  // BEDARF 147 — wie die Universe-Zahlen dieses Plans zu lesen sind. Am
+  // PROJEKT, nicht an der Leuchte: die Zahl an der Leuchte ist richtig, sie
+  // war nur unbestimmt. Voreinstellung `sacn`, weil `autoPatch` flach ab 1
+  // zaehlt — Art-Net als Vorgabe behauptete eine Gateway-Einstellung, die
+  // niemand gemacht hat.
+  const [dmxProtocol, setDmxProtocol] = useState<DmxProtocol>(DEFAULT_PROTOCOL);
+  // BEDARF 141 — welche Phasen der Anschluss fuehrt. Auch das ist eine Aussage
+  // ueber die Anlage und nicht ueber die Leuchte: die Vorgabe ABC aendert
+  // keine vorhandene Zahl, sie macht nur nachpruefbar, worauf sie beruhte.
+  const [phaseTemplate, setPhaseTemplate] = useState<PhaseTemplate>(DEFAULT_TEMPLATE);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   // Look present just before a scene was switched on, so it can be switched off.
   const preSceneRef = useRef<Record<string, SceneFixtureState> | null>(null);
@@ -758,6 +770,14 @@ const App: React.FC = () => {
   const handleSaveProject = useCallback(async (meta: ProjectMeta) => {
     const data: ProjectData = {
       meta,
+      // BEDARF 147 — die Lesart geht IMMER mit in die Datei, auch wenn sie
+      // die Vorgabe ist. Ein Plan, der sie verschweigt, laesst „Universe 2"
+      // wieder offen; ausgeschrieben sagt die Datei selbst, wie sie zu lesen
+      // ist — auch bei dem, der sie in vier Jahren oeffnet.
+      dmxProtocol,
+      // BEDARF 141 — dito fuer die Phasen-Vorlage. Ohne sie liest ein anderer
+      // Rechner dieselbe Last-Zahl auf einem anderen Anschluss.
+      phaseTemplate,
       fixtures,
       shapes,
       persons,
@@ -798,7 +818,7 @@ const App: React.FC = () => {
     } catch (err) {
       await alertDialog(t('app.alert.saveFailed', 'Projekt konnte nicht gespeichert werden:'), { body: err instanceof Error ? err.message : String(err) });
     }
-  }, [fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, workNotes, cameras, layers, floor, sun, floorPlan, projectId]);
+  }, [fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, workNotes, dmxProtocol, phaseTemplate, cameras, layers, floor, sun, floorPlan, projectId]);
 
   const handleLoadProject = useCallback((data: ProjectData, keepId?: string) => {
     historyRef.current = [];
@@ -823,6 +843,11 @@ const App: React.FC = () => {
     setCeilings(data.ceilings ?? []);
     setScenes(data.scenes ?? []);
     setWorkNotes(normalizeWorkNotes(data.workNotes));
+    // BEDARF 147 — fehlt die Angabe, gilt die Vorgabe. NICHT das zuletzt
+    // Eingestellte: sonst laege die Lesart am Rechner statt an der Datei, und
+    // dieselbe Datei hiesse bei zwei Leuten zweierlei.
+    setDmxProtocol(data.dmxProtocol ?? DEFAULT_PROTOCOL);
+    setPhaseTemplate(data.phaseTemplate ?? DEFAULT_TEMPLATE);
     setActiveSceneId(null);
     preSceneRef.current = null;
     setCameras(data.cameras ?? []);
@@ -913,6 +938,11 @@ const App: React.FC = () => {
       domains: {
         lighting: {
           meta: projectMeta ?? { name: t('app.defaultProject.name', 'Lichtplan'), author: '', version: '1.0', createdAt: now, updatedAt: now },
+          // BEDARF 147/141 — auch hier: die .avplan traegt Lesart und
+          // Phasen-Vorlage mit, sonst verliert der Weg ueber die Suite genau
+          // die Angaben, die den Patch- und den Last-Fehler verhindern.
+          dmxProtocol,
+          phaseTemplate,
           fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups,
           trusses, walls, ceilings, scenes, cameras, layers, floor, sun,
           // BEDARF 71 — die .avplan ist die EIGENE Datei-Familie der Suite,
@@ -929,7 +959,7 @@ const App: React.FC = () => {
     });
     const safe = (projectMeta?.name || 'projekt').replace(/[^a-zA-Z0-9_-]+/g, '_');
     await host.saveProjectFile(JSON.stringify(avplan, null, 2), `${safe}.avplan`);
-  }, [floorPlan, persons, walls, stageElements, projectMeta, host, fixtures, shapes, customFixtures, fixtureGroups, trusses, ceilings, scenes, cameras, layers, floor, sun]);
+  }, [floorPlan, persons, walls, stageElements, projectMeta, host, fixtures, shapes, customFixtures, fixtureGroups, trusses, ceilings, scenes, workNotes, dmxProtocol, phaseTemplate, cameras, layers, floor, sun]);
 
   const handleImportAvplan = useCallback(async () => {
     const res = await host.openProjectFile();
@@ -1314,6 +1344,12 @@ const App: React.FC = () => {
     const now = new Date().toISOString();
     const meta: ProjectMeta = projectMeta ?? { name: t('app.defaultProject.name', 'Lichtplan'), author: '', version: '1.0', createdAt: now, updatedAt: now };
     return {
+      // BEDARF 147/141 — der Versions-Schnappschuss haelt beide Angaben fest.
+      // Ohne sie laese ein zurueckgeholter Stand seine Universes anders und
+      // rechnete seine Last auf einem anderen Anschluss als der, aus dem er
+      // stammt.
+      dmxProtocol,
+      phaseTemplate,
       meta, fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups,
       trusses, walls, ceilings, scenes, cameras, layers, floor, sun,
       ...(workNotes.length > 0 ? { workNotes } : {}),
@@ -1331,7 +1367,7 @@ const App: React.FC = () => {
         ? { personForeign: preservedPersonsRef.current }
         : {}),
     };
-  }, [projectMeta, fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, workNotes, cameras, layers, floor, sun, floorPlan]);
+  }, [projectMeta, fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, workNotes, dmxProtocol, phaseTemplate, cameras, layers, floor, sun, floorPlan]);
 
   // ── Project save/load to a real file (the host decides where) ──
   const handleSaveToFile = useCallback(async () => {
@@ -1339,6 +1375,9 @@ const App: React.FC = () => {
     const meta: ProjectMeta = projectMeta ?? { name: t('app.defaultProject.name', 'Lichtplan'), author: '', version: '1.0', createdAt: now, updatedAt: now };
     const data: ProjectData = {
       meta: { ...meta, updatedAt: now },
+      // BEDARF 147/141 — dito im Dateipfad.
+      dmxProtocol,
+      phaseTemplate,
       fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups,
       trusses, walls, ceilings, scenes, cameras, layers, floor, sun,
       ...(workNotes.length > 0 ? { workNotes } : {}),
@@ -1356,7 +1395,7 @@ const App: React.FC = () => {
     };
     const safe = (meta.name || 'Lichtplan').replace(/[^\w.\-]+/g, '_');
     await host.saveProjectFile(JSON.stringify(data, null, 2), `${safe}.lightplan.json`);
-  }, [projectMeta, fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, workNotes, cameras, layers, floor, sun, floorPlan, host]);
+  }, [projectMeta, fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, workNotes, dmxProtocol, phaseTemplate, cameras, layers, floor, sun, floorPlan, host]);
 
   const handleLoadFromFile = useCallback(async () => {
     const res = await host.openProjectFile();
@@ -1839,6 +1878,10 @@ const App: React.FC = () => {
           area={lightArea}
           projectName={projectMeta?.name ?? ''}
           projectId={projectId}
+          dmxProtocol={dmxProtocol}
+          onSetProtocol={setDmxProtocol}
+          phaseTemplate={phaseTemplate}
+          onSetPhaseTemplate={setPhaseTemplate}
           conflicts={patchConflicts}
           workNotes={workNotes}
           onAddNote={handleAddNote}

@@ -16,6 +16,18 @@ import {
 } from '../core/fixtureGroups';
 import { gdtfSpecNames } from '../core/mvrIdentity';
 import { preflight, preflightTable, type PreflightVerdict } from '../core/preflight';
+import {
+  PROTOCOL_LABEL, UNIVERSE_HEADERS, artnetReading, readingsDiverge, sacnReading,
+  universeReading, universeReadings, universeTable, type DmxProtocol,
+} from '../core/universeIdentity';
+import {
+  CIRCUIT_HEADERS, PHASE_HEADERS, PHASE_LABEL, TEMPLATE_LABEL, circuitLabel, circuitTable,
+  distributionFor, phaseTable, type PhaseTemplate,
+} from '../core/powerDistribution';
+import { fieldContext } from '../core/reportFields';
+import {
+  REPORTS, renderReport, reportGaps, reportTable, findReport,
+} from '../core/reportEngine';
 import { groupNotes, staleNotes } from '../core/workNotes';
 import { getFixtureCCT, cctToRgb } from '../core/colorTemp';
 import Icon from './Icon';
@@ -31,6 +43,22 @@ interface Props {
   projectName: string;
   /** Fuer den Stempel: unter dieser Kennung liegen die festgeschriebenen Staende. */
   projectId: string;
+  // ── Bedarf 147 — wie die Universe-Zahlen zu lesen sind ──
+  /**
+   * Das Protokoll, in dem die `universe`-Zahlen dieses Plans gemeint sind.
+   * Es haengt am PROJEKT: die Zahl an der Leuchte war nie falsch, sie war
+   * unbestimmt.
+   */
+  dmxProtocol: DmxProtocol;
+  /** Umstellen. Der Wert lebt im Wirt und geht mit in die Datei. */
+  onSetProtocol: (p: DmxProtocol) => void;
+  // ── Bedarf 141 — Kreise, Phasen und Steckreihenfolge ──
+  /**
+   * Welche Phasen der Anschluss fuehrt, der dieses Rig speist. Ohne die
+   * Angabe bliebe die Last je Phase die ausgeglichene Annahme.
+   */
+  phaseTemplate: PhaseTemplate;
+  onSetPhaseTemplate: (p: PhaseTemplate) => void;
   conflicts: Set<string>;
   onAutoNumber: () => void;
   onAutoPatch: () => void;
@@ -49,13 +77,14 @@ interface Props {
   onClose: () => void;
 }
 
-type Tab = 'list' | 'magic' | 'focus' | 'notes' | 'check' | 'return' | 'photo' | 'load' | 'export';
+type Tab = 'list' | 'magic' | 'focus' | 'notes' | 'papers' | 'check' | 'return' | 'photo' | 'load' | 'export';
 type T = (key: string, de: string) => string;
 const buildTabs = (t: T): { id: Tab; label: string; icon: IconName }[] => [
   { id: 'list', label: t('dlg.sch.tab.list', 'Geräteliste & Patch'), icon: 'schedule' },
   { id: 'magic', label: t('dlg.sch.tab.magic', 'Magic Sheet'), icon: 'grid' },
   { id: 'focus', label: t('dlg.sch.tab.focus', 'Fokus'), icon: 'autolight' },
   { id: 'notes', label: t('dlg.sch.tab.notes', 'Notizen'), icon: 'tag' },
+  { id: 'papers', label: t('dlg.sch.tab.papers', 'Papiere'), icon: 'schedule' },
   { id: 'check', label: t('dlg.sch.tab.check', 'Prüfung'), icon: 'check' },
   { id: 'return', label: t('dlg.sch.tab.return', 'Rückweg vom Pult'), icon: 'import' },
   { id: 'photo', label: t('dlg.sch.tab.photo', 'Photometrie'), icon: 'heatmap' },
@@ -108,7 +137,7 @@ const verdictText = (t: (k: string, de: string) => string, v: PreflightVerdict):
   }
 };
 
-const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, area, projectName, projectId, conflicts, onAutoNumber, onAutoPatch, onLocate, onUpdateFixture, fixtureGroups, onRenameGroup, workNotes, onAddNote, onToggleNote, onRemoveNote, onClose }) => {
+const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, area, projectName, projectId, dmxProtocol, onSetProtocol, phaseTemplate, onSetPhaseTemplate, conflicts, onAutoNumber, onAutoPatch, onLocate, onUpdateFixture, fixtureGroups, onRenameGroup, workNotes, onAddNote, onToggleNote, onRemoveNote, onClose }) => {
   const { t } = useTranslation();
   const TABS = buildTabs(t);
   const [tab, setTabState] = useState<Tab>(() => {
@@ -132,20 +161,46 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   // Zuordnung, die niemand getroffen hat.
   const [noteTarget, setNoteTarget] = useState<WorkNoteTarget>({ kind: 'plan' });
 
+  // BEDARF 143 — welches der Blaetter gerade offen ist. Lokal: die Wahl ist
+  // eine Ansicht und keine Projekt-Angabe; sie in die Datei zu schreiben
+  // hiesse, dass zwei Leute mit derselben Datei streiten, welches Blatt „das"
+  // Blatt ist.
+  const [reportId, setReportId] = useState<string>(REPORTS[0].id);
+
   const counts = fixtureCounts(fixtures);
   const power = computePower(fixtures);
   const totalWeight = fixtures.reduce((s, f) => s + (f.fixture.weight || 0), 0);
   // BEDARF 142 — der Vorflug-Bericht statt der blossen Rig-Pruefung. Er
   // enthaelt dieselben Befunde (`rigCheck` bleibt die Quelle) plus die
   // semantischen, und er faellt ein Urteil, das „nicht beurteilbar" kennt.
-  const bericht = preflight(fixtures, trusses);
+  // BEDARF 147/141 — Protokoll und Phasen-Vorlage gehen MIT in die Pruefung.
+  // Ohne sie liesse sich nicht sagen, ob „Universe 40000" gueltig ist, und die
+  // Stromlast bliebe die ausgeglichene Annahme, die sie bisher war.
+  const bericht = preflight(fixtures, trusses, dmxProtocol, phaseTemplate);
   const issues = bericht.issues;
   const ic = { errors: bericht.counts.error, warnings: bericht.counts.warning, infos: bericht.counts.info };
   const photo = photometricReport(fixtures, walls, ceilings, area);
   const loads = trussLoads(fixtures, trusses);
   const circuits = circuitBreakdown(fixtures);
+  // BEDARF 141 — die Kreise auf Distros, Ausgaenge und Phasen, in
+  // Steckreihenfolge. Beide Zahlen — die gerechnete und die angenommene —
+  // kommen aus dieser einen Stelle, damit sie nicht zweimal verschieden
+  // entstehen koennen.
+  const verteilung = distributionFor(fixtures, phaseTemplate);
   const colors = colorCounts(fixtures);
   const checkBadge = ic.errors + ic.warnings;
+
+  // BEDARF 147 — die Universes des Plans mit BEIDEN Lesarten. Eine Zeile je
+  // Universe, sortiert nach der Zahl und nicht nach der Reihenfolge der
+  // Leuchten: sonst saehe dasselbe Blatt zweimal anders aus.
+  const lesarten = universeReadings(fixtures.map((f) => f.universe), dmxProtocol);
+
+  // BEDARF 143 — der Zusammenhang fuer die Felder, EINMAL gebaut und nicht je
+  // Zeile: `distributionFor` teilt den ganzen Bestand in Kreise auf, und wer
+  // das je Zeile taete, bekaeme bei n Leuchten n Verteilungen.
+  const feldKontext = fieldContext(fixtures, trusses, dmxProtocol, phaseTemplate);
+  const bericht143 = renderReport(findReport(reportId) ?? REPORTS[0], fixtures, feldKontext);
+  const luecken = reportGaps();
 
   const ordered = scheduleOrder(fixtures);
   const safe = (projectName || 'lichtplan').replace(/[^\w.-]+/g, '_');
@@ -204,6 +259,36 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     header: [t('dlg.sch.csv.count', 'Anzahl'), t('dlg.sch.csv.brand', 'Marke'), 'Code', 'Name', t('dlg.sch.csv.type', 'Typ')],
     rows: colors.map((c) => [c.count, c.brand, c.code, c.name, c.type]),
   }, colorTable);
+
+  // Bedarf 141 — die Kreis-Liste ist eines der zwoelf Blaetter aus Bedarf 143
+  // und das erste, das ohne die Phasen-Zuordnung gar nicht schreibbar war.
+  const exportCircuits = () => exportTable('kreisliste.csv', {
+    header: [t('dlg.sch.pwr.hCircuit', 'Kreis'), t('dlg.sch.pwr.hPhase', 'Phase'), t('dlg.sch.fixtures', 'Leuchten'), 'W', 'A', t('dlg.sch.col.utilization', 'Auslastung')],
+    rows: verteilung.assignments.map((a) => [
+      circuitLabel(a), PHASE_LABEL[a.phase], a.fixtureCount,
+      Math.round(a.watts), a.amps.toFixed(1), `${Math.round(a.utilization * 100)} %`,
+    ]),
+  }, (fs: PlacedFixture[]) => circuitTable(distributionFor(fs, phaseTemplate)));
+
+  // Bedarf 147 — das Universe-Blatt geht denselben Weg wie die anderen Listen
+  // und traegt damit denselben Stempel (ADR-004): wer es ausdruckt und ans
+  // Gateway mitnimmt, sieht, aus welchem Stand es stammt.
+  // Bedarf 143 — jedes Blatt geht denselben Weg und traegt denselben Stempel.
+  // Der Dateiname folgt der Blatt-Kennung, damit zwei Blaetter nicht dieselbe
+  // Datei ueberschreiben.
+  const exportReport = () => {
+    const def = findReport(reportId) ?? REPORTS[0];
+    const tb = reportTable(bericht143);
+    exportTable(`${def.id}.csv`, { header: tb.header, rows: tb.rows },
+      (fs: PlacedFixture[]) => reportTable(
+        renderReport(def, fs, fieldContext(fs, trusses, dmxProtocol, phaseTemplate)),
+      ));
+  };
+
+  const exportUniverses = () => exportTable('universes.csv', {
+    header: [UNIVERSE_HEADERS[0], UNIVERSE_HEADERS[1], UNIVERSE_HEADERS[2], t('dlg.sch.uni.note', 'Hinweis')],
+    rows: universeTable(lesarten).rows,
+  }, (fs: PlacedFixture[]) => universeTable(universeReadings(fs.map((f) => f.universe), dmxProtocol)));
 
   const exportMvr = () => {
     // Bedarf 144: die Projekt-Kennung geht mit — sie ist der Namensraum der
@@ -356,14 +441,22 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       </table>
       <h4 className="schedule-subhead">{t('dlg.sch.instrumentSchedule', 'Instrument Schedule')}</h4>
       <table className="schedule-table">
-        <thead><tr><th>Unit</th><th>Ch</th><th>DMX</th><th>{t('dlg.sch.col.type', 'Typ')}</th><th>{t('dlg.sch.col.pos', 'Pos (x,y,h)')}</th><th>Gel</th><th>{t('dlg.sch.col.purpose', 'Zweck')}</th></tr></thead>
+        {/* BEDARF 147 — der Kopf nennt das Protokoll. „DMX 2.15" allein ist
+            unbestimmt: in sACN ist das Universe 2, in Art-Net die
+            Port-Address 0:0:2, und ab 16 laufen die beiden auseinander. */}
+        <thead><tr><th>Unit</th><th>Ch</th><th>DMX ({PROTOCOL_LABEL[dmxProtocol]})</th><th>{t('dlg.sch.col.type', 'Typ')}</th><th>{t('dlg.sch.col.pos', 'Pos (x,y,h)')}</th><th>Gel</th><th>{t('dlg.sch.col.purpose', 'Zweck')}</th></tr></thead>
         <tbody>
           {ordered.map((f) => (
             <tr key={f.id} className={conflicts.has(f.id) ? 'row-conflict' : ''}
               onClick={() => onLocate([f.id])} title={t('dlg.sch.showInPlan', 'Im Plan zeigen')}>
               <td>{f.unitNumber ?? '–'}</td>
               <td>{f.channel ?? '–'}</td>
-              <td>{f.universe != null && f.dmxAddress != null ? `${f.universe}.${f.dmxAddress}` : (footprint(f) === 0 ? 'Dimmer' : '–')}</td>
+              {/* Die Zelle zeigt die Zahl SO, wie sie im gewaehlten Protokoll
+                  am Geraet steht — in Art-Net also „0:0:2.15" statt „2.15".
+                  Wer sie abtippt, tippt damit das, was am Node steht. */}
+              <td>{f.universe != null && f.dmxAddress != null
+                ? `${universeReading(f.universe, dmxProtocol).primary}.${f.dmxAddress}`
+                : (footprint(f) === 0 ? 'Dimmer' : '–')}</td>
               <td>{f.fixture.name}</td>
               <td>{f.x},{f.y} · {f.mountingHeight}m</td>
               <td>{gelCodes(f.gelFilterIds) || '–'}</td>
@@ -372,6 +465,75 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           ))}
         </tbody>
       </table>
+      {/* ── BEDARF 147 — ein Universe ist keine blosse Zahl ──────────────
+          Der Beleg (`mvrdevelopment/spec#94`) nennt die Verwechslung von
+          Art-Net-Port-Address und sACN-Universe „the classic patch error".
+          Beide Lesarten stehen hier NEBENEINANDER, auch die des nicht
+          gewaehlten Protokolls: wer das Gateway einstellt, hat oft das andere
+          vor sich, und der Sinn dieses Blattes ist, dass ihm der Unterschied
+          auffaellt, bevor er ihn tippt. */}
+      <h4 className="schedule-subhead">
+        {t('dlg.sch.uni.head', 'Universes')} ({lesarten.length})
+        {lesarten.length > 0 && (
+          <button className="btn-secondary" style={{ marginLeft: 8 }} onClick={exportUniverses}>
+            &#8595; {t('dlg.sch.uni.csv', 'Universe-Blatt (CSV)')}
+          </button>
+        )}
+      </h4>
+      <div className="schedule-actions">
+        <label>
+          {t('dlg.sch.uni.protocol', 'Die Universe-Zahlen dieses Plans sind')}{' '}
+          <select
+            value={dmxProtocol}
+            onChange={(e) => onSetProtocol(e.target.value as DmxProtocol)}
+          >
+            {/* Literale Optionen, keine Schleife ueber die Sprach-Schluessel:
+                die Protokollnamen sind Eigennamen und werden nicht uebersetzt. */}
+            <option value="sacn">{PROTOCOL_LABEL.sacn}</option>
+            <option value="artnet">{PROTOCOL_LABEL.artnet}</option>
+          </select>
+        </label>
+      </div>
+      {lesarten.length === 0 ? (
+        <div className="prop-derived">
+          {t('dlg.sch.uni.none', 'Noch nichts gepatcht — sobald Universes vergeben sind, stehen hier beide Lesarten nebeneinander.')}
+        </div>
+      ) : (
+        <table className="schedule-table">
+          <thead>
+            <tr>
+              <th>{UNIVERSE_HEADERS[0]}</th>
+              <th>{UNIVERSE_HEADERS[1]}</th>
+              <th>{UNIVERSE_HEADERS[2]}</th>
+              <th>{t('dlg.sch.uni.note', 'Hinweis')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lesarten.map((r) => (
+              <tr key={r.value}>
+                <td><strong>{r.value}</strong></td>
+                {/* Die Spalte des gewaehlten Protokolls ist hervorgehoben —
+                    aber die andere bleibt sichtbar. Sie wegzulassen hiesse,
+                    genau die Gegenprobe zu streichen, um die es hier geht. */}
+                <td className={dmxProtocol === 'artnet' ? 'row-conflict' : undefined}>
+                  {artnetReading(r.value)}
+                </td>
+                <td className={dmxProtocol === 'sacn' ? 'row-conflict' : undefined}>
+                  {sacnReading(r.value)}
+                </td>
+                <td>
+                  {r.problem ?? (readingsDiverge(r.value)
+                    ? t('dlg.sch.uni.diverge', 'Ab hier lesen Art-Net und sACN verschieden — am Node stimmen Net und Sub-Net nicht mehr mit 0.')
+                    : '\u2014')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <div className="prop-derived">
+        {t('dlg.sch.uni.hint', 'Die Angabe hängt am Projekt und geht mit in die Datei: die Zahl an der Leuchte war nie falsch, sie war unbestimmt.')}
+      </div>
       {colors.length > 0 && (
         <>
           <h4 className="schedule-subhead">{t('dlg.sch.colorsUsage', 'Farben & Verbrauch')} ({colors.reduce((s, c) => s + c.count, 0)} {t('dlg.sch.cuts', 'Schnitte')})</h4>
@@ -687,6 +849,78 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     );
   })();
 
+  // ── BEDARF 143 — zwoelf Blaetter, ein Modell ─────────────────────────────
+  //
+  // „all sorts and groupings of the same fields" (jkarp7/showstack#48). Die
+  // Blaetter sind BESCHREIBUNGEN in `core/reportEngine.ts`; hier wird nur
+  // gezeigt, was `renderReport` liefert. Wer hier Zeilen selbst zusammenbaut,
+  // hat das dreizehnte handgepflegte Dokument angelegt — und genau das ist
+  // der Zustand, den dieser Bedarf abschafft.
+  const papersPanel = (
+    <>
+      <div className="schedule-actions">
+        <label>
+          {t('dlg.sch.rep.pick', 'Blatt')}{' '}
+          <select value={reportId} onChange={(e) => setReportId(e.target.value)}>
+            {REPORTS.map((r) => (
+              <option key={r.id} value={r.id}>{r.label}</option>
+            ))}
+          </select>
+        </label>
+        <button className="btn-secondary" onClick={exportReport}>
+          &#8595; {t('dlg.sch.rep.csv', 'Dieses Blatt (CSV)')}
+        </button>
+      </div>
+      <div className="prop-derived">{bericht143.def.purpose}</div>
+      <table className="schedule-table">
+        <thead>
+          <tr>{bericht143.header.map((h, i) => <th key={i}>{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {bericht143.groups.map((g) => (
+            <React.Fragment key={g.key}>
+              {/* Die Gruppen-Ueberschrift steht als eigene Zeile — und zwar
+                  auch in der CSV. Ein Ausdruck, der anders gruppiert als der
+                  Bildschirm, ist genau das Auseinanderlaufen, um das es geht. */}
+              {bericht143.def.groupBy && (
+                <tr className="row-muted">
+                  <td colSpan={bericht143.header.length}>
+                    <strong>{g.key}</strong> · {g.rows.length}
+                  </td>
+                </tr>
+              )}
+              {g.rows.map((row, i) => (
+                <tr key={`${g.key}-${i}`}>
+                  {row.map((c, j) => <td key={j}>{c}</td>)}
+                </tr>
+              ))}
+            </React.Fragment>
+          ))}
+          {bericht143.rows.length === 0 && (
+            <tr><td colSpan={bericht143.header.length} className="row-muted">
+              {t('dlg.sch.rep.empty', 'Keine Zeilen.')}
+            </td></tr>
+          )}
+        </tbody>
+      </table>
+      {/* Was dieses Modell NICHT schreiben kann — berechnet aus dem
+          Feld-Katalog, nicht aufgezaehlt. Eine Aufzaehlung waere der
+          Kenntnisstand ihres Autors, und das naechste fehlende Feld fiele
+          niemandem auf. */}
+      {luecken.length > 0 && (
+        <div className="prop-derived">
+          {t('dlg.sch.rep.gaps', 'Aus diesem Modell nicht schreibbar:')}
+          <ul>
+            {luecken.map((g) => <li key={g.label}>{g.message}</li>)}
+          </ul>
+        </div>
+      )}
+      <div className="prop-derived">
+        {t('dlg.sch.rep.hint', 'Alle Blätter lesen dieselben Felder. Wer eine Spalte ändert, ändert sie einmal — nicht zwölfmal.')}
+      </div>
+    </>
+  );
+
   const checkPanel = (
     <>
       <div className="rig-pills">
@@ -762,7 +996,21 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       <div className="schedule-cards">
         <div className="schedule-card"><span className="sc-val">{(power.totalWatts / 1000).toFixed(2)} kW</span><span className="sc-label">{t('dlg.sch.totalPower', 'Gesamtleistung')}</span></div>
         <div className="schedule-card"><span className="sc-val">{power.amps1ph.toFixed(1)} A</span><span className="sc-label">{t('dlg.sch.singlePhase', '@ 230 V (1-phasig)')}</span></div>
-        <div className="schedule-card"><span className="sc-val">{power.ampsPerPhase.toFixed(1)} A</span><span className="sc-label">{t('dlg.sch.perPhase', 'pro Phase (3×230 V)')}</span></div>
+        {/* BEDARF 141 — hier stand bis 2026-09-07 `power.ampsPerPhase`, also
+            `Gesamtlast / 3`: die Last einer AUSGEGLICHENEN Anlage, und damit
+            eines Zustands, den niemand hat. Den Automaten wirft die SCHWERSTE
+            Phase. Die Annahme steht jetzt daneben statt an ihrer Stelle. */}
+        <div className={`schedule-card ${verteilung.peak && verteilung.peak.amps > 16 ? 'photo-bad' : ''}`}>
+          <span className="sc-val">{(verteilung.peak?.amps ?? 0).toFixed(1)} A</span>
+          <span className="sc-label">
+            {t('dlg.sch.pwr.peak', 'schwerste Phase')}
+            {verteilung.peak ? ` · ${PHASE_LABEL[verteilung.peak.phase]}` : ''}
+          </span>
+        </div>
+        <div className="schedule-card">
+          <span className="sc-val">{power.ampsPerPhase.toFixed(1)} A</span>
+          <span className="sc-label">{t('dlg.sch.pwr.assumed', 'ausgeglichen angenommen')}</span>
+        </div>
         <div className="schedule-card"><span className="sc-val">{circuits.length}×</span><span className="sc-label">{t('dlg.sch.circuits', 'Stromkreise (16 A, 3 kW)')}</span></div>
       </div>
       {circuits.length > 0 && (
@@ -775,6 +1023,99 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
             </div>
           ))}
         </div>
+      )}
+      {/* ── BEDARF 141 — Kreise, Phasen und Steckreihenfolge ─────────────
+          Der Beleg (`jkarp7/showstack#41`, `#39`) nennt drei Dinge, die dem
+          Plan fehlten: AB/AC/ABC-Vorlagen, die Last JE PHASE, und die
+          Punkt-Kreis-Schreibweise „3-2" (Distro 3, Ausgang 2). Die dritte ist
+          keine Verzierung: sie ist die einzige Bezeichnung, die jemand am
+          Steckfeld wiederfindet. */}
+      <h4 className="schedule-subhead">
+        {t('dlg.sch.pwr.phases', 'Phasen & Kreise')}
+        {verteilung.assignments.length > 0 && (
+          <button className="btn-secondary" style={{ marginLeft: 8 }} onClick={exportCircuits}>
+            &#8595; {t('dlg.sch.pwr.csv', 'Kreisliste (CSV)')}
+          </button>
+        )}
+      </h4>
+      <div className="schedule-actions">
+        <label>
+          {t('dlg.sch.pwr.template', 'Der Anschluss führt')}{' '}
+          <select
+            value={phaseTemplate}
+            onChange={(e) => onSetPhaseTemplate(e.target.value as PhaseTemplate)}
+          >
+            {/* Literale Optionen: die vier Vorlagen aus dem Beleg, nicht eine
+                frei zusammenstellbare Menge. „L2+L3 ohne L1" findet niemand
+                vor — „eine Phase ist belegt" schon. */}
+            <option value="ABC">{TEMPLATE_LABEL.ABC}</option>
+            <option value="AB">{TEMPLATE_LABEL.AB}</option>
+            <option value="AC">{TEMPLATE_LABEL.AC}</option>
+            <option value="A">{TEMPLATE_LABEL.A}</option>
+          </select>
+        </label>
+      </div>
+      <table className="schedule-table">
+        <thead>
+          <tr>
+            <th>{PHASE_HEADERS[0]}</th>
+            <th>{t('dlg.sch.pwr.hCircuits', 'Kreise')}</th>
+            <th>W</th>
+            <th>A</th>
+          </tr>
+        </thead>
+        <tbody>
+          {verteilung.phases.map((ph) => (
+            <tr key={ph.phase} className={ph.amps > 16 ? 'row-conflict' : ''}>
+              <td>{PHASE_LABEL[ph.phase]}</td>
+              <td>{ph.circuits}</td>
+              <td>{Math.round(ph.watts)}</td>
+              <td>{ph.amps.toFixed(1)} A</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {/* Der Betrag, um den der Plan zu gut aussah — als Satz und nicht als
+          Fussnote. Null heisst: die Anlage ist ausgeglichen, die alte Zahl
+          stimmte. Alles darueber ist der Unterschied zur Wirklichkeit. */}
+      <div className="prop-derived">
+        {verteilung.understatedAmps >= 1
+          ? t('dlg.sch.pwr.understated', 'Ungleich verteilt: die schwerste Phase trägt {d} A mehr als die ausgeglichene Annahme ({a} A). Unterschied zwischen schwerster und leichtester Phase: {i} A.')
+            .replace('{d}', verteilung.understatedAmps.toFixed(1))
+            .replace('{a}', verteilung.assumedAmpsPerPhase.toFixed(1))
+            .replace('{i}', verteilung.imbalanceAmps.toFixed(1))
+          : t('dlg.sch.pwr.balanced', 'Gleichmäßig verteilt — die ausgeglichene Annahme trifft hier zu.')}
+      </div>
+      {verteilung.assignments.length > 0 && (
+        <table className="schedule-table">
+          <thead>
+            <tr>
+              <th>{CIRCUIT_HEADERS[0]}</th>
+              <th>{PHASE_HEADERS[0]}</th>
+              <th>{t('dlg.sch.fixtures', 'Leuchten')}</th>
+              <th>W</th>
+              <th>A</th>
+              <th>{t('dlg.sch.col.utilization', 'Auslastung')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {verteilung.assignments.map((a) => (
+              <tr key={a.index} className={a.overloaded ? 'row-conflict' : ''}>
+                {/* Die Punkt-Kreis-Schreibweise, nicht die laufende Nummer:
+                    „Kreis 14" sagt niemandem, wo er steht. */}
+                <td><strong>{circuitLabel(a)}</strong></td>
+                <td>{PHASE_LABEL[a.phase]}</td>
+                <td>{a.fixtureCount}</td>
+                <td>{Math.round(a.watts)}</td>
+                <td>{a.amps.toFixed(1)}{a.overloaded ? ' \u26a0' : ''}</td>
+                <td>
+                  <span className={`util-bar ${utilClass(a.utilization)}`}><i style={{ width: `${Math.min(100, a.utilization * 100)}%` }} /></span>
+                  <span className="util-pct">{Math.round(a.utilization * 100)} %</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
       <h4 className="schedule-subhead">{t('dlg.sch.loadPerTruss', 'Last pro Traverse')} · {totalWeight.toFixed(1)} {t('dlg.sch.kgTotalLabel', 'kg gesamt')}</h4>
       <table className="schedule-table">
@@ -864,7 +1205,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     </div>
   );
 
-  const panels: Record<Tab, React.ReactNode> = { list: listPanel, magic: magicPanel, focus: focusPanel, notes: notesPanel, check: checkPanel, return: returnPanel, photo: photoPanel, load: loadPanel, export: exportPanel };
+  const panels: Record<Tab, React.ReactNode> = { list: listPanel, magic: magicPanel, focus: focusPanel, notes: notesPanel, papers: papersPanel, check: checkPanel, return: returnPanel, photo: photoPanel, load: loadPanel, export: exportPanel };
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
