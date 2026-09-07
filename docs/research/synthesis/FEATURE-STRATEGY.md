@@ -269,6 +269,10 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 87 | Ein Uebertragungs-Protokoll, das nach der Show erklaert, was passiert ist (P2) | `cable#729` (`lib/transmissionRecord.ts`) |
 | 88 | Event-Metadaten einmal eingegeben und an die Ausspielziele abgeglichen (P2) | `cable#729` (`lib/eventMetadata.ts`) |
 | 35 | Uebertragungszustand als Show-Control-Signal (P1) | **offen, E-23** — die Massnahme steht unter einer Bedingung, die dieses Repo nicht erfuellt |
+| 49 | Eine Zuordnung Kamera→Bedienfeld→MV→Tally statt drei Kopien (P2) | **E-22 entschieden** (geteiltes Objekt ueber `@avplan`), Bau blockiert an E-21 |
+| 20 | Subnetz-/VLAN-Vergabe mit Doppel- und Masken-Pruefung (P1) | **E-5 entschieden** (Container + Pool wie NetBox), Bau offen |
+| 4 · 6 · 7 · 8 | Ablauf lesen und mit dem technischen Plan verknuepfen (P1) | **E-18 entschieden**: nur lesen, Bau offen |
+| 11 · 53 · 54 · 56 | Ablauf FUEHREN — Autorenschaft, Nachziehen, Spaltenrechte, Ist-Zeiten (P1/P2) | **WON'T** (E-18: die Suite fuehrt den Ablauf nicht) |
 | 122 | Tally und UMD folgen dem Mischer, statt von Hand gepflegt zu werden (P4) | Initiative 2 (`cable/lib/tallyMap.ts`) |
 | 129 | Relatives Trimmen der meistbenutzten Paint-Werte statt Sprung auf eine Zahl (P4) | `sony-camera-bridge#15` |
 
