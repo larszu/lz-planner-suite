@@ -388,7 +388,26 @@ ist selbst ein Ergebnis.
 
 ### B-17 · Die dokumentierte Dev-Einbettung trifft nie einen laufenden Planer
 
-* **Status:** offen (Entscheidung beim Eigentümer, siehe E-10)
+* **Status:** ~~offen~~ **erledigt 2026-09-07** (`cable#763`, `multicam#106`,
+  `light#90`, `suite#155`) — die drei Planer pinnen jetzt genau die Ports,
+  die Shell und README seit jeher nennen: 4181 / 4182 / 4183, jeweils mit
+  `strictPort: true`.
+
+  **`strictPort` ist nicht Beiwerk, sondern die zweite Hälfte des Defekts.**
+  Ohne die Angabe rückt Vite bei besetztem Port still weiter; dann stimmt die
+  Zahl in der Konfiguration zwar, der laufende Server hört aber woanders — und
+  genau dieses stille Weiterrücken war der Grund, warum der zweite gestartete
+  Planer nicht mehr gefunden wurde. Ein Startfehler mit Portnummer ist die
+  bessere Meldung.
+
+  Der Wächter (`npm run devports:check`, in CI) misst **nicht** gegen die
+  README — dann wäre die README die Wahrheit, und die kann veralten, ohne dass
+  es auffällt. Er vergleicht zwei Quellen, die beide Code sind: den
+  Dev-Fallback in `apps/shell/src/modules/registry.ts` gegen den `server.port`
+  in der `vite.config.ts` des jeweiligen Planers, und verlangt `strictPort`.
+
+  E-10 (wo die Dev-URLs herkommen sollen — Manifest, Env oder Fallback) bleibt
+  davon unberührt: falsch waren die **Defaults**, nicht der Mechanismus.
 * **Befund (nachgeprüft 2026-09-04):** Die Dev-Fallback-URLs der Shell stehen
   auf `4181`/`4182`/`4183` (`registry.ts:73/91/109`, so auch in `README.md`
   Zeile 144-146 dokumentiert). **Kein Planer hört je auf diesen Ports:**
@@ -1085,7 +1104,20 @@ ist selbst ein Ergebnis.
 
 ### B-37 · Die Doku nennt ein ICE-/TURN-Feld, das die App nicht hat
 
-* **Status:** offen.
+* **Status:** ~~offen~~ **erledigt** (`cable#687`, Commit `061cd9e`) —
+  nachgemessen 2026-09-07. Der Eintrag stand hier als „offen", obwohl die
+  Arbeit längst getan war: `src/renderer/lib/crdt/iceServers.ts` (Parser),
+  `iceServers` in `PersistedCollab` und im Store, `peerOpts.config.iceServers`
+  in `webrtcProvider.ts`, ein Eingabefeld im `CollabPanel` samt Prüfung der
+  ungültigen Zeilen, und `tests/iceServerErreichenDenProvider.test.ts` (9
+  Tests, in CI). `docs/self-hosted-relay.md` nennt jetzt „Zusammenarbeit →
+  STUN-/TURN-Server" mit dem tatsächlichen Zeilenformat.
+* **Was daran zählt, auch wenn nichts mehr zu bauen ist:** Ein Eintrag, der
+  fälschlich „offen" sagt, ist nicht harmlos. Er ist die Umkehrung des
+  Befunds, den er beschreibt — eine Zusage, die nicht mehr stimmt — und schickt
+  den Nächsten los, etwas zu bauen, das es gibt. Derselbe Fehler wie bei B-4,
+  und aus demselben Grund hier mit Datum und Beleg nachgetragen statt still
+  gestrichen.
 * **Befund (gemessen 2026-09-04):** `cable-planner/docs/self-hosted-relay.md:51`
   weist den Nutzer an: „Die TURN-Zugangsdaten trägst du in der App unter
   **Zusammenarbeit → ICE-Server** ein (bzw. via `iceServers`-Feld)." Beides gibt

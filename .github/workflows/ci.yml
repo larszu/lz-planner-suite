@@ -77,6 +77,11 @@ jobs:
       # durchblaettert, ist praktisch nicht vorhanden.
       - name: Dokumentation ist auffindbar
         run: npm run docs:reachable
+      # B-17: Die Shell zeigt im Dev-Betrieb auf Ports, auf denen wirklich
+      # jemand hoert. Gemessen wird nicht gegen die README (die kann veralten,
+      # ohne dass es auffaellt), sondern Shell-Fallback gegen vite.config.
+      - name: Dev-Ports von Shell und Planern stimmen ueberein
+        run: npm run devports:check
 
       # Der Suite-Installer verpackt Cables Main-Prozess mit; was der zur
       # Laufzeit `require`t, muss in apps/shell/package.json stehen. Gemessen
