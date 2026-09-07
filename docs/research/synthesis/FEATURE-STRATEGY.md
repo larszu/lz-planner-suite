@@ -258,6 +258,9 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 63 | Der Bildzustand gehoert zur Position — Szenendatei, Datum, Urheber, Referenz (P2) | `multicam#98` |
 | 50 | Das Blatt fuer die Schicht: Bildzustand, Bedienfeld, Fehler und Befunde je Position (P2) | `multicam#99` |
 | 48 | Fernsteuerweg je Position; Paint-Luecken und der Flotten-Schnitt zur Planungszeit statt in der Probe (P2) | `multicam#100` |
+| 46 | Kommandiert ist nicht bestaetigt: Herkunft je Paint-Wert, aus den Backends nachgelesen (P2) | `sony-camera-bridge#17` |
+| 47 | Platz am Geraet, Body-Nummer und Abgleich-Gruppen — gegen das gerechnet, was gemeinsam geht (P2) | `multicam#101` |
+| 51 | Cine- und Camcorder-Bodies als Positionen mit TEILWEISER Paint statt zweiter Klasse (P2) | `multicam#100` (mit Bedarf 48 erledigt) |
 
 **Nachtrag 2026-09-07 — diese Tabelle war neunundzwanzig Zeilen im Rueckstand.**
 Sie endete bei `cable#727` und `light#72`, obwohl seither in drei Repos
@@ -271,6 +274,18 @@ gezogen, nicht aus der Erinnerung; wo ein Body keine Nummer nannte
 `cable#729` fehlt hier bewusst: er hat Bedarfe (88, 87, 81, 79, 74, 70, 52) in
 den Korpus EINGEARBEITET und keinen davon gebaut. Eine Zeile dafuer haette
 genau die Verwechslung erzeugt, gegen die diese Tabelle geschrieben ist.
+
+**Nachtrag 2026-09-07 — Bedarf 51 steht mit fremder PR-Nummer.** Seine
+Massnahme lautet woertlich: „the planning layer should treat these as
+legitimate ‚camera positions with partial paint‘ rather than second-class
+devices". Genau das ist `multicam#100` (Bedarf 48): `ControlPath` fuehrt
+`sony-usb`, `sony-mnc`, `canon-ccapi`, `lumix-http` und `zcam` gleichrangig
+neben den CCU-Wegen, `MODE_PAINT` gibt jedem seinen TEILWEISEN Satz, und
+`fleetMatch` zaehlt sie im Flotten-Schnitt mit. Nachgesehen 2026-09-07; die
+Zeile steht hier, damit der naechste Leser den Bedarf nicht ein zweites Mal
+baut. Was an 51 offen BLEIBT, ist Steuerung (Rueckweg, Ersatz fuer die
+HC-ROP-App) und liegt damit in `sony-camera-bridge`, nicht in der
+Planungsschicht.
 
 **Zwei Berichtigungen an dieser Tabelle.** Die Zeile zu `cable#703` fuehrte
 „28 · 29 · 34". Gebaut wurden dort das Ziel-Register, die Paritaetspruefung und
