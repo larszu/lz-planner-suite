@@ -221,6 +221,18 @@ jobs:
         with:
           node-version: 22
 
+      # Die Paritaet der Faehigkeits-Tabelle (Bedarf 48) wird NICHT hier
+      # geprueft, sondern in `sony-camera-bridge` selbst. Hier stand sie kurz
+      # und war wertlos: der Checkout jenes Repos scheitert mit dem
+      # GITHUB_TOKEN der Suite an „Not Found" — es ist privat (nachgemessen,
+      # Lauf 34092050711). Der Guard hat sich uebersprungen und der Job blieb
+      # gruen; das sieht im Log aus wie eine bestandene Pruefung.
+      #
+      # Dort herum geht es auf: die Quelle ist lokal, und
+      # `larszu/multicam-planner` ist oeffentlich. Was hier bleibt, ist der
+      # Drift-Guard — er haelt die vendorte Kopie an ihrem Upstream, und der
+      # Upstream haengt an der Bridge.
+
       - name: Check drift against baseline
         working-directory: suite
         run: node scripts/planner-drift.mjs --upstream ../upstream --check
