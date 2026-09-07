@@ -10,32 +10,32 @@
     "drift": 25,
     "total": 62,
     "missingUpstream": false,
-    "upstreamSha": "d3ca31c66654"
+    "upstreamSha": "09c2ad81cced"
   },
   "multicam-planner": {
-    "only-upstream": 0,
+    "only-upstream": 1,
     "only-suite": 3,
     "two-way": 20,
     "upstream-ahead": 0,
     "suite-ahead": 1,
     "expected-overlay": 16,
     "dead-upstream": 0,
-    "drift": 24,
-    "total": 40,
+    "drift": 25,
+    "total": 41,
     "missingUpstream": false,
-    "upstreamSha": "ba8abacea454"
+    "upstreamSha": "b2a81d01ef4e"
   },
   "light-planner": {
-    "only-upstream": 0,
+    "only-upstream": 1,
     "only-suite": 5,
     "two-way": 16,
     "upstream-ahead": 0,
     "suite-ahead": 1,
     "expected-overlay": 14,
     "dead-upstream": 2,
-    "drift": 22,
-    "total": 38,
+    "drift": 23,
+    "total": 39,
     "missingUpstream": false,
-    "upstreamSha": "c24bf0f3bdb5"
+    "upstreamSha": "18b5536638cf"
   }
 }

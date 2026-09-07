@@ -128,7 +128,7 @@ export function InventoryDialog({ open, onClose }: Props) {
             <button type="button" onClick={() => fileRef.current?.click()} className="flex items-center gap-1 rounded bg-bc-dark px-2.5 py-1.5 hover:bg-black" title={t('inventory.import.title', 'Import')}>
               <FiUpload size={13} /> {t('inventory.import', 'Import')}
             </button>
-            <button type="button" onClick={() => setForm({ model: '', quantity: 1 })} className="flex items-center gap-1 rounded bg-bc-accent px-2.5 py-1.5 text-black hover:opacity-90">
+            <button type="button" onClick={() => setForm({ model: '', quantity: 1 })} className="flex items-center gap-1 rounded bg-bc-accent px-2.5 py-1.5 text-bc-accent-text hover:opacity-90">
               <FiPlus size={13} /> {t('inventory.addItem', 'Item')}
             </button>
           </div>
@@ -155,7 +155,7 @@ export function InventoryDialog({ open, onClose }: Props) {
               </div>
               <div className="mt-3 flex justify-end gap-2">
                 <button type="button" onClick={() => setForm(null)} className="rounded bg-bc-dark px-3 py-1 hover:bg-black">{t('inventory.cancel', 'Cancel')}</button>
-                <button type="button" disabled={form.model.trim() === ''} onClick={save} className="rounded bg-bc-accent px-3 py-1 text-black enabled:hover:opacity-90 disabled:opacity-50">{t('inventory.save', 'Save')}</button>
+                <button type="button" disabled={form.model.trim() === ''} onClick={save} className="rounded bg-bc-accent px-3 py-1 text-bc-accent-text enabled:hover:opacity-90 disabled:opacity-50">{t('inventory.save', 'Save')}</button>
               </div>
             </div>
           )}

@@ -119,7 +119,7 @@ export default function TemplateSelector() {
             <button
               onClick={handleSave}
               disabled={!newName.trim()}
-              className="px-3 py-1.5 text-sm rounded bg-bc-accent text-white font-medium disabled:opacity-40 hover:bg-bc-accent/80"
+              className="px-3 py-1.5 text-sm rounded bg-bc-accent text-bc-accent-text font-medium disabled:opacity-40 hover:bg-bc-accent/80"
             >
               {t('header.templates.save', 'Save')}
             </button>
@@ -178,7 +178,7 @@ export default function TemplateSelector() {
                           <option key={c.value} value={c.value}>{c.label}</option>
                         ))}
                       </select>
-                      <button onClick={handleEditSave} className="px-2 py-1 text-xs rounded bg-bc-accent text-white">{t('header.templates.save', 'Save')}</button>
+                      <button onClick={handleEditSave} className="px-2 py-1 text-xs rounded bg-bc-accent text-bc-accent-text">{t('header.templates.save', 'Save')}</button>
                       <button onClick={() => setEditingId(null)} className="px-2 py-1 text-xs rounded text-gray-400 hover:text-gray-200">{t('header.templates.cancel', 'Cancel')}</button>
                     </div>
                   </div>

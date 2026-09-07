@@ -337,7 +337,7 @@ export default function Header({
             type="button"
             onClick={() => onSetLayoutMode('focus')}
             style={{ padding: '6px 12px' }}
-            className={`rounded-md text-xs font-medium transition-colors ${layoutMode === 'focus' ? 'bg-bc-accent text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`rounded-md text-xs font-medium transition-colors ${layoutMode === 'focus' ? 'bg-bc-accent text-bc-accent-text' : 'text-gray-400 hover:text-white'}`}
             title={t('header.layout.focus.title', 'Show a single focused panel')}
           >
             {t('header.layout.focus', 'Focus')}
@@ -346,7 +346,7 @@ export default function Header({
             type="button"
             onClick={() => onSetLayoutMode('grid')}
             style={{ padding: '6px 12px' }}
-            className={`rounded-md text-xs font-medium transition-colors ${layoutMode === 'grid' ? 'bg-bc-accent text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`rounded-md text-xs font-medium transition-colors ${layoutMode === 'grid' ? 'bg-bc-accent text-bc-accent-text' : 'text-gray-400 hover:text-white'}`}
             title={t('header.layout.grid.title', 'Show the grid workspace')}
           >
             {t('header.layout.grid', 'Grid')}
