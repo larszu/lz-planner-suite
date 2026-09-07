@@ -261,6 +261,13 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 46 | Kommandiert ist nicht bestaetigt: Herkunft je Paint-Wert, aus den Backends nachgelesen (P2) | `sony-camera-bridge#17` |
 | 47 | Platz am Geraet, Body-Nummer und Abgleich-Gruppen — gegen das gerechnet, was gemeinsam geht (P2) | `multicam#101` |
 | 51 | Cine- und Camcorder-Bodies als Positionen mit TEILWEISER Paint statt zweiter Klasse (P2) | `multicam#100` (mit Bedarf 48 erledigt) |
+| 43 | Geraetekonfigurationen tragen ihre Herkunft — Blatt daneben, Datei unberuehrt (P2, halb) | `cable#749` |
+| 52 | Fehlerhistorie am physischen Kabel, an Trommel und Stecker (P2) | `cable#729` (`lib/faultHistory.ts`) |
+| 74 | Namens-Konvention mit Massen-Anwendung und Umbenennungs-Export (P2) | `cable#729` (`lib/namingScheme.ts`) |
+| 79 | Budget gegen Ist ohne Tabellenkalkulation (P2) | `cable#729` (`lib/costComparison.ts`) |
+| 81 | Kundenbericht, der aggregiert — und ein Export, den der Kunde lesen kann (P2) | `cable#729` (`lib/clientSummary.ts`) |
+| 87 | Ein Uebertragungs-Protokoll, das nach der Show erklaert, was passiert ist (P2) | `cable#729` (`lib/transmissionRecord.ts`) |
+| 88 | Event-Metadaten einmal eingegeben und an die Ausspielziele abgeglichen (P2) | `cable#729` (`lib/eventMetadata.ts`) |
 
 **Nachtrag 2026-09-07 — diese Tabelle war neunundzwanzig Zeilen im Rueckstand.**
 Sie endete bei `cable#727` und `light#72`, obwohl seither in drei Repos
@@ -271,9 +278,32 @@ gezogen, nicht aus der Erinnerung; wo ein Body keine Nummer nannte
 (`cable#732`, `cable#733`), ist sie ueber den zitierten Beleg bestimmt worden —
 `chazw661/ShowStack#68` fuer Bedarf 114, `erikkaashoek/tinySA#88` fuer Bedarf 112.
 
-`cable#729` fehlt hier bewusst: er hat Bedarfe (88, 87, 81, 79, 74, 70, 52) in
-den Korpus EINGEARBEITET und keinen davon gebaut. Eine Zeile dafuer haette
-genau die Verwechslung erzeugt, gegen die diese Tabelle geschrieben ist.
+**BERICHTIGUNG 2026-09-07 — `cable#729` hat sehr wohl gebaut.** Hier stand:
+
+> `cable#729` fehlt hier bewusst: er hat Bedarfe (88, 87, 81, 79, 74, 70, 52)
+> in den Korpus EINGEARBEITET und keinen davon gebaut. Eine Zeile dafuer
+> haette genau die Verwechslung erzeugt, gegen die diese Tabelle geschrieben
+> ist.
+
+Das ist falsch, und es hat genau den Schaden angerichtet, gegen den der
+Abschnitt geschrieben ist. Nachgesehen am Diff des Commits (`d79af9b`):
+`cable#729` legt SIEBEN Module an — `faultHistory.ts`, `labelSheets.ts`,
+`namingScheme.ts`, `costComparison.ts`, `clientSummary.ts`,
+`transmissionRecord.ts`, `eventMetadata.ts` — plus die Typen und die drei
+Dialoge, die sie bedienbar machen (`AnalysisDialog` +446, `DeliveryDialog`
++407, `InventoryDialog` +147). Jedes Modul nennt in seinem Kopf den Bedarf,
+den es baut.
+
+Gemessen wurde der Schaden am selben Tag: ein Durchlauf durch die
+Bedarfs-Datenbank gegen diese Tabelle fuehrte 52, 74, 87 und 88 als OFFEN —
+also als Kandidaten fuer den naechsten Bau. Ein zweites Mal gebaut worden
+waeren sie, weil hier stand, sie seien es nicht.
+
+Die sechs fehlenden Zeilen sind unten nachgetragen (70 stand bereits als
+„frueher gebaut, nachgewiesen" da). Was an der urspruenglichen Aussage
+stimmte: `cable#729` hat die Bedarfe AUCH in den Korpus eingearbeitet. Beides
+in einem PR zu tun ist der Grund, warum die falsche Haelfte plausibel
+aussah.
 
 **Nachtrag 2026-09-07 — Bedarf 51 steht mit fremder PR-Nummer.** Seine
 Massnahme lautet woertlich: „the planning layer should treat these as
