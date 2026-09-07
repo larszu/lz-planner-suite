@@ -7,17 +7,17 @@ import {
   identityFindings,
   identityTable,
   unitLabel,
-} from '../src/renderer/lib/unitIdentity'
+} from '../src/renderer/lager/lib/unitIdentity'
 import type { InventoryItem, InventoryUnit } from '@avplan/inventory-core'
-import { derivePackList } from '../src/renderer/lib/packList'
-import { auditScan } from '../src/renderer/lib/inventoryAudit'
-import { resolveInventoryCode } from '../src/renderer/lib/inventoryScan'
+import { derivePackList } from '../src/renderer/lager/lib/packList'
+import { auditScan } from '../src/renderer/lager/lib/inventoryAudit'
+import { resolveInventoryCode } from '../src/renderer/lager/lib/inventoryScan'
 import typenQuelle from '../../../packages/inventory-core/src/types.ts?raw'
-import libQuelle from '../src/renderer/lib/unitIdentity.ts?raw'
-import storeQuelle from '../src/renderer/store/inventoryStore.ts?raw'
-import packQuelle from '../src/renderer/lib/packList.ts?raw'
-import auditQuelle from '../src/renderer/lib/inventoryAudit.ts?raw'
-import dialogQuelle from '../src/renderer/components/Inventory/InventoryDialog.tsx?raw'
+import libQuelle from '../src/renderer/lager/lib/unitIdentity.ts?raw'
+import storeQuelle from '../src/renderer/lager/store/inventoryStore.ts?raw'
+import packQuelle from '../src/renderer/lager/lib/packList.ts?raw'
+import auditQuelle from '../src/renderer/lager/lib/inventoryAudit.ts?raw'
+import dialogQuelle from '../src/renderer/lager/ui/InventoryDialog.tsx?raw'
 import netzQuelle from '../src/renderer/components/Properties/sections/NetworkAccessSection.tsx?raw'
 import lexikonQuelle from '../src/renderer/lib/dataDictionary.ts?raw'
 

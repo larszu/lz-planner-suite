@@ -3,7 +3,7 @@ import {
   deriveDemand,
   normaliseName,
   resolveCoverage,
-} from '../src/renderer/lib/inventoryCoverage'
+} from '../src/renderer/lager/lib/inventoryCoverage'
 import type { EquipmentItem } from '../src/renderer/types/equipment'
 import type { InventoryItem } from '@avplan/inventory-core'
 

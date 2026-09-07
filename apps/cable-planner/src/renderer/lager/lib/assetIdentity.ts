@@ -38,15 +38,15 @@
 // REIN: keine Uhr, kein Store, kein IO.
 // ───────────────────────────────────────────────────────────────────────────
 
-import type { EquipmentItem } from '../types/equipment'
+import type { EquipmentItem } from '../../types/equipment'
 // OVERLAY (Suite): upstream liest die Lager-Typen aus `../types/inventory`;
 // in der Suite kommen sie aus `@avplan/inventory-core` (siehe
 // REPLACED_BY_PACKAGE in `scripts/planner-drift.mjs`). Eine zweite Kopie der
 // Typen waere genau die Doppelung, wegen der das Paket ueberhaupt existiert.
 import type { InventoryUnit, InventoryItem } from '@avplan/inventory-core'
 import type { CheckoutRecord } from '../types/checkout'
-import type { CsvTable } from './csv'
-import { deviceInterfaces } from './networkInterfaces'
+import type { CsvTable } from '../../lib/csv'
+import { deviceInterfaces } from '../../lib/networkInterfaces'
 
 /**
  * Woran haengt an diesem Platz eine Netz-Identitaet?

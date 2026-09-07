@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { resolveInventoryCode } from '../src/renderer/lib/inventoryScan'
-import { derivePackList, packListToText, packListTotalCount } from '../src/renderer/lib/packList'
-import { buildInventoryReport } from '../src/renderer/lib/inventoryReport'
+import { resolveInventoryCode } from '../src/renderer/lager/lib/inventoryScan'
+import { derivePackList, packListToText, packListTotalCount } from '../src/renderer/lager/lib/packList'
+import { buildInventoryReport } from '../src/renderer/lager/lib/inventoryReport'
 import type { InventoryItem, StorageNode, InventoryUnit } from '@avplan/inventory-core'
 
 const now = '2026-07-06T00:00:00.000Z'

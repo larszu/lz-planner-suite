@@ -9,11 +9,11 @@ import {
   expectedAt,
   missingAt,
   type AuditCandidate,
-} from '../src/renderer/lib/inventoryAudit'
+} from '../src/renderer/lager/lib/inventoryAudit'
 import type { InventoryItem, InventoryUnit, StorageNode } from '@avplan/inventory-core'
-import inventarQuelle from '../src/renderer/components/Inventory/InventoryDialog.tsx?raw'
+import inventarQuelle from '../src/renderer/lager/ui/InventoryDialog.tsx?raw'
 import mobileQuelle from '../src/mobile/MobileApp.tsx?raw'
-import auditQuelle from '../src/renderer/lib/inventoryAudit.ts?raw'
+import auditQuelle from '../src/renderer/lager/lib/inventoryAudit.ts?raw'
 
 // ---------------------------------------------------------------------------
 // Scannen ist der schnelle Weg, nie der einzige (Bedarf 150, P4).

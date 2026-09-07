@@ -12,8 +12,8 @@
 // in der Liste nicht vor.
 // ───────────────────────────────────────────────────────────────────────────
 import { describe, expect, it } from 'vitest'
-import { buildPlanBom, pickListCsv } from '../src/renderer/lib/planBom'
-import { resolveCoverage } from '../src/renderer/lib/inventoryCoverage'
+import { buildPlanBom, pickListCsv } from '../src/renderer/lager/lib/planBom'
+import { resolveCoverage } from '../src/renderer/lager/lib/inventoryCoverage'
 import type { EquipmentItem } from '../src/renderer/types/equipment'
 import type { InventoryItem, InventoryUnit, StorageNode } from '@avplan/inventory-core'
 

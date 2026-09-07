@@ -8,8 +8,8 @@ import {
   buildLabelSheetHtml,
   type LabelSpec,
 } from '../src/renderer/lib/labelSheets'
-import { buildPackListHtml } from '../src/renderer/lib/inventoryPrint'
-import type { PackListNode } from '../src/renderer/lib/packList'
+import { buildPackListHtml } from '../src/renderer/lager/lib/inventoryPrint'
+import type { PackListNode } from '../src/renderer/lager/lib/packList'
 import type { StorageNode } from '@avplan/inventory-core'
 
 const sheet3667 = labelSheetById('zweckform-3667')!

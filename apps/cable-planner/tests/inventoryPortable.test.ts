@@ -5,7 +5,7 @@ import {
   INVENTORY_FORMAT,
   INVENTORY_FORMAT_VERSION,
 } from '@avplan/inventory-core'
-import { useInventoryStore } from '../src/renderer/store/inventoryStore'
+import { useInventoryStore } from '../src/renderer/lager/store/inventoryStore'
 
 const reset = () => {
   localStorage.clear()

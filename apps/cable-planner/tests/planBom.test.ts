@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPlanBom, outcomeLabel, pickListCsv, planBomCsv } from '../src/renderer/lib/planBom'
+import { buildPlanBom, outcomeLabel, pickListCsv, planBomCsv } from '../src/renderer/lager/lib/planBom'
 import type { EquipmentItem } from '../src/renderer/types/equipment'
 import type { InventoryItem, StorageNode } from '@avplan/inventory-core'
 

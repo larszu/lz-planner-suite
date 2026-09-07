@@ -14,8 +14,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { describe, expect, it } from 'vitest'
 import { zusatzBedarf } from '../src/renderer/lib/planDemandExtras'
-import { deriveDemand } from '../src/renderer/lib/inventoryCoverage'
-import { buildPlanBom } from '../src/renderer/lib/planBom'
+import { deriveDemand } from '../src/renderer/lager/lib/inventoryCoverage'
+import { buildPlanBom } from '../src/renderer/lager/lib/planBom'
 import type { EquipmentItem } from '../src/renderer/types/equipment'
 import type { InventoryItem, StorageNode } from '@avplan/inventory-core'
 import type { DrumKitPlan } from '../src/renderer/types/drumKit'

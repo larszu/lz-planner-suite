@@ -8,7 +8,7 @@ import {
   wouldCreateCycle,
   availabilityOfSet,
   isContainerKind,
-} from '../src/renderer/lib/storageTree'
+} from '../src/renderer/lager/lib/storageTree'
 import type { StorageNode, InventoryItem, InventorySet } from '@avplan/inventory-core'
 
 const now = '2026-07-06T00:00:00.000Z'

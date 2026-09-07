@@ -40,7 +40,7 @@
 // ───────────────────────────────────────────────────────────────────────────
 
 import type { InventoryUnit } from '@avplan/inventory-core'
-import type { CsvTable } from './csv'
+import type { CsvTable } from '../../lib/csv'
 
 export type IdentityAudience = 'house' | 'external'
 

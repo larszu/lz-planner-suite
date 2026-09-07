@@ -83,6 +83,64 @@ Deshalb in dieser Reihenfolge, je Bereich:
    Vertrag. Eine zweite Ableitung derselben Zahl auf der Planer-Seite ist der Defekt, gegen den
    ADR-001 geschrieben ist — beim Schnitt entsteht sie besonders leicht.
 
+## Der Vertrag „Lager" — Schritt 1, ausgeschrieben (2026-09-07)
+
+Punkt 1 oben verlangt die Liste, *bevor* eine Datei umzieht. Hier steht sie. Sie ist gemessen und
+nicht geschätzt: der vollständige Import-Querschnitt zwischen Planer und Lager, aufgenommen im
+Cable-Planner (`cable-planner#761`), und in Code gegossen als `src/renderer/lager/index.ts`.
+
+### Was der Plan das Lager fragt
+
+| Frage | Der Vertrag |
+| --- | --- |
+| **Deckt der Bestand den Bedarf?** | `deriveDemand`, `resolveCoverage`, `normaliseName` · `buildPlanBom`, `planBomCsv`, `pickListCsv`, `outcomeLabel` · `reconcileErp`, `erpReconcileTable` · Typen `DemandLine`, `CoverageLine`, `CoverageOutcome`, `CoverageResult`, `CoverageSource`, `PlanBom`, `PlanBomRow`, `ErpReport`, `ErpRow`, `ErpLine`, `ErpVerdict`, `ErpBasis` |
+| **Was steht auf dem Ausgabeschein?** | `openCheckouts`, `overdueCheckouts` — und die Kehrseite, die der Schein nicht beantwortet: `assessAssetIdentity`, `assetIdentityTable`, `identityAnchors`, `ASSET_FINDING_LABEL`, `IDENTITY_ANCHOR_LABEL`, `unitLabel` samt ihren Typen |
+| **Ist das Stück fremdes Material?** | `ownershipNote`, `overdueSubhire`, `subhireStatus`, `isForeign`, `OWNERSHIP_LABEL`, Typen `SubhireStatus`, `OverdueLine` |
+
+Dazu der Bestand selbst, über **vier benannte Haken** statt über rohe Store-Selektoren:
+`useBestand` (Artikel), `useEinheiten` (serialisierte Einheiten), `useLagerorte` (der Lagerbaum),
+`useAusgaben` (die Scheine). Damit ist die Zustand-Store-Form nicht Teil des Vertrags — nach dem
+Umzug wäre sie sonst eine Schnittstelle, die aus einem fremden Repo kommt.
+
+Und **genau ein Schreibweg** vom Plan ins Lager: `useTypBestaetigen(itemId, deviceTypeId)`. Das ist
+die Antwort auf `proposed-by-name` — ein Mensch hat gesagt, dass Plan-Gerät und Lager-Position
+dasselbe meinen, und diese Aussage gehört an die Lager-Position, sonst wird sie beim nächsten
+Abgleich wieder geraten. Menge, Ort und Zustand bleiben Sache des Lagers.
+
+### Was ausdrücklich NICHT zum Lager gehört
+
+Vier Module hätte man mit einem Blick auf den Namen hineinsortiert. Jedes wäre danach aus einem
+fremden Repo zu holen gewesen:
+
+- **`pickFile`** — generischer Datei-Dialog mit fünf Aufrufern quer durch den Planer
+  (Videohub-Export, Bibliothek, Abgleich, Konfigurationen, Bild-Import). Im Lager-Import
+  entstanden, aber keine Lager-Frage.
+- **`mergeDefined`** — „Die Regel ist nicht auf das Lager beschränkt" steht wörtlich in ihrem
+  eigenen Kommentar; `saveEquipmentAsTemplate` benutzt sie aus demselben Grund. Sie ist deshalb
+  nach `lib/mergeDefined.ts` gezogen.
+- **`handoverPackage`** — klingt nach Ausgabeschein, ist das Übergabe-/Closeout-Paket der
+  Festinstallation, also die andere Domäne dieses ADRs (Issues #665–#667).
+- **`actionItems`** — liest das Lager, gehört aber dem Plan: es zählt auch Netz- und Geld-Befunde
+  zusammen. Verbraucher des Vertrags, nicht sein Inhalt.
+
+### Wie der Vertrag gehalten wird
+
+`cable-planner/tests/lagerVertrag.test.ts` misst die Einhaltung, statt sie zu behaupten: kein
+Modul außerhalb von `lager/` importiert ein Internum; der Ordner ist nicht leer; die vier
+Ausnahmen liegen außerhalb; die Tür rechnet nicht selbst (Punkt 4 dieses ADRs); jeder Store-Haken
+*ist* ein Selektor und kein frisch gebautes Objekt.
+
+**Die Domäne ist der Ordner**, nicht eine Liste im Wächter. Die erste Fassung zählte 29 Pfade auf —
+und ein Tippfehler darin machte den Wächter für genau dieses Modul still wirkungslos. Eine Datei
+gehört zum Lager, weil sie darin liegt; wer eine hinzunimmt, verschiebt sie, und das ist ein Diff,
+den man sieht.
+
+### Was als Nächstes ansteht
+
+Schritt 3: `src/renderer/lager/` wird ein eigenes Repo, die Suite bindet es wie die anderen Planer
+ein, `scripts/planner-drift.mjs` bekommt seine Wurzel dazu. Der Schnitt selbst ist damit ein
+Ordner, den man heraushebt — kein Umbau mehr.
+
 **Was ausdrücklich nicht passiert:** kein „großer Wurf" in einem Schritt. Jeder Bereich wird
 einzeln geschnitten, mit grünem CI dazwischen. Der Cable-Planner bleibt in jedem Zwischenstand
 lauffähig — er ist das Werkzeug, mit dem gearbeitet wird, nicht ein Umbauprojekt.

@@ -6,19 +6,19 @@ import {
   normaliseFaultEvent,
   openFaultsOf,
   suspectUnits,
-} from '../src/renderer/lib/faultHistory'
+} from '../src/renderer/lager/lib/faultHistory'
 import {
   FAULT_SERVICE_LABEL,
   type InventoryItem,
   type InventoryUnit,
   type UnitEvent,
-} from '@avplan/inventory-core'
 // Suite-Overlay: die Typen liegen hier im Paket, nicht in der App-Kopie —
 // deshalb liest die Quelltext-Pruefung die Paketdatei.
+} from '@avplan/inventory-core'
 import typenQuelle from '../../../packages/inventory-core/src/types.ts?raw'
-import libQuelle from '../src/renderer/lib/faultHistory.ts?raw'
-import storeQuelle from '../src/renderer/store/inventoryStore.ts?raw'
-import dialogQuelle from '../src/renderer/components/Inventory/InventoryDialog.tsx?raw'
+import libQuelle from '../src/renderer/lager/lib/faultHistory.ts?raw'
+import storeQuelle from '../src/renderer/lager/store/inventoryStore.ts?raw'
+import dialogQuelle from '../src/renderer/lager/ui/InventoryDialog.tsx?raw'
 
 // ---------------------------------------------------------------------------
 // Verdaechtige Einheiten (Bedarf 52, P2).

@@ -6,13 +6,13 @@ import {
   assetIdentityTable,
   identityAnchors,
   type AssetIdentityInput,
-} from '../src/renderer/lib/assetIdentity'
+} from '../src/renderer/lager/lib/assetIdentity'
 import { INSTANCE_FIELDS } from '../src/renderer/lib/modelFields'
 import type { EquipmentItem } from '../src/renderer/types/equipment'
 // OVERLAY (Suite): dieselbe Ersetzung wie in `lib/assetIdentity.ts` --
 // upstream `src/renderer/types/inventory`, hier `@avplan/inventory-core`.
 import type { InventoryUnit, InventoryItem } from '@avplan/inventory-core'
-import type { CheckoutRecord } from '../src/renderer/types/checkout'
+import type { CheckoutRecord } from '../src/renderer/lager/types/checkout'
 import sectionQuelle from '../src/renderer/components/Properties/sections/NetworkAccessSection.tsx?raw'
 import analyseQuelle from '../src/renderer/components/Analysis/AnalysisDialog.tsx?raw'
 import diffQuelle from '../src/renderer/lib/planDiff.ts?raw'
@@ -356,8 +356,12 @@ describe('Erreichbarkeit und Einordnung des neuen Feldes', () => {
   it('LIEST Bestand und Scheine nur, statt sie ins Projekt zu kopieren', () => {
     // Dieselbe Kiste faehrt auf mehreren Shows; sie ins Projektfile zu
     // kopieren waere eine zweite Wahrheit ueber den Lagerbestand.
-    expect(analyseQuelle).toContain('const invUnits = useInventoryStore((st) => st.units)')
-    expect(analyseQuelle).toContain('const checkouts = useCheckoutStore((st) => st.records)')
+    // Seit dem Lager-Schnitt (ADR-006) laeuft der Zugriff ueber die eine
+    // Tuer `src/renderer/lager` statt direkt in den Store. Die Aussage bleibt
+    // dieselbe und wird hier weiter gemessen: GELESEN, nicht kopiert.
+    expect(analyseQuelle).toContain('const invUnits = useEinheiten()')
+    expect(analyseQuelle).toContain('const checkouts = useAusgaben()')
+    expect(analyseQuelle).toContain("from '../../lager'")
     expect(analyseQuelle).not.toContain('setInventory')
   })
 

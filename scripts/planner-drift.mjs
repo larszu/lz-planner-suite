@@ -119,8 +119,13 @@ const BASELINE = join(ROOT, 'scripts', 'planner-drift-baseline.json')
  */
 const REPLACED_BY_PACKAGE = {
   'cable-planner': [
-    'renderer/types/inventory.ts',      // -> @avplan/inventory-core (Typen)
-    'renderer/lib/inventoryPortable.ts', // -> @avplan/inventory-core (Wire-Format)
+    // Seit dem Lager-Schnitt (ADR-006, cable#761) liegen beide unter
+    // `renderer/lager/`. Die alten Pfade bleiben stehen, damit ein aelterer
+    // Upstream-Stand hier nicht ploetzlich als `only-upstream` auftaucht.
+    'renderer/lager/types/inventory.ts',      // -> @avplan/inventory-core (Typen)
+    'renderer/lager/lib/inventoryPortable.ts', // -> @avplan/inventory-core (Wire-Format)
+    'renderer/types/inventory.ts',
+    'renderer/lib/inventoryPortable.ts',
   ],
   'multicam-planner': [
     'inventory/types.ts',
@@ -181,6 +186,27 @@ REPLACED_BY_PACKAGE['light-planner'].push('scripts/inventory-contract-check.ts')
  * Skript verteidigt.
  */
 const UEBERSETZT = {
+  'cable-planner': [
+    // Der Lager-Schnitt (ADR-006, cable#761) hat `types/inventory` und
+    // `lib/inventoryPortable` nach `lager/` verschoben. Die Suite traegt beide
+    // Dateien gar nicht — sie kommen aus `@avplan/inventory-core`
+    // (REPLACED_BY_PACKAGE oben). Die drei neuen Upstream-Zeilen sind genau
+    // die Imports auf diese zwei Dateien; sie koennen hier nie woertlich
+    // stehen, und sie fehlen auch nicht: die Suite-Kopie liest dieselbe
+    // Zusicherung aus dem Paket.
+    {
+      zeile: "import inventoryTypesSrc from '../src/renderer/lager/types/inventory.ts?raw'",
+      wo: "apps/cable-planner/tests/inventoryContract.test.ts: liest ../../../packages/inventory-core/src/types.ts?raw",
+    },
+    {
+      zeile: "} from '../src/renderer/lager/lib/inventoryPortable'",
+      wo: "apps/cable-planner/tests/inventoryContract.test.ts: importiert aus @avplan/inventory-core",
+    },
+    {
+      zeile: "import type { InventoryItem, StorageNode, InventorySet, InventoryUnit } from '../src/renderer/lager/types/inventory'",
+      wo: "apps/cable-planner/tests/inventoryContract.test.ts: importiert aus @avplan/inventory-core",
+    },
+  ],
   'multicam-planner': [
     {
       zeile: 'title="Bearbeiten-Modus — sperrt alles ausser der gewählten Kategorie"',

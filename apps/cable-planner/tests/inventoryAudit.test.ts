@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { AUDIT_LABEL, auditRelocations, auditScan, auditTable } from '../src/renderer/lib/inventoryAudit'
+import { AUDIT_LABEL, auditRelocations, auditScan, auditTable } from '../src/renderer/lager/lib/inventoryAudit'
 import type { InventoryItem, InventoryUnit, StorageNode } from '@avplan/inventory-core'
-import inventarQuelle from '../src/renderer/components/Inventory/InventoryDialog.tsx?raw'
+import inventarQuelle from '../src/renderer/lager/ui/InventoryDialog.tsx?raw'
 import dictsQuelle from '../src/renderer/lib/i18n/dicts.ts?raw'
 
 // ---------------------------------------------------------------------------
