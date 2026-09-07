@@ -2713,3 +2713,21 @@ kbd {
   .label-line.overflows { outline: none !important; }
   @page { size: A4; margin: 0; }
 }
+
+/* ── BEDARF 132 — der Ablauf ist ein Baum ──────────────────────────────────
+   Hand-portiert: dieses Stylesheet ist ein gepflegter Fork (es traegt
+   zusaetzlich die Light-Theme-Palette der Shell), deshalb wird der Block
+   ANGEHAENGT statt die Datei kopiert.
+
+   Die Nummer steht vorn und ist gerechnet; die Einrueckung kommt aus der
+   Tiefe (inline, weil sie je Zeile verschieden ist). Ein Eintrag ohne Stelle
+   im Ablauf — Waise oder Kreis — bleibt SICHTBAR und wird markiert:
+   verschwinden zu lassen waere Datenverlust ohne Meldung. */
+.sp-num {
+  flex: 0 0 auto;
+  min-width: 22px;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: var(--text3);
+}
+.sp-item-problem { border-color: #b58900; background: rgba(181, 137, 0, 0.12); }

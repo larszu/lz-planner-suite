@@ -46,6 +46,7 @@ import { foreignCamerasFrom, type ForeignCamera } from './core/foreignView';
 import { APP_VERSION } from './version';
 import { useUiStore } from './store/uiStore';
 import { useProjectStore } from './store/projectStore';
+import { canParent, moveItem } from './core/runningOrder';
 import { useTranslation } from './i18n';
 import type * as pdfjsLib from 'pdfjs-dist';
 import './App.css';
@@ -1475,6 +1476,21 @@ const App: React.FC = () => {
     setActiveSceneId((a) => (a === id ? null : a));
   }, []);
 
+  // BEDARF 132 — verschieben und ein-/ausruecken. Beides geht durch
+  // `core/runningOrder.ts`: `moveItem` tauscht die Nachbarn, und `canParent`
+  // entscheidet, ob ein Umhaengen ueberhaupt geht. Hier wird nichts davon
+  // nachgebaut — eine zweite Fassung waere die, die den Kreis durchlaesst.
+  const handleMoveScene = useCallback((id: string, direction: 'up' | 'down') => {
+    setScenes((prev) => moveItem(prev, id, direction));
+  }, []);
+
+  const handleReparentScene = useCallback((id: string, parentId: string | null) => {
+    setScenes((prev) => {
+      if (!canParent(prev, id, parentId).ok) return prev;
+      return prev.map((s) => (s.id === id ? { ...s, parentId: parentId ?? undefined } : s));
+    });
+  }, []);
+
   // ── Temporarily mute / un-mute lamps ──
   const handleShowAllFixtures = useCallback(() => {
     if (!fixtures.some((f) => f.hidden)) return;
@@ -1621,6 +1637,8 @@ const App: React.FC = () => {
           onRenameScene={handleRenameScene}
           onDeleteScene={handleDeleteScene}
           onShowAll={handleShowAllFixtures}
+          onMoveScene={handleMoveScene}
+          onReparentScene={handleReparentScene}
         />
         <div className="canvas-area">
           {viewMode === '2d' ? (

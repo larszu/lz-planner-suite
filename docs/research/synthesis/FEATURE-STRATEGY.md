@@ -24,6 +24,55 @@ assets. Neither can hold the sentence *"camera 4 is an FX6 at position SL-2, on 
 into frame input 7, tally TSL address 4, MV window 6, comms channel C, operated by Anna."*
 That sentence is the product.
 
+### 1b. Bedarf 149 — was der Markt gerade aufgibt, und was wir davon wirklich haben (2026-09-07)
+
+Bedarf 149 ist der einzige Eintrag der Datenbank, dessen Empfehlung sich nicht an den Code
+richtet, sondern an das, was wir über uns selbst sagen. Er ist mit **widespread** bewertet und
+zählt auf, was in den letzten zwölf Monaten in diesem Werkzeugkasten passiert ist:
+
+* **Lightwright** ist auf Abonnement umgestellt; die Fehlerbehebung für die Altfassung endet
+  laut Hersteller am 2026-07-01.
+* **WYSIWYG** hat Dongles und Dauerlizenzen abgeschafft und läuft nicht mehr, wenn das
+  Abonnement ausläuft.
+* **Depence**-Dauerlizenzen decken nur die aktuelle Hauptversion ab.
+
+Belege: `showstack`-Datenblätter zu den Herstellerdokumenten, abgerufen 2026-08-16 bis
+2026-08-22 (`lightwright.yaml`, `wysiwyg.yaml`, `depence.yaml`, `capture.yaml`,
+`eos-family.yaml`, `chamsys-magicq.yaml`).
+
+**Die Empfehlung der Datenbank stimmt in zwei Dritteln und ist im letzten Drittel schlicht
+falsch — über uns.** Sie schreibt: „light-planner is already offline-first, single-file, MIT."
+Nachgesehen am 2026-09-07: `LICENSE` in der Suite wie im eigenständigen Planer ist eine
+**proprietäre** Lizenz (Copyright 2026 Lars Zumpe, alle Rechte vorbehalten), `package.json`
+sagt `UNLICENSED`. Es hat auch einmal anders ausgesehen — die vendorte Kopie
+`apps/cable-planner/LICENSE` stand bis 2026-09-04 auf MIT, sechs Tage nachdem upstream
+umgestellt hatte. Genau deshalb gibt es `licence:check`.
+
+Das ist keine Kleinigkeit für ein Positionierungs-Dokument. Wer „MIT" in eine Verkaufsaussage
+schreibt, gibt eine Erlaubnis, die der Eigentümer nicht erteilt hat — und nimmt sie
+anschließend zurück, was schlimmer ist, als sie nie gegeben zu haben.
+
+**Was also wirklich der Unterschied ist, und zwar nachprüfbar:**
+
+1. **Die Datei gehört dem Kunden.** Ein Projekt ist eine Datei auf seinem Rechner, kein
+   Datensatz in unserer Datenbank. Das ist eine Eigenschaft des Codes und nicht des
+   Preismodells.
+2. **Nichts entscheidet abends, ob die Show läuft.** Kein Lizenzserver, kein Dongle, keine
+   Ablauffrist im Programm. Der Planer startet ohne Netz.
+3. **Offline ist die Vorgabe und keine Zusatzleistung** — dieselbe Aussage, die Bedarf 133 und
+   135 von der anderen Seite her machen.
+
+Die Lizenzform (proprietär, gekauft, dauerhaft nutzbar) steht dabei **nicht** im Widerspruch zu
+Punkt 2: was der Markt gerade abschafft, ist nicht das Eigentum am Quelltext, sondern die
+*Verfügbarkeit ohne laufende Zahlung*. Genau die versprechen wir — und deshalb ist die richtige
+Aussage nicht „open source", sondern: **gekauft ist gekauft, und der Abend gehört nicht dem
+Lizenzserver.**
+
+Diese drei Punkte sind Zusicherungen und keine Prosa; wer eine Aktivierungspflicht, eine
+Ablauffrist oder einen Anmeldezwang einbaut, macht Punkt 2 zur Lüge. Was daran maschinell
+prüfbar ist, prüft `licence:check` (jede vendorte Kopie trägt dieselbe Lizenzaussage wie die
+Wurzel); was nicht, steht hier, damit es jemand liest, bevor er es zusagt.
+
 ## 2. Prioritisation model
 
 Section 26 defines seven factors. `USER-NEED-DATABASE.md` scores the two measurable ones
