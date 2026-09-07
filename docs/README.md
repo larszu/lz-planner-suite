@@ -25,6 +25,8 @@ Jede ADR hält eine Entscheidung samt Befund fest, der sie ausgelöst hat.
 - [`ADR-003 — Bestätigter Zustand`](decisions/ADR-003-confirmed-state.md)
 - [`ADR-004 — Dokument-Stempel`](decisions/ADR-004-document-stamp.md)
 - [`ADR-005 — Verlustfrei oder laut`](decisions/ADR-005-lossless-or-loud.md)
+- [`ADR-006 — Der Schnitt: was Kern bleibt und was ein eigenes Werkzeug wird`](decisions/ADR-006-werkzeug-schnitt.md)
+- [`ADR-007 — Die Oberflaechen-Regeln der Suite`](decisions/ADR-007-oberflaechen-regeln.md)
 
 ## Markt- und Nutzer-Recherche
 

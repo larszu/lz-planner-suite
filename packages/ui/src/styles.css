@@ -1,154 +1,207 @@
 /* ============================================================================
  * @avplan/ui — Design-System der AV Planner Suite
  *
- * Eine Datei, ein Import: Theme-Tokens (dark/light) + Per-Modul-Akzente +
- * die Styles aller UI-Primitive (.av-*). Die Suite ist ein Broadcast-/AV-
- * Control-Surface: kühles Near-Black, ein Akzent der mit dem aktiven Modul
- * die Farbe wechselt (Raum grau, Signal violett, Kameras cyan, Licht amber),
- * technische Zahlen in tabellarischem Mono.
+ * Eine Datei, ein Import: Theme-Tokens (dark/light) + die Styles aller
+ * UI-Primitive (.av-*).
  *
- * Neutrale Basis liegt bewusst nah an den cp-*-Tokens des Cable Planners,
- * damit eingebettete Planer-iframes nahtlos in die Shell übergehen.
+ * ─── DIE WERTE SIND NICHT FREI GEWAEHLT ────────────────────────────────────
+ *
+ * Sie stammen aus dem Brand Guide 2.0 der Lars Zumpe Medienproduktion und
+ * stehen maschinenlesbar in `src/brand.ts`; `test/brand.test.ts` haelt beide
+ * Dateien zusammen, damit hier nichts abdriftet. Die Regeln dazu — auch die
+ * benannten Abweichungen fuers Werkzeug — stehen in ADR-007.
+ *
+ * ─── DAS EINE, DAS MAN WISSEN MUSS ─────────────────────────────────────────
+ *
+ * Blau ist die Marke, ROT IST DAS SIGNAL. `--av-signal` ist kein Farbton aus
+ * der Palette, sondern das Aufnahmelicht: Fokusring, EIN Punkt am primaeren
+ * Knopf, Live-/Aufnahme-Zustand. Nie Flaeche, nie Text, nie Rahmen, nie
+ * zweimal in einem Sichtfeld. Wer Rot als Fehlerfarbe braucht, nimmt
+ * `--av-danger` — das ist ein anderer Ton und ein anderer Zweck.
+ *
+ * Und: keine Rundungen, keine Schatten, keine Verlaeufe. Die Radius- und
+ * Schatten-Tokens gibt es weiter, damit kein Aufrufer umgebaut werden muss;
+ * sie sind auf 0 bzw. `none` gesetzt. Struktur entsteht durch Linie und
+ * Weissraum.
  * ==========================================================================*/
 
 :root {
-  /* ── Neutrale Flächen (Dark, Default) ── */
-  --av-bg: #0b0e14;          /* Shell-Canvas, tiefste Ebene */
-  --av-surface-1: #10141d;   /* Panels */
-  --av-surface-2: #171d2a;   /* raised / hover */
-  --av-surface-3: #0c0f16;   /* sunken: Leisten, Inputs, Rail */
-  --av-surface-4: #1e2636;   /* Chip-/Button-Fläche */
-  --av-border: #232c3d;
-  --av-border-muted: #1a2130;
+  /* ── Flaechen (Dark = Default; das Web ist die dunkle Anwendung) ── */
+  --av-bg: #132040;          /* Deep Navy — Grund, Hero, Footer */
+  --av-surface-1: #182948;   /* abgeleitet — Panels */
+  --av-surface-2: #1D324F;   /* Zumpe Navy — Karten, Formulare, raised */
+  --av-surface-3: #0E1930;   /* abgeleitet — versenkt: Leisten, Inputs, Rail */
+  --av-surface-4: #24405F;   /* abgeleitet — Chip-/Button-Flaeche */
+  --av-border: rgba(246, 245, 240, 0.14);
+  --av-border-muted: rgba(246, 245, 240, 0.07);
+  --av-border-strong: rgba(246, 245, 240, 0.35);
 
-  --av-text: #e7eaf2;
-  --av-text-secondary: #b7c0d0;
-  --av-text-muted: #8590a3;
-  --av-text-faint: #59637a;
+  --av-text: #F6F5F0;            /* Off-White */
+  --av-text-secondary: #E1ECEF;  /* Eisblau — Fliesstext auf Dunkel */
+  --av-text-muted: #8C9CB3;      /* Stahlblau — Kicker, Meta, Platzhalter */
+  --av-text-faint: #6E7F99;      /* abgeleitet — nie fuer Saetze */
 
-  /* ── Semantischer Status (getrennt vom Akzent) ── */
-  --av-ok: #34d399;
-  --av-warn: #fbbf24;
-  --av-danger: #f87171;
-  --av-ok-dim: rgba(52, 211, 153, 0.14);
-  --av-warn-dim: rgba(251, 191, 36, 0.14);
-  --av-danger-dim: rgba(248, 113, 113, 0.14);
+  /* ── Status: NUR Meldungen. Nicht der Akzent, nicht das Signal. ── */
+  --av-ok: #2F7D5C;
+  --av-warn: #C8892B;
+  --av-danger: #B04A3F;
+  --av-ok-dim: color-mix(in srgb, var(--av-ok) 22%, transparent);
+  --av-warn-dim: color-mix(in srgb, var(--av-warn) 22%, transparent);
+  --av-danger-dim: color-mix(in srgb, var(--av-danger) 22%, transparent);
 
-  /* ── Modul-Akzente ── */
-  --mod-raum: #94a3b8;
-  --mod-signal: #a78bfa;
-  --mod-cameras: #38bdf8;
-  --mod-licht: #f5a623;
-  --mod-overview: #5b8cf5;
-  --mod-board: #f472b6;
+  /* ── Das Signal ── */
+  --av-signal: #D6402E;      /* Tally-Rot */
 
-  /* Live-Akzent: folgt dem aktiven Modul (via [data-module]). */
-  --av-accent: var(--mod-overview);
-  --av-accent-dim: color-mix(in srgb, var(--av-accent) 16%, transparent);
-  --av-accent-text: #ffffff;
+  /* ── Akzent ──
+   * Frueher wechselte er mit dem Modul die Farbe: violett, cyan, amber,
+   * pink. Das war ein zweites Farbsystem neben der Marke, und es machte
+   * jede Ansicht zu einer anderen Anwendung. Das Modul erkennt man jetzt am
+   * Kicker in der Kopfzeile, nicht am Farbton — dieselbe Entscheidung, die
+   * der Guide fuer die Marke trifft: Struktur statt Buntheit.
+   * Die --mod-*-Namen bleiben, damit [data-module] nichts bricht; sie
+   * zeigen alle auf denselben Wert. */
+  --av-accent: #F6F5F0;          /* Off-White: primaerer Knopf, Auswahl */
+  --av-accent-text: #132040;     /* Navy darauf — 13:1 statt 4:1 */
+  --av-accent-dim: rgba(246, 245, 240, 0.12);
+  --av-accent-line: #8C9CB3;     /* Stahlblau: Kopflinie, Kicker */
 
-  /* ── Form ── */
-  --av-r-control: 7px;
-  --av-r-card: 10px;
-  --av-r-modal: 14px;
-  --av-r-pill: 999px;
+  --mod-raum: var(--av-accent);
+  --mod-signal: var(--av-accent);
+  --mod-cameras: var(--av-accent);
+  --mod-licht: var(--av-accent);
+  --mod-overview: var(--av-accent);
+  --mod-board: var(--av-accent);
 
-  --av-shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px -16px rgba(0, 0, 0, 0.6);
-  --av-shadow-pop: 0 24px 64px -24px rgba(0, 0, 0, 0.7);
-  --av-shadow-float: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  /* ── Form: keine Rundungen, keine Schatten (Guide S. 10) ── */
+  --av-r-control: 0;
+  --av-r-card: 0;
+  --av-r-modal: 0;
+  --av-r-pill: 0;
 
-  --av-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --av-shadow-panel: none;
+  --av-shadow-pop: none;
+  --av-shadow-float: none;
+
+  /* ── Bewegung: schnell, kurz, dann still ── */
+  --av-ease: cubic-bezier(.2, .8, .2, 1);
+  --av-dur: 350ms;
+  --av-dur-max: 450ms;
+
+  /* ── Typo-Leiter (zwei Stufen, siehe brand.ts) ── */
+  --av-fs-micro: 11px;
+  --av-fs-kicker: 12px;
+  --av-fs-body: 13px;
+  --av-fs-read: 16px;
+  --av-fs-title: 20px;
+  --av-fs-display: 26px;
+  --av-tracking-kicker: 0.16em;
+
+  /* ── 8-px-Raster ── */
+  --av-space-1: 4px;
+  --av-space-2: 8px;
+  --av-space-3: 12px;
+  --av-space-4: 16px;
+  --av-space-6: 24px;
+  --av-space-8: 32px;
+  --av-space-12: 48px;
+
+  --av-font-sans: 'Public Sans', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
   --av-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 }
 
-/* Per-Modul-Akzent — an einen Container mit [data-module] gebunden. */
-[data-module='raum'] { --av-accent: var(--mod-raum); }
-[data-module='signal'] { --av-accent: var(--mod-signal); }
-[data-module='cameras'] { --av-accent: var(--mod-cameras); }
-[data-module='licht'] { --av-accent: var(--mod-licht); }
-[data-module='overview'] { --av-accent: var(--mod-overview); }
-[data-module='board'] { --av-accent: var(--mod-board); }
-
-/* ── Light-Theme ── */
+/* ── Helles Theme ──
+ * Dieselbe Palette, gedrehte Gewichtung: Print ist hell (60 % Weiss), das
+ * Web dunkel (70 % Deep Navy). Schiefer ist hier der Sekundaertext — der
+ * Wert, fuer den ihn der Guide misst (5,4:1 auf Weiss). */
 @media (prefers-color-scheme: light) {
   :root {
-    --av-bg: #eef1f6;
-    --av-surface-1: #ffffff;
-    --av-surface-2: #f4f6fb;
-    --av-surface-3: #e9edf4;
-    --av-surface-4: #e3e8f1;
-    --av-border: #d2d9e6;
-    --av-border-muted: #e2e7f0;
-    --av-text: #131924;
-    --av-text-secondary: #38424f;
-    --av-text-muted: #5a6577;
-    --av-text-faint: #8a94a6;
-    --av-ok: #0f9d61;
-    --av-warn: #b7791f;
-    --av-danger: #d64545;
-    --mod-raum: #64748b;
-    --mod-signal: #7c5cdf;
-    --mod-cameras: #0c82c4;
-    --mod-licht: #bd7a12;
-    --mod-overview: #2f6fe4;
-    --mod-board: #d1477f;
-    --av-shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 8px 24px -18px rgba(24, 34, 54, 0.28);
-    --av-shadow-pop: 0 24px 64px -28px rgba(24, 34, 54, 0.35);
-    --av-shadow-float: 0 10px 30px -14px rgba(24, 34, 54, 0.3);
+    --av-bg: #F6F5F0;
+    --av-surface-1: #FFFFFF;
+    --av-surface-2: #E1ECEF;
+    --av-surface-3: #ECEBE6;
+    --av-surface-4: #FFFFFF;
+    --av-border: rgba(29, 50, 79, 0.16);
+    --av-border-muted: rgba(29, 50, 79, 0.08);
+    --av-border-strong: rgba(29, 50, 79, 0.32);
+    --av-text: #1D324F;
+    --av-text-secondary: #5C6B85;
+    --av-text-muted: #8C9CB3;
+    --av-text-faint: #A7B3C4;
+    --av-accent: #1D324F;
+    --av-accent-text: #F6F5F0;
+    --av-accent-dim: rgba(29, 50, 79, 0.10);
+    --av-accent-line: #8C9CB3;
   }
 }
 :root[data-theme='light'] {
-  --av-bg: #eef1f6;
-  --av-surface-1: #ffffff;
-  --av-surface-2: #f4f6fb;
-  --av-surface-3: #e9edf4;
-  --av-surface-4: #e3e8f1;
-  --av-border: #d2d9e6;
-  --av-border-muted: #e2e7f0;
-  --av-text: #131924;
-  --av-text-secondary: #38424f;
-  --av-text-muted: #5a6577;
-  --av-text-faint: #8a94a6;
-  --av-ok: #0f9d61;
-  --av-warn: #b7791f;
-  --av-danger: #d64545;
-  --mod-raum: #64748b;
-  --mod-signal: #7c5cdf;
-  --mod-cameras: #0c82c4;
-  --mod-licht: #bd7a12;
-  --mod-overview: #2f6fe4;
-  --mod-board: #d1477f;
-  --av-shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 8px 24px -18px rgba(24, 34, 54, 0.28);
-  --av-shadow-pop: 0 24px 64px -28px rgba(24, 34, 54, 0.35);
-  --av-shadow-float: 0 10px 30px -14px rgba(24, 34, 54, 0.3);
+  --av-bg: #F6F5F0;
+  --av-surface-1: #FFFFFF;
+  --av-surface-2: #E1ECEF;
+  --av-surface-3: #ECEBE6;
+  --av-surface-4: #FFFFFF;
+  --av-border: rgba(29, 50, 79, 0.16);
+  --av-border-muted: rgba(29, 50, 79, 0.08);
+  --av-border-strong: rgba(29, 50, 79, 0.32);
+  --av-text: #1D324F;
+  --av-text-secondary: #5C6B85;
+  --av-text-muted: #8C9CB3;
+  --av-text-faint: #A7B3C4;
+  --av-accent: #1D324F;
+  --av-accent-text: #F6F5F0;
+  --av-accent-dim: rgba(29, 50, 79, 0.10);
+  --av-accent-line: #8C9CB3;
 }
 :root[data-theme='dark'] {
-  --av-bg: #0b0e14;
-  --av-surface-1: #10141d;
-  --av-surface-2: #171d2a;
-  --av-surface-3: #0c0f16;
-  --av-surface-4: #1e2636;
-  --av-border: #232c3d;
-  --av-border-muted: #1a2130;
-  --av-text: #e7eaf2;
-  --av-text-secondary: #b7c0d0;
-  --av-text-muted: #8590a3;
-  --av-text-faint: #59637a;
-  --av-ok: #34d399;
-  --av-warn: #fbbf24;
-  --av-danger: #f87171;
-  --mod-raum: #94a3b8;
-  --mod-signal: #a78bfa;
-  --mod-cameras: #38bdf8;
-  --mod-licht: #f5a623;
-  --mod-overview: #5b8cf5;
-  --mod-board: #f472b6;
+  --av-bg: #132040;
+  --av-surface-1: #182948;
+  --av-surface-2: #1D324F;
+  --av-surface-3: #0E1930;
+  --av-surface-4: #24405F;
+  --av-border: rgba(246, 245, 240, 0.14);
+  --av-border-muted: rgba(246, 245, 240, 0.07);
+  --av-border-strong: rgba(246, 245, 240, 0.35);
+  --av-text: #F6F5F0;
+  --av-text-secondary: #E1ECEF;
+  --av-text-muted: #8C9CB3;
+  --av-text-faint: #6E7F99;
+  --av-accent: #F6F5F0;
+  --av-accent-text: #132040;
+  --av-accent-dim: rgba(246, 245, 240, 0.12);
+  --av-accent-line: #8C9CB3;
+}
+
+/* ── Kopflinie: Kicker in Versalien, darunter die Linie bis zur Satzkante ──
+ * „Das Element aus der Visitenkarte 2020 — unverändert, es ist das
+ * Kontinuum der Marke." Einer pro Flaeche. In der Suite ist das die
+ * Kopfzeile jedes Panels und jedes Dialogs; sie traegt auch die
+ * Modul-Kennung, die frueher eine Farbe war. */
+.av-kicker {
+  font-size: var(--av-fs-kicker);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--av-tracking-kicker);
+  color: var(--av-text-muted);
+}
+.av-headrule {
+  border-bottom: 1px solid var(--av-accent-line);
+  padding-bottom: var(--av-space-2);
+  margin-bottom: var(--av-space-3);
+}
+
+/* ── Tally-Punkt: das Aufnahmesignal, eckig, einer pro Sichtfeld ──
+ * Er ist der Satzpunkt der Hausschrift, kein Kreis — deshalb quadratisch. */
+.av-tally {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--av-signal);
+  flex: none;
 }
 
 /* ── Reset-Ergänzungen ── */
 .av-scroll { scrollbar-width: thin; scrollbar-color: var(--av-border) transparent; }
 .av-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
-.av-scroll::-webkit-scrollbar-thumb { background: var(--av-border); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+.av-scroll::-webkit-scrollbar-thumb { background: var(--av-border); border-radius: 0; border: 3px solid transparent; background-clip: content-box; }
 .av-scroll::-webkit-scrollbar-thumb:hover { background: var(--av-surface-4); background-clip: content-box; }
 
 .av-num { font-family: var(--av-font-mono); font-variant-numeric: tabular-nums; }
@@ -162,8 +215,11 @@
 .av-cmdk-input:focus-visible,
 .av-search-trigger:focus-visible,
 .av-toolbar-btn:focus-visible {
-  outline: 2px solid var(--av-accent);
-  outline-offset: 2px;
+  /* Der Fokusring ist Rot — 2 px, 3 px Abstand (Guide S. 17). Das ist der
+   * eine Ort, an dem das Signal ohne Zutun erscheint: wer mit der Tastatur
+   * arbeitet, soll sehen, wo er ist. */
+  outline: 2px solid var(--av-signal);
+  outline-offset: 3px;
 }
 
 /* ── Button ── */
@@ -174,12 +230,19 @@
   border: 1px solid var(--av-border);
   background: var(--av-surface-4); color: var(--av-text);
   cursor: pointer; white-space: nowrap;
-  transition: background 120ms ease, border-color 120ms ease, filter 120ms ease;
+  transition: background var(--av-dur) var(--av-ease), border-color var(--av-dur) var(--av-ease), filter var(--av-dur) var(--av-ease);
 }
 .av-btn:hover { background: color-mix(in srgb, var(--av-surface-4) 82%, var(--av-text) 6%); }
 .av-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Primaerknopf: Off-White-Flaeche, Navy-Text, roter Punkt links — 13:1 statt
+ * 4:1 (Weiss auf Rot). Einer pro Abschnitt; der Punkt macht sichtbar, welcher
+ * es ist. */
 .av-btn[data-variant='primary'] { background: var(--av-accent); border-color: transparent; color: var(--av-accent-text); font-weight: 600; }
+.av-btn[data-variant='primary']::before { content: ''; width: 6px; height: 6px; background: var(--av-signal); flex: none; }
 .av-btn[data-variant='primary']:hover { filter: brightness(1.08); }
+/* Sekundaer: Outline Off-White 35 %, im Hover voll. */
+.av-btn[data-variant='secondary'] { background: transparent; border-color: var(--av-border-strong); color: var(--av-text); }
+.av-btn[data-variant='secondary']:hover { border-color: var(--av-text); background: transparent; }
 .av-btn[data-variant='ghost'] { background: transparent; border-color: transparent; color: var(--av-text-secondary); }
 .av-btn[data-variant='ghost']:hover { background: var(--av-surface-2); color: var(--av-text); }
 .av-btn[data-variant='subtle'] { background: var(--av-surface-2); border-color: var(--av-border-muted); }
@@ -190,7 +253,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; border-radius: var(--av-r-control);
   border: 1px solid transparent; background: transparent; color: var(--av-text-muted);
-  cursor: pointer; transition: background 120ms ease, color 120ms ease;
+  cursor: pointer; transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
 }
 .av-icon-btn:hover { background: var(--av-surface-2); color: var(--av-text); }
 .av-icon-btn[data-active='true'] { background: var(--av-accent-dim); color: var(--av-accent); }
@@ -224,7 +287,9 @@
 .av-badge[data-tone='warn'] { color: var(--av-warn); border-color: transparent; background: var(--av-warn-dim); }
 .av-badge[data-tone='danger'] { color: var(--av-danger); border-color: transparent; background: var(--av-danger-dim); }
 .av-badge[data-tone='accent'] { color: var(--av-accent); border-color: transparent; background: var(--av-accent-dim); }
-.av-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+/* Eckig, nicht rund: „keine Kreise ausser dem Punkt" — und der Punkt der
+ * Hausschrift IST eckig. */
+.av-badge-dot { width: 6px; height: 6px; border-radius: 0; background: currentColor; }
 
 /* ── Kbd ── */
 .av-kbd {
@@ -233,7 +298,7 @@
   font-family: var(--av-font-mono); font-size: 11px; line-height: 1;
   color: var(--av-text-muted); background: var(--av-surface-3);
   border: 1px solid var(--av-border); border-bottom-width: 2px;
-  border-radius: 5px;
+  border-radius: 0;
 }
 
 /* ── Tabs (Deck) ── */
@@ -243,11 +308,11 @@
   font: inherit; font-size: 13px; font-weight: 550;
   padding: 7px 13px; border-radius: var(--av-r-control);
   border: 1px solid transparent; background: transparent; color: var(--av-text-muted);
-  cursor: pointer; transition: background 120ms ease, color 120ms ease;
+  cursor: pointer; transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
 }
 .av-tab:hover { background: var(--av-surface-2); color: var(--av-text-secondary); }
 .av-tab[data-active='true'] { background: var(--av-surface-2); color: var(--av-text); }
-.av-tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--av-accent); }
+.av-tab-dot { width: 6px; height: 6px; border-radius: 0; background: var(--av-accent); }
 .av-tab[data-active='false'] .av-tab-dot { background: var(--av-text-faint); }
 
 /* ── Modul-Leiste (Rail) ── */
@@ -261,13 +326,13 @@
   width: 52px; padding: 8px 4px 6px; border-radius: var(--av-r-card);
   border: 1px solid transparent; background: transparent;
   color: var(--av-text-muted); cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
 }
 .av-rail-item:hover { background: var(--av-surface-2); color: var(--av-text-secondary); }
 .av-rail-item[data-active='true'] { color: var(--av-mod, var(--av-accent)); background: color-mix(in srgb, var(--av-mod, var(--av-accent)) 13%, transparent); }
 .av-rail-item[data-active='true']::before {
   content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
-  width: 3px; height: 22px; border-radius: 0 3px 3px 0; background: var(--av-mod, var(--av-accent));
+  width: 3px; height: 22px; border-radius: 0; background: var(--av-mod, var(--av-accent));
 }
 .av-rail-label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.01em; }
 /* Gruppen-Ueberschrift in der Rail (Planung / Betrieb). Klein und leise: sie
@@ -295,7 +360,7 @@
   left: 7px;
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--av-text-faint);
 }
 .av-rail-dot[data-status='on'] { background: var(--av-ok); }
@@ -318,7 +383,7 @@
   display: inline-flex; align-items: center; gap: 6px; justify-content: center;
   height: 30px; min-width: 30px; padding: 0 8px; border-radius: var(--av-r-control);
   border: 1px solid transparent; background: transparent; color: var(--av-text-muted);
-  cursor: pointer; font: inherit; font-size: 12.5px; transition: background 120ms ease, color 120ms ease;
+  cursor: pointer; font: inherit; font-size: 12.5px; transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
 }
 .av-toolbar-btn:hover { background: var(--av-surface-4); color: var(--av-text); }
 .av-toolbar-btn[data-active='true'] { background: var(--av-accent-dim); color: var(--av-accent); }
@@ -399,7 +464,7 @@
 }
 .av-modal-title { flex: 1; margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
 .av-modal-x {
-  border: 0; background: none; padding: 4px; border-radius: 6px; cursor: pointer;
+  border: 0; background: none; padding: 4px; border-radius: 0; cursor: pointer;
   color: var(--av-text-muted); display: inline-flex;
 }
 .av-modal-x:hover { color: var(--av-text); background: var(--av-surface-3); }

@@ -114,3 +114,22 @@ export {
   type RundownAudience,
   type RundownView,
 } from './rundownViews'
+
+// Die verbindlichen Oberflaechen-Werte (ADR-007). Apps, die keine CSS-
+// Variablen lesen koennen — Canvas, Print, SVG-Export, Konva —, holen sie
+// hier, statt einen zweiten Satz Hexwerte zu fuehren.
+export {
+  BRAND_COLORS,
+  BRAND_STATUS,
+  BRAND_LINES,
+  DERIVED_SURFACES,
+  TYPE_SCALE,
+  KICKER_TRACKING_EM,
+  SPACE,
+  MOTION,
+  FOCUS,
+  RADIUS_PX,
+  GRID,
+  FONT_SANS,
+  FONT_MONO,
+} from './brand'
