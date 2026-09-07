@@ -28,14 +28,14 @@
   "light-planner": {
     "only-upstream": 0,
     "only-suite": 5,
-    "two-way": 15,
+    "two-way": 16,
     "upstream-ahead": 0,
     "suite-ahead": 1,
-    "expected-overlay": 15,
+    "expected-overlay": 14,
     "dead-upstream": 2,
-    "drift": 21,
+    "drift": 22,
     "total": 38,
     "missingUpstream": false,
-    "upstreamSha": "551786762869"
+    "upstreamSha": "21aab0e5eaee"
   }
 }

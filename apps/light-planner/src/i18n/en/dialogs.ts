@@ -121,6 +121,17 @@ export const dialogs: Record<string, string> = {
     'From here Art-Net and sACN read differently \u2014 at the node, Net and Sub-Net are no longer 0.',
   'dlg.sch.uni.hint':
     'The setting belongs to the project and travels with the file: the number on the fixture was never wrong, it was undetermined.',
+  // Bedarf 145 - die Bestellung faellt aus dem Plan.
+  'dlg.sch.exp.shop': 'Shop order (CSV)',
+  'dlg.sch.exp.shopNote':
+    'Demand from the plan, covered from stock: owned, foreign (goes back) and what is left over.',
+  'dlg.sch.exp.shopUnmatched': '{n} line(s) with no stock item \u2014 nobody vouched for those.',
+  'dlg.sch.exp.shopGaps': 'Not from this plan:',
+  // Bedarf 146 - den Patch ans Pult schicken statt abtippen.
+  'dlg.sch.exp.console': 'Patch for the console',
+  'dlg.sch.exp.consoleDropped': '{n} of {m} rows will NOT be included:',
+  'dlg.sch.exp.consoleUnverifiable':
+    'Whether the remaining {n} rows arrive depends on the console\u2019s fixture library. This machine cannot know that \u2014 the import decides.',
   // Bedarf 143 - zwoelf Blaetter, ein Modell.
   'dlg.sch.tab.papers': 'Paperwork',
   'dlg.sch.rep.pick': 'Sheet',
