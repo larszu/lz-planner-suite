@@ -32,6 +32,9 @@ import {
   DROP_LABEL, FORMATS, TARGETS, buildConsoleFile, consoleFileName, exportPreflight,
   type ConsoleTarget,
 } from '../core/consoleExport';
+import {
+  CABLE_HEADERS, KIND_LABEL, LENGTH_BASIS_NOTE, cableGaps, cableRuns, cableTable, cableTotals,
+} from '../core/rigCables';
 import { shopOrder, shopOrderGaps, shopOrderTable } from '../core/shopOrder';
 import {
   FIT_BASIS_NOTE, LABEL_DEFS, PADDING_MM, STOCKS, findLabelDef, findStock, labelSheet,
@@ -134,6 +137,8 @@ const omissionNoun = (t: (k: string, de: string) => string, kind: OmissionKind):
     case 'gels': return t('dlg.sch.exp.omit.gels', 'Lampe(n) mit Folie');
     case 'purposes': return t('dlg.sch.exp.omit.purposes', 'Lampe(n) mit Zweck');
     case 'notes': return t('dlg.sch.exp.omit.notes', 'Notiz(en)');
+    case 'circuits': return t('dlg.sch.exp.omit.circuits', 'Kreis(e)');
+    case 'cables': return t('dlg.sch.exp.omit.cables', 'Kabelweg(e)');
   }
 };
 
@@ -309,6 +314,21 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       Math.round(a.watts), a.amps.toFixed(1), `${Math.round(a.utilization * 100)} %`,
     ]),
   }, (fs: PlacedFixture[]) => circuitTable(distributionFor(fs, phaseTemplate)));
+
+  // BEDARF 140 — die Kabelliste. Sie geht denselben Weg wie die anderen
+  // Blaetter und traegt damit denselben Stempel (ADR-004): das Blatt, das am
+  // Ladetag in der Kiste liegt, sagt, aus welchem Stand es stammt.
+  const kabelWege = cableRuns(fixtures, trusses, phaseTemplate);
+  const kabelSummen = cableTotals(kabelWege);
+  const kabelLuecken = cableGaps(fixtures, kabelWege);
+  const exportCables = () => exportTable('kabelliste.csv', {
+    header: [
+      t('dlg.sch.cbl.col.kind', 'Art'), t('dlg.sch.cbl.col.from', 'Von'),
+      t('dlg.sch.cbl.col.to', 'Nach'), t('dlg.sch.col.truss', 'Traverse'),
+      CABLE_HEADERS[4], t('dlg.sch.cbl.col.connector', 'Stecker'),
+    ],
+    rows: cableTable(kabelWege).rows,
+  }, (fs: PlacedFixture[]) => cableTable(cableRuns(fs, trusses, phaseTemplate)));
 
   // Bedarf 147 — das Universe-Blatt geht denselben Weg wie die anderen Listen
   // und traegt damit denselben Stempel (ADR-004): wer es ausdruckt und ans
@@ -1269,6 +1289,52 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           </tbody>
         </table>
       )}
+      {/* ── BEDARF 140 — die Wege, die dieser Plan bedeutet ───────────────
+          „MVR has NO CABLE ENTITY […] individual cables and the connections
+          need to be specified in the MVR file." (`mvrdevelopment/spec#296`
+          und `#288`, beide offen)
+
+          Sie steht hier und nicht in einem eigenen Reiter: die Kette bricht am
+          Kreis, und der Kreis steht eine Tabelle weiter oben. Wer die Wege
+          woanders sucht, vergleicht sie nicht mit dem, woraus sie folgen. */}
+      <h4 className="schedule-subhead">
+        {t('dlg.sch.cbl.head', 'Kabelwege')}
+        {kabelSummen.map((sum) => (
+          <span key={sum.kind}>
+            {' · '}{KIND_LABEL[sum.kind]}: {sum.runs} × {sum.metres.toFixed(1)} m
+            {sum.unknown > 0
+              ? ` ${t('dlg.sch.cbl.plusUnknown', '(+ {n} ohne Länge)').replace('{n}', String(sum.unknown))}`
+              : ''}
+          </span>
+        ))}
+      </h4>
+      {/* Die Grundlage steht ueber der Tabelle und nicht darunter: wer die
+          Zahlen liest, soll vorher wissen, was sie sind. */}
+      <div className="prop-derived">{t('dlg.sch.cbl.basis', LENGTH_BASIS_NOTE)}</div>
+      {kabelLuecken.map((l) => (
+        <div key={l.kind} className="schedule-warning">{l.message}</div>
+      ))}
+      {kabelWege.length > 0 && (
+        <table className="schedule-table">
+          <thead>
+            <tr>
+              <th>{t('dlg.sch.cbl.col.kind', 'Art')}</th>
+              <th>{t('dlg.sch.cbl.col.from', 'Von')}</th>
+              <th>{t('dlg.sch.cbl.col.to', 'Nach')}</th>
+              <th>{t('dlg.sch.col.truss', 'Traverse')}</th>
+              <th>{CABLE_HEADERS[4]}</th>
+              <th>{t('dlg.sch.cbl.col.connector', 'Stecker')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cableTable(kabelWege).rows.map((r, i) => (
+              <tr key={kabelWege[i].id} className={kabelWege[i].from.kind === 'source' ? 'row-muted' : ''}>
+                {r.map((z, j) => <td key={j}>{z}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
       <h4 className="schedule-subhead">{t('dlg.sch.loadPerTruss', 'Last pro Traverse')} · {totalWeight.toFixed(1)} {t('dlg.sch.kgTotalLabel', 'kg gesamt')}</h4>
       <table className="schedule-table">
         <thead><tr><th>{t('dlg.sch.col.truss', 'Traverse')}</th><th>{t('dlg.sch.fixtures', 'Leuchten')}</th><th>{t('dlg.sch.col.load', 'Last')}</th><th>{t('dlg.sch.col.capacity', 'Traglast')}</th><th>{t('dlg.sch.col.utilization', 'Auslastung')}</th></tr></thead>
@@ -1299,6 +1365,11 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <Icon name="schedule" size={22} className="er-icon" />
         <div className="er-text"><b>{t('dlg.sch.exp.schedule', 'Instrument Schedule (CSV)')}</b><span>{t('dlg.sch.exp.scheduleDesc', 'Patch, Position, Gel & Zweck je Leuchte – für Tabellenkalkulation.')}</span></div>
         <button className="btn-secondary" onClick={exportSchedule}>⬇ CSV</button>
+      </div>
+      <div className="export-row">
+        <Icon name="truss" size={22} className="er-icon" />
+        <div className="er-text"><b>{t('dlg.sch.exp.cables', 'Kabelliste (CSV)')}</b><span>{t('dlg.sch.exp.cablesDesc', 'Strom- und DMX-Wege mit Länge und Stecker – das, was MVR nicht trägt.')}</span></div>
+        <button className="btn-secondary" onClick={exportCables}>⬇ CSV</button>
       </div>
       <div className="export-row">
         <Icon name="library" size={22} className="er-icon" />

@@ -170,6 +170,22 @@ export const dialogs: Record<string, string> = {
   'dlg.sch.exp.omit.gels': 'fixture(s) with gel',
   'dlg.sch.exp.omit.purposes': 'fixture(s) with a purpose',
   'dlg.sch.exp.omit.notes': 'note(s)',
+  'dlg.sch.exp.omit.circuits': 'circuit(s)',
+  'dlg.sch.exp.omit.cables': 'cable run(s)',
+  // Bedarf 140 — die Kabelliste.
+  'dlg.sch.cbl.head': 'Cable runs',
+  'dlg.sch.cbl.plusUnknown': '(+ {n} without length)',
+  'dlg.sch.cbl.basis':
+    'Lengths are the straight lines between hanging points — a lower bound. '
+    + 'Sag, the way around the truss and the loop at the hook come on top. Runs '
+    + 'from the source to the first fixture are left blank: the plan places '
+    + 'neither distros nor nodes, and a number here would be invented.',
+  'dlg.sch.cbl.col.kind': 'Kind',
+  'dlg.sch.cbl.col.from': 'From',
+  'dlg.sch.cbl.col.to': 'To',
+  'dlg.sch.cbl.col.connector': 'Connector',
+  'dlg.sch.exp.cables': 'Cable list (CSV)',
+  'dlg.sch.exp.cablesDesc': 'Power and DMX runs with length and connector — what MVR does not carry.',
   // Bedarf 144 — Austauschdateien, die an einer Umbenennung nicht zerbrechen.
   'dlg.sch.exp.specClash': 'Same GDTF file name',
   'dlg.sch.exp.specClashNote':

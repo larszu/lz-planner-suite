@@ -43,6 +43,8 @@ import { networkInterfaces } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { randomBytes } from 'node:crypto'
 import { stripSecrets } from '../util/stripSecrets.js'
+import { shareAddresses, type WithheldAddress } from '../util/lanReach.js'
+import { showIdOf, showMismatch } from '../util/shareShow.js'
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -74,6 +76,30 @@ interface MobileShareState {
    *  data/write route (?t= query or X-CP-Token header). Empty when the
    *  server is stopped. */
   token: string
+  /**
+   * BEDARF 133 — ob Adressen ueber das LAN hinaus angeboten werden duerfen.
+   *
+   * Vorgabe `false`. Der Server bindet auf `0.0.0.0`, und bis 2026-09-07 wurde
+   * JEDE nicht-interne IPv4 des Rechners als Freigabe-Adresse angeboten —
+   * samt Token in der URL. Auf einem Hallen-WLAN ist das richtig; an einer
+   * oeffentlich erreichbaren Adresse war es ein Bearer-Token im offenen Netz,
+   * ohne dass es jemand entschieden haette. Es ergab sich aus der
+   * Netzwerkkarte.
+   *
+   * Die Quelle (`cpvalente/ontime#1423`) verlangt Zugriffskontrolle genau
+   * fuer Aufstellungen, die „globally available" sind. Also: der LAN-Weg
+   * bleibt leicht, der Weg darueber hinaus verlangt eine ausdrueckliche
+   * Entscheidung.
+   */
+  allowBeyondLan: boolean
+  /**
+   * BEDARF 127 — die Show, die gerade freigegeben ist.
+   *
+   * Steht neben dem Projekt und nicht in ihm, damit die Pruefung des
+   * Rueckwegs nicht bei jedem Aufruf durch das ganze Projekt greifen muss.
+   * Gesetzt wird sie an EINER Stelle, zusammen mit dem Projekt selbst.
+   */
+  showId: string | null
   project: unknown | null
   /** Cached JSON serialization of `project` with secrets stripped. Built
    *  once per setProject() so each /project.json poll doesn't re-stringify
@@ -127,6 +153,8 @@ const state: MobileShareState = {
   server: null,
   port: 0,
   token: '',
+  allowBeyondLan: false,
+  showId: null,
   project: null,
   serialized: null,
   rendererDir: '',
@@ -279,6 +307,36 @@ const handleRequest = (req: IncomingMessage, res: ServerResponse) => {
     return
   }
 
+  /**
+   * BEDARF 127 — gehoert dieser Rueckweg zur freigegebenen Show?
+   *
+   * DIE ENGSTELLE fuer alle drei Schreibwege (`/checks`, `/cables`,
+   * `/pending-changes`). Sie fragen hier und vergleichen nicht selbst: drei
+   * eigene Vergleiche waeren drei Gelegenheiten, einen zu vergessen — und
+   * vergessen wuerde man den seltensten, also den, bei dem es am laengsten
+   * niemandem auffaellt.
+   *
+   * 409 und nicht 400: der Aufruf ist nicht falsch gebaut, er kommt in eine
+   * Lage, die sich seit dem Laden der Seite geaendert hat. Der Grund geht
+   * mit — eine abgewiesene Rueckmeldung ohne Erklaerung sieht am Handy aus
+   * wie ein Netzfehler, und dann drueckt der Field-Tech noch dreimal.
+   */
+  const showOk = (parsed: Record<string, unknown>): boolean => {
+    const sent = typeof parsed.projectId === 'string' && parsed.projectId.trim().length > 0
+      ? parsed.projectId
+      : null
+    const pruefung = showMismatch(state.showId, sent)
+    if (pruefung.ok) return true
+    res.statusCode = 409
+    applyCors(req, res)
+    res.end(JSON.stringify({
+      error: pruefung.rejection,
+      reason: pruefung.reason,
+      servedShow: pruefung.served,
+    }))
+    return false
+  }
+
   // v7.9.3 — POST /checks: das Mobile-View schickt nach jedem Toggle
   // einen vollständigen CheckState. Wir leiten ihn via Callback an
   // den Renderer weiter, der dann project.checkState updated → das
@@ -302,9 +360,11 @@ const handleRequest = (req: IncomingMessage, res: ServerResponse) => {
       if (aborted) return
       try {
         const parsed = JSON.parse(body) as {
+          projectId?: string
           ports?: Record<string, boolean>
           cables?: Record<string, boolean>
         }
+        if (!showOk(parsed)) return
         const checks = {
           ports: parsed.ports && typeof parsed.ports === 'object' ? parsed.ports : {},
           cables: parsed.cables && typeof parsed.cables === 'object' ? parsed.cables : {},
@@ -352,6 +412,7 @@ const handleRequest = (req: IncomingMessage, res: ServerResponse) => {
       if (aborted) return
       try {
         const parsed = JSON.parse(body) as Record<string, unknown>
+        if (!showOk(parsed)) return
         const fromEquipmentId = String(parsed.fromEquipmentId ?? '').trim()
         const fromPortId = String(parsed.fromPortId ?? '').trim()
         const toEquipmentId = String(parsed.toEquipmentId ?? '').trim()
@@ -415,6 +476,7 @@ const handleRequest = (req: IncomingMessage, res: ServerResponse) => {
       if (aborted) return
       try {
         const parsed = JSON.parse(body) as Record<string, unknown>
+        if (!showOk(parsed)) return
         const summary = String(parsed.summary ?? '').trim()
         const kind = String(parsed.kind ?? '').trim()
         if (!summary || !kind) {
@@ -548,14 +610,34 @@ export interface MobileShareInfo {
   port: number
   urls: string[]
   hasProject: boolean
+  /**
+   * BEDARF 133 — Adressen, unter denen der Rechner erreichbar ist und die
+   * NICHT angeboten werden, mit Grund.
+   *
+   * Der Dialog zeigt sie. Eine zurueckgehaltene Adresse, die niemand nennt,
+   * ist fuer den Nutzer dasselbe wie eine, die es nicht gibt — und dann
+   * sucht er den Fehler in der Netzwerktechnik.
+   */
+  withheld: WithheldAddress[]
 }
 
 /** Build the phone-facing viewer URLs, embedding the session token so the
  *  QR/links carry it transparently. */
 const buildUrls = (port: number): string[] => {
   const q = state.token ? `?t=${state.token}` : ''
-  return collectLanAddresses().map((ip) => `http://${ip}:${port}/mobile.html${q}`)
+  return shareAddresses(collectLanAddresses(), { allowBeyondLan: state.allowBeyondLan }).offered
+    .map((ip) => `http://${ip}:${port}/mobile.html${q}`)
 }
+
+/**
+ * BEDARF 133 — was NICHT angeboten wird, und warum.
+ *
+ * Aus DERSELBEN Einordnung wie die angebotenen Adressen (`shareAddresses`):
+ * zwei Rechnungen koennten sich widersprechen, und dann stuende eine Adresse
+ * oben als angeboten und unten als zurueckgehalten.
+ */
+const buildWithheld = (): WithheldAddress[] =>
+  shareAddresses(collectLanAddresses(), { allowBeyondLan: state.allowBeyondLan }).withheld
 
 export const startMobileShareServer = async (
   rendererDir: string,
@@ -566,6 +648,7 @@ export const startMobileShareServer = async (
       port: state.port,
       urls: buildUrls(state.port),
       hasProject: state.project !== null,
+      withheld: buildWithheld(),
     }
   }
   state.rendererDir = pathResolve(rendererDir)
@@ -580,6 +663,25 @@ export const startMobileShareServer = async (
     port,
     urls: buildUrls(port),
     hasProject: state.project !== null,
+    withheld: buildWithheld(),
+  }
+}
+
+/**
+ * BEDARF 133 — Adressen ueber das LAN hinaus freigeben oder wieder sperren.
+ *
+ * Eine ausdrueckliche Entscheidung des Nutzers, und sie gilt nur fuer diese
+ * Sitzung: `stopMobileShareServer` setzt sie zurueck. Wer den Rechner morgen
+ * woanders aufstellt, faengt wieder beim LAN an — eine Freigabe, die eine
+ * Ortsaenderung ueberlebt, ist keine Entscheidung ueber DIESES Netz.
+ */
+export const setMobileShareAllowBeyondLan = (allow: boolean): MobileShareInfo => {
+  state.allowBeyondLan = allow
+  return {
+    port: state.port,
+    urls: buildUrls(state.port),
+    hasProject: state.project !== null,
+    withheld: buildWithheld(),
   }
 }
 
@@ -589,13 +691,21 @@ export const stopMobileShareServer = (): void => {
   state.server = null
   state.port = 0
   state.token = ''
+  // Die Freigabe gilt fuer DIESES Netz und diese Sitzung. Wer den Rechner
+  // morgen woanders aufstellt, faengt wieder beim LAN an.
+  state.allowBeyondLan = false
   state.project = null
   state.serialized = null
+  state.showId = null
   state.devProxyUrl = undefined
 }
 
 export const setMobileShareProject = (project: unknown): void => {
   state.project = project
+  // Bedarf 127 — die Show wandert MIT dem Projekt. Wer sie hier nicht
+  // nachzieht, laesst die Freigabe auf die alte Show zeigen und nimmt
+  // Rueckwege an, die in die neue gehoeren.
+  state.showId = showIdOf(project)
   // Strip secrets and pre-serialize once; /project.json serves the cached
   // string so polling phones don't re-stringify the project each request.
   try {
@@ -656,6 +766,7 @@ export const getMobileShareStatus = (): MobileShareInfo & { running: boolean } =
   port: state.port,
   urls: state.server ? buildUrls(state.port) : [],
   hasProject: state.project !== null,
+  withheld: state.server ? buildWithheld() : [],
 })
 
 void __filename // keep ESM file-url alive
