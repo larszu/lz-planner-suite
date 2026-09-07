@@ -1075,7 +1075,7 @@ function CameraCard({
                         {limits.armLengthM ? ` · Ausleger ${limits.armLengthM.toFixed(1)} m` : ''}
                         {limits.telescopeM ? ` · Teleskop ${limits.telescopeM.toFixed(1)} m` : ''}
                         {limits.payloadKg ? ` · max ${limits.payloadKg} kg` : ''}
-                        {limits.footprintM ? ` · Stellflaeche ${limits.footprintM.w.toFixed(1)}×${limits.footprintM.d.toFixed(1)} m` : ''}
+                        {limits.footprintM ? ` · Stellfläche ${limits.footprintM.w.toFixed(1)}×${limits.footprintM.d.toFixed(1)} m` : ''}
                         {limits.rig.notes ? ` — ${limits.rig.notes}` : ''}
                       </span>
                     )}

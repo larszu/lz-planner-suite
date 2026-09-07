@@ -15,7 +15,7 @@ import { cableToSeedPatch, seedToCable } from './shellSeed'
 const melde = (seed: SuiteSeed, ausgelassen: { label: string; grund: string }[]): void => {
   const name = seed.projectName ? `„${seed.projectName}"` : 'Shell-Projekt'
   console.info(
-    `[shellSeed] ${name} uebernommen: ${seed.devices.length} Geraete, ${seed.cables.length - ausgelassen.length}/${seed.cables.length} Kabel`,
+    `[shellSeed] ${name} übernommen: ${seed.devices.length} Geräte, ${seed.cables.length - ausgelassen.length}/${seed.cables.length} Kabel`,
   )
   for (const a of ausgelassen) console.warn(`[shellSeed] Kabel „${a.label}" nicht angelegt — ${a.grund}`)
 }

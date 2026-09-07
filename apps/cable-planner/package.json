@@ -53,6 +53,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "ui:smoke": "node scripts/ui-smoke.mjs",
+    "ui:overflow": "node scripts/ui-overflow.mjs",
+    "ui:labels": "node scripts/ui-labels.mjs",
     "test:drag": "node scripts/drag-test.mjs",
     "docs:stats": "node scripts/update-doc-stats.mjs",
     "test:crdt": "node scripts/crdt-convergence-check.mjs",

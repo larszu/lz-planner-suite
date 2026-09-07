@@ -27,7 +27,7 @@ export function initShellSeed(): () => void {
       }
       s.setVenue(venue);
       useStore.setState({ cameras });
-      console.info(`[shellSeed] ${cameras.length}/${seed.cameras.length} Kameras uebernommen`);
+      console.info(`[shellSeed] ${cameras.length}/${seed.cameras.length} Kameras übernommen`);
       return true;
     },
     collect: () => camerasToSeedPatch(useStore.getState().cameras),

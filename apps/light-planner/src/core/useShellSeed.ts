@@ -37,7 +37,7 @@ export function useShellSeed(args: ShellSeedArgs): void {
           console.warn(`[shellSeed] Scheinwerfer „${x.name}" nicht platziert — ${x.grund}`);
         }
         a.setFixtures(fixtures);
-        console.info(`[shellSeed] ${fixtures.length}/${seed.fixtures.length} Scheinwerfer uebernommen`);
+        console.info(`[shellSeed] ${fixtures.length}/${seed.fixtures.length} Scheinwerfer übernommen`);
         return true;
       },
       collect: () => fixturesToSeedPatch(ref.current.fixtures),

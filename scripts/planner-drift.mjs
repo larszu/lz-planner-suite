@@ -167,6 +167,28 @@ const SUITE_OVERLAY = {
  */
 REPLACED_BY_PACKAGE['light-planner'].push('scripts/inventory-contract-check.ts')
 
+/**
+ * Zeilen, die die Suite bewusst UEBERSETZT traegt statt woertlich: dort steht
+ * `t('key', 'English fallback')`, wo upstream den deutschen Text direkt in
+ * das Attribut schreibt. Der Vergleich unten sucht die hinzugekommene Zeile
+ * woertlich — und findet sie nie, egal wie vollstaendig die Aenderung
+ * angekommen ist.
+ *
+ * Sie hier einzutragen ist KEIN Wegdruecken: `wo` nennt die Stelle, an der
+ * derselbe Satz in der Suite steht, und der Bericht fuehrt sie weiter auf,
+ * nur eben unter „uebersetzt" statt unter „fehlt". Wer eine Zeile eintraegt,
+ * ohne dass sie dort wirklich steht, faelscht dieselbe Zahl, die dieses
+ * Skript verteidigt.
+ */
+const UEBERSETZT = {
+  'multicam-planner': [
+    {
+      zeile: 'title="Bearbeiten-Modus — sperrt alles ausser der gewählten Kategorie"',
+      wo: "src/i18n/de/header.ts: 'header.editModeSlider.title'",
+    },
+  ],
+}
+
 const DEAD_UPSTREAM = {
   'light-planner': [
     'components/MenuBar.tsx', // App.tsx nutzt TopBar
@@ -503,7 +525,10 @@ function uncarried(app, baseUpstreamSha) {
     // Fehlt auch nur eine, bleibt es eine offene, blockierende Meldung --
     // eine halb getragene Aenderung ist keine Ablage-Frage.
     const appBag = appLineBag(app)
-    const fehltGanz = added.filter((l) => (appBag.get(l) ?? 0) < (nowBag.get(l) ?? 0))
+    const uebersetzt = new Set((UEBERSETZT[app] ?? []).map((u) => u.zeile.trim()))
+    const fehltGanz = added
+      .filter((l) => !uebersetzt.has(l.trim()))
+      .filter((l) => (appBag.get(l) ?? 0) < (nowBag.get(l) ?? 0))
     if (fehltGanz.length === 0) { verlagert.push({ file: f, addedLines: added.length }); continue }
     // Teilweise verlagert: die Meldung bleibt offen, nennt aber beide Zahlen.
     // „52 neue Zeilen fehlen", wenn 34 davon in der Kopie stehen, ist eine
