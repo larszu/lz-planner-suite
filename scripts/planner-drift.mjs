@@ -219,6 +219,13 @@ const DEAD_UPSTREAM = {
   'light-planner': [
     'components/MenuBar.tsx', // App.tsx nutzt TopBar
     'components/Toolbar.tsx', // App.tsx nutzt ToolRail
+    // Die Kommandopalette haengt upstream IN der MenuBar und liest ihr
+    // Menue-Modell — beides gibt es hier nicht, weil hier die TopBar
+    // bedient. Sie zu vendorieren hiesse, zwei Dateien mitzuschleppen, die
+    // nichts mountet. Eingebettet gehoert Strg/Cmd+K ohnehin der Shell
+    // (siehe die OVERLAY-Kommentare in cable- und multicam-App).
+    'components/CommandPalette.tsx',
+    'components/menuModel.ts',
   ],
 }
 

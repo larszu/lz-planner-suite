@@ -2,20 +2,20 @@
   "cable-planner": {
     "only-upstream": 0,
     "only-suite": 4,
-    "two-way": 15,
+    "two-way": 16,
     "upstream-ahead": 0,
-    "suite-ahead": 8,
+    "suite-ahead": 7,
     "expected-overlay": 37,
     "dead-upstream": 0,
     "drift": 27,
     "total": 64,
     "missingUpstream": false,
-    "upstreamSha": "6798e16a9aa1"
+    "upstreamSha": "4faf601064a0"
   },
   "multicam-planner": {
-    "only-upstream": 1,
+    "only-upstream": 0,
     "only-suite": 3,
-    "two-way": 20,
+    "two-way": 21,
     "upstream-ahead": 0,
     "suite-ahead": 1,
     "expected-overlay": 16,
@@ -23,19 +23,19 @@
     "drift": 25,
     "total": 41,
     "missingUpstream": false,
-    "upstreamSha": "b2a81d01ef4e"
+    "upstreamSha": "9501840580ec"
   },
   "light-planner": {
-    "only-upstream": 1,
+    "only-upstream": 0,
     "only-suite": 5,
-    "two-way": 16,
+    "two-way": 17,
     "upstream-ahead": 0,
     "suite-ahead": 1,
     "expected-overlay": 14,
-    "dead-upstream": 2,
+    "dead-upstream": 4,
     "drift": 23,
-    "total": 39,
+    "total": 41,
     "missingUpstream": false,
-    "upstreamSha": "18b5536638cf"
+    "upstreamSha": "5a543fa025d4"
   }
 }

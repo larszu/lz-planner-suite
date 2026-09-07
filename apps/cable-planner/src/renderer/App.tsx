@@ -1324,7 +1324,13 @@ export default function App() {
       <AnalysisDialog />
       <PlanCheckPanel />
       <ShortcutsHelp />
-      <CommandPalette />
+      {/* OVERLAY (Suite): Strg/Cmd + K gehoert eingebettet der SHELL.
+          ADR-007 Abschnitt 6 verlangt „derselbe Griff ueberall" — genau
+          deshalb darf es nicht zwei Paletten auf derselben Taste geben: die
+          Shell oeffnet ihre, der Planer seine, und der Nutzer sieht je nach
+          Fokus mal die eine, mal die andere. Standalone (eigenes Fenster,
+          Electron) gibt es keine Shell, dort haengt sie hier. */}
+      {!isEmbedded && <CommandPalette />}
       <RevisionsDialog />
       <AiPlanGenDialog />
       <CsvImportDialog />
