@@ -226,6 +226,47 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 78 | Lager-Einheit und Netz-Identitaet aneinander — der unsichtbare Tausch (P2) | `cable#726` |
 | 84 | Die Uebergabe sagt, ob sie den Bauzustand traegt oder den Angebotsstand (P2) | `cable#727` |
 | 71 | Arbeits-Notizen der Probe im EIGENEN Projekt statt in der Show-Datei des Pults (P2) | `light#72` |
+| 75 | „promote as-built to template" nach dem Ausbau — die naechste Show startet vom As-built statt vom Plan (P2) | `cable#728` |
+| 92 · 94 · 107 | Szenendatei des Pults lesen, Dante-Patch offline pflegen, zwei Kennungen je Einheit (P2/P3) | `cable#730` |
+| 106 · 110 · 111 · 113 | Spalten-Eigentum, Port statt Bandkanal, EIN Dante-Kanalname, Umraeumen als Vorgang (P3) | `cable#731` |
+| 114 | Wer traegt heute welche Strecke — je Session statt je Produktion (P3) | `cable#732` |
+| 112 | Der Scan vor Ort gegen den Plan, ohne Umwandlungsskript auf dem kritischen Pfad (P3) | `cable#733` |
+| 115 | Druck, der sich zum Unterlagen-Stapel heften laesst: Wiederholungs-Kopfzeile, Farbe, Umbruch (P3) | `cable#734` |
+| 101 | Umbenennen kostet EINE Aenderung, nicht eine je Stelle (P3) | `cable#735` |
+| 105 | Tally-Quelle und Sichtpruefung je Position dokumentiert und pruefbar (P3) | `cable#736` |
+| 116 | VLANs, PTP-Domaene und Steuer-/Medien-Trennung im Plan statt am Laptop vor Ort (P3) | `cable#737` |
+| 121 | Der Umbau-Zettel — nur was sich aendert, statt eine 40×40-Matrix abzutippen (P4) | `cable#738` |
+| 125 | Das MV-Layout als lesbares Blatt statt als undurchsichtige Datei des Mischers (P4) | `cable#739` |
+| 126 | „wie geplant" gegen „wie gebaut" als ausdrueckliche Unterscheidung mit Pruefgang (P4) | `cable#740` |
+| 136 | Eine Quittung je Container — und eine auf dem Rueckweg (P4) | `cable#741` |
+| 150 | Inventur ohne Scanner: abhaken statt scannen, nie nur-Scanner (P4) | `cable#742` |
+| 133 | Adressen jenseits des LANs zurueckhalten und benennen (P4) | `cable#743` |
+| 127 | Die LAN-Freigabe haengt an einer Show, nicht am Rechner (P4) | `cable#744` |
+| 57 · 59 · 60 · 61 | Rigging, Comms und Kit je Position — auf der gestempelten Kamerakarte (P2) | `multicam#94` |
+| 107 | Hausreferenz UND Herstellerseriennummer je Einheit, im Bestand (P3) | `multicam#95` |
+| 130 | Wem gehoert dieses Bild — Quellen-Identitaet nach einem Neustart (P4) | `multicam#96` |
+| 58 | Reicht die Optik an dieser Position an den beauftragten Ausschnitt? (P2) | `multicam#97` |
+| 141 | Kreise auf Phasen und Steckplaetze statt auf einen Durchschnitt (P4) | `light#79` |
+| 143 | EIN Rig-Modell, zwoelf Blaetter als Sichten darauf (P4) | `light#80` |
+| 146 | Den Patch ans Pult schicken statt abtippen (P4) | `light#81` |
+| 145 | Die Bestellung faellt aus dem Rig statt getippt zu werden (P4) | `light#82` |
+| 148 | Etiketten aus denselben Daten wie die Papiere (P4) | `light#83` |
+| 140 | Kabel und Stecker als Daten: Wege, Laenge und Stecker aus dem Plan (P4) | `light#84` |
+| 132 | Hierarchische Ablauf-Eintraege — Umsortieren oben ordnet nicht alles darunter um (P4) | `light#86` |
+| 149 | Eigene Datei, offline, ohne Abo oder Dongle — als Positionsaussage, siehe Abschnitt 1b (P4) | Abschnitt 1b |
+
+**Nachtrag 2026-09-07 — diese Tabelle war neunundzwanzig Zeilen im Rueckstand.**
+Sie endete bei `cable#727` und `light#72`, obwohl seither in drei Repos
+weitergebaut wurde. Genau der Zustand, vor dem der Abschnitt selbst warnt: ein
+gebauter Bedarf, der hier nicht steht, wird vom naechsten Leser noch einmal
+gebaut. Die Nachtraege oben sind aus den Commit-Bodies der gemergten PRs
+gezogen, nicht aus der Erinnerung; wo ein Body keine Nummer nannte
+(`cable#732`, `cable#733`), ist sie ueber den zitierten Beleg bestimmt worden —
+`chazw661/ShowStack#68` fuer Bedarf 114, `erikkaashoek/tinySA#88` fuer Bedarf 112.
+
+`cable#729` fehlt hier bewusst: er hat Bedarfe (88, 87, 81, 79, 74, 70, 52) in
+den Korpus EINGEARBEITET und keinen davon gebaut. Eine Zeile dafuer haette
+genau die Verwechslung erzeugt, gegen die diese Tabelle geschrieben ist.
 
 **Zwei Berichtigungen an dieser Tabelle.** Die Zeile zu `cable#703` fuehrte
 „28 · 29 · 34". Gebaut wurden dort das Ziel-Register, die Paritaetspruefung und
