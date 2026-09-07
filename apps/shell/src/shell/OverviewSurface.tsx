@@ -28,6 +28,8 @@ import {
 import { DashboardGrid, type DashboardItem } from './DashboardGrid'
 import { HeaderEditor, type HeaderDraft } from './dashboardEditors'
 import { useT, format, type TFunc } from '../i18n'
+import { RundownCard } from './RundownCard'
+import { suiteToSeed } from '../data/seed'
 import { WIDGET_LABEL as WIDGET_LABEL_DE } from './dashboardPrefs'
 
 /** Widget-Label an die aktuelle Sprache gebunden (DE bleibt Fallback). */
@@ -264,6 +266,17 @@ export function OverviewSurface({
   // Renderer je Karten-Widget (nur die Masonry-Karten).
   const cardRender: Record<Exclude<WidgetId, 'gewerke'>, ReactNode> = {
     runofshow: <RunOfShowCard schedule={show.schedule} onChange={editSchedule} />,
+    // BEDARF 8 — der eingelesene Ablauf. Der Seed wird HIER gebildet und
+    // nicht durchgereicht: die Karte braucht ihn nur zum Nachschlagen von
+    // Namen und Ids, nicht fuer die Bruecke — die Revision ist deshalb 0.
+    rundown: (
+      <RundownCard
+        rundown={show.rundown}
+        seed={suiteToSeed(project, 0)}
+        onImport={onUpdateShow && ((r) => onUpdateShow((sh) => ({ ...sh, rundown: r })))}
+        now={() => new Date().toISOString()}
+      />
+    ),
     crew: <CrewCard crew={show.crew} onChange={editCrew} />,
     budget: <BudgetCard budget={show.budget} onChange={editBudget} />,
     readiness: <ReadinessCard project={project} />,

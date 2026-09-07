@@ -143,6 +143,17 @@ export interface ShowDetails {
   /** Planungsfortschritt 0..1. */
   progress: number
   schedule: ScheduleItem[]
+  /**
+   * BEDARF 8 — der Ablauf des KUNDEN, eingelesen und mit dem Plan verknuepft.
+   *
+   * Er steht NEBEN `schedule` und nicht statt seiner, weil es zwei Dokumente
+   * mit zwei Eigentuemern sind: `schedule` ist der Tagesablauf der Produktion
+   * (Load-in, Soundcheck, Doors — hier angelegt, hier geaendert), dieser hier
+   * die Programm-Reihenfolge, die in der Tabelle des Kunden lebt. Nach E-18
+   * (2026-09-07) wird sie nur GELESEN; es gibt keinen Schreibweg hinein.
+   * Optional — ein Projekt ohne eingelesenen Ablauf hat keinen.
+   */
+  rundown?: import('@avplan/ui').Rundown
   crew: CrewMember[]
   budget: BudgetLine[]
   logistics: LogisticsInfo

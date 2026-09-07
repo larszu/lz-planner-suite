@@ -1,0 +1,406 @@
+import { useMemo, useRef, useState } from 'react'
+import {
+  Badge,
+  Icon,
+  Modal,
+  parseDelimited,
+  previewRundown,
+  rundownCoverage,
+  rundownFindings,
+  rundownFromPreview,
+  rundownView,
+  rundownViewCsv,
+  suggestMapping,
+  RUNDOWN_AUDIENCES,
+  RUNDOWN_FIELDS,
+  type ColumnMapping,
+  type Rundown,
+  type RundownField,
+  type RundownAudience,
+  type RundownPreview,
+} from '@avplan/ui'
+// `SuiteSeed` kommt aus dem Bruecken-Eintrag und nicht aus dem Haupt-Eintrag:
+// dort ist es zuhause (`@avplan/ui/embed` re-exportiert `seed.ts`), und es
+// zweimal zu exportieren gaebe zwei Namen fuer denselben Typ.
+import type { SuiteSeed } from '@avplan/ui/embed'
+import { Card } from './dashboard'
+import { useT, format } from '../i18n'
+
+/**
+ * BEDARF 8 + 6 — der Ablauf des Kunden, eingelesen und mit dem Plan verknuepft.
+ *
+ * WARUM NEBEN DEM TAGESABLAUF UND NICHT STATT SEINER. Das sind zwei
+ * Dokumente mit zwei Eigentuemern, und sie zusammenzulegen hiesse, einem von
+ * beiden seinen zu nehmen:
+ *
+ *   * Der **Tagesablauf** (`RunOfShowCard`) gehoert der Produktion. Load-in,
+ *     Soundcheck, Doors, Load-out, je mit Gewerk — hier angelegt, hier
+ *     geaendert.
+ *   * Der **Ablauf** (diese Karte) gehoert dem Kunden. Er lebt in dessen
+ *     Tabelle, wird eingelesen und NICHT hier gefuehrt (E-18, 2026-09-07).
+ *     Deshalb gibt es an dieser Karte keinen „Bearbeiten"-Knopf, sondern nur
+ *     „einlesen" — und die Herkunft steht darunter, damit niemand die Karte
+ *     fuer die Quelle haelt.
+ *
+ * WAS SIE ZEIGT, IST DIE VERKNUEPFUNG. Die Punkte selbst sind schnell
+ * abgeschrieben; was es bis heute nirgends gab, ist die Antwort auf „was
+ * entwertet diese Aenderung" — die Befunde unter der Liste.
+ */
+export function RundownCard({
+  rundown,
+  seed,
+  onImport,
+  now,
+}: {
+  rundown: Rundown | undefined
+  seed: SuiteSeed
+  /** Fehlt er, ist die Karte reine Anzeige (kein Persistenz-Weg vorhanden). */
+  onImport?: (next: Rundown) => void
+  /** Der Zeitstempel des Imports. Hereingereicht, damit die Rechnung rein bleibt. */
+  now: () => string
+}) {
+  const t = useT()
+  const [dialog, setDialog] = useState(false)
+
+  const findings = useMemo(
+    () => (rundown ? rundownFindings(rundown, seed) : []),
+    [rundown, seed],
+  )
+  const coverage = useMemo(
+    () => (rundown ? rundownCoverage(rundown, seed) : null),
+    [rundown, seed],
+  )
+
+  return (
+    <Card
+      title={t('overview.card.rundown.title', 'Ablauf (eingelesen)')}
+      icon="grid"
+      action={
+        <span className="flex items-center gap-1.5">
+          {rundown && (
+            <Badge tone="accent">
+              {format(t('overview.card.rundown.points', '{n} Punkte'), {
+                n: rundown.items.length,
+              })}
+            </Badge>
+          )}
+          {onImport && (
+            <button
+              type="button"
+              className="av-focus rounded-av-control px-1.5 py-0.5 text-[11px] font-medium text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
+              onClick={() => setDialog(true)}
+            >
+              {t('overview.card.rundown.import', 'Einlesen')}
+            </button>
+          )}
+        </span>
+      }
+    >
+      {onImport && (
+        <RundownImportDialog
+          open={dialog}
+          seed={seed}
+          now={now}
+          onClose={() => setDialog(false)}
+          onDone={(next) => {
+            onImport(next)
+            setDialog(false)
+          }}
+        />
+      )}
+
+      {rundown && (
+        <RundownExports rundown={rundown} seed={seed} />
+      )}
+
+      {!rundown ? (
+        <p className="text-[12.5px] text-av-text-muted">
+          {t(
+            'overview.card.rundown.empty',
+            'Noch kein Ablauf eingelesen. Er wird hier nicht geführt — er kommt aus der Tabelle, in der er ohnehin lebt.',
+          )}
+        </p>
+      ) : (
+        <>
+          <ol className="mb-2 flex flex-col gap-0">
+            {rundown.items.map((item) => (
+              <li key={item.id} className="grid grid-cols-[54px_1fr] items-start gap-2">
+                <span className="av-num pt-0.5 text-[12px] text-av-text-muted">
+                  {item.startMin != null
+                    ? `${String(Math.floor(item.startMin / 60)).padStart(2, '0')}:${String(item.startMin % 60).padStart(2, '0')}`
+                    : (item.startText ?? '—')}
+                </span>
+                <span className="pb-2">
+                  <span className="block text-[13px] text-av-text">{item.title}</span>
+                  {item.refs.length > 0 && (
+                    <span className="text-[10.5px] text-av-text-faint">
+                      {item.refs.map((r) => r.mentionedAs ?? r.id).join(' · ')}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          <p className="text-[10.5px] text-av-text-faint">
+            {format(
+              t('overview.card.rundown.source', 'aus {file}, eingelesen {when}'),
+              { file: rundown.source.filename, when: rundown.source.importedAt.slice(0, 16).replace('T', ' ') },
+            )}
+          </p>
+          {coverage && coverage.total > 0 && (
+            <p className="text-[10.5px] text-av-text-faint">
+              {format(
+                t('overview.card.rundown.coverage', '{n} von {m} Objekten des Plans kommen im Ablauf vor'),
+                { n: coverage.referenced, m: coverage.total },
+              )}
+            </p>
+          )}
+
+          {findings.length > 0 && (
+            <ul className="mt-2 flex flex-col gap-0.5">
+              {findings.map((f, i) => (
+                <li
+                  key={`${f.kind}:${f.itemId}:${i}`}
+                  className="flex items-start gap-1 text-[11px]"
+                  style={{ color: f.severity === 'error' ? 'var(--av-danger)' : 'var(--av-warn)' }}
+                >
+                  <Icon name="warning" size={12} />
+                  <span>{f.message}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </Card>
+  )
+}
+
+/**
+ * Die Vorschau vor dem Import — die Forderung aus Bedarf 6 („confirm-before-
+ * import"), und der Grund, warum der Maintainer von ontime seinen Importer
+ * ueberhaupt umgebaut hat.
+ *
+ * DREI DINGE STEHEN HIER UND NICHT IM MODELL:
+ *
+ * 1. Die Zuordnung ist AENDERBAR. `suggestMapping` schlaegt vor; was es nicht
+ *    trifft, legt der Mensch — es gibt keine Liste erwarteter Spaltennamen,
+ *    an der eine fremde Tabelle scheitern koennte.
+ * 2. Jede uebersprungene Zeile und jede unaufloesbare Nennung steht mit
+ *    Zeilennummer da. Ein Import, der still die Haelfte schluckt, ist
+ *    schlimmer als keiner.
+ * 3. Uebernommen wird erst auf Knopfdruck.
+ */
+function RundownImportDialog({
+  open,
+  seed,
+  now,
+  onClose,
+  onDone,
+}: {
+  open: boolean
+  seed: SuiteSeed
+  now: () => string
+  onClose: () => void
+  onDone: (r: Rundown) => void
+}) {
+  const t = useT()
+  const datei = useRef<HTMLInputElement>(null)
+  const [filename, setFilename] = useState('')
+  const [headers, setHeaders] = useState<string[]>([])
+  const [rows, setRows] = useState<string[][]>([])
+  const [mapping, setMapping] = useState<ColumnMapping>({})
+
+  const preview: RundownPreview | null = useMemo(
+    () => (headers.length > 0 ? previewRundown(headers, rows, mapping, seed) : null),
+    [headers, rows, mapping, seed],
+  )
+
+  const lies = async (f: File) => {
+    const text = await f.text()
+    const { headers: h, rows: r } = parseDelimited(text)
+    setFilename(f.name)
+    setHeaders(h)
+    setRows(r)
+    setMapping(suggestMapping(h))
+  }
+
+  const setzeSpalte = (spalte: string, feld: RundownField | '') =>
+    setMapping((m) => {
+      const next = { ...m }
+      if (feld === '') delete next[spalte]
+      else next[spalte] = feld
+      return next
+    })
+
+  return (
+    <Modal open={open} onClose={onClose} title={t('rundown.import.title', 'Ablauf einlesen')}>
+      <div className="flex flex-col gap-3 text-[12.5px]">
+        <p className="text-av-text-muted">
+          {t(
+            'rundown.import.hint',
+            'CSV, TSV oder ein aus der Tabelle kopierter Bereich. Die Spalten werden vorgeschlagen — was nicht passt, wird hier gelegt. Übernommen wird erst am Ende.',
+          )}
+        </p>
+
+        <input
+          ref={datei}
+          type="file"
+          accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) void lies(f)
+          }}
+          className="text-[12px]"
+        />
+
+        {headers.length > 0 && (
+          <>
+            <div className="flex flex-col gap-1">
+              {headers.map((h) => (
+                <label key={h} className="flex items-center gap-2">
+                  <span className="w-40 truncate text-av-text-secondary">{h}</span>
+                  <select
+                    value={mapping[h] ?? ''}
+                    onChange={(e) => setzeSpalte(h, e.target.value as RundownField | '')}
+                    className="rounded-av-control border border-av-border bg-av-surface-1 px-1 py-0.5"
+                  >
+                    <option value="">{t('rundown.import.ignore', 'nicht übernehmen')}</option>
+                    {RUNDOWN_FIELDS.map((f) => (
+                      <option key={f} value={f}>
+                        {t(`rundown.field.${f}`, f)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+
+            {preview && (
+              <>
+                <p className="text-av-text">
+                  {format(
+                    t('rundown.import.count', '{n} Punkte, {s} Zeilen übersprungen, {u} Nennungen ohne Zuordnung'),
+                    {
+                      n: preview.items.length,
+                      s: preview.skipped.length,
+                      u: preview.unresolved.length,
+                    },
+                  )}
+                </p>
+                {preview.skipped.length > 0 && (
+                  <ul className="flex max-h-24 flex-col gap-0.5 overflow-auto text-[11px] text-av-text-muted">
+                    {preview.skipped.map((s) => (
+                      <li key={`s${s.row}`}>
+                        {format(t('rundown.import.skipped', 'Zeile {row}: {reason}'), {
+                          row: s.row,
+                          reason: t(`rundown.skip.${s.reason}`, s.reason),
+                        })}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {preview.unresolved.length > 0 && (
+                  <ul className="flex max-h-24 flex-col gap-0.5 overflow-auto text-[11px]" style={{ color: 'var(--av-warn)' }}>
+                    {preview.unresolved.map((u, i) => (
+                      <li key={`u${i}`}>
+                        {format(
+                          u.matches === 0
+                            ? t('rundown.import.unknown', 'Zeile {row}: „{text}“ gibt es im Plan nicht')
+                            : t('rundown.import.ambiguous', 'Zeile {row}: „{text}“ passt auf {n} Objekte im Plan'),
+                          { row: u.row, text: u.text, n: u.matches },
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {preview.ignoredColumns.length > 0 && (
+                  <p className="text-[11px] text-av-text-faint">
+                    {format(t('rundown.import.ignored', 'Nicht übernommen: {cols}'), {
+                      cols: preview.ignoredColumns.join(', '),
+                    })}
+                  </p>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        <div className="flex justify-end gap-2">
+          <button type="button" className="av-focus rounded-av-control px-2 py-1" onClick={onClose}>
+            {t('rundown.import.cancel', 'Abbrechen')}
+          </button>
+          <button
+            type="button"
+            disabled={!preview || preview.items.length === 0}
+            className="av-focus rounded-av-control bg-av-accent px-2 py-1 text-av-accent-text disabled:opacity-50"
+            onClick={() => {
+              if (!preview) return
+              onDone(
+                rundownFromPreview(preview, {
+                  filename,
+                  importedAt: now(),
+                  mapping,
+                }),
+              )
+            }}
+          >
+            {t('rundown.import.confirm', 'Übernehmen')}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+/**
+ * BEDARF 7 — dieselbe Quelle, jedes Empfaenger-Format.
+ *
+ *   > Each rendering is made by hand from the same rows and forks the moment
+ *   > it is exported.
+ *
+ * Fuenf Knoepfe, EINE Quelle. Die Sichten sind Spalten-Auswahlen aus
+ * `rundownViews.ts`, keine eigenen Datensaetze — deshalb kann sich hier
+ * nichts gabeln. Diese Datei rechnet nichts aus; sie waehlt einen Empfaenger
+ * und laedt herunter.
+ *
+ * Die Legende und die Stand-Zeile stehen IM Blatt, nicht daneben: ein
+ * Beiblatt geht auf dem Weg zum Empfaenger verloren, und der Bedarf verlangt
+ * „self-explaining" als Eigenschaft der Datei.
+ */
+const AUDIENCE_LABEL: Record<RundownAudience, string> = {
+  client: 'Kunde',
+  crew: 'Crew',
+  department: 'Gewerk',
+  signage: 'Foyer',
+  showcaller: 'Show-Caller',
+}
+
+function RundownExports({ rundown, seed }: { rundown: Rundown; seed: SuiteSeed }) {
+  const t = useT()
+  const lade = (audience: RundownAudience) => {
+    const view = rundownView(rundown, seed, audience)
+    const blob = new Blob([rundownViewCsv(view)], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ablauf-${audience}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+  return (
+    <div className="mb-2 flex flex-wrap gap-1">
+      {RUNDOWN_AUDIENCES.map((a) => (
+        <button
+          key={a}
+          type="button"
+          className="av-focus rounded-av-control border border-av-border px-1.5 py-0.5 text-[11px] text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
+          onClick={() => lade(a)}
+        >
+          {t(`rundown.audience.${a}`, AUDIENCE_LABEL[a])}
+        </button>
+      ))}
+    </div>
+  )
+}

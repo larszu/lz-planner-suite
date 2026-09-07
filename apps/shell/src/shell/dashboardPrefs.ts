@@ -7,6 +7,7 @@
 export type WidgetId =
   | 'gewerke'
   | 'runofshow'
+  | 'rundown'
   | 'crew'
   | 'budget'
   | 'readiness'
@@ -20,6 +21,7 @@ export const FULL_WIDTH_WIDGETS: WidgetId[] = ['gewerke']
 /** Karten in der responsiven Masonry — an-/abwählbar und umsortierbar. */
 export const DEFAULT_CARD_ORDER: WidgetId[] = [
   'runofshow',
+  'rundown',
   'crew',
   'budget',
   'readiness',
@@ -31,6 +33,7 @@ export const DEFAULT_CARD_ORDER: WidgetId[] = [
 export const WIDGET_LABEL: Record<WidgetId, string> = {
   gewerke: 'Gewerke-Karten',
   runofshow: 'Tagesablauf',
+  rundown: 'Ablauf (eingelesen)',
   crew: 'Crew',
   budget: 'Budget',
   readiness: 'Equipment-Bereitschaft',
