@@ -89,7 +89,15 @@ const InventoryDialog: React.FC<Props> = ({ onClose }) => {
       return;
     }
     const n = importSnapshot(snap, wahl === 'ok' ? 'replace' : 'merge');
-    setMsg(t('inventory.importDone', '{n} Objekte importiert.').replace('{n}', String(n)));
+    // B-36: „Importiert" ist erst wahr, wenn es auch geschrieben wurde.
+    setMsg(
+      useInventoryStore.getState().storageFull
+        ? t(
+            'inventory.importFull',
+            '{n} Objekte gelesen, aber NICHT gespeichert: der lokale Speicher ist voll. Erst Platz schaffen, dann erneut importieren.',
+          ).replace('{n}', String(n))
+        : t('inventory.importDone', '{n} Objekte importiert.').replace('{n}', String(n)),
+    );
   };
 
   const doScan = () => {

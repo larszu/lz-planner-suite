@@ -1080,7 +1080,7 @@ ist selbst ein Ergebnis.
 
 ### B-36 · Der Defektformen-Sweep über die fünf Nicht-cable-Repos ist NICHT abgeschlossen
 
-* **Status:** offen — und ausdrücklich **ohne verwertbares Ergebnis**.
+* **Status:** offen — **eine von fünf Formen ist durchgearbeitet** (2026-09-07, fünf bestätigte und behobene Befunde, siehe unten). Der ursprüngliche Lauf blieb ausdrücklich **ohne verwertbares Ergebnis**.
 * **Was lief (2026-09-04):** ein Sweep über fünf wiederkehrende Defektformen
   dieser Sitzung (`guard-umgangen`, `zwei-rechnungen`, `vertrag-nur-feldnamen`,
   `fixture-erreicht-grenze-nicht`, `zustand-nach-fehler`) in
@@ -1098,7 +1098,44 @@ ist selbst ein Ergebnis.
   aussehen wie Befunde.
 * **Was der Sweep an Substanz ergeben hat:** nichts Bestätigtes. Er ist zu
   wiederholen, nicht auszuwerten.
-* **Aufwand:** mittel (Wiederholung, sobald Kontingent da ist)
+
+* **Wiederholt 2026-09-07 — fünf bestätigte Befunde, jeder gegengeprobt und
+  behoben.** Diesmal nicht als Liste von Verdachtsmomenten, sondern als
+  gemessener Defekt plus die Gegenprobe, die ihn rot macht. Vier von fünf
+  gehören zur Form `zustand-nach-fehler`, und sie ähneln einander so stark,
+  dass die Form selbst der eigentliche Befund ist: **nach einem Fehler bleibt
+  der letzte gültige Zustand stehen und behauptet weiter, gültig zu sein.**
+
+  | Repo | Befund | PR |
+  | --- | --- | --- |
+  | `pi-media-station` | `SensorThread.distance` startete bei **0.0** — und 0,0 m heißt nicht „noch nichts gemessen", sondern „jemand steht direkt vor dem Sensor". Die Station ging beim Start in die Nah-Szene, und ein Sensor, der gar nicht antwortete, hielt sie dauerhaft dort. Ein gemessener Wert veraltete außerdem nie. | `#6` |
+  | `Broadcast-intercom` | `saveConfig` schrieb mit blankem `fs.writeFile` direkt auf die Zieldatei. Ein Absturz dabei hinterließ eine halbe Datei, und `initializeState` hatte keinen Zweig dafür: **der Kern startete nicht mehr.** Geschrieben wird bei jedem übernommenen Plan, also während des Aufbaus. | `#12` |
+  | `sony-camera-bridge` | Nach einem Verbindungsverlust blieben Zustand, Herkunft und **Bestätigungszeit** stehen. Auf einem Melde-Weg liest `freshness` daraus dauerhaft „frisch" — die Behauptung, die Bedarf 102 abschaffen sollte, eine Ebene tiefer. Drei Aufräumwege, drei verschiedene Regelungen. | `#20` |
+  | `multicam-planner` | Der Lager-Store schrieb über `saveJSON`, dessen `catch` leer ist. Der Import meldete „N Objekte importiert", und der Bestand war beim nächsten Start weg. Das Mittel dagegen (`saveJSONSafe` + `…StorageFull`) gab es im selben Repo — für Shotlisten, nicht für die Stammdaten. | `#107` |
+  | `light-planner` | Derselbe Befund, eigener Code (`catch { /* quota */ }`). | `#91` |
+
+  Der fünfte gehört zu `guard-umgangen` und stand vorher als offenes Issue da:
+  `tally-pi#2` („Überlastet wenn Buttons dazu kommen?"). Der `BurstTracker`
+  legte **pro GPIO-Flanke** einen `threading.Timer` an, und ein Timer ist ein
+  Thread; gemessen 200 Flanken → 200 Threads. Genau das, wogegen der Tracker
+  gebaut ist (eine verrauschte Leitung liefert „dozens" Flanken je Druck),
+  war seine eigene Last. Behoben in `tally-pi#13`.
+
+* **Was die Wiederholung methodisch geändert hat.** Der abgebrochene Lauf
+  suchte breit und prüfte nichts. Dieser suchte an *einer* Form entlang durch
+  alle fünf Repos und hat jeden Befund sofort gegengeprobt — Regel
+  kaputtmachen, Wächter rot sehen, zurückbauen. Von den fünf Befunden hat
+  keiner die Gegenprobe verfehlt; zwei **Wächter** dagegen schon, und beide
+  Male war der Wächter schuld, nicht der Fix (ein Test, der bei einem
+  Fehlschlag am offenen Port hängt statt rot zu werden; eine Zusicherung, die
+  schon vom Schritt davor grün war). Beides steht in den PRs.
+
+* **Was offen bleibt:** die Formen `zwei-rechnungen`, `vertrag-nur-feldnamen`
+  und `fixture-erreicht-grenze-nicht` sind in diesem Durchgang nur gestreift
+  worden. Sie bleiben zu wiederholen — mit demselben Verfahren.
+
+* **Aufwand:** ~~mittel (Wiederholung, sobald Kontingent da ist)~~ eine Form
+  von fünf ist durch; drei stehen aus
 
 ---
 

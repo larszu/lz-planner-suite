@@ -93,7 +93,20 @@ export function InventoryDialog({ open, onClose }: Props) {
       return;
     }
     const n = importSnapshot(snap, wahl === 'ok' ? 'replace' : 'merge');
-    setScanResult(format(t('inventory.import.done', '{count} objects imported.'), { count: n }));
+    // B-36: „Importiert" ist erst wahr, wenn es auch geschrieben wurde. Vorher
+    // meldete der Dialog den Erfolg, waehrend der volle localStorage den
+    // Bestand still verwarf — sichtbar wurde das beim naechsten Start.
+    setScanResult(
+      useInventoryStore.getState().storageFull
+        ? format(
+            t(
+              'inventory.import.full',
+              '{count} objects read but NOT saved: local storage is full. Free some space, then import again.',
+            ),
+            { count: n },
+          )
+        : format(t('inventory.import.done', '{count} objects imported.'), { count: n }),
+    );
   };
 
   const doScan = () => {

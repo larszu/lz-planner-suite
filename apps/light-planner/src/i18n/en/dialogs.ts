@@ -486,6 +486,7 @@ export const dialogs: Record<string, string> = {
   'version.delete': 'Delete version',
   'version.pick': 'Pick a version on the left to see what changed since then.',
   'version.noDiff': 'No differences from the current state.',
+  'version.alsoChanged': '{cats} also changed (no detail)',
   'version.change': 'change',
   'version.changes': 'changes',
   'version.since': 'since',

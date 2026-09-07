@@ -1,0 +1,243 @@
+name: CI
+
+# Der Merge-Gate. Selbst-Merge ist nur bei gruenem CI erlaubt — auf Pull
+# Requests lief bisher aber gar kein Check, den es haette gruen oder rot
+# machen koennen: release.yml haengt an Tags.
+#
+# Neben Lint und Build laufen hier die drei Austauschformat-Waechter mit.
+# Genau sie halten fest, dass `.avplan`, das Venue-Format und
+# `avplan-inventory` in allen drei Planern identisch bleiben — ein Drift
+# darin faellt sonst erst auf, wenn ein Import beim Nutzer scheitert.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Wire-Contract — avplan-inventory
+        run: npm run inventory:check
+      - name: Wire-Contract — .avplan
+        run: npm run avplan:check
+      - name: Wire-Contract — Venue-Austausch
+        run: npm run venue:check
+      - name: Projekt-Identitaet (Versionen, Geraete-Liste)
+        run: npm run identity:check
+      # B-21: „Keine Unterschiede zum aktuellen Stand" darf nicht mehr
+      # behaupten, als der Vergleich abdeckt — sonst verwirft der Nutzer eine
+      # Version, die sich sehr wohl unterscheidet.
+      - name: Versions-Vergleich behauptet nicht zu viel
+        run: npm run diff:check
+      # B-36: Ein Lager, das nicht geschrieben wurde, ist kein Lager. Der
+      # Store fing den Quota-Fehler mit einem leeren `catch` ab; der Import
+      # meldete Erfolg, und der Bestand war beim naechsten Start weg.
+      - name: Lager meldet einen gescheiterten Schreibvorgang
+        run: npm run storage:check
+      - name: i18n — erreichbare Oberflaeche uebersetzt
+        run: npm run i18n:check
+
+      # Nutzer-Rueckmeldung 2026-09-07: "die ui ist nicht konsistent. lege
+      # globale ui regeln fest die fuer alle repos gelten." Die Regeln stehen
+      # in ADR-007 der av-planner-suite; dieser Check haelt sie hier.
+      - name: Oberflaechen-Regeln (ADR-007)
+        run: npm run brand:check
+
+      # Nutzer-Rueckmeldung 2026-09-07 am Kabel-Planer: die Anwendung schrieb
+      # ihr Deutsch als „Geraet"/„Domaene". Dieselbe Drift stand hier in elf
+      # Meldungen. Der Check kennt nicht die falschen Woerter, sondern die,
+      # in denen „ae/oe/ue" kein Umlaut-Ersatz ist — sonst liesse er das
+      # naechste neue Wort still durch.
+      - name: Meldungstexte in richtigem Deutsch
+        run: npm run ascii:check
+
+      - name: MVR-Export — Fixture-Typ-Identitaet
+        run: npm run mvr:check
+
+      - name: Herkunft der Kenndaten
+        run: npm run spec:check
+
+      # Ein Ausdruck sagt seinen Stand (ADR-004). Der Waechter haelt vor allem
+      # zwei Dinge fest, die man nicht sieht: dass der Fingerabdruck derselbe
+      # ist wie im cable-planner, und dass eine CSV OHNE Stempel zeichengleich
+      # bleibt wie vor der Einfuehrung.
+      - name: Stand-Stempel auf den Ausdrucken
+        run: npm run stamp:check
+
+      # Bedarf 71 — die Arbeits-Notizen aus der Probe. Der Lauf haelt zwei
+      # Dinge fest, die man nicht sieht: dass eine Notiz nie still
+      # verschwindet (auch nicht, wenn ihre Leuchte geloescht wird), und dass
+      # sie in KEINEN Fremdformat-Export geraet — am Ergebnis geprueft, nicht
+      # an der Absicht.
+      - name: Arbeits-Notizen bleiben im eigenen Projekt
+        run: npm run notes:check
+
+      # Bedarf 137 — der Rueckweg vom Pult. Nach dem Aufbau liegt der einzige
+      # richtige Stand in der Show-Datei des Pults; der Plan zeigt die Absicht
+      # von vor drei Wochen. Der Lauf haelt vor allem zwei Dinge fest, die man
+      # nicht sieht: dass ein mehrfach belegter Kanal KEINEN Feldvergleich
+      # ergibt (mehrere Leuchten auf einem Kanal sind im Licht normal), und
+      # dass der Vergleich nichts in den Plan schreibt -- am Ergebnis
+      # geprueft, nicht an der Absicht.
+      - name: Rueckweg vom Pult schreibt nichts zurueck
+        run: npm run patch:check
+
+      # Bedarf 139 — Gruppen ueberleben die Uebergabe. Der Lauf haelt vor allem
+      # zwei Dinge fest, die man nicht sieht: dass ein geloeschtes Mitglied
+      # nicht still aus der Gruppe faellt, und dass die Liste dessen, was eine
+      # .mvr NICHT traegt, BERECHNET ist statt aufgezaehlt -- eine Aufzaehlung
+      # waere der Kenntnisstand ihres Autors, und die naechste Auslassung
+      # fiele wieder niemandem auf.
+      - name: Gruppen haben Namen, ein Blatt und einen Weg
+        run: npm run groups:check
+
+      # Bedarf 144 — Austauschdateien, die an einer Umbenennung nicht
+      # zerbrechen. Zwei gemessene Defekte stehen dahinter: derselbe Plan ergab
+      # zweimal verschiedene UUIDs (ein Nachimport war damit keine
+      # Aktualisierung, sondern eine Verdopplung), und zwei Geraetetypen fielen
+      # auf denselben GDTF-Dateinamen. Beides sah man der Datei nicht an.
+      - name: MVR-Identitaeten sind stabil und kollisionsfrei
+        run: npm run identity:mvr
+
+      # Bedarf 138 — zwei auseinandergelaufene Kopien desselben Rigs. Der Lauf
+      # haelt vor allem drei Dinge fest: dass ohne gemeinsamen Stand gar nichts
+      # passiert (sonst liesse sich „neu angelegt" nicht von „geloescht"
+      # unterscheiden, und das IST der Datenverlust aus dem Beleg), dass
+      # geloescht-gegen-geaendert ein Konflikt ist, und dass ein Eintrag ohne
+      # Wahl nichts bewirkt.
+      - name: Zusammenfuehren ist ein Vorschlag, keine Uebernahme
+        run: npm run merge:check
+
+      # Bedarf 142 — die Vorflug-Pruefung. Der Lauf haelt vor allem eines
+      # fest: dass ein Plan, dessen Last-Zahlen auf fehlenden Angaben beruhen,
+      # NICHT als „bereit" durchgeht. Das ist der Fall, den die Quelle als
+      # „confident, wrong numbers" beschreibt -- und er sieht von aussen aus
+      # wie ein sauberer Plan.
+      - name: Vorflug-Pruefung faellt kein Urteil ohne Grundlage
+        run: npm run preflight:check
+
+      # Bedarf 147 -- „Universe 2" heisst in sACN etwas anderes als in Art-Net,
+      # wo dieselbe Zahl die Port-Address 0:0:2 ist; ab 16 laufen die beiden
+      # Lesarten auseinander (Art-Net 16 ist Sub-Net 1 / Universe 0, und das
+      # Feld am Node hat nur vier Bit). Der Beleg nennt die Verwechslung „the
+      # classic patch error". Der Waechter haelt drei Dinge fest: die Zerlegung
+      # stimmt, es wird nichts geklemmt, und die Angabe ueberlebt alle vier
+      # ProjectData-Bauplaetze in App.tsx.
+      - name: Universe-Identitaet nennt beide Lesarten
+        run: npm run universe:check
+
+      # Bedarf 141 -- die Last je Phase. `computePower` teilte die Gesamtlast
+      # seit jeher durch drei: die Last einer AUSGEGLICHENEN Anlage, also des
+      # Zustands, den niemand hat. Den Automaten wirft die schwerste Phase.
+      # Der Waechter haelt vor allem drei Dinge fest: dass die Phase am
+      # STECKPLATZ haengt und nicht am Kreis (ein Distro verdrahtet reihum,
+      # und jedes faengt von vorn an), dass die alte Annahme benannt statt
+      # ersetzt wird -- sie kann nie groesser sein als die schwerste Phase --,
+      # und dass ein Geraet, das in keinen 16-A-Kreis passt, auffaellt.
+      - name: Last steht auf Phasen, nicht auf einem Durchschnitt
+        run: npm run power:check
+
+      # Bedarf 143 -- zwoelf Blaetter, ein Modell. Der Beleg beschreibt sie als
+      # „all sorts and groupings of the same fields": zwoelf Sichten, keine
+      # zwoelf Dokumente. Der Waechter haelt vor allem drei Dinge fest: dass
+      # jede Spalte aus dem einen Feld-Katalog kommt (ein Blatt bringt keinen
+      # eigenen Zugriff mit), dass dieselben Leuchten in JEDER
+      # Einfuegereihenfolge dasselbe Blatt ergeben -- sonst meldete der
+      # Stand-Stempel Abweichungen, die niemand gemacht hat --, und dass die
+      # drei alten CSVs zeichengleich bleiben.
+      - name: Blaetter sind Sichten auf ein Modell
+        run: npm run reports:check
+
+      # Bedarf 146 -- den Patch ans Pult schicken statt abtippen. Der Beleg
+      # nennt zwei Fallen ausdruecklich: Eos will Tabulatoren und
+      # Windows-Zeilenenden, und es verwirft Zeilen ohne bekannten Geraetetyp
+      # -- beides ohne ein Wort. Die Empfehlung der Quelle ist deshalb keine
+      # Funktion, sondern eine Warnung VOR dem Speichern. Der Waechter haelt
+      # vor allem fest, dass gewarnt und geschrieben DIESELBE Entscheidung
+      # ist: zwei Regeln koennten auseinanderlaufen, und dann warnte die eine,
+      # waehrend die andere etwas anderes tut.
+      - name: Die Pult-Datei sagt vorher, was sie nicht enthaelt
+        run: npm run console:check
+
+      # Bedarf 145 -- die Bestellung faellt aus dem Plan, statt getippt zu
+      # werden. Der Waechter haelt vor allem drei Dinge fest: dass die Mengen
+      # in JEDER Zeile aufgehen (Bedarf = eigen + fremd + bestellen), dass
+      # fremdes Material als fremdes erscheint -- es kommt zurueck und kostet
+      # je Tag, und wer es als „gedeckt" verbucht, hat den Fehler aus Bedarf 82
+      # wieder --, und dass jede Zeile sagt, worauf ihre Deckung beruht: die
+      # Zuordnung Plan-Geraet zu Lager-Artikel ist ein Vergleich von
+      # Zeichenketten und keine Tatsache.
+      - name: Die Bestellung teilt auf und nennt ihre Grundlage
+        run: npm run shop:check
+
+      # Bedarf 148 -- Etiketten aus denselben Daten wie die Papiere. „Label
+      # output is a print view over the existing circuit/dimmer/channel
+      # model": die Zeilen nennen Feld-Kennungen aus dem Katalog von
+      # Bedarf 143, keine eigenen Zugriffe -- sonst klebte am Ladetag am
+      # Verteiler etwas anderes, als auf dem Blatt steht. Der Waechter haelt
+      # daneben zwei Dinge fest, die man erst am Drucker merkt: dass NICHTS
+      # gekuerzt wird (ein abgeschnittener Kreis ist ein falsches Etikett) und
+      # dass die Bogen-Masse wirklich auf A4 passen.
+      - name: Etiketten lesen dieselben Felder wie die Blaetter
+        run: npm run labels:check
+
+      # Bedarf 140: das Austauschformat MVR hat keine Kabel-Entitaet
+      # (`mvrdevelopment/spec#296`, `#288`, beide offen) -- die Wege folgen aber
+      # aus dem, was der Plan schon weiss. Der Waechter haelt die zwei Stellen
+      # fest, an denen so eine Liste luegt: die Kette muss der Traverse folgen
+      # und am Kreis brechen (nicht nach einer zweiten, eigenen Regel), und die
+      # Zuleitung vom Verteiler bekommt KEINE erfundene Laenge -- ausgerechnet
+      # dort, wo das Kabel am laengsten ist.
+      - name: Kabelwege folgen dem Kreis, nicht einer zweiten Regel
+        run: npm run cables:check
+
+      # Bedarf 132: die Szenen waren eine flache Liste. Wer den dritten Song
+      # nach vorn zieht, musste seine Teil-Stimmungen einzeln hinterherziehen
+      # -- und vergisst eine; dann steht im Ablauf ein Chorus vor seinem Intro,
+      # und beim Durchgang merkt es niemand, weil beide plausibel heissen. Der
+      # Waechter haelt die drei Stellen fest, an denen so ein Baum kippt: das
+      # Verschieben muss die Kinder MITnehmen und darf die eigene Ebene NICHT
+      # verlassen, ein verwaistes Kind wird genannt statt entsorgt, und ein
+      # Kreis darf die Ableitung nicht aufhaengen.
+      - name: Der Ablauf ist ein Baum, keine Liste
+        run: npm run order:check
+
+      # INTEGRATION.md war bis 2026-09-04 von keiner Einstiegsseite aus
+      # verlinkt -- also ausgerechnet das Dokument, das die Einbettung in den
+      # cable-planner beschreibt.
+      - name: Dokumentation ist auffindbar
+        run: npm run docs:check
+
+      # Zuletzt und bewusst: dieser Lauf prueft, dass die Liste darueber
+      # vollstaendig ist. `mvr:check` fehlte hier bis 2026-09-04 — er
+      # existierte, war gruen, und lief bei keinem Merge.
+      # Fragt die action.yml jedes Pins nach ihrer Node-Version, statt sie in
+      # einem Kommentar zu behaupten. `release.yml` pinnt per Sha -- gut gegen
+      # Tag-Verschiebung, schlecht gegen Vergessen: am 2026-09-05 zeigten alle
+      # vier Shas noch auf v4.x, also node20, und der Kommentar daneben sagte
+      # "Drop this once checkout/setup-node ship v5", die es laengst gab.
+      - name: Actions laufen auf einer unterstuetzten Node-Version
+        run: npm run actions:check
+
+      - name: Jeder Pruef-Lauf steht auch im Workflow
+        run: npm run ci:complete
+      - name: Build (inkl. Type-Check)
+        run: npm run build

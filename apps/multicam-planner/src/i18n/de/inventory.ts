@@ -40,6 +40,7 @@ export const inventory: Record<string, string> = {
   'inventory.import.replace': 'Ersetzen',
   'inventory.import.merge': 'Zusammenführen',
   'inventory.import.cancelled': 'Import abgebrochen — nichts geändert.',
+  'inventory.import.full': '{count} Objekte gelesen, aber NICHT gespeichert: der lokale Speicher ist voll. Erst Platz schaffen, dann erneut importieren.',
   'inventory.import.done': '{count} Objekte importiert.',
   'inventory.scan.noMatch': 'Kein Treffer für „{code}".',
   'inventory.scan.item': 'Artikel: {model}',
