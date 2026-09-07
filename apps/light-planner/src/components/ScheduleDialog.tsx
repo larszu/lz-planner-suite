@@ -3,7 +3,7 @@ import {
   RETURN_KIND_LABEL, parseConsolePatch, patchReturn, returnFindings, returnTable,
   type PatchReturn,
 } from '../core/consolePatch';
-import type { PlacedFixture, Truss, Wall, Ceiling, WorkNote, WorkNoteTarget } from '../types';
+import type { FixtureGroup, PlacedFixture, Truss, Wall, Ceiling, WorkNote, WorkNoteTarget } from '../types';
 import { computePower, fixtureCounts, footprint, trussLoads, circuitBreakdown, colorCounts, nearestTrussId } from '../core/patch';
 import { documentFingerprint, stampForStand, type DocumentStamp } from '../core/documentStamp';
 import { colorTable, gelCodes, inventoryTable, scheduleOrder, scheduleTable, tableToCsv, type DocumentTable } from '../core/documentTables';
@@ -11,6 +11,11 @@ import { versionsFor } from '../utils/versionStore';
 import { rigCheck, issueCounts } from '../core/rigCheck';
 import { photometricReport, type EvalArea } from '../core/photometrics';
 import { buildMvr } from '../core/mvrExport';
+import {
+  groupTable, mvrOmissions, resolveGroups, UNNAMED_GROUP, type OmissionKind,
+} from '../core/fixtureGroups';
+import { gdtfSpecNames } from '../core/mvrIdentity';
+import { preflight, preflightTable, type PreflightVerdict } from '../core/preflight';
 import { groupNotes, staleNotes } from '../core/workNotes';
 import { getFixtureCCT, cctToRgb } from '../core/colorTemp';
 import Icon from './Icon';
@@ -31,6 +36,10 @@ interface Props {
   onAutoPatch: () => void;
   onLocate: (ids: string[]) => void;
   onUpdateFixture: (id: string, updates: Partial<PlacedFixture>) => void;
+  // ── Bedarf 139 — Gruppen, die die Uebergabe ueberleben ──
+  fixtureGroups: FixtureGroup[];
+  /** Umbenennen. Die History haengt am Wirt, nicht hier. */
+  onRenameGroup: (id: string, label: string) => void;
   // ── Bedarf 71 — Arbeits-Notizen aus der Probe ──
   workNotes: WorkNote[];
   /** Legt eine Notiz an. Id und Zeitpunkt kommen vom Wirt, nicht von hier. */
@@ -77,7 +86,29 @@ const utilClass = (u: number) => (u >= 1 ? 'util-over' : u >= 0.8 ? 'util-warn' 
 
 // A focused multi-tool hub for paperwork, validation, analysis and interchange.
 // Each tab is one job, so no single view is overloaded.
-const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, area, projectName, projectId, conflicts, onAutoNumber, onAutoPatch, onLocate, onUpdateFixture, workNotes, onAddNote, onToggleNote, onRemoveNote, onClose }) => {
+// Bedarf 139/142 — literale Schluessel, damit `i18n:check` sie sieht. Ein
+// `t(`dlg.sch.exp.omit.${kind}`)` waere fuer den Guard unsichtbar, und die
+// englische Fassung fehlte, ohne dass es jemand meldet.
+const omissionNoun = (t: (k: string, de: string) => string, kind: OmissionKind): string => {
+  switch (kind) {
+    case 'trusses': return t('dlg.sch.exp.omit.trusses', 'Traverse(n)');
+    case 'groups': return t('dlg.sch.exp.omit.groups', 'Gruppe(n)');
+    case 'gels': return t('dlg.sch.exp.omit.gels', 'Lampe(n) mit Folie');
+    case 'purposes': return t('dlg.sch.exp.omit.purposes', 'Lampe(n) mit Zweck');
+    case 'notes': return t('dlg.sch.exp.omit.notes', 'Notiz(en)');
+  }
+};
+
+const verdictText = (t: (k: string, de: string) => string, v: PreflightVerdict): string => {
+  switch (v) {
+    case 'blocked': return t('dlg.sch.check.blocked', 'So nicht — mindestens ein Fehler');
+    case 'unknown': return t('dlg.sch.check.unknown', 'Nicht beurteilbar — es fehlen Angaben');
+    case 'check': return t('dlg.sch.check.check', 'Durchsehen');
+    case 'ready': return t('dlg.sch.check.ready', 'Bereit');
+  }
+};
+
+const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, area, projectName, projectId, conflicts, onAutoNumber, onAutoPatch, onLocate, onUpdateFixture, fixtureGroups, onRenameGroup, workNotes, onAddNote, onToggleNote, onRemoveNote, onClose }) => {
   const { t } = useTranslation();
   const TABS = buildTabs(t);
   const [tab, setTabState] = useState<Tab>(() => {
@@ -104,8 +135,12 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   const counts = fixtureCounts(fixtures);
   const power = computePower(fixtures);
   const totalWeight = fixtures.reduce((s, f) => s + (f.fixture.weight || 0), 0);
-  const issues = rigCheck(fixtures, trusses);
-  const ic = issueCounts(issues);
+  // BEDARF 142 — der Vorflug-Bericht statt der blossen Rig-Pruefung. Er
+  // enthaelt dieselben Befunde (`rigCheck` bleibt die Quelle) plus die
+  // semantischen, und er faellt ein Urteil, das „nicht beurteilbar" kennt.
+  const bericht = preflight(fixtures, trusses);
+  const issues = bericht.issues;
+  const ic = { errors: bericht.counts.error, warnings: bericht.counts.warning, infos: bericht.counts.info };
   const photo = photometricReport(fixtures, walls, ceilings, area);
   const loads = trussLoads(fixtures, trusses);
   const circuits = circuitBreakdown(fixtures);
@@ -171,7 +206,11 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   }, colorTable);
 
   const exportMvr = () => {
-    const data = buildMvr(fixtures, trusses, projectName);
+    // Bedarf 144: die Projekt-Kennung geht mit — sie ist der Namensraum der
+    // MVR-Identitaeten. Ohne sie bekaemen zwei Projekte mit derselben
+    // Leuchten-id dieselbe UUID, und wer beide in einen Visualisierer laedt,
+    // sieht eine Leuchte statt zweier.
+    const data = buildMvr(fixtures, trusses, projectName, projectId);
     triggerDownload(new Blob([data as BlobPart], { type: 'application/octet-stream' }), `${safe}.mvr`);
   };
 
@@ -214,6 +253,31 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
 
   const activeLabel = TABS.find((x) => x.id === tab)!.label;
 
+  // ── BEDARF 139 — Gruppen ────────────────────────────────────────────────
+  //
+  // Aufgeloest EINMAL, hier: das Blatt, die Liste im Reiter und die
+  // Auslassungs-Meldung im Export lesen dieselbe Aufloesung.
+  const trussLabelOf = (fixtureId: string): string | undefined => {
+    const f = fixtures.find((x) => x.id === fixtureId);
+    if (!f) return undefined;
+    const tid = nearestTrussId(f, trusses);
+    return tid ? (trusses.find((x) => x.id === tid)?.label || undefined) : undefined;
+  };
+  const gruppen = resolveGroups(fixtureGroups, fixtures, trussLabelOf);
+  const auslassungen = mvrOmissions(fixtures, trusses, fixtureGroups, workNotes.length);
+
+  // BEDARF 144 — zwei Typen, ein Dateiname. Sie bekommen jetzt eindeutige
+  // Namen, und der Fall steht trotzdem da: wer seine GDTF-Bibliothek nach dem
+  // Namen durchsucht, findet nur einen von beiden wieder.
+  const specKollisionen = gdtfSpecNames(fixtures.map((f) => f.fixture)).collisions;
+
+  const exportGroups = () => {
+    const tb = groupTable(gruppen);
+    downloadCsv('gruppen.csv', [tb.header, ...tb.rows]
+      .map((r) => r.map((v) => (/[",;\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v))).join(';'))
+      .join('\r\n'));
+  };
+
   // ── per-tool panels ──
   const listPanel = (
     <>
@@ -221,6 +285,63 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <button className="btn-secondary" onClick={onAutoNumber}>① {t('dlg.sch.autoNumber', 'Auto-Nummerieren')}</button>
         <button className="btn-secondary" onClick={onAutoPatch}>② {t('dlg.sch.autoPatch', 'Auto-Patch (DMX)')}</button>
       </div>
+      {/* BEDARF 139 — Gruppen bekommen einen Namen und ein Blatt. Bis hierher
+          hiessen sie „Gruppe 3" und existierten nur auf der Zeichenflaeche. */}
+      {gruppen.length > 0 && (
+        <>
+          <h4 className="schedule-subhead">
+            {t('dlg.sch.groups', 'Gruppen')} ({gruppen.length})
+            <button className="btn-secondary" style={{ marginLeft: 8 }} onClick={exportGroups}>
+              ⬇ {t('dlg.sch.groups.csv', 'Gruppen-Blatt (CSV)')}
+            </button>
+          </h4>
+          <table className="schedule-table">
+            <thead>
+              <tr>
+                <th>{t('dlg.sch.groups.name', 'Name')}</th>
+                <th>{t('dlg.sch.groups.members', 'Leuchten')}</th>
+                <th>{t('dlg.sch.groups.channels', 'Kanäle')}</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {gruppen.map((g) => (
+                <tr key={g.id}>
+                  <td>
+                    <input
+                      value={g.label === UNNAMED_GROUP ? '' : g.label}
+                      placeholder={t('dlg.sch.groups.namePh', 'Name der Gruppe (z. B. „Front warm")')}
+                      onChange={(e) => onRenameGroup(g.id, e.target.value)}
+                      style={{ width: '100%' }}
+                    />
+                  </td>
+                  <td>
+                    {g.members.length}
+                    {/* Ein verschwundenes Mitglied verschwindet nicht still. */}
+                    {g.missing.length > 0 && (
+                      <span className="rig-pill warn" style={{ marginLeft: 6 }}>
+                        {g.missing.length} {t('dlg.sch.groups.missing', 'gelöscht')}
+                      </span>
+                    )}
+                  </td>
+                  <td>{g.members.map((m) => m.channel ?? '–').join(', ')}</td>
+                  <td>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => onLocate(g.members.map((m) => m.fixtureId))}
+                    >
+                      {t('dlg.sch.groups.locate', 'Im Plan zeigen')}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="prop-derived">
+            {t('dlg.sch.groups.hint', 'Das MVR-Format kennt keine Gruppen — dieses Blatt ist der Weg, sie an Pult, Visualisierer und Medienserver zu übergeben.')}
+          </div>
+        </>
+      )}
       <h4 className="schedule-subhead">{t('dlg.sch.inventory', 'Inventar')} ({fixtures.length} {t('dlg.sch.fixtures', 'Leuchten')}, {counts.length} {t('dlg.sch.types', 'Typen')})</h4>
       <table className="schedule-table">
         <thead><tr><th>{t('dlg.sch.col.qty', 'Anz.')}</th><th>{t('dlg.sch.col.manufacturer', 'Hersteller')}</th><th>{t('dlg.sch.col.type', 'Typ')}</th><th>W/Stk</th><th>{t('dlg.sch.col.wTotal', 'W ges.')}</th><th>{t('dlg.sch.col.kgTotal', 'kg ges.')}</th></tr></thead>
@@ -572,7 +693,25 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <span className={`rig-pill ${ic.errors ? 'err' : 'off'}`}>{ic.errors} {t('dlg.sch.errors', 'Fehler')}</span>
         <span className={`rig-pill ${ic.warnings ? 'warn' : 'off'}`}>{ic.warnings} {t('dlg.sch.warnings', 'Warnungen')}</span>
         <span className="rig-pill info">{ic.infos} {t('dlg.sch.infos', 'Hinweise')}</span>
+        {/* BEDARF 142 — das Urteil, und zwar mit „nicht beurteilbar" darin.
+            Ein Plan, dessen Last-Zahlen auf fehlenden Angaben beruhen, ist
+            nicht bereit: er ist unbeantwortet. */}
+        <span className={`rig-pill ${bericht.verdict === 'ready' ? 'off' : bericht.verdict === 'blocked' ? 'err' : 'warn'}`}>
+          {verdictText(t, bericht.verdict)}
+        </span>
+        <button className="btn-secondary" onClick={() => {
+          const tb = preflightTable(bericht);
+          downloadCsv('vorflug.csv', [tb.header, ...tb.rows]
+            .map((r) => r.map((v) => (/[",;\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v))).join(';'))
+            .join('\r\n'));
+        }}>⬇ {t('dlg.sch.check.csv', 'Bericht (CSV)')}</button>
       </div>
+      {bericht.assumed > 0 && (
+        <div className="prop-derived">
+          {t('dlg.sch.check.assumedNote', 'Achtung: {n} Befund(e) beruhen auf angenommenen Werten (fehlendes Gewicht, fehlende Leistung, geschätzte Traglast). Zahlen daraus sind kleiner als die Wirklichkeit — und bei der Traglast ist das die gefährliche Richtung.')
+            .replace('{n}', String(bericht.assumed))}
+        </div>
+      )}
       {issues.length === 0 ? (
         <div className="rig-clean">✓ {t('dlg.sch.noIssues', 'Keine Probleme gefunden.')}</div>
       ) : (
@@ -584,6 +723,11 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
                 onClick={locatable ? () => onLocate(i.ids!) : undefined}
                 title={locatable ? t('dlg.sch.showAffected', 'Betroffene Leuchten im Plan zeigen') : undefined}>
                 <span className="rig-dot" />{i.message}
+                {i.basis === 'assumed' && (
+                  <span className="rig-pill warn" style={{ marginLeft: 6 }}>
+                    {t('dlg.sch.check.assumed', 'angenommen')}
+                  </span>
+                )}
                 {locatable && <Icon name="chevronRight" size={14} className="rig-go" />}
               </li>
             );
@@ -674,27 +818,46 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <button className="btn-secondary" onClick={exportColors} disabled={colors.length === 0}>⬇ CSV</button>
       </div>
       <div className="export-row">
+        <Icon name="tag" size={22} className="er-icon" />
+        <div className="er-text">
+          <b>{t('dlg.sch.exp.groups', 'Gruppen-Blatt (CSV)')}</b>
+          <span>{t('dlg.sch.exp.groupsNote', 'Gruppe je Zeile mit Kanal, Unit, Typ und Position – das, was am Pult, im Visualisierer und im Medienserver sonst von Hand nachgebaut wird.')}</span>
+        </div>
+        <button className="btn-secondary" onClick={exportGroups} disabled={gruppen.length === 0}>⬇ CSV</button>
+      </div>
+      <div className="export-row">
         <Icon name="cube3d" size={22} className="er-icon" />
         <div className="er-text">
           <b>MVR (GDTF/MVR)</b>
           <span>
             {t('dlg.sch.exp.mvrDesc', 'Lampen mit Positionen & Patch – öffnet in Capture, grandMA3, WYSIWYG, Vectorworks, BlenderDMX.')}
-            {/* ADR-005, Regel 3 — die Szene enthaelt nur Fixtures. Vorher stand
-                hier „Rig", und die Traverse IST das Rig: der Nutzer bekam eine
-                Zusage, die die Datei nicht haelt. */}
-            {trusses.length > 0 && (
-              <>
-                {' '}
-                <b>
-                  {t('dlg.sch.exp.mvrNoTrusses', '{count} Traverse(n) sind nicht enthalten').replace(
-                    '{count}',
-                    String(trusses.length),
-                  )}
-                </b>
-                {t('dlg.sch.exp.mvrNoTrussesHint', ' – MVR bildet hier nur die Lampen ab.')}
-              </>
-            )}
           </span>
+          {/* ADR-005, Regel 3 UND Bedarf 139. Hier stand die Ehrlichkeit
+              frueher fuer genau EINEN Fall — die Traversen —, weil den einmal
+              jemand bemerkt hatte. Gruppen, Farben, Zwecke und Notizen gingen
+              daneben genauso verloren, ohne ein Wort. Was fehlt, rechnet jetzt
+              `mvrOmissions` aus. */}
+          {specKollisionen.length > 0 && (
+            <ul className="rig-issues">
+              {specKollisionen.map((c) => (
+                <li key={c.file} className="rig-issue sev-warning">
+                  <span className="rig-dot" />
+                  <b>{t('dlg.sch.exp.specClash', 'Gleicher GDTF-Dateiname')}</b> — {c.types.join(', ')}{' '}
+                  {t('dlg.sch.exp.specClashNote', '– die Namen unterscheiden sich nur in Zeichen, die ein Dateiname nicht führen kann. Sie bekommen eindeutige Bezüge; deine GDTF-Bibliothek kennt aber womöglich nur einen davon.')}
+                </li>
+              ))}
+            </ul>
+          )}
+          {auslassungen.length > 0 && (
+            <ul className="rig-issues">
+              {auslassungen.map((o) => (
+                <li key={o.kind} className="rig-issue sev-warning">
+                  <span className="rig-dot" />
+                  <b>{o.count} {omissionNoun(t, o.kind)}</b> — {o.message}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <button className="btn-secondary" onClick={exportMvr}>⬇ .mvr</button>
       </div>
