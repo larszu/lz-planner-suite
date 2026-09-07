@@ -275,6 +275,11 @@ staende in der Roadmap weiter nichts davon, und der naechste Leser baute sie noc
 | 7 | Ein Ablauf, fuenf Empfaenger-Blaetter — Spalten-Auswahlen aus EINER Quelle, mit Feld-Legende und Stand-Zeile im Blatt (P1) | `suite#142` |
 | 4 | Ablauf-Interoperabilitaet mit der Tabelle, in der er lebt (P1) | **halb**: CSV/TSV lesen und schreiben steht (`suite#142`), XLSX offen |
 | 11 · 53 · 54 · 56 | Ablauf FUEHREN — Autorenschaft, Nachziehen, Spaltenrechte, Ist-Zeiten (P1/P2) | **WON'T** (E-18: die Suite fuehrt den Ablauf nicht) |
+| 40 | Ein Satz-Modell, das der AV-Wirklichkeit standhaelt: Baender nach Tageszeit und Tagesart, Ueberstunden ab einer TAGES-Schwelle, Pauschale je Einsatz, mehrere Saetze je Person (P2) | `cable#756` (`lib/labourCost.ts`) — der Beleg rechnete „10 h zu 50 + 2 h zu 55" als „12 x 50" (`kimai#5913`); genau diese Rechnung steht als erster Test |
+| 41 | Stunden und Auslagen erreichen die Buchhaltung, ohne dreimal getippt zu werden (P2) | `cable#756` (`lib/crewBilling.ts`) — ein Blatt je Zeitraum plus Netto-Positionen ohne Steuer; kein Rechnungs-Modul (`wontfix` in `kimai#3884`) |
+| 42 | Aus „ja, macht das" im Chat wird ein datierter Beleg am Job (P2) | `cable#756` (`lib/approvalCapture.ts`) — Einfuegen und Zuordnen, KEIN Abfangen (so verlangt); ohne Zeitstempel im Text bekommt die Zusage keinen |
+| 83 | Fahrt, Uebernachtung und Belege haengen an den Job-Kosten (P2) | `cable#756` — `billable` ist Pflichtfeld ohne Vorgabewert; eigene Auslagen stehen auf dem Blatt und in keiner Kundensumme |
+| 39 | Eine Verfuegbarkeit, die andere ABFRAGEN koennen — vorgemerkt/reserviert/bestaetigt als echte Zustaende (P2) | `cable#756` (`lib/crewCalendar.ts`, `/crew.ics`) — abonnierbarer Feed statt Download, wie die Massnahme verlangt. Die drei Zustandsnamen sind UNBELEGT uebernommen: die Massnahme sagt „verify that convention first", und die Anbieterseiten liegen hinter dem Egress-Filter |
 | 122 | Tally und UMD folgen dem Mischer, statt von Hand gepflegt zu werden (P4) | Initiative 2 (`cable/lib/tallyMap.ts`) |
 | 129 | Relatives Trimmen der meistbenutzten Paint-Werte statt Sprung auf eine Zahl (P4) | `sony-camera-bridge#15` |
 
@@ -349,6 +354,24 @@ Bedarfe 4, 6, 7, 8, 10 und 11 haengen an der Zeitachse (E-18,
 Eigentuemer-Entscheidung), Bedarf 20 an der Subnetz-Vergabe (E-5), und
 Bedarf 35 steht unten. Die Arbeit ist seither in die P2-Ebene gewandert;
 die letzten fuenf Zeilen der Tabelle oben sind ihre ersten Ergebnisse.
+
+**Nachtrag 2026-09-07 — die kaufmaennische Ecke der P2-Ebene ist zu.** Von
+den 58 P2-Bedarfen lagen die Nummern 39 bis 43 und 83 als GESCHLOSSENER
+Block da: Verfuegbarkeit, Satz-Modell, Stunden in die Buchhaltung, die
+Zusage aus dem Chat, Auslagen. Sie haengen aneinander — eine Zusage
+ueber Mehrarbeit ist wertlos ohne ein Satz-Modell, das Mehrarbeit
+ueberhaupt kennt, und ein Stundenblatt ohne Auslagen ist die halbe
+Rechnung. Gebaut in `cable#756`, mit einer Ausnahme: Bedarf 43
+(„portable toolkit config that survives a version change and a new
+venue's IP scheme") war bereits durch `lib/deviceConfigProvenance.ts`
+abgedeckt und steht schon in der Tabelle.
+
+**Was an dieser Ecke offen BLEIBT, und warum es keine Arbeit ist:** die
+Bedarfe 53 bis 56 verlangen Autorenschaft am Ablauf und fallen unter
+E-18 (WON'T); 45 haengt an E-23, 49 an E-21, 93 an einem Vendor-Format,
+das hinter dem Egress-Filter liegt. Bedarf 46 („read back the camera's
+actual paint state") gehoert in `sony-camera-bridge` und nicht in die
+Planungsschicht.
 
 **Bedarf 35 bleibt bewusst ungebaut.** Er verlangt den Sendezustand (Stream auf /
 Stream ab) als Vokabel der Show-Control-Oberflaeche — und sagt im selben Atemzug:
