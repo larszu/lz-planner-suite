@@ -127,6 +127,16 @@ export const dialogs: Record<string, string> = {
     'Demand from the plan, covered from stock: owned, foreign (goes back) and what is left over.',
   'dlg.sch.exp.shopUnmatched': '{n} line(s) with no stock item \u2014 nobody vouched for those.',
   'dlg.sch.exp.shopGaps': 'Not from this plan:',
+  // Bedarf 148 - Etiketten aus denselben Daten wie die Papiere.
+  'dlg.sch.lbl.head': 'Labels',
+  'dlg.sch.lbl.kind': 'Label',
+  'dlg.sch.lbl.stock': 'Sheet',
+  'dlg.sch.lbl.startAt': 'First free label',
+  'dlg.sch.lbl.print': 'Print',
+  'dlg.sch.lbl.counts':
+    '{n} label(s) on {p} sheet(s). {r} stay free on the last one \u2014 enter that as \u201cfirst free label\u201d next time.',
+  'dlg.sch.lbl.overflow':
+    '{n} label(s) will probably be too wide \u2014 nothing is truncated. Pick a narrower label or a bigger sheet.',
   // Bedarf 146 - den Patch ans Pult schicken statt abtippen.
   'dlg.sch.exp.console': 'Patch for the console',
   'dlg.sch.exp.consoleDropped': '{n} of {m} rows will NOT be included:',
