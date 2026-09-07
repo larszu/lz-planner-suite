@@ -271,4 +271,26 @@ export const sidebar: Record<string, string> = {
   'sidebar.walls.title': 'Wände',
   'sidebar.objectsPersons.title': 'Objekte & Personen',
   'sidebar.cameras.title': 'Kameras',
+
+  // ── BEDARF 130 — wem gehoert dieses Bild? ──────────────────────────────
+  //    Die Beschriftungen der Merkmale und der Urteile stehen NICHT hier,
+  //    sondern im Kern-Modul `utils/sourceIdentity.ts`: ein zweiter Satz
+  //    Woerter dafuer waere ein zweiter Ort, an dem „Position" und
+  //    „bestaetigt" auseinanderlaufen koennen.
+  'sidebar.cam.source': 'Quelle im Netz',
+  'sidebar.cam.source.deviceId': 'Geräte-Kennung (Seriennummer / UUID) — überlebt alles',
+  'sidebar.cam.source.deviceId.aria': 'Geräte-Kennung der Quelle',
+  'sidebar.cam.source.host': 'Rechner (NDI: vor der Klammer)',
+  'sidebar.cam.source.host.aria': 'Rechner der Quelle',
+  'sidebar.cam.source.name': 'Quellenname (in der Klammer)',
+  'sidebar.cam.source.name.aria': 'Quellenname',
+  'sidebar.cam.source.address': 'IP-Adresse — nur mit fester Reservierung verlässlich',
+  'sidebar.cam.source.address.aria': 'IP-Adresse der Quelle',
+  'sidebar.cam.source.list': 'Quellenliste aus dem Empfänger (eine je Zeile)',
+  'sidebar.cam.source.list.aria': 'Quellenliste aus dem Empfänger',
+  'sidebar.cam.source.unreadable':
+    '{n} Zeile(n) nicht lesbar — Zeile {lines}. Nichts davon wurde stillschweigend verworfen.',
+  'sidebar.cam.source.unexpected': 'Nicht zugeordnet im Netz:',
+  'sidebar.cam.source.needsLook':
+    '{n} von {total} Kameras sind nicht zweifelsfrei wiedererkannt — vor der Sendung nachsehen.',
 };

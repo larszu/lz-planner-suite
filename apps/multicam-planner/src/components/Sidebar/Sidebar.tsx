@@ -5,6 +5,9 @@ import { computeFov, computeDof } from '../../utils/fov';
 import { checkPresets, presetRows, type PresetFinding } from '../../utils/ptzPresets';
 import { conflictsForCamera, conflictText } from '../../utils/sightline';
 import {
+  FACET_LABEL, VERDICT_LABEL, parseSourceList, reconcile, sourceLabel,
+} from '../../utils/sourceIdentity';
+import {
   ACCESS_LABEL,
   CARD_FINDING_LABEL,
   cardFindings,
@@ -185,6 +188,8 @@ function CameraCard({
     cameras,
     selectedCameraId,
     updateCamera,
+    sourceListText,
+    setSourceListText,
     removeCamera,
     duplicateCamera,
     customLenses,
@@ -240,6 +245,24 @@ function CameraCard({
   // eigenen Dialog wie die Sichtlinien: die Luecke entsteht beim EINRICHTEN
   // der Position, und dort steht auch das Feld, das sie schliesst.
   const kartenBefunde = cardFindings(cam, cameras);
+
+  // BEDARF 130 — der Abgleich Plan gegen das, was im Netz wirklich da ist.
+  //
+  // Er steht hier und nicht in einem eigenen Dialog, aus demselben Grund wie
+  // die Sichtlinien-Konflikte: die Kennung wird HIER eingetragen, und eine
+  // Warnung, die man erst suchen muss, wird waehrend der Sendung gefunden
+  // statt davor — genau das, was der Beleg beklagt.
+  const quellenListe = parseSourceList(sourceListText);
+  const quellenAbgleich = reconcile(
+    cameras.map((c) => ({
+      cameraId: c.id,
+      label: c.label,
+      identity: c.source,
+      lastIndex: c.lastSourceIndex,
+    })),
+    quellenListe.sources,
+  );
+  const meineZeile = quellenAbgleich.rows.find((r) => r.cameraId === cam.id);
   const feldCls =
     'block w-full rounded border border-bc-border bg-bc-dark px-1.5 py-1 text-xs text-white';
   /** Leeres Feld heisst „nicht angegeben", nicht null. */
@@ -1446,6 +1469,145 @@ function CameraCard({
                     </li>
                   ))}
                 </ul>
+              )}
+            </div>
+          </Group>
+
+          {/* ── BEDARF 130 — wem gehoert dieses Bild? ────────────────────
+              „After a NIC outage and an OBS restart, NDI ports were reshuffled
+              and receivers displayed incorrect scene labels — the label says
+              one camera, the picture is another, so a shading correction lands
+              on the WRONG camera." (zbynekdrlik/camera-box#1180, P0)
+
+              Der PLAN ist die Autoritaet: hier steht, wie die Quelle heisst.
+              Danebengelegt wird die Liste, wie sie JETZT im Empfaenger steht —
+              und ein Treffer auf der blossen Position macht nichts gruen.
+
+              Hand-portiert: die Texte laufen hier durch `t()`, weil diese
+              Fassung der Seitenleiste uebersetzt wird. Die Beschriftungen der
+              Merkmale und Urteile kommen unveraendert aus dem Kern-Modul —
+              ein zweiter Satz Woerter dafuer waere ein zweiter Ort, an dem
+              „Position“ und „bestaetigt“ auseinanderlaufen koennen. */}
+          <Group
+            id="source"
+            title={t('sidebar.cam.source', 'Network source')}
+            defaultOpen={false}
+            summary={meineZeile ? VERDICT_LABEL[meineZeile.verdict] : cam.source?.sourceName}
+          >
+            <div className="flex flex-col gap-1.5 text-xs">
+              <input
+                className={feldCls}
+                placeholder={t('sidebar.cam.source.deviceId', 'Device ID (serial / UUID) — survives everything')}
+                aria-label={t('sidebar.cam.source.deviceId.aria', 'Device ID of the source')}
+                value={cam.source?.deviceId ?? ''}
+                onChange={(e) =>
+                  updateCamera(cam.id, {
+                    source: { ...cam.source, deviceId: e.target.value || undefined },
+                  })
+                }
+              />
+              <div className="flex gap-1.5">
+                <input
+                  className={feldCls}
+                  placeholder={t('sidebar.cam.source.host', 'Machine (NDI: before the bracket)')}
+                  aria-label={t('sidebar.cam.source.host.aria', 'Machine hosting the source')}
+                  value={cam.source?.host ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      source: { ...cam.source, host: e.target.value || undefined },
+                    })
+                  }
+                />
+                <input
+                  className={feldCls}
+                  placeholder={t('sidebar.cam.source.name', 'Source name (inside the bracket)')}
+                  aria-label={t('sidebar.cam.source.name.aria', 'Source name')}
+                  value={cam.source?.sourceName ?? ''}
+                  onChange={(e) =>
+                    updateCamera(cam.id, {
+                      source: { ...cam.source, sourceName: e.target.value || undefined },
+                    })
+                  }
+                />
+              </div>
+              <input
+                className={feldCls}
+                placeholder={t('sidebar.cam.source.address', 'IP address — reliable only with a fixed reservation')}
+                aria-label={t('sidebar.cam.source.address.aria', 'IP address of the source')}
+                value={cam.source?.address ?? ''}
+                onChange={(e) =>
+                  updateCamera(cam.id, {
+                    source: { ...cam.source, address: e.target.value || undefined },
+                  })
+                }
+              />
+
+              {/* Die Liste, wie sie JETZT im Empfaenger steht. Sie wird
+                  HEREINGEHOLT und nicht gesucht: dieser Planer laeuft auf dem
+                  Rechner des Planers und nicht auf dem der Regie. */}
+              <label className="mt-1 text-[10px] uppercase tracking-wider text-gray-500">
+                {t('sidebar.cam.source.list', 'Source list from the receiver (one per line)')}
+              </label>
+              <textarea
+                className="block min-h-[3.5rem] w-full resize-y rounded border border-bc-border bg-bc-dark text-xs text-white"
+                style={{ padding: '4px 6px' }}
+                rows={3}
+                placeholder={'REGIE-PC (CAM 1)\nREGIE-PC (CAM 2)  10.0.0.42'}
+                aria-label={t('sidebar.cam.source.list.aria', 'Source list from the receiver')}
+                value={sourceListText}
+                onChange={(e) => setSourceListText(e.target.value)}
+              />
+              {quellenListe.warnings.length > 0 && (
+                <div className="text-[11px] text-amber-400">
+                  {format(
+                    t(
+                      'sidebar.cam.source.unreadable',
+                      '{n} line(s) could not be read — line {lines}. None of it was discarded silently.',
+                    ),
+                    {
+                      n: quellenListe.warnings.length,
+                      lines: quellenListe.warnings.map((w) => w.line).join(', '),
+                    },
+                  )}
+                </div>
+              )}
+
+              {meineZeile && (
+                <div
+                  className={
+                    meineZeile.verdict === 'confirmed'
+                      ? 'text-[11px] text-emerald-400'
+                      : 'text-[11px] text-amber-400'
+                  }
+                >
+                  {meineZeile.message}
+                  {meineZeile.facet && (
+                    <> {' · '}{FACET_LABEL[meineZeile.facet]}</>
+                  )}
+                  {meineZeile.matched && (
+                    <> {' · '}{sourceLabel(meineZeile.matched)}</>
+                  )}
+                </div>
+              )}
+              {/* Was im Netz da ist und keine Kamera fuer sich beansprucht.
+                  Eine unerwartete Quelle ist der Zwilling einer fehlenden:
+                  zusammen sind sie meist genau die Vertauschung. */}
+              {quellenAbgleich.unexpected.length > 0 && (
+                <div className="text-[11px] text-gray-400">
+                  {t('sidebar.cam.source.unexpected', 'Unassigned on the network:')}{' '}
+                  {quellenAbgleich.unexpected.map(sourceLabel).join(' · ')}
+                </div>
+              )}
+              {quellenAbgleich.needsLook > 0 && quellenListe.sources.length > 0 && (
+                <div className="text-[11px] text-amber-400">
+                  {format(
+                    t(
+                      'sidebar.cam.source.needsLook',
+                      '{n} of {total} cameras are not recognised beyond doubt — check before air.',
+                    ),
+                    { n: quellenAbgleich.needsLook, total: quellenAbgleich.rows.length },
+                  )}
+                </div>
               )}
             </div>
           </Group>
