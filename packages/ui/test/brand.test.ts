@@ -162,3 +162,43 @@ describe('das Modul erkennt man am Kicker, nicht am Farbton', () => {
     expect(css).toContain('.av-headrule');
   })
 })
+
+
+// ───────────────────────────────────────────────────────────────────────────
+// ADR-007 Abschnitt 6 — der Rahmen. Die Masse stehen im ADR, damit alle acht
+// Werkzeuge denselben haben; hier werden sie festgehalten, damit „eben mal
+// vier Pixel mehr" nicht unbemerkt durchgeht.
+// ───────────────────────────────────────────────────────────────────────────
+
+const block = (selector: string): string => {
+  const i = css.indexOf(selector)
+  if (i < 0) return ''
+  return css.slice(i, css.indexOf('}', i))
+}
+
+describe('der Rahmen hat feste Masse', () => {
+  it('Kopfzeile 40 px', () => {
+    expect(block('.av-topbar {')).toContain('height: 40px')
+  })
+
+  it('Modul-Rail 56 px', () => {
+    expect(block('.av-rail {')).toContain('width: 56px')
+  })
+
+  it('Statusleiste 24 px', () => {
+    expect(block('.av-statusbar {')).toContain('height: 24px')
+  })
+})
+
+describe('die Kopflinie ist die Kopflinie', () => {
+  it('traegt die Linie in Stahlblau, nicht den gedaempften Rahmen', () => {
+    expect(block('.av-panel-head {')).toContain('border-bottom: 1px solid var(--av-accent-line)')
+  })
+
+  it('setzt den Kicker in Versalien und gesperrt', () => {
+    const t = block('.av-panel-title {')
+    expect(t).toContain('text-transform: uppercase')
+    expect(t).toContain('letter-spacing: var(--av-tracking-kicker)')
+    expect(t).toContain('font-size: var(--av-fs-kicker)')
+  })
+})

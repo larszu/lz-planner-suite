@@ -31,7 +31,7 @@ function Header({ eyebrow, title, sub, accent }: { eyebrow: string; title: strin
   return (
     <div className="px-3.5 pb-3 pt-3.5">
       <div className="mb-1 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
+        <span className="h-1.5 w-1.5 rounded-none" style={{ background: accent }} />
         {eyebrow}
       </div>
       <div className="text-[17px] font-bold tracking-tight text-av-text">{title}</div>
@@ -118,7 +118,7 @@ export function PropertiesPanel({
                   onClick={() => onNavigate(r.id)}
                 >
                   <span
-                    className="h-2 w-2 flex-none rounded-full"
+                    className="h-2 w-2 flex-none rounded-none"
                     style={{
                       background: zustand === 'on' ? 'var(--av-ok)' : 'var(--av-text-faint)',
                       opacity: zustand === 'on' ? 1 : zustand === 'off' ? 0.5 : 0.3,

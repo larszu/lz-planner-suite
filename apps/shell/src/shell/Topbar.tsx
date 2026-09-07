@@ -166,12 +166,14 @@ export function Topbar({
 
   const ghost = 'av-btn'
 
+  // ADR-007 Abschnitt 6 — Hoehe und Rahmen kommen aus `.av-topbar`; eine
+  // eigene Inline-Hoehe hier waere die zweite Zahl fuer dieselbe Regel.
   return (
-    <header className="flex items-center gap-3 border-b border-av-border-muted bg-av-surface-1 px-3" style={{ height: 52 }}>
+    <header className="av-topbar">
       <div className="flex items-center gap-2 pr-1">
         <span
-          className="grid h-6 w-6 place-items-center rounded-md"
-          style={{ background: 'linear-gradient(135deg, var(--mod-cameras), var(--mod-signal) 55%, var(--mod-licht))' }}
+          className="grid h-6 w-6 place-items-center"
+          style={{ background: 'var(--av-accent)', color: 'var(--av-accent-text)' }}
         />
         <span className="whitespace-nowrap text-[15px] font-bold tracking-tight text-av-text">AV Planner Suite</span>
       </div>

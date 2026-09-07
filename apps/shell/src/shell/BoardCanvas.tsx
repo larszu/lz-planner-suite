@@ -356,6 +356,9 @@ export function BoardCanvas({ seed, title: titleProp }: { seed: Board; title?: s
         <div
           ref={boardRef}
           className="relative"
+          /* Das Punktraster ist eine ZEICHNUNG, kein Farbverlauf im Sinne von
+             ADR-007: der Verlauf zeichnet den Punkt, er faerbt keine Flaeche.
+             Dieselbe benannte Ausnahme wie der Chevron des Auswahlfelds. */
           style={{ width: BOARD_W, height: BOARD_H, backgroundImage: 'radial-gradient(circle, var(--av-border-muted) 1px, transparent 1px)', backgroundSize: '26px 26px' }}
           onPointerDown={(e) => { if (e.target === e.currentTarget) setSelectedId(null) }}
         >
@@ -511,15 +514,15 @@ function BoardCardView({
   return (
     <div data-card-id={card.id} className="absolute select-none" style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h, opacity: dim ? 0.28 : 1 }}>
       {selected && (
-        <div className="absolute -top-8 left-0 z-20 flex items-center gap-1 rounded-av-control border border-av-border bg-av-surface-2 p-0.5 shadow-[var(--av-shadow-float)]">
+        <div className="absolute -top-8 left-0 z-20 flex items-center gap-1 rounded-av-control border border-av-border bg-av-surface-2 p-0.5">
           {(card.type === 'color' || card.type === 'look') && SWATCHES.slice(0, 6).map((s) => (
-            <button key={s} type="button" className="h-4 w-4 rounded-full border border-av-border" style={{ background: s }} onClick={() => onPatch({ color: s })} aria-label={format(t('board.swatch', 'Farbe {color}'), { color: s })} />
+            <button key={s} type="button" className="h-4 w-4 rounded-none border border-av-border" style={{ background: s }} onClick={() => onPatch({ color: s })} aria-label={format(t('board.swatch', 'Farbe {color}'), { color: s })} />
           ))}
           <button type="button" className="av-icon-btn" style={{ width: 24, height: 24 }} onClick={onDelete} aria-label={t('board.card.delete', 'Karte löschen')}><Icon name="close" size={14} /></button>
         </div>
       )}
       {selected && (
-        <button type="button" className="absolute top-1/2 z-20 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full border border-av-border bg-av-surface-2 text-av-accent" style={{ right: -10 }} onPointerDown={onStartConnect} aria-label={t('board.connect', 'Verbindung ziehen')}>
+        <button type="button" className="absolute top-1/2 z-20 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-none border border-av-border bg-av-surface-2 text-av-accent" style={{ right: -10 }} onPointerDown={onStartConnect} aria-label={t('board.connect', 'Verbindung ziehen')}>
           <Icon name="nodes" size={11} />
         </button>
       )}
@@ -645,7 +648,7 @@ function CardBody({ card, editing, onEndEdit, onPatch }: { card: BoardCard; edit
   // look
   return (
     <div className="flex h-full w-full flex-col overflow-hidden border border-av-border">
-      <div className="flex-1" style={{ background: `linear-gradient(135deg, ${card.color}, color-mix(in srgb, ${card.color} 40%, #0b0e14))` }} />
+      <div className="flex-1" style={{ background: card.color }} />
       <div className="bg-av-surface-1 px-2.5 py-1.5 text-[11.5px] font-medium text-av-text">{card.title}</div>
     </div>
   )

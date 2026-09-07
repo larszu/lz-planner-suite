@@ -326,8 +326,8 @@ export function OverviewSurface({
             })}
           </p>
           <div className="mt-3 flex items-center gap-3">
-            <div className="h-1.5 w-48 overflow-hidden rounded-full bg-av-surface-3">
-              <span className="block h-full rounded-full" style={{ width: `${Math.round(show.progress * 100)}%`, background: 'var(--av-accent)' }} />
+            <div className="h-1.5 w-48 overflow-hidden rounded-none bg-av-surface-3">
+              <span className="block h-full rounded-none" style={{ width: `${Math.round(show.progress * 100)}%`, background: 'var(--av-accent)' }} />
             </div>
             <span className="av-num text-[12px] text-av-text-muted">{format(t('overview.header.progress', '{n}% Planung'), { n: Math.round(show.progress * 100) })}</span>
           </div>

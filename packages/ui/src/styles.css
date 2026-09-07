@@ -265,12 +265,18 @@
   background: var(--av-surface-1); border: 1px solid var(--av-border);
   border-radius: var(--av-r-card); box-shadow: var(--av-shadow-panel);
 }
+/* ADR-007 Abschnitt 3 — die KOPFLINIE. Der Panel-Kopf IST sie: Kicker in
+   Versalien, darunter die durchgehende Linie in Stahlblau bis zur rechten
+   Satzkante. „Das Element aus der Visitenkarte 2020 — unveraendert, es ist
+   das Kontinuum der Marke." Eine pro Flaeche; sie traegt auch die
+   Modul-Kennung, die frueher eine Farbe war. */
 .av-panel-head {
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px; border-bottom: 1px solid var(--av-border-muted);
+  padding: 10px 12px; border-bottom: 1px solid var(--av-accent-line);
 }
 .av-panel-title {
-  font-size: 11px; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase;
+  font-size: var(--av-fs-kicker); font-weight: 700;
+  letter-spacing: var(--av-tracking-kicker); text-transform: uppercase;
   color: var(--av-text-muted);
 }
 .av-panel-body { flex: 1; min-height: 0; overflow: auto; }
@@ -316,14 +322,18 @@
 .av-tab[data-active='false'] .av-tab-dot { background: var(--av-text-faint); }
 
 /* ── Modul-Leiste (Rail) ── */
+/* ADR-007 Abschnitt 6 — die Modul-Rail ist 56 px breit, senkrecht, mit
+   Beschriftung unter dem Zeichen. Die Zahl steht im ADR, damit alle acht
+   Werkzeuge denselben Rahmen haben und nicht jedes seinen eigenen. */
 .av-rail {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 10px 8px; background: var(--av-surface-3);
+  width: 56px; flex: none;
+  padding: 10px 4px; background: var(--av-surface-3);
   border-right: 1px solid var(--av-border-muted);
 }
 .av-rail-item {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  width: 52px; padding: 8px 4px 6px; border-radius: var(--av-r-card);
+  width: 48px; padding: 8px 2px 6px; border-radius: var(--av-r-card);
   border: 1px solid transparent; background: transparent;
   color: var(--av-text-muted); cursor: pointer;
   transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
@@ -389,8 +399,9 @@
 .av-toolbar-btn[data-active='true'] { background: var(--av-accent-dim); color: var(--av-accent); }
 
 /* ── Statusleiste ── */
+/* ADR-007 Abschnitt 6 — 24 px. Sie meldet; sie bedient nicht. */
 .av-statusbar {
-  display: flex; align-items: center; gap: 0; height: 30px;
+  display: flex; align-items: center; gap: 0; height: 24px;
   padding: 0 4px; background: var(--av-surface-3);
   border-top: 1px solid var(--av-border-muted);
   font-size: 12px; color: var(--av-text-muted);
@@ -503,4 +514,16 @@
 
 @media (prefers-reduced-motion: reduce) {
   .av-btn, .av-icon-btn, .av-rail-item, .av-tab, .av-toolbar-btn { transition: none; }
+}
+
+
+/* ── ADR-007 Abschnitt 6: die Kopfzeile ─────────────────────────────────────
+   40 px. Menue links, Dokument mittig, Zustand rechts. Als Klasse und nicht
+   als Inline-Hoehe je App: der Rahmen ist eine Regel der Suite, keine
+   Entscheidung des einzelnen Werkzeugs. */
+.av-topbar {
+  display: flex; align-items: center; gap: 12px;
+  height: 40px; flex: none; padding: 0 12px;
+  background: var(--av-surface-1);
+  border-bottom: 1px solid var(--av-border-muted);
 }

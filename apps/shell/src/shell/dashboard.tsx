@@ -94,7 +94,7 @@ export function RunOfShowCard({ schedule, onChange }: { schedule: ScheduleItem[]
             <li key={`${item.time}-${item.title}`} className="grid grid-cols-[46px_16px_1fr] items-start gap-2">
               <span className="av-num pt-0.5 text-[12px] text-av-text-muted">{item.time}</span>
               <span className="relative flex justify-center">
-                <span className="z-10 mt-1.5 h-2 w-2 rounded-full" style={{ background: color }} />
+                <span className="z-10 mt-1.5 h-2 w-2 rounded-none" style={{ background: color }} />
                 {!last && <span className="absolute top-2 h-full w-px" style={{ background: 'var(--av-border)' }} />}
               </span>
               <span className="pb-3">
@@ -134,7 +134,7 @@ export function CrewCard({ crew, onChange }: { crew: CrewMember[]; onChange?: (n
       <ul className="flex flex-col gap-1.5">
         {crew.map((c) => (
           <li key={c.name} className="flex items-center gap-2.5">
-            <span className="h-2 w-2 flex-none rounded-full" style={{ background: DEPARTMENT_COLOR[c.dept] }} />
+            <span className="h-2 w-2 flex-none rounded-none" style={{ background: DEPARTMENT_COLOR[c.dept] }} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] text-av-text">{c.name}</span>
               <span className="block truncate text-[11px] text-av-text-muted">{c.role}</span>
@@ -181,9 +181,9 @@ export function BudgetCard({ budget, onChange }: { budget: BudgetLine[]; onChang
                   {fmtEur(line.actualEur)}
                 </span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-av-surface-3">
+              <div className="h-1.5 overflow-hidden rounded-none bg-av-surface-3">
                 <span
-                  className="block h-full rounded-full"
+                  className="block h-full rounded-none"
                   style={{ width: `${pct}%`, background: lineOver ? 'var(--av-danger)' : 'var(--av-accent)' }}
                 />
               </div>
@@ -214,8 +214,8 @@ export function ReadinessCard({ project }: { project: SuiteProject }) {
         <span className="av-num text-xl font-bold text-av-text">{r.packedQty}</span>
         <span className="text-[12px] text-av-text-muted">{t('overview.card.readiness.ofPre', 'von ')}<span className="av-num">{r.totalQty}</span>{t('overview.card.readiness.ofPost', ' Stück gepackt')}</span>
       </div>
-      <div className="mb-3 h-2 overflow-hidden rounded-full bg-av-surface-3">
-        <span className="block h-full rounded-full" style={{ width: `${r.packedPct}%`, background: 'var(--av-accent)' }} />
+      <div className="mb-3 h-2 overflow-hidden rounded-none bg-av-surface-3">
+        <span className="block h-full rounded-none" style={{ width: `${r.packedPct}%`, background: 'var(--av-accent)' }} />
       </div>
       <div className="flex gap-2 text-[12px]">
         <span className="flex items-center gap-1.5 text-av-text-secondary"><Icon name="rack" size={13} /> {format(t('overview.card.readiness.cases', '{n} Cases'), { n: r.cases })}</span>
@@ -278,7 +278,7 @@ export function ContactsCard({ contacts, onChange }: { contacts: Contact[]; onCh
       <ul className="flex flex-col gap-2">
         {contacts.map((c) => (
           <li key={c.name} className="flex items-center gap-2.5">
-            <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-av-surface-3 text-[11px] font-semibold text-av-text-secondary">
+            <span className="grid h-7 w-7 flex-none place-items-center rounded-none bg-av-surface-3 text-[11px] font-semibold text-av-text-secondary">
               {c.name.split(' ').map((p) => p[0]).join('').slice(0, 2)}
             </span>
             <span className="min-w-0 flex-1">

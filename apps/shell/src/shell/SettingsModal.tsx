@@ -477,11 +477,11 @@ function Switch({
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className="av-focus relative inline-flex h-5 w-9 flex-none items-center rounded-full border border-av-border transition-colors"
+      className="av-focus relative inline-flex h-5 w-9 flex-none items-center rounded-none border border-av-border transition-colors"
       style={{ background: checked ? accent : 'var(--av-surface-3)' }}
     >
       <span
-        className="inline-block h-3.5 w-3.5 rounded-full transition-transform"
+        className="inline-block h-3.5 w-3.5 rounded-none transition-transform"
         style={{ background: 'var(--av-accent-text)', transform: checked ? 'translateX(17px)' : 'translateX(3px)' }}
       />
     </button>
