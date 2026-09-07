@@ -1,16 +1,16 @@
 {
   "cable-planner": {
-    "only-upstream": 0,
+    "only-upstream": 1,
     "only-suite": 4,
     "two-way": 13,
     "upstream-ahead": 0,
     "suite-ahead": 8,
     "expected-overlay": 37,
     "dead-upstream": 0,
-    "drift": 25,
-    "total": 62,
+    "drift": 26,
+    "total": 63,
     "missingUpstream": false,
-    "upstreamSha": "ab222b96030a"
+    "upstreamSha": "4a0fedcdded8"
   },
   "multicam-planner": {
     "only-upstream": 0,
