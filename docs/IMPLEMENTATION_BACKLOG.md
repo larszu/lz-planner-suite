@@ -2390,9 +2390,9 @@ belegbar, dort sind sie erprobt.
 | 93 | P2 | **Blockiert wie E-24, aus demselben Grund.** Der Spektrum-Plan ist gebaut (`spectrumPlan.ts`, Bedarf 95) und gibt eine CSV-Tabelle aus. Was der Bedarf will, ist der Austausch mit Wireless Workbench / WSM / IAS — und deren Dateiformate sind nicht dokumentiert öffentlich. Ein aus dem Gedächtnis gebauter Schreiber wäre eine ungeprüfte Zusicherung (Invariante 18). Sobald eine Beispieldatei vorliegt, ist das dieselbe Bauform wie der Ablauf-Leser. |
 | 99 | P3 | **Offen.** `packages/lexware-core` legt Belege an; Mahnketten mit gesetzlichen Fristen und Verzugszinsen auf dem Dokument gibt es nicht. Hängt an E-12 (Lexware als eigene Shell-Domäne), das entschieden und noch nicht gebaut ist. |
 | 117 | P4 | **Offen, und ohne Schema nicht baubar.** Eine Rechnung, die den E-Invoicing-Validator des Kunden besteht, heisst XRechnung oder ZUGFeRD — beides Formate mit Spezifikation, die dieses Repo nicht vorliegen hat. Wie 93: erst die Fundstelle, dann der Schreiber. |
-| 118 | P4 | **Offen.** Ein persönliches Geräteregister mit Serien, Kaufpreis und Versicherungswert. Das Lager-Modul ist inzwischen ein eigenes Repo; dort gehört es hin, nicht in den Verkabelungsplaner. |
-| 119 | P4 | **Offen.** „Ohne weiteres Konto in ein Kundensystem aufgenommen werden" — der kontolose Teilen-Weg steht (`mobileShareServer`, Bedarf 1), die Gegenrichtung nicht. |
-| 120 | P4 | **Offen.** Ein tragbares Nachweis-Paket (Zertifikate, Versicherung, Qualifikationen) ist ein Dokumenten-Bündel und berührt den Signalfluss nicht. |
+| 118 | P4 | **Erledigt 2026-09-08** — `cable#789`, plus `multicam#114` und `light#100` fürs Format. **Die Zeile hier war falsch:** sie sagte, das Lager-Modul sei „inzwischen ein eigenes Repo" — nachgesehen liegt es weiter in `cable-planner/src/renderer/lager/` (die Auslagerung steht noch aus). Gebaut wurde deshalb dort. **Zwei der drei Artefakte gab es schon:** der Lieferschein ist seit den Bedarfen 15/16/136 der Ausgabeschein samt Quittung. Neu ist die WERT-Hälfte: `InventoryUnit.anschaffung` und `.versicherungswert` (zwei Zahlen, **kein Zeitwert** — die Abschreibungsregel gehört dem Versicherer), `InventoryItem.ursprungsland`, `Geldbetrag` mit Währung am Betrag. Daraus die **Versicherungsliste** (Summe je Währung, und die Einheiten ohne Wert namentlich darunter — eine Summe, die ihre Lücke verschweigt, ist die stille Unterversicherung) und das **Carnet-Datenblatt** (die Spalten, nicht das Zolldokument). Format-Version 3 → 4 in allen drei Repos. Elf Gegenproben. |
+| 119 | P4 | **Offen, und der Zuschnitt ist jetzt schaerfer.** Mit Bedarf 120 ist die eine Haelfte da: die Nachweise liegen als Paket vor, samt Deckblatt. Was fehlt, sind die **Stammdaten** (Steuernummer, Bankverbindung) auf demselben Blatt — und genau die sind der Grund, warum hier nicht weitergebaut wurde: Bankdaten in einen localStorage zu legen, den niemand als Tresor angelegt hat, ist eine Entscheidung des Eigentuemers und keine, die beim Bauen nebenbei faellt (dieselbe Frage wie bei den Stream-Keys, die deshalb im keytar liegen). **Der zweite Teil des Bedarfs ist ohnehin nicht baubar:** „ohne weiteres Konto aufgenommen werden" betrifft das System des KUNDEN; diese Anwendung kann dort nichts abschalten. Der Bedarf ist zudem der am schwaechsten belegte des Dossiers — „the forums carrying it were unreachable" — und wurde ausdruecklich heruntergestuft. |
+| 120 | P4 | **Erledigt 2026-09-08** — `cable#790`. Die alte Begründung („berührt den Signalfluss nicht") war kein Grund, es nicht zu bauen, sondern nur einer, es nicht in den Plan zu legen: die Nachweise liegen im **eigenen, projektübergreifenden Store** und in keiner `.avplan` — in einer Datei, die an einen Kunden geht, hätte die Versicherungsnummer des Freiberuflers nichts zu suchen. **Die eine gefährliche Stelle** ist ein Eintrag ohne Frist: `NachweisLage` hat deshalb **drei** Werte (`in-frist`, `abgelaufen`, `ohne-frist`) und nicht zwei, und „keine Frist angegeben" ist auf dem Schirm ausdrücklich **nicht grün**. Das Deckblatt lässt nichts weg — auch das Abgelaufene steht drauf, mit seiner Lage, und was ohne benannte Datei ist, sagt es. **Die Vorwarnzeit wird angegeben, nicht vorausgesetzt**: ohne Zahl wird nicht gewarnt (dieselbe Haltung wie `CostPlan.tolerancePercent`). Was die Anwendung **nicht** tut: die Scans speichern — nur ihren Dateinamen. Zehn Gegenproben. |
 | 122 | P4 | **Erfüllt, nur nicht vermerkt.** `tallyMap.ts` leitet die Tally-/UMD-Zuordnung aus dem Plan ab — Router eingeschlossen, seit der Korrektur der Eingangsnummer. Keine handgepflegte Tabelle. |
 | 123 | P4 | **Erfüllt, nur nicht vermerkt.** Der geteilte Plan zwischen Maschinen läuft über die CRDT-Synchronisation (`sync:*`, `signaling:*`) und nicht über Export/Import von Hand. |
 | 124 | P4 | **Erfüllt als REGEL, und die Regel ist stärker als der Bedarf.** ADR-005 „Verlustfrei oder laut": ein Import, der ein Feld nicht bewahren kann, muss verweigern statt es zu verwerfen. Der Bedarf verlangt nur, dass ein Rundlauf keine von Hand gefüllte Spalte zerstört; Bedarf 29 (`cable#711`) hat das für den CSV-Weg eingelöst. |
@@ -2526,7 +2526,45 @@ belegbar, dort sind sie erprobt.
   behauptet. Statt die Zahl hochzuzählen gibt es jetzt `GENERISCHE_KATALOGE`,
   erklärt statt abgeleitet, plus eine Prüfung, dass darin wirklich keine
   `manufacturerUrl` steht — sonst verdeckte die Ausnahme eine echte Lücke.
-* **Teil 2 bleibt offen:** der Verteiler als Bauart im Schaltbild.
+* **TEIL 2 ERLEDIGT 2026-09-08** — `cable#788`. Sieben neue `CircuitKind`:
+  `distro` (Stromverteiler) sowie `button`, `contactor`, `relay`,
+  `emergencyStop`, `rcd`, `mcb`. Der Verteiler ist eine **Klemmstelle mit
+  abgesicherten Abgängen** — die Absicherung sitzt am Anschluss
+  (`Port.absicherungA` aus Teil 1) und **löst nie aus**: dafür müsste der Plan
+  die angeschlossenen Lasten kennen (dieselbe Grenze wie beim
+  Router-Kreuzpunkt, ADR-003).
+* **Die sechs Kontakte teilen sich EINE Rechnung.** Elektrisch sind Schütz,
+  Relais, Taster, Not-Aus, FI und LS dasselbe wie `switch`; sechs eigene
+  Zeilen in `INNERE_VERBINDUNG` wären sechsmal dieselbe Rechnung. Der
+  Modulkopf des Rechners sagt das seit seiner ersten Fassung („Eine vierte
+  Schaltungsart braucht dann eine Zeile in `INNERE_VERBINDUNG` und keinen
+  neuen Zweig"); hier wird es eingelöst. Eigene Bauarten sind sie für
+  **Beschriftung und Ruhestellung** — „Aus-Schalter" auf einem Not-Aus wäre
+  auf einem Blatt schlicht falsch. Die **Spule** eines Schützes (A1/A2) ist
+  bewusst nicht abgebildet: sie wäre ein zweiter Stromkreis, der den ersten
+  schaltet, und der Rechner hätte eine Rückkopplung zu lösen, die niemand
+  angegeben hat.
+* **Der eigentliche Befund kam beim Bauen heraus: DREI Ruhestellungen.**
+  `VORGABE_STELLUNG` im Rechner, `vorgabe()` im `circuitStore` und die Marke
+  am Canvas-Knoten (`stellung ?? (kind === 'feed' ? 1 : undefined)`)
+  rechneten alle drei aus, welche Stellung ohne Zutun gilt. Sie stimmten
+  überein, weil ausser der Einspeisung alles bei 0 anfing — ein Zufall, der
+  genau mit dieser Änderung endete: Not-Aus, FI und LS sind im Ruhezustand
+  **geschlossen**. Der Rechner hätte die Leuchte brennen lassen und die Marke
+  daneben keine Stellung gezeigt; zwei Antworten auf dieselbe Frage,
+  nebeneinander auf dem Schirm. Die Ruhestellung steht jetzt als `ruhe` in
+  `CIRCUIT_KIND_INFO`, alle drei lesen sie dort.
+* **Die Marke am Knoten wird angegeben statt aus dem Namen geschnitten.** Sie
+  war der erste Buchstabe der Beschriftung; mit „Stromverteiler"/„Schütz" und
+  „Leuchte"/„Leitungsschutzschalter" kollidiert das. Ausdrücklich **kein**
+  Betriebsmittelkennzeichen nach DIN EN 81346 — die Norm vergibt
+  Klassen-Buchstaben und zählt innerhalb der Klasse.
+* **Zwölf Gegenproben, alle rot** (`tests/schaltbildBauarten.test.ts`). Zwei
+  eigene Fehlgriffe dabei: die erste Fassung prüfte nur `solveCircuit` mit
+  selbst gesetzter Stellung — dort fällt eine gedrehte Ruhestellung durch kein
+  Netz; und die Regel „schaltbar genau dann, wenn es Stellungen gibt" wurde
+  zunächst ein zweites Mal geprüft, obwohl sie schon einen Ort hat.
+* **Damit ist B-52 abgeschlossen.**
 
 ## Eigentümer-Entscheidungen
 
