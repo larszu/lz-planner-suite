@@ -1041,6 +1041,14 @@ export const MenuBar = ({
           >
             {t('app.menu.view.colorByLength', 'Kabelfarbe nach Länge')}
           </MenuItem>
+          <MenuItem
+            onClick={() =>
+              useUiStore.getState().setCableColorMode(cableColorMode === 'byLayer' ? 'manual' : 'byLayer')
+            }
+            icon={cableColorMode === 'byLayer' ? <Icon icon={Check} size="sm" /> : null}
+          >
+            {t('app.menu.view.colorByLayer', 'Kabelfarbe nach Gewerk')}
+          </MenuItem>
           <MenuSep />
           <MenuItem
             onClick={() => useUiStore.getState().setAnnotationsPanelOpen(!annotationsPanelOpen)}
