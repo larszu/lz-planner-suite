@@ -96,18 +96,38 @@ count read off a datasheet and one guessed by a name heuristic remain indistingu
 
 ## If it is taken up
 
-In this order — step 1 is now settled, so step 2 is the next actual work:
-
 1. ~~Decide the vocabulary **with** ADR-003 Increment 2, not before it.~~ Done: reuse
    `cable-planner/src/renderer/types/provenance.ts`. Do not invent a second one.
-2. Lift the 253 existing `// Quelle:` comments into a field. Mechanical, reversible,
-   loses nothing — the comments can stay.
-3. Only then the 8 catalogues without per-entry attribution, which is real research and
-   the expensive part.
+2. ~~Lift the 253 existing `// Quelle:` comments into a field.~~ **Already done when this
+   step was written** — measured 2026-09-07, and the finding is recorded at the top of
+   `cable-planner/src/renderer/lib/catalogueEvidence.ts`: every one of the 253 comments
+   already stood as `template.manufacturerUrl` in the same entry, checked URL by URL with
+   no divergence. The field travels through `equipmentSlice` to the device, the properties
+   panel shows it with its origin named, and `exportDevicePdf` prints it.
+
+   This file's sentence *"No `provenance`, `source`, or `verifiedAt` field exists"* was
+   true when written and is true today — the field is simply called `manufacturerUrl`, and
+   nobody had looked for that name. What step 2 actually left open was different, and
+   `cable#746` built both halves: **the coverage was never computed** (253 of 412 lived as
+   prose in B-11 and nowhere in the code, so thirty unsourced additions would move the
+   number with nobody noticing), and **"no evidence" was invisible** (an ATEM — 32 entries,
+   not one source — looked like a device nobody had got around to checking, which is the
+   difference between an empty cell and a dash on a sheet).
+3. **The next actual work — and it cannot be done from the build container.** The six
+   catalogues without per-entry attribution (159 entries: `blackmagic`, `camera`,
+   `greengo`, `misc`, `monitor`, `ubiquiti`) need real research. Measured repeatedly, most
+   recently 2026-09-08: the manufacturer domains sit behind the egress filter —
+   `blackmagicdesign.com`, `ui.com` and even `lynx-technik.com`, whose URLs already stand
+   in the code, all fail to open. Web search returns dealer pages (B&H, Markertek, Full
+   Compass), not manufacturer product pages. Entering 159 URLs nobody has opened would be
+   exactly the failure this repository's evidence chain is built against: a
+   `manufacturerUrl` pointing at nothing is worse than an empty field, because it claims
+   checkability. It stays open, deliberately, until someone runs it from a machine with
+   manufacturer access. B-11 in the backlog carries the same finding.
 4. `capabilities.ts` last: its comments carry reasoning, not references, and a URL field
    is the wrong container for them.
 
-Step 2 alone would make a claim testable that the suite currently only asserts. That is
-ADR-005's fourth rule — a "lossless" claim is testable — applied to a different kind of
-claim, and it is the reason this initiative is worth keeping on the list even while it
-waits.
+Step 2 was the one that would "make a claim testable that the suite currently only
+asserts" — ADR-005's fourth rule applied to a different kind of claim. That is now what
+`catalogueEvidence.ts` does, and a test holds the two numbers. What still waits is step 3,
+and it waits on network access, not on a decision.
