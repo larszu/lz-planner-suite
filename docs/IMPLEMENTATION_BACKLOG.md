@@ -1080,7 +1080,7 @@ ist selbst ein Ergebnis.
 
 ### B-36 · Der Defektformen-Sweep über die fünf Nicht-cable-Repos ist NICHT abgeschlossen
 
-* **Status:** offen — **eine von fünf Formen ist durchgearbeitet** (2026-09-07, fünf bestätigte und behobene Befunde, siehe unten). Der ursprüngliche Lauf blieb ausdrücklich **ohne verwertbares Ergebnis**.
+* **Status:** offen — **zwei von fünf Formen sind durchgearbeitet** (2026-09-07, je fünf bestätigte und behobene Befunde, siehe unten). Der ursprüngliche Lauf blieb ausdrücklich **ohne verwertbares Ergebnis**.
 * **Was lief (2026-09-04):** ein Sweep über fünf wiederkehrende Defektformen
   dieser Sitzung (`guard-umgangen`, `zwei-rechnungen`, `vertrag-nur-feldnamen`,
   `fixture-erreicht-grenze-nicht`, `zustand-nach-fehler`) in
@@ -1130,12 +1130,38 @@ ist selbst ein Ergebnis.
   Fehlschlag am offenen Port hängt statt rot zu werden; eine Zusicherung, die
   schon vom Schritt davor grün war). Beides steht in den PRs.
 
-* **Was offen bleibt:** die Formen `zwei-rechnungen`, `vertrag-nur-feldnamen`
-  und `fixture-erreicht-grenze-nicht` sind in diesem Durchgang nur gestreift
+* **Zweite Form durch: `zwei-rechnungen` (2026-09-07), fünf bestätigte
+  Befunde, einer je Repo.** Die Form lautet: *dieselbe Zahl wird an zwei
+  Stellen gerechnet.* Was sie so ergiebig macht, ist nicht der Fall, in dem
+  die zwei Rechnungen schon heute auseinanderlaufen — das ist der seltenere.
+  Es ist der Fall, in dem sie heute übereinstimmen und die zweite Stelle
+  niemand kennt.
+
+  | Repo | Befund | PR |
+  | --- | --- | --- |
+  | `tally-pi` | Die Übersetzung von „die Lampe brennt" auf „der Pin liegt tief" stand an **vier** Stellen. Die zwei im Browser lasen ihre Polarität aus **verschiedenen Quellen** — die Gerätekarte aus dem ungespeicherten Formular, die Diagnose-Tabelle aus dem gespeicherten Stand: zwei Knöpfe für denselben Pin, wenige Zentimeter auseinander, mit entgegengesetzten Kommandos. Und der Browser schickte einen *Pegel* statt eines *Anliegens*, weshalb das Ereignis-Log für jede active-high Lampe das Gegenteil dessen protokollierte, was passiert ist. | `#14` |
+  | `pi-media-station` | `get_scene()` setzt die Lautstärke-Vorgaben bereits ein; die Anzeigeseite setzte sie ein zweites Mal — als `scene.master_volume \|\| 100`. **`0 \|\| 100` ist 100.** Der Regler geht bis 0, `web_ui.py` nimmt die 0 an, `get_scene` reicht sie durch — und die Seite machte daraus volle Lautstärke. Es ist der einzige Stumm-Schalter, den eine Station hat, die unbeaufsichtigt in einer Ausstellung steht. | `#7` |
+  | `Broadcast-intercom` | `Softclient` und `PhoneClient` sind zwei Ansichten derselben App am selben Kern. `downsampleToInt16` und `int16ToBase64` standen Zeile für Zeile in beiden. Der **Mikrofon-Pegel** wurde aus demselben Signal mit zwei verschiedenen Formeln gerechnet — Spektrum-Mittel gegen Zeitbereichs-RMS —, beide als „%" auf demselben Balken; nachgerechnet 10 % gegen 50 %. Der Softclient vergleicht seine **VOX-Schwelle** gegen diese Zahl. | `#13` |
+  | `light-planner` | `footprint()` ist die eine Antwort auf „wie viele DMX-Kanäle belegt diese Einheit". `integration/equipment.ts` stellte dieselbe Frage noch einmal und gab im Nein-Fall eine **andere** Antwort: 1 statt 0. Die 0 ist aber die Kodierung für „konventionelle Leuchte am Dimmer"; der Export an den Kabel-Planer behauptete für sie einen Kanal und hängte ihr eine DMX-Buchse an. Drei Nachrechnungen insgesamt, zwei davon zufällig richtig. | `#92` |
+  | `multicam-planner` | `CalculationBreakdown.tsx` ist die Tafel, die dem Nutzer die Formeln vorrechnet, **damit er die Ausgabe nachprüfen kann** — und rechnete Sensordiagonale und Personenhöhe selbst nach, mit dem Kommentar „(matches utils/fov.ts:personHeightInFrame)" daneben. Eine Übereinstimmung, die jemand von Hand pflegen muss, ist keine. Dazu `1.80`, `1080` und `1500` als nackte Literale: der *gezeigte* Rechenweg war von der tatsächlichen Rechnung entkoppelt. | `#108` |
+
+* **Und wieder haben zwei Gegenproben den Wächter erwischt statt den Fix** —
+  dieselbe Quote wie beim ersten Durchgang, und beide Male derselbe Grund:
+  der Wächter prüfte den **Wert**, wo die Form die **Kennlinie** angreift.
+  In `Broadcast-intercom` blieb er grün, als die Wurzel aus der RMS
+  verschwand (jeder Einzelwert plausibel, die Kurve quadratisch); in
+  `multicam-planner` blieb er grün, als `circleOfConfusion` seine eigene
+  `Math.sqrt(…)` zurückbekam (zahlengleich, aber wieder doppelt). Beide
+  Wächter prüfen seither das, was die Form angreift: „doppelte Amplitude
+  liest sich doppelt so hoch", und „`Math.sqrt` steht an genau einer Stelle".
+
+* **Was offen bleibt:** die Formen `vertrag-nur-feldnamen` und
+  `fixture-erreicht-grenze-nicht` sind in diesem Durchgang nur gestreift
   worden. Sie bleiben zu wiederholen — mit demselben Verfahren.
 
-* **Aufwand:** ~~mittel (Wiederholung, sobald Kontingent da ist)~~ eine Form
-  von fünf ist durch; drei stehen aus
+* **Aufwand:** ~~mittel (Wiederholung, sobald Kontingent da ist)~~ ~~eine Form
+  von fünf ist durch; drei stehen aus~~ zwei Formen von fünf sind durch; zwei
+  stehen aus
 
 ---
 
