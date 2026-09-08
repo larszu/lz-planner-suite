@@ -1662,7 +1662,7 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-42 · „Wo kommt was an?" — Prüfbild, Erwartung, Rückmeldung
 
-* **Status:** Inkrement 1 gebaut und vendoriert (`cable#772`), Inkrement 2 und 3 offen. Der Schaltbild-Teil aus `cable#771` (Strom) ist ebenfalls gebaut und vendoriert.
+* **Status: ERLEDIGT.** Alle drei Inkremente gebaut und vendoriert — 1 in `cable#772`, 2 in `cable#773`, 3 in `cable#774`. Der Schaltbild-Teil aus `cable#771` (Strom) ist ebenfalls gebaut und vendoriert. Was offen bleibt, ist ausdrücklich kein Rest dieses Bedarfs, sondern eine Grenze der Anlage: der ATEM kennt bis heute keinen Schnitt-Befehl (`atem:*` kann Namen, Multiviewer und Audio), und ein Live-Videobild im Plan kommt nicht — dafür fehlt nicht die Zeit, sondern der Eingang.
 * **Der Wunsch (Eigentümer, 2026-09-08):** „Kann man auch als Quelle
   Testpattern generieren mit dem Namen der Quelle und ner SMPTE bar und dann
   an Displays nen Mini Monitor Feld einfügen, sodass man auch den
@@ -1685,23 +1685,76 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Pflicht-Beschriftung, der Streifen in der Werkzeugleiste, Export von Bild
   und Prüfblatt. Die gewählte Quelle liegt im nicht persistierten
   `patternStore`. **Invariante 16** hält die Regel fest.
-* **Inkrement 2 — die Rückmeldung (offen).** „Stimmt" / „falsches Bild, es
-  steht X drauf" / „kein Bild", je Ankunftsort, mit Zeitpunkt und Prüfer.
-  Das ist eine **Beobachtung** und gehört damit ins Projekt (wie
-  `TallyCheck`), anders als die Wahl der Quelle. Der Weg dafür steht schon:
-  die Mobile-Ansicht hat mit `/checks` einen token-gesicherten
-  Schreibrückweg — der Techniker geht mit dem Telefon herum, sieht je Monitor
-  die Erwartung und tippt die Antwort. **Der Gewinn liegt in der zweiten
-  Antwort:** wer „es steht KAMERA 3 drauf" meldet, hat die Vertauschung
-  benannt, und der Plan kann sagen, welcher Kreuzpunkt das erklärt.
-* **Inkrement 3 — steuern (offen, und mit einer Auflage).** `videohub:send`
-  kann Kreuzpunkte **setzen**; damit wäre „schalte den Router aus dem Plan"
-  buildbar. Das ist ein Eingriff in eine laufende Anlage, kein Anzeigen:
-  er braucht eine Bestätigung mit Klartext („Ausgang 3 von Kamera 1 auf
-  Kamera 2"), einen Eintrag im Dokument-Register und die Regel aus ADR-001,
-  dass der gelesene Ist-Zustand den Plan nicht überschreibt. Beim ATEM fehlt
-  der Weg heute ganz: `atem:*` kennt Namen, Multiviewer und Audio, aber
-  keinen Schnitt-Befehl.
+* **Inkrement 2 — die Rückmeldung (gebaut, `cable#773`).** „Stimmt" /
+  „falsches Bild, es steht X drauf" / „kein Bild" / „kein Monitor", je
+  Ankunftsort, mit Zeitpunkt und Prüfer. Das ist eine **Beobachtung** und
+  liegt damit im Projekt (wie `TallyCheck`), anders als die Wahl der Quelle.
+  `lib/patternDiagnose.ts` verdichtet die Meldungen zum Befund — allen voran
+  `vertauscht`, wenn zwei Ankunftsorte wechselseitig den Namen des jeweils
+  anderen zeigen. **Der Gewinn liegt in der zweiten Antwort:** wer „es steht
+  KAMERA 3 drauf" meldet, hat die Vertauschung benannt, und der Plan sagt,
+  welcher Kreuzpunkt sie erklärt. Der Weg über die Mobile-Ansicht (`/checks`,
+  token-gesichert) ist damit vorbereitet, aber noch nicht verdrahtet — das
+  ist Inkrement 2b und steht unten.
+* **Inkrement 3 — steuern (gebaut, `cable#774`).** Aus dem Plan heraus die
+  Kreuzpunkte setzen, über die ein Prüfbild-Weg läuft. Was gebaut wurde und
+  warum genau so:
+  * **`lib/videohubCrosspoint.ts` baut den Befehl, und zwar NEU statt über
+    den vorhandenen `buildVideohubRoutingCommand`.** Das ist der Kern dieses
+    Inkrements. Der alte Bauer schreibt eine Zeile für **jeden** Ausgang und
+    setzt jeden fehlenden Eintrag auf Eingang 0. Für den vollständigen Export
+    ist das richtig — für „schalte Ausgang 7" hiesse es, 39 weitere Ausgänge
+    mitzunehmen und alles Unerwähnte schwarzzuschalten, darunter womöglich
+    den, auf dem gerade gesendet wird. Der neue Bauer hat deshalb **kein
+    `totalOutputs` und keinen Default**: ein Ausgang, über den niemand etwas
+    gesagt hat, kommt im Block nicht vor. `tests/hubSwitch.test.ts` hält das
+    als Zusicherung fest — mitsamt der Gegenprobe, die belegt, dass der alte
+    Bauer genau das täte.
+  * **Die Kreuzpunkte werden abgelesen, nicht gesucht.** `signalChains` folgt
+    an einer Kreuzschiene ohnehin dem geplanten Kreuzpunkt; das Paar
+    (Eingang, Ausgang) steht damit schon in zwei aufeinanderfolgenden
+    Schritten der Kette. Es ein zweites Mal aus `videohubRouting.planned` zu
+    rechnen wäre die Defektform `zwei-rechnungen`.
+  * **Die Bestätigung mit Klartext** steht wie geplant: je Kreuzpunkt ein
+    Satz mit Namen und Nummern („Ausgang 3 (Regie links) von Kamera 2 auf
+    Eingang 1 (Kamera 1)"), dazu der **wortwörtlich gesendete Text** im
+    Dialog und ein Haken, der gesetzt sein muss. Wo der Ist-Zustand nicht
+    gelesen wurde, steht dort „vom aktuellen Stand (ungelesen)" und **kein
+    aus dem Plan erfundener Vorher-Wert** — der sähe aus wie eine Messung.
+  * **Der Eintrag geht NICHT ins Dokument-Register**, anders als diese Zeile
+    es bis zum Bau vorsah. Nachgesehen: `documentLog:*` führt, welches
+    BLATT mit welchem Planstand ausgegeben wurde, und jeder Eintrag trägt
+    einen `stand`, an dem hängt, ob er noch gilt. Ein Kreuzpunkt-Befehl ist
+    kein ausgegebenes Dokument; ihn dort einzutragen hiesse, das Register mit
+    einer zweiten Bedeutung zu belegen, und die Frage „welches meiner
+    ausgeteilten Blätter ist hin?" bekäme Antworten, die keine Blätter sind.
+    Stattdessen: `project.hubSwitches` — ein Beleg wie `TallyCheck` und
+    `PatternCheck`, angehängt und nie ersetzt, **samt der gescheiterten
+    Versuche**, weil „wer hat geschaltet?" auch die beantwortet.
+  * **ADR-001 hält:** `videohubRouting.planned` wird beim Schalten nicht
+    nachgezogen, auch nicht „zur Sicherheit". Zöge das Senden den Plan mit,
+    gäbe es hinterher keine Abweichung mehr zu sehen — und die zu sehen ist
+    der Grund, warum der Plan neben der Anlage steht. Der Wächter dafür ist
+    eine **negative** Zusicherung über den Dialog (kein `updateEquipment`,
+    kein `videohubRouting`, kein `planned`), und die ist per Quelltext
+    haltbar: einen Aufruf, den es nicht gibt, kann kein eingeschleustes
+    `return` verstecken.
+* **Was die Gegenproben gekostet haben, und warum sie dazugehören.** Von neun
+  eingeschleusten Fehlern machten sieben den passenden Wächter sofort rot.
+  Zwei nicht — und beide waren echte Lücken: einer war ein Fehler in der
+  Gegenprobe selbst (die eingefügte Zeile traf die Einrückung nicht), der
+  andere eine Zusicherung, die etwas anderes prüfte als behauptet. Der Test
+  „ein Anschluss, den es nicht mehr gibt, ergibt keine geratene Nummer" deckte
+  in Wahrheit den Fall „die Kette endet hier"; die Nummern-Prüfung selbst ist
+  über `patternRouting` gar nicht erreichbar, weil `forwardFrom` einen
+  Weiterweg nur über vorhandene Anschlüsse findet. Sie steht trotzdem im Code
+  — die Folge ihres Wegfalls wäre eine geratene Nummer, die als Befehl an eine
+  laufende Anlage ginge — und wird jetzt **direkt** geprüft. Das ist die Regel
+  dahinter: eine Zusicherung, die kein Gegenversuch rot machen kann, ist keine.
+* **Inkrement 2b — die Rückmeldung vom Telefon (offen).** Die Mobile-Ansicht
+  zeigt je Monitor die Erwartung und schreibt die Antwort über `/checks`
+  zurück. Der Schreibweg ist token-gesichert und steht bereits; was fehlt, ist
+  die Ansicht und die Abbildung auf `PatternCheck`.
 * **Was ausdrücklich NICHT kommt:** ein Live-Videobild im Plan. Dafür fehlt
   nicht die Zeit, sondern der Eingang.
 
