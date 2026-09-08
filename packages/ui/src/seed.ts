@@ -102,6 +102,39 @@ export interface SeedCable {
   to: string
 }
 
+/**
+ * Wer ein Feld schreiben darf. Die Shell ist eine Quelle wie ein Planer —
+ * sie fuehrt den Raum-Namen und den Projektnamen selbst.
+ */
+export type SeedWriter = 'shell' | SeedDomain
+
+/**
+ * Wer ein geteiltes Feld gerade HAELT. `at` ist der Zeitpunkt der Setzung in
+ * Epoch-Millisekunden, vom Schreiber gestempelt und nicht hier erzeugt: diese
+ * Datei rechnet, sie liest keine Uhr (dieselbe Trennung wie beim
+ * Ablauf-Import, `now()` wird hereingereicht).
+ *
+ * `at` entscheidet NICHT, wer gewinnt — es steht im Befund, damit jemand die
+ * beiden Setzungen einordnen kann. „Letzter gewinnt mit Zeitstempel" ist
+ * ausdruecklich die Regel, gegen die E-21 entschieden hat: sie macht aus einem
+ * Widerspruch ein Rennen, dessen Ausgang von der Netzlaufzeit abhaengt.
+ */
+export interface SeedHold {
+  by: SeedWriter
+  at: number
+}
+
+/**
+ * Die Felder, die mehr als eine App schreibt — und damit die einzigen, bei
+ * denen ueberhaupt ein Widerspruch entstehen kann. Alles andere haengt an
+ * genau einer Domaene und ist ueber `SeedPatch.domain` schon getrennt.
+ *
+ * Heute ist das der Raum: MultiCam vermisst ihn fuer die Sichtlinien, Licht
+ * fuer die Rigging-Punkte. Beide duerfen ihn setzen, keiner still
+ * ueberschreiben.
+ */
+export type SeedSharedField = 'venue.widthM' | 'venue.heightM' | 'venue.stage'
+
 export interface SuiteSeed {
   kind: typeof SUITE_SEED_KIND
   formatVersion: typeof SUITE_SEED_VERSION
@@ -119,6 +152,13 @@ export interface SuiteSeed {
   fixtures: SeedFixture[]
   devices: SeedDevice[]
   cables: SeedCable[]
+  /**
+   * Wer welches geteilte Feld haelt. Fehlt ein Eintrag, haelt es niemand — der
+   * naechste Schreiber bekommt es. Optional, damit ein Seed aus der Zeit vor
+   * E-21 weiter gilt: kein Halter heisst „noch nicht beansprucht" und nicht
+   * „ungueltig".
+   */
+  holds?: Partial<Record<SeedSharedField, SeedHold>>
 }
 
 /**
@@ -136,6 +176,23 @@ export type SeedDomain = 'cameras' | 'fixtures' | 'signal'
 export interface SeedPatch {
   domain: SeedDomain
   revision: number
+  /**
+   * Zeitpunkt der Aenderung im Planer (Epoch-Millisekunden). Steht im Befund,
+   * wenn zwei Apps dasselbe geteilte Feld verschieden setzen. Fehlt er, gilt
+   * 0 — der Befund ist dann aermer, aber nicht falsch.
+   */
+  at?: number
+  /**
+   * Der Raum. Anders als die drei Domaenen-Listen gehoert er KEINEM Planer
+   * allein (E-21): MultiCam und Licht vermessen beide, und bis 2026-09-08 ging
+   * er nur hin und nie zurueck — wer die Halle im Planer korrigierte,
+   * korrigierte sie nicht in der Shell (B-39, Punkt 1).
+   *
+   * Ein Planer darf ihn deshalb mit jeder Domaene mitschicken. Was damit
+   * geschieht, entscheidet `mergeSeedPatch` nach Eigentum je Feld — nicht der
+   * Empfaenger und nicht die Reihenfolge des Eintreffens.
+   */
+  venue?: SeedVenue
   cameras?: SeedCamera[]
   fixtures?: SeedFixture[]
   devices?: SeedDevice[]
@@ -181,26 +238,13 @@ export function seedContentCount(seed: SuiteSeed): number {
   return seed.cameras.length + seed.fixtures.length + seed.devices.length + seed.cables.length
 }
 
-/**
- * Eine Rueckmeldung in den Seed einarbeiten. Nur die Domaene des Patches wird
- * ersetzt; die anderen bleiben, wie sie waren. Die Revision bleibt stehen — die
- * Aenderung kommt aus einem Planer, der bereits auf diesem Stand aufsetzte, und
- * darf deshalb kein erneutes Befuellen ausloesen.
- */
-export function applySeedPatch(seed: SuiteSeed, patch: SeedPatch): SuiteSeed {
-  if (patch.revision !== seed.revision) return seed
-  switch (patch.domain) {
-    case 'cameras':
-      return patch.cameras ? { ...seed, cameras: patch.cameras } : seed
-    case 'fixtures':
-      return patch.fixtures ? { ...seed, fixtures: patch.fixtures } : seed
-    case 'signal':
-      return {
-        ...seed,
-        devices: patch.devices ?? seed.devices,
-        cables: patch.cables ?? seed.cables,
-      }
-    default:
-      return seed
-  }
-}
+// Das Einarbeiten einer Rueckmeldung steht NICHT hier, sondern in
+// `seedOwnership.ts` als `mergeSeedPatch`. Bis 2026-09-08 gab es an dieser
+// Stelle ein `applySeedPatch`, das die gemeldete Domaene stillschweigend
+// ersetzte. Das war richtig, solange jede Domaene genau einen Schreiber hatte
+// — und falsch, sobald der Raum zurueckkommt, den zwei Planer bearbeiten.
+//
+// Die Funktion ist ersetzt und nicht daneben stehen geblieben: ein zweiter,
+// stiller Weg ins selbe Ziel ist genau die Form, an der E-21 haengt. Wer den
+// Rueckgabewert von `mergeSeedPatch` auf `.seed` verkuerzt, hat ihn wieder —
+// darum gibt der Merge Befunde und Seed als EIN Ergebnis zurueck.

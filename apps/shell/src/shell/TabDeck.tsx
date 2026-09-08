@@ -9,7 +9,7 @@ import { RuntimeFrame } from '../embed/RuntimeFrame'
 import { TallyPushPanel } from './TallyPushPanel'
 import { RUNTIME_BY_ID } from '../modules/runtimes'
 import { NativeSignalRegion, hasNativeCable } from '../embed/NativeSignalRegion'
-import { PlanPreview, SignalPreview } from './previews'
+import { PlanPreview, PreviewNotice, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
 import { BoardCanvas } from './BoardCanvas'
 import { useT, format, type TFunc } from '../i18n'
@@ -161,6 +161,16 @@ export function TabDeck({
             </div>
           ) : (
             <div className="relative h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-bg">
+              {/* Die Vorschau nennt sich Vorschau (E-13). Nur bei zugewiesenem
+                  Projekt: ohne eines zeigt `StandaloneHint` ohnehin schon, dass
+                  hier nichts Echtes steht, und zwei Hinweise uebereinander
+                  heben einander auf. */}
+              {project && (
+                <PreviewNotice
+                  project={project}
+                  onOpenInPlanner={module.planner && module.plannerUrl ? onToggleMount : undefined}
+                />
+              )}
               {/* schwebende Werkzeugleiste — nur echte Overlay-Toggles (FOV/Heatmap) */}
               {toolbars(t)[module.id as CanvasModuleId].length > 0 && (
               <div className="pointer-events-auto absolute left-1/2 top-4 z-10 -translate-x-1/2">
@@ -193,7 +203,9 @@ export function TabDeck({
 
               {/* Modul-Fläche (zoombar) */}
               <div
-                className="h-full w-full p-6 pt-16"
+                // pt-20 statt pt-16, seit der Vorschau-Streifen (E-13) ueber
+                // der Flaeche steht: mit pt-16 lag der oberste Knoten darunter.
+                className="h-full w-full p-6 pt-20"
                 style={{
                   transform: `scale(${zoom / 100})`,
                   transformOrigin: 'center top',

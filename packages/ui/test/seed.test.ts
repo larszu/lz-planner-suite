@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   SUITE_SEED_KIND,
   SUITE_SEED_VERSION,
-  applySeedPatch,
   emptySeed,
   isSuiteSeed,
   seedContentCount,
   type SuiteSeed,
 } from '../src/seed'
+import { mergeSeedPatch } from '../src/seedOwnership'
 
 // ───────────────────────────────────────────────────────────────────────────
 // Das Protokoll selbst — vor allem die Revisions-Regel.
@@ -49,7 +49,7 @@ describe('suite-seed — Formpruefung', () => {
 describe('suite-seed — Rueckmeldung einarbeiten', () => {
   it('ersetzt nur die gemeldete Domaene', () => {
     const vorher = seed()
-    const nachher = applySeedPatch(vorher, { domain: 'cameras', revision: 3, cameras: [] })
+    const nachher = mergeSeedPatch(vorher, { domain: 'cameras', revision: 3, cameras: [] }).seed
     expect(nachher.cameras).toEqual([])
     // Alles andere unangetastet — ein Kamera-Planer sagt nichts ueber Kabel.
     expect(nachher.devices).toEqual(vorher.devices)
@@ -58,12 +58,12 @@ describe('suite-seed — Rueckmeldung einarbeiten', () => {
   })
 
   it('nimmt bei „signal" Geraete und Kabel zusammen', () => {
-    const nachher = applySeedPatch(seed(), {
+    const nachher = mergeSeedPatch(seed(), {
       domain: 'signal',
       revision: 3,
       devices: [{ id: 'd2', name: 'B' }],
       cables: [],
-    })
+    }).seed
     expect(nachher.devices.map((d) => d.id)).toEqual(['d2'])
     expect(nachher.cables).toEqual([])
   })
@@ -72,18 +72,18 @@ describe('suite-seed — Rueckmeldung einarbeiten', () => {
     // Der Planer hatte einen ueberholten Stand — seine Meldung wuerde neueren
     // Inhalt mit aelterem ueberschreiben.
     const vorher = seed()
-    expect(applySeedPatch(vorher, { domain: 'cameras', revision: 2, cameras: [] })).toBe(vorher)
+    expect(mergeSeedPatch(vorher, { domain: 'cameras', revision: 2, cameras: [] }).seed).toBe(vorher)
   })
 
   it('laesst die Revision stehen', () => {
     // Genau das schneidet die Echo-Schleife ab: der eingearbeitete Stand ist
     // KEIN neuer Seed fuer den Planer, der ihn gerade gemeldet hat.
-    const nachher = applySeedPatch(seed(), { domain: 'fixtures', revision: 3, fixtures: [] })
+    const nachher = mergeSeedPatch(seed(), { domain: 'fixtures', revision: 3, fixtures: [] }).seed
     expect(nachher.revision).toBe(3)
   })
 
   it('aendert nichts, wenn die Domaene ohne Daten gemeldet wird', () => {
     const vorher = seed()
-    expect(applySeedPatch(vorher, { domain: 'cameras', revision: 3 })).toBe(vorher)
+    expect(mergeSeedPatch(vorher, { domain: 'cameras', revision: 3 }).seed).toBe(vorher)
   })
 })

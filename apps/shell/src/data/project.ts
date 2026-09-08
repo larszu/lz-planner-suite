@@ -240,6 +240,32 @@ export interface SuiteProject {
   show: ShowDetails
   /** Kleiner Lager-Ausschnitt (via @avplan/inventory-core) für den Pack-Status. */
   inventory: { items: InventoryItem[]; nodes: StorageNode[] }
+  /**
+   * Wer welches geteilte Seed-Feld hält (E-21). Nur der Raum ist heute
+   * geteilt: MultiCam und Licht vermessen ihn beide, und wer ihn zuerst setzt,
+   * hält ihn. Fehlt der Eintrag, hält ihn niemand — der nächste Schreiber
+   * bekommt ihn.
+   */
+  seedHolds?: Partial<Record<import('@avplan/ui/embed').SeedSharedField, import('@avplan/ui/embed').SeedHold>>
+  /**
+   * Widersprüche, die NICHT überschrieben wurden — ein Planer hat ein Feld
+   * anders gesetzt als der, der es hält. Sie stehen im Projekt und nicht in
+   * einem Toast, weil ein Befund, der nach drei Sekunden verschwindet, dem
+   * stillen Überschreiben zu ähnlich sieht: beide Male ist der Widerspruch
+   * weg, bevor jemand ihn gelesen hat.
+   */
+  seedConflicts?: SeedConflictRecord[]
+}
+
+/**
+ * Ein gemeldeter Widerspruch, wie das Projekt ihn führt. Der `id` macht ihn
+ * für die Anzeige adressierbar (annehmen / verwerfen); `seenAt` ist der
+ * Zeitpunkt, zu dem die Shell ihn aufgenommen hat.
+ */
+export interface SeedConflictRecord {
+  id: string
+  seenAt: number
+  conflict: import('@avplan/ui/embed').SeedConflict
 }
 
 export const PROJECT: SuiteProject = {

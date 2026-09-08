@@ -7,15 +7,22 @@
 
 import { isSuiteSeed, type SeedDomain, type SeedPatch, type SuiteSeed } from './seed'
 
-export type { SeedCable, SeedCamera, SeedDevice, SeedDomain, SeedFixture, SeedPatch, SeedVenue, SuiteSeed } from './seed'
-export {
-  SUITE_SEED_KIND,
-  SUITE_SEED_VERSION,
-  applySeedPatch,
-  emptySeed,
-  isSuiteSeed,
-  seedContentCount,
+export type {
+  SeedCable,
+  SeedCamera,
+  SeedDevice,
+  SeedDomain,
+  SeedFixture,
+  SeedHold,
+  SeedPatch,
+  SeedSharedField,
+  SeedVenue,
+  SeedWriter,
+  SuiteSeed,
 } from './seed'
+export { SUITE_SEED_KIND, SUITE_SEED_VERSION, emptySeed, isSuiteSeed, seedContentCount } from './seed'
+export type { SeedConflict, SeedMerge, SeedVenueField } from './seedOwnership'
+export { SEED_VENUE_OWNER, acceptProposal, conflictFieldName, mergeSeedPatch } from './seedOwnership'
 
 export type ResolvedTheme = 'dark' | 'light'
 
@@ -459,7 +466,7 @@ export interface ShellSeedHandlers {
  *
  * Die Echo-Schleife (Shell schiebt → Planer meldet → Shell schiebt erneut) ist
  * ueber die Revision abgeschnitten und nicht ueber Zeitfenster: `apply` laeuft
- * nur bei einer NEUEREN Revision, und `applySeedPatch` in der Shell laesst die
+ * nur bei einer NEUEREN Revision, und `mergeSeedPatch` in der Shell laesst die
  * Revision beim Einarbeiten stehen.
  */
 export function connectShellSeed(h: ShellSeedHandlers): { publish: () => void; dispose: () => void } {
@@ -476,7 +483,17 @@ export function connectShellSeed(h: ShellSeedHandlers): { publish: () => void; d
   const publish = () => {
     if (!embedded || appliedRevision < 0) return
     try {
-      const patch: SeedPatch = { domain: h.domain, revision: appliedRevision, ...h.collect() }
+      // Zeitstempel hier und nicht in jedem Planer: er gehoert zur Meldung,
+      // nicht zum Modell, und ein Planer, der ihn vergisst, macht seinen
+      // Befund in der Shell aermer, ohne es zu merken. Liefert `collect`
+      // selbst ein `at`, gewinnt das — ein Planer, der den Zeitpunkt der
+      // AENDERUNG kennt statt den des Sendens, weiss es besser.
+      const patch: SeedPatch = {
+        domain: h.domain,
+        revision: appliedRevision,
+        at: Date.now(),
+        ...h.collect(),
+      }
       window.parent.postMessage({ type: 'avplan:seedPatch', app: app(), patch } satisfies SeedPatchMessage, '*')
     } catch {
       /* egal */

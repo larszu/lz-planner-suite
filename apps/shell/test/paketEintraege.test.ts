@@ -47,7 +47,21 @@ const exportiert = (laufzeit: object, eintragsDatei: string): Set<string> => {
   // Typ-Exporte verschwinden beim Uebersetzen. Sie stehen aber im
   // Eintrags-Quelltext, und der ist die Wahrheit, gegen die `tsc -b` prueft.
   const quelle = readFileSync(join(UI_SRC, eintragsDatei), 'utf8')
+  // (1) Inline-Markierung in einer Import-/Export-Liste: `{ …, type X, … }`.
   for (const m of quelle.matchAll(/\btype\s+([A-Za-z0-9_]+)/g)) namen.add(m[1])
+  // (2) Ganze Typ-Listen: `export type { A, B } from '…'` — auch mehrzeilig.
+  //     Ohne diesen Zweig sah der Guard nur die Namen, die zufaellig auch in
+  //     einer Import-Zeile mit `type X` standen; ein Typ, der NUR ueber einen
+  //     `export type {…}`-Block herausgeht, galt als nicht exportiert. Der
+  //     Guard war damit an einer richtigen Aenderung rot (2026-09-08,
+  //     `SeedConflict`/`SeedWriter`) und haette bei der naechsten das Umbauen
+  //     der Datei erzwungen statt eines echten Fundes.
+  for (const m of quelle.matchAll(/\bexport\s+type\s*\{([^}]*)\}/g)) {
+    for (const roh of m[1].split(',')) {
+      const name = roh.trim().replace(/^type\s+/, '').split(/\s+as\s+/).pop()!.trim()
+      if (name) namen.add(name)
+    }
+  }
   return namen
 }
 

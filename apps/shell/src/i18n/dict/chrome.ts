@@ -177,6 +177,12 @@ export const chrome: Record<string, string> = {
   'chrome.frame.retry': 'Try again',
   'chrome.frame.openNewTab': 'Open in new tab',
   // previews
+  'chrome.preview.badge': 'Preview',
+  'chrome.preview.notice':
+    "The suite's simplified overview model, not the plan. Ports, data sheets, DMX universes and rigging heights live in the planner.",
+  'chrome.preview.stand': 'As of v{version}',
+  'chrome.preview.unsaved': 'unsaved',
+  'chrome.preview.open': 'Open in planner',
   'chrome.preview.noProject': 'No project assigned',
   'chrome.preview.standaloneHint':
     '{label} can be used standalone — “Open in planner” starts the module without a project.',

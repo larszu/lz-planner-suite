@@ -22,7 +22,7 @@
 //     (`pickInitialMountAndLens`) — eine UI-Voreinstellung, die der Nutzer mit
 //     einem Klick aendert, keine Behauptung ueber sein Material.
 // ───────────────────────────────────────────────────────────────────────────
-import type { SeedCamera, SuiteSeed } from '@avplan/ui/embed';
+import type { SeedCamera, SeedVenue, SuiteSeed } from '@avplan/ui/embed';
 import { CAMERAS } from '../data/cameras';
 import { LENSES } from '../data/lenses';
 import type { Camera, Lens, VenueCamera, Venue } from '../types';
@@ -177,5 +177,40 @@ export function camerasToSeedPatch(cameras: VenueCamera[], lenses: Lens[] = LENS
         y: v.y,
       };
     }),
+  };
+}
+
+/**
+ * Rueckweg fuer den RAUM. Er ist das einzige Stueck, das nicht dieser App
+ * allein gehoert (E-21): die Shell fuehrt ihn, MultiCam vermisst ihn fuer die
+ * Sichtlinien, und Licht tut dasselbe fuer die Rigging-Punkte.
+ *
+ * Bis 2026-09-08 ging er nur HIN: `seedToVenue` setzte Masse und Buehne hier,
+ * und wer sie hier korrigierte, korrigierte sie nicht in der Shell (B-39,
+ * Punkt 1). Die Meldung ist deshalb kein Nachtrag, sondern die fehlende
+ * Haelfte der Verbindung.
+ *
+ * `venue.name` steht bewusst NICHT drin. Er gehoert laut `SEED_VENUE_OWNER`
+ * der Shell; ihn mitzuschicken erzeugte bei jedem Umbenennen in diesem Planer
+ * einen Befund, den niemand haben wollte — die Regel meldet ja gerade den
+ * Vorschlag zu einem fremden Feld. Was hier gemeldet wird, ist das, was dieser
+ * Planer wirklich vermisst.
+ *
+ * Nur die ERSTE Buehne wird gemeldet: der Seed kennt genau ein Rechteck, und
+ * eine zweite Buehne stillschweigend zur ersten zu machen waere eine
+ * Falschaussage ueber den Raum.
+ */
+export function venueToSeedPatch(venue: Venue): { venue: SeedVenue } {
+  const stage = venue.stages[0];
+  return {
+    venue: {
+      // `name` ist im Typ Pflicht; der bisherige Wert ist die einzige
+      // wahrheitsgemaesse Belegung — und weil er unveraendert ist, meldet die
+      // Regel dazu nichts.
+      name: venue.name,
+      widthM: venue.widthM,
+      heightM: venue.heightM,
+      ...(stage ? { stage: { x: stage.x, y: stage.y, w: stage.width, h: stage.height } } : {}),
+    },
   };
 }

@@ -13,9 +13,9 @@ import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './module
 import { RUNTIMES, type RuntimeId } from './modules/runtimes'
 import { loadAddresses, runtimeUrl, saveAddresses, type RuntimeAddresses } from './shell/runtimeHosts'
 import { useRuntimeHealth } from './shell/runtimeHealth'
-import { PROJECT, type ShowDetails, type SuiteProject } from './data/project'
+import { PROJECT, type SeedConflictRecord, type ShowDetails, type SuiteProject } from './data/project'
 import { applyPatchToSuite, suiteToSeed } from './data/seed'
-import type { SeedPatch } from '@avplan/ui/embed'
+import { acceptProposal, type SeedPatch } from '@avplan/ui/embed'
 import {
   downloadProject,
   projectFileHost,
@@ -49,9 +49,10 @@ import { LibraryPanel } from './shell/LibraryPanel'
 import { PropertiesPanel } from './shell/PropertiesPanel'
 import { TabDeck } from './shell/TabDeck'
 import type { HeaderDraft } from './shell/dashboardEditors'
+import { SeedConflictBar } from './shell/SeedConflictBar'
 import { StatusBar } from './shell/StatusBar'
 import { buildCommands } from './shell/buildCommands'
-import { LanguageProvider, translate } from './i18n'
+import { LanguageProvider, format, translate } from './i18n'
 
 /** Ein Satz je Modul, aus einem Wert fuer die Planer und einem fuer die Geraete. */
 const jeModul = <T,>(basis: Record<Exclude<ModuleId, RuntimeId>, T>, geraet: T): Record<ModuleId, T> => ({
@@ -183,10 +184,65 @@ export function App() {
   // Shell-Historie — die Aenderung ist im Planer passiert und hat dort schon
   // ihr eigenes Undo; ein zweiter Eintrag hier hiesse zweimal zuruecknehmen.
   const applySeedPatch = useCallback((patch: SeedPatch) => {
+    let gemeldet = 0
     setHistory((h) => {
       if (!h.present) return h
-      const next = applyPatchToSuite(h.present, patch)
+      const { project: next, conflicts } = applyPatchToSuite(h.present, patch, seedRevision)
+      gemeldet = conflicts.length
       return next === h.present ? h : { ...h, present: next }
+    })
+    // Der Befund steht am Projekt und bleibt dort stehen; der Toast ist nur
+    // der Hinweis, dass gerade einer dazugekommen ist. Ohne ihn muesste
+    // jemand die Liste von sich aus aufschlagen, um zu erfahren, dass seine
+    // Aenderung NICHT eingezogen ist — und genau das taete niemand.
+    if (gemeldet > 0) {
+      pushToast(
+        format(
+          tt('seed.conflict.toast', '{n} Angabe(n) aus dem Planer nicht übernommen — Widerspruch'),
+          { n: gemeldet },
+        ),
+        { tone: 'warn' },
+      )
+    }
+  }, [seedRevision, pushToast, tt])
+
+  /**
+   * Einen Befund aufloesen: der Vorschlag zieht ein, und bei einem geteilten
+   * Feld wechselt der Halter zum Vorschlagenden. Ausdruecklich und von Hand —
+   * das ist der ganze Unterschied zu „letzter gewinnt".
+   *
+   * Der Seed wird danach NICHT hochgezaehlt: der Wert kommt aus einem Planer,
+   * der ihn schon hat, und ein erneutes Schieben ueberschriebe dort die
+   * naechste Aenderung (dieselbe Echo-Schleife wie beim Patch).
+   */
+  const acceptSeedConflict = useCallback((record: SeedConflictRecord) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const seed = acceptProposal(suiteToSeed(h.present, seedRevision), record.conflict)
+      const present: SuiteProject = {
+        ...h.present,
+        hall: { w: seed.venue.widthM ?? h.present.hall.w, h: seed.venue.heightM ?? h.present.hall.h },
+        stage: seed.venue.stage ?? h.present.stage,
+        meta: { ...h.present.meta, venue: seed.venue.name || h.present.meta.venue, saved: false },
+        seedHolds: seed.holds,
+        seedConflicts: (h.present.seedConflicts ?? []).filter((c) => c.id !== record.id),
+      }
+      return { ...h, present }
+    })
+  }, [seedRevision])
+
+  /**
+   * Einen Befund verwerfen: der gehaltene Wert bleibt, der Halter behaelt sein
+   * Feld, und nur die Meldung geht weg. Ohne diesen Weg waere der Streifen
+   * nicht wegzubekommen, ohne nachzugeben — und ein Hinweis, den man nur durch
+   * Nachgeben los wird, ist eine Erpressung und kein Befund.
+   */
+  const dismissSeedConflict = useCallback((id: string) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const rest = (h.present.seedConflicts ?? []).filter((c) => c.id !== id)
+      if (rest.length === (h.present.seedConflicts ?? []).length) return h
+      return { ...h, present: { ...h.present, seedConflicts: rest } }
     })
   }, [])
 
@@ -666,6 +722,12 @@ export function App() {
           </div>
         )}
       </div>
+
+      <SeedConflictBar
+        conflicts={project?.seedConflicts ?? []}
+        onAccept={acceptSeedConflict}
+        onDismiss={dismissSeedConflict}
+      />
 
       <StatusBar
         module={moduleId}

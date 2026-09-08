@@ -14,22 +14,39 @@
 //                          DMX-Universum, Rigging-Hoehe), erfindet die Shell
 //                          nicht.
 //
-//   zurueck `applyPatchToSuite`  ersetzt die gemeldete Domaene, behaelt aber je
-//                          Objekt-Id die Shell-eigenen Felder, die im Seed gar
-//                          nicht vorkommen (`SignalNode.group`, `.venue`,
+//   zurueck `applyPatchToSuite`  laesst `mergeSeedPatch` (E-21) entscheiden,
+//                          was der Planer aendern DARF, und schreibt das
+//                          Ergebnis ins Shell-Modell zurueck — je Objekt-Id
+//                          unter Erhalt der Shell-eigenen Felder, die im Seed
+//                          gar nicht vorkommen (`SignalNode.group`, `.venue`,
 //                          `Camera.linked`). Ein Planer, der diese Felder nicht
 //                          kennt, darf sie nicht loeschen — genau daran ist die
 //                          Bruecke sonst ein Datenverlust statt einer
 //                          Verbindung.
+//
+// DER RAUM GEHT SEIT 2026-09-08 AUCH ZURUECK (B-39, Punkt 1). Er ist das
+// einzige geteilte Stueck: MultiCam vermisst ihn fuer die Sichtlinien, Licht
+// fuer die Rigging-Punkte. Er kommt deshalb nicht einfach an — er laeuft durch
+// die Konfliktregel, und was ihr widerspricht, wird zu einem BEFUND am
+// Projekt statt zu einer stillen Ueberschreibung.
 // ───────────────────────────────────────────────────────────────────────────
 
 import {
   SUITE_SEED_KIND,
   SUITE_SEED_VERSION,
+  mergeSeedPatch,
   type SeedPatch,
   type SuiteSeed,
 } from '@avplan/ui/embed'
-import type { Cable, CableLayer, Camera, Fixture, SignalNode, SuiteProject } from './project'
+import type {
+  Cable,
+  CableLayer,
+  Camera,
+  Fixture,
+  SeedConflictRecord,
+  SignalNode,
+  SuiteProject,
+} from './project'
 
 /**
  * Kabel-Ebene aus dem Kabeltyp ableiten. Nur fuer Kabel noetig, die ein Planer
@@ -103,6 +120,10 @@ export function suiteToSeed(project: SuiteProject | null, revision: number): Sui
       from: c.from,
       to: c.to,
     })),
+    // Wer welches geteilte Feld haelt, faehrt mit: ohne diesen Teil koennte
+    // `mergeSeedPatch` keinen Halter erkennen und wuerde jede Setzung
+    // durchlassen — die Regel waere gebaut und unwirksam.
+    holds: project.seedHolds,
   }
 }
 
@@ -114,85 +135,134 @@ export function seedSignature(project: SuiteProject | null): string {
   return JSON.stringify(suiteToSeed(project, 0))
 }
 
-/** Rueckmeldung eines Planers in das Shell-Projekt einarbeiten. */
-export function applyPatchToSuite(project: SuiteProject, patch: SeedPatch): SuiteProject {
-  switch (patch.domain) {
-    case 'cameras': {
-      if (!patch.cameras) return project
-      const vorher = new Map(project.cameras.map((c) => [c.id, c]))
-      const cameras: Camera[] = patch.cameras.map((c) => {
-        const alt = vorher.get(c.id)
-        return {
-          id: c.id,
-          name: c.name,
-          model: c.model ?? alt?.model ?? '',
-          lens: c.lens ?? alt?.lens ?? '',
-          focalMm: c.focalMm ?? alt?.focalMm ?? 0,
-          hfovDeg: c.hfovDeg ?? alt?.hfovDeg ?? 0,
-          x: c.x ?? alt?.x ?? 0,
-          y: c.y ?? alt?.y ?? 0,
-          // `linked` kennt der Seed nicht — bei bekannten Kameras erhalten,
-          // bei neuen ist „noch nicht verkabelt" die wahre Aussage.
-          linked: alt?.linked ?? false,
-        }
-      })
-      return { ...project, cameras, meta: { ...project.meta, saved: false } }
-    }
-    case 'fixtures': {
-      if (!patch.fixtures) return project
-      const vorher = new Map(project.fixtures.map((f) => [f.id, f]))
-      const fixtures: Fixture[] = patch.fixtures.map((f) => {
-        const alt = vorher.get(f.id)
-        return {
-          id: f.id,
-          name: f.name,
-          model: f.model ?? alt?.model ?? '',
-          purpose: f.purpose ?? alt?.purpose ?? '',
-          dimmerPct: f.dimmerPct ?? alt?.dimmerPct ?? 0,
-          dmxChannel: f.dmxChannel ?? alt?.dmxChannel ?? 0,
-          x: f.x ?? alt?.x ?? 0,
-          y: f.y ?? alt?.y ?? 0,
-        }
-      })
-      return { ...project, fixtures, meta: { ...project.meta, saved: false } }
-    }
-    case 'signal': {
-      if (!patch.devices && !patch.cables) return project
-      const alteKnoten = new Map(project.nodes.map((n) => [n.id, n]))
-      const nodes: SignalNode[] = (patch.devices ?? project.nodes.map(nodeToSeedShape)).map((d) => {
-        const alt = alteKnoten.get(d.id)
-        return {
-          id: d.id,
-          name: d.name,
-          sub: d.subtitle ?? alt?.sub ?? '',
-          // `group`/`venue` sind Shell-Begriffe (Bodennaehe vs. Regie,
-          // steht im Raum). Der Cable-Planer kennt sie nicht und darf sie
-          // deshalb weder setzen noch verlieren.
-          group: alt?.group ?? 'floor',
-          venue: alt?.venue ?? true,
-          nx: d.nx ?? alt?.nx ?? 0.5,
-          ny: d.ny ?? alt?.ny ?? 0.5,
-        }
-      })
-      const alteKabel = new Map(project.cables.map((c) => [c.id, c]))
-      const cables: Cable[] = (patch.cables ?? project.cables.map(cableToSeedShape)).map((c) => {
-        const alt = alteKabel.get(c.id)
-        return {
-          id: c.id,
-          label: c.label,
-          type: c.type,
-          layer: alt?.layer ?? layerForCableType(c.type),
-          lengthM: c.lengthM ?? alt?.lengthM ?? 0,
-          from: c.from,
-          to: c.to,
-        }
-      })
-      return { ...project, nodes, cables, meta: { ...project.meta, saved: false } }
-    }
-    default:
-      return project
-  }
+/**
+ * Das Ergebnis einer Rueckmeldung: das Projekt UND die Befunde. Beides
+ * zusammen und nicht nacheinander — ein Aufrufer, der nur das Projekt nimmt,
+ * hat das stille Ueberschreiben wieder, nur an einer Stelle weiter oben.
+ */
+export interface PatchAufSuite {
+  project: SuiteProject
+  /** Leer heisst „nichts zu melden", nicht „nichts passiert". */
+  conflicts: SeedConflictRecord[]
 }
 
-const nodeToSeedShape = (n: SignalNode) => ({ id: n.id, name: n.name, subtitle: n.sub, nx: n.nx, ny: n.ny })
-const cableToSeedShape = (c: Cable) => ({ id: c.id, label: c.label, type: c.type, lengthM: c.lengthM, from: c.from, to: c.to })
+/**
+ * Rueckmeldung eines Planers in das Shell-Projekt einarbeiten.
+ *
+ * `revision` ist der Stand, den die Shell gerade fuehrt — nicht der aus dem
+ * Patch. Genau daran haengt die Verwerfung ueberholter Meldungen: ein Planer,
+ * der auf einem aelteren Seed aufsetzte, darf neueren Inhalt nicht
+ * ueberschreiben.
+ *
+ * `now` und `id` kommen von aussen, damit die Rechnung rein bleibt (dieselbe
+ * Trennung wie beim Ablauf-Import).
+ */
+export function applyPatchToSuite(
+  project: SuiteProject,
+  patch: SeedPatch,
+  revision: number,
+  now: () => number = Date.now,
+  id: (n: number) => string = (n) => `sc${n}`,
+): PatchAufSuite {
+  const vorher = suiteToSeed(project, revision)
+  const { seed, conflicts } = mergeSeedPatch(vorher, patch)
+
+  const befunde: SeedConflictRecord[] = conflicts.map((conflict, i) => ({
+    id: id(now() + i),
+    seenAt: now(),
+    conflict,
+  }))
+
+  if (seed === vorher) {
+    // Nichts uebernommen. Befunde koennen es trotzdem geben — genau das ist
+    // der Fall, den E-21 sichtbar machen soll: der Planer hat etwas gemeldet,
+    // und es ist NICHT eingezogen.
+    return befunde.length
+      ? { project: { ...project, seedConflicts: [...(project.seedConflicts ?? []), ...befunde] }, conflicts: befunde }
+      : { project, conflicts: [] }
+  }
+
+  // Zurueck ins Shell-Modell. Gearbeitet wird auf dem GEMERGTEN Seed und nicht
+  // auf dem Patch: was die Regel abgelehnt hat, steht dort gar nicht erst
+  // drin, und diese Funktion muss die Regel nicht ein zweites Mal kennen.
+  const alteKameras = new Map(project.cameras.map((c) => [c.id, c]))
+  const cameras: Camera[] = seed.cameras.map((c) => {
+    const alt = alteKameras.get(c.id)
+    return {
+      id: c.id,
+      name: c.name,
+      model: c.model ?? alt?.model ?? '',
+      lens: c.lens ?? alt?.lens ?? '',
+      focalMm: c.focalMm ?? alt?.focalMm ?? 0,
+      hfovDeg: c.hfovDeg ?? alt?.hfovDeg ?? 0,
+      x: c.x ?? alt?.x ?? 0,
+      y: c.y ?? alt?.y ?? 0,
+      // `linked` kennt der Seed nicht — bei bekannten Kameras erhalten,
+      // bei neuen ist „noch nicht verkabelt" die wahre Aussage.
+      linked: alt?.linked ?? false,
+    }
+  })
+
+  const alteLeuchten = new Map(project.fixtures.map((f) => [f.id, f]))
+  const fixtures: Fixture[] = seed.fixtures.map((f) => {
+    const alt = alteLeuchten.get(f.id)
+    return {
+      id: f.id,
+      name: f.name,
+      model: f.model ?? alt?.model ?? '',
+      purpose: f.purpose ?? alt?.purpose ?? '',
+      dimmerPct: f.dimmerPct ?? alt?.dimmerPct ?? 0,
+      dmxChannel: f.dmxChannel ?? alt?.dmxChannel ?? 0,
+      x: f.x ?? alt?.x ?? 0,
+      y: f.y ?? alt?.y ?? 0,
+    }
+  })
+
+  const alteKnoten = new Map(project.nodes.map((n) => [n.id, n]))
+  const nodes: SignalNode[] = seed.devices.map((d) => {
+    const alt = alteKnoten.get(d.id)
+    return {
+      id: d.id,
+      name: d.name,
+      sub: d.subtitle ?? alt?.sub ?? '',
+      // `group`/`venue` sind Shell-Begriffe (Bodennaehe vs. Regie,
+      // steht im Raum). Der Cable-Planer kennt sie nicht und darf sie
+      // deshalb weder setzen noch verlieren.
+      group: alt?.group ?? 'floor',
+      venue: alt?.venue ?? true,
+      nx: d.nx ?? alt?.nx ?? 0.5,
+      ny: d.ny ?? alt?.ny ?? 0.5,
+    }
+  })
+
+  const alteKabel = new Map(project.cables.map((c) => [c.id, c]))
+  const cables: Cable[] = seed.cables.map((c) => {
+    const alt = alteKabel.get(c.id)
+    return {
+      id: c.id,
+      label: c.label,
+      type: c.type,
+      layer: alt?.layer ?? layerForCableType(c.type),
+      lengthM: c.lengthM ?? alt?.lengthM ?? 0,
+      from: c.from,
+      to: c.to,
+    }
+  })
+
+  const next: SuiteProject = {
+    ...project,
+    cameras,
+    fixtures,
+    nodes,
+    cables,
+    // Der Raum. `venue.name` gehoert der Shell (SEED_VENUE_OWNER) und kommt
+    // deshalb hier gar nicht veraendert an — der Fallback ist trotzdem der
+    // bisherige Wert und nicht der aus dem Seed geratene.
+    hall: { w: seed.venue.widthM ?? project.hall.w, h: seed.venue.heightM ?? project.hall.h },
+    stage: seed.venue.stage ?? project.stage,
+    meta: { ...project.meta, venue: seed.venue.name || project.meta.venue, saved: false },
+    seedHolds: seed.holds,
+    seedConflicts: befunde.length ? [...(project.seedConflicts ?? []), ...befunde] : project.seedConflicts,
+  }
+  return { project: next, conflicts: befunde }
+}

@@ -8,6 +8,64 @@ import {
 } from '../data/project'
 import { useT, format } from '../i18n'
 
+/**
+ * Die Vorschau sagt, dass sie eine Vorschau ist (E-13, 2026-09-08).
+ *
+ * WARUM. Die Shell führt ein eigenes, absichtlich einfaches Übersichtsmodell —
+ * das ist die Entscheidung, und sie bleibt. Was daran falsch war, ist nicht die
+ * Eigenständigkeit, sondern ihr SCHWEIGEN darüber: die Fläche zeigt echte
+ * Daten in einem anderen Modell, sieht aus wie der Plan und heißt auch so.
+ * Wer hier vier Kabel zählt, hat vier Kabel des SHELL-Modells gezählt, nicht
+ * die des Kabelplans — und merkt es nicht.
+ *
+ * ADR-003 verlangt für genau diesen Fall dreierlei, und alle drei stehen hier:
+ * die Kennzeichnung, den STAND (sonst ist „Vorschau" ein Etikett ohne Datum),
+ * und einen Weg dorthin, wo das Fehlende steht.
+ *
+ * WAS SIE NICHT TUT: den Nutzer bevormunden. Der Streifen ist eine Zeile hoch,
+ * steht über der Fläche und nimmt ihr nichts weg. Ein modaler Hinweis wäre die
+ * teuerste Art, dasselbe zu sagen, und nach dem zweiten Mal klickt ihn jeder
+ * ungelesen weg.
+ */
+export function PreviewNotice({
+  project,
+  onOpenInPlanner,
+}: {
+  project: SuiteProject
+  /** Fehlt er, hat dieses Modul keinen Planer — dann entfällt der Weg dorthin. */
+  onOpenInPlanner?: () => void
+}) {
+  const t = useT()
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center gap-2 border-b border-av-border-muted bg-av-surface-2/95 px-3 py-1.5 text-[12px]">
+      <span className="rounded-av-control border border-av-border px-1.5 py-0.5 font-medium text-av-text-secondary">
+        {t('chrome.preview.badge', 'Vorschau')}
+      </span>
+      <span className="text-av-text-muted">
+        {t(
+          'chrome.preview.notice',
+          'Vereinfachtes Übersichtsmodell der Suite, nicht der Plan. Ports, Datenblatt, DMX-Universum und Rigging-Höhe stehen im Planer.',
+        )}
+      </span>
+      <span className="ml-auto flex items-center gap-2 text-av-text-muted">
+        <span className="av-num">
+          {format(t('chrome.preview.stand', 'Stand: v{version}'), { version: project.meta.version })}
+          {project.meta.saved ? '' : ` · ${t('chrome.preview.unsaved', 'ungespeichert')}`}
+        </span>
+        {onOpenInPlanner && (
+          <button
+            type="button"
+            className="av-focus pointer-events-auto rounded-av-control border border-av-border px-2 py-0.5 text-av-text hover:bg-av-surface-3"
+            onClick={onOpenInPlanner}
+          >
+            {t('chrome.preview.open', 'Im Planer öffnen')}
+          </button>
+        )}
+      </span>
+    </div>
+  )
+}
+
 function StandaloneHint({ label }: { label: string }) {
   const t = useT()
   return (

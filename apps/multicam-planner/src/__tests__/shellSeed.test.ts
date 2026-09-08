@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { emptySeed, type SuiteSeed } from '@avplan/ui/embed';
-import { camerasToSeedPatch, katalogKamera, seedToCameras, seedToVenue } from '../utils/shellSeed';
+import { camerasToSeedPatch, katalogKamera, seedToCameras, seedToVenue, venueToSeedPatch } from '../utils/shellSeed';
 import { LENSES } from '../data/lenses';
 import type { Venue } from '../types';
 
@@ -85,5 +85,57 @@ describe('shellSeed — Rueckweg', () => {
     // nicht und wuerde sonst den alten Wert weiterzeigen.
     expect(zurueck.hfovDeg).toBeGreaterThan(0);
     expect(zurueck.hfovDeg).toBeLessThan(180);
+  });
+});
+
+describe('Der Raum geht auch zurueck (E-21, B-39.1)', () => {
+  const raum = (over: Partial<Venue> = {}): Venue => {
+    const basis: Venue = {
+      name: 'Halle A',
+      widthM: 24,
+      heightM: 14,
+      stages: [{ id: 'stage-0', x: 8, y: 3, width: 8, height: 3.2, label: 'Stage' }],
+    };
+    return { ...basis, ...over };
+  };
+
+  it('meldet Masse und Buehne', () => {
+    const { venue } = venueToSeedPatch(raum());
+    expect(venue.widthM).toBe(24);
+    expect(venue.heightM).toBe(14);
+    expect(venue.stage).toEqual({ x: 8, y: 3, w: 8, h: 3.2 });
+  });
+
+  it('meldet den Namen unveraendert', () => {
+    // `venue.name` gehoert der Shell. Ihn unveraendert mitzuschicken ist
+    // wahrheitsgemaess und erzeugt keinen Befund; ihn zu AENDERN waere ein
+    // Vorschlag zu einem fremden Feld — und genau das soll dieser Planer nicht
+    // bei jedem Umbenennen ungefragt tun.
+    expect(venueToSeedPatch(raum({ name: 'Halle B' })).venue.name).toBe('Halle B');
+  });
+
+  it('meldet nur die erste Buehne', () => {
+    // Der Seed kennt genau ein Rechteck. Eine zweite Buehne stillschweigend
+    // zur ersten zu machen waere eine Falschaussage ueber den Raum.
+    const zwei = raum({
+      stages: [
+        { id: 's0', x: 1, y: 1, width: 2, height: 2, label: 'A' },
+        { id: 's1', x: 9, y: 9, width: 4, height: 4, label: 'B' },
+      ],
+    });
+    expect(venueToSeedPatch(zwei).venue.stage).toEqual({ x: 1, y: 1, w: 2, h: 2 });
+  });
+
+  it('laesst die Buehne weg, wenn es keine gibt', () => {
+    expect(venueToSeedPatch(raum({ stages: [] })).venue.stage).toBeUndefined();
+  });
+
+  it('ist die Umkehrung von seedToVenue', () => {
+    // Hin und zurueck darf den Raum nicht veraendern — sonst meldete jeder
+    // uebernommene Seed sofort einen Widerspruch gegen sich selbst.
+    const vorher = raum();
+    const s = seed({ venue: { name: 'Halle A', widthM: 30, heightM: 18, stage: { x: 2, y: 2, w: 6, h: 4 } } });
+    const nachher = seedToVenue(s, vorher);
+    expect(venueToSeedPatch(nachher).venue).toEqual(s.venue);
   });
 });
