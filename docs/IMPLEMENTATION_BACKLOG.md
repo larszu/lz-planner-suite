@@ -1924,9 +1924,8 @@ belegbar, dort sind sie erprobt.
 
 ### B-44 · Touch, Schliessen, Umbruch — die Bedienung selbst
 
-* **Status:** Teil 1 (Schliessen) und Teil 2 (Touch) GEBAUT — `cable#780`.
-  Teil 3 (Umbruch) offen, jetzt gemessen (siehe Befund 3). **Wunsch des
-  Eigentümers, 2026-09-08:** „Die ganze Anwendung ist auch noch nicht touch
+* **Status:** ALLE DREI TEILE GEBAUT — Schliessen und Touch `cable#780`,
+  Umbruch `cable#784`. **Wunsch des Eigentümers, 2026-09-08:** „Die ganze Anwendung ist auch noch nicht touch
   optimiert. Menüs schließen ist auch nicht immer intuitiv. Oft muss man auf
   ein x klicken und nicht auch in eine leere Fläche. Und auch nicht alles ist
   responsive."
@@ -2048,13 +2047,17 @@ belegbar, dort sind sie erprobt.
   * **21** stehen ohne `w-full`; die sind einzeln anzusehen.
   * **13 Dateien** haben `grid-cols-3` bis `-9` ohne jeden Umbruchpunkt —
     das bleibt, ein mehrspaltiges Raster ohne Breakpoint läuft über.
-  * **23 Dateien** enthalten ein `<table>` **ohne** `overflow-x` irgendwo in
-    der Datei. Das ist der grösste und konkreteste Befund und stand in der
-    ersten Messung überhaupt nicht drin: eine breite Tabelle ohne eigenen
-    Scrollbereich schiebt das ganze Blatt zur Seite.
+  * **9 Dateien** enthalten ein `<table>` ohne **jeden** Scrollbereich. Das
+    ist der grösste und konkreteste Befund und stand in der ersten Messung
+    überhaupt nicht drin: eine breite Tabelle ohne eigenen Scrollbereich
+    schiebt das ganze Blatt zur Seite.
+    *(Zwischenstand „23" war zu hoch — er suchte nur nach `overflow-x` und
+    übersah `overflow-auto`, das beide Achsen abdeckt. Dieselbe Sorte Fehler
+    wie oben, eine Ebene kleiner.)*
   * Genau **eine** Stelle hat eine echte Pixelbreite an einem Dialog-Panel
-    (`w-[560px]` in `App.tsx`). Die übrigen `w-NN`-Treffer sind kleine
-    Bedienelemente (`w-14`, `w-12`, `w-28`) und in Ordnung.
+    (`w-[560px]` in `App.tsx`) — und auch die war **kein** Befund: sie steht
+    neben `max-w-[92vw]` und schrumpft. Die übrigen `w-NN`-Treffer sind
+    kleine Bedienelemente (`w-14`, `w-12`, `w-28`) und in Ordnung.
 
   **Warum das hier steht und nicht stillschweigend berichtigt wird:** die
   falsche Zahl ist bereits in einem gemergten Suite-PR und in einer Antwort
@@ -2063,13 +2066,35 @@ belegbar, dort sind sie erprobt.
   für eine Veränderung am Code. Und der Fehler selbst ist lehrreich: er ist
   dieselbe Form wie die beiden Fehlmessungen davor — ein Muster, das
   *irgendetwas* zählt, statt die Frage zu stellen, um die es geht.
-* **Reihenfolge:** (1) Schliessen — ERLEDIGT; (2) Touch — ERLEDIGT bis auf
-  den Löschgriff am Kabel-Wegpunkt und die 44-px-Messung am gerenderten
-  Element; (3) Umbruch — OFFEN, und zwar als Regel und nicht als Sweep: eine
-  Breite ohne Breakpoint ist kein Fehler an sich (ein Bestätigungsdialog darf
-  schmal bleiben), ein **Dialog mit Eingabefeldern** ohne einen ist einer. Der
-  Wächter muss also fragen, was der Dialog enthält, nicht bloss zählen.
-* **Aufwand:** (1) mittel — erledigt, (2) klein — erledigt, (3) gross.
+* **Reihenfolge:** (1) Schliessen — ERLEDIGT; (2) Touch — ERLEDIGT, samt dem
+  Löschgriff am Kabel-Wegpunkt (`cable#784`, siehe unten); (3) Umbruch —
+  ERLEDIGT (`cable#784`).
+* **TEIL 3, GEBAUT — und die Regel ist eine andere geworden, als der Befund
+  oben sie beschrieb.** Gebaut wurde, was an der richtigen Frage übrig blieb:
+  * **`block overflow-x-auto`** an den neun Tabellen ohne Scrollbereich. Eine
+    breite Tabelle schiebt sonst das ganze Blatt zur Seite, und die Knöpfe
+    rechts sind nicht mehr erreichbar — derselbe Fehler wie seinerzeit beim
+    Export-Dialog, nur waagerecht.
+  * **`grid-cols-1 sm:grid-cols-N`** an den dreizehn Rastern mit
+    Eingabefeldern. Nur mit Eingabefeldern: drei Häkchen dürfen dreispaltig
+    bleiben, drei Eingabefelder werden schmal unlesbar. Der Wächter fragt
+    also, WAS im Raster steht, statt Raster zu zählen.
+  * **`.cp-coarse-only`** und der sichtbare Löschgriff am Kabel-Wegpunkt.
+    Damit ist die letzte benannte Ausnahme aus Teil 2 gestrichen — und zwar
+    so, wie sie es angekündigt hat: nicht mit dem langen Druck (auf demselben
+    `pointerdown` sitzt das Ziehen; wer zögert, hätte gelöscht), sondern mit
+    einem sichtbaren Griff.
+  * Der Touch-Wächter fragt nicht mehr nach `useLongPress`, sondern nach
+    einem **zweiten Weg**. Nach einem Bauteil zu fragen hätte den besseren
+    Weg als Lücke gemeldet.
+  * `tests/umbruch.test.ts` zählt **keine Breiten** und hält in einer eigenen
+    Zusicherung fest, warum: fällt `w-full` aus `ModalShell` heraus, wird die
+    Zahl aus Befund 3 auf einmal doch ein Befund — und dann wird der Wächter
+    rot.
+* **Was offen bleibt:** die 44-px-Trefferfläche, gemessen am gerenderten
+  Element statt an Klassennamen. Der Weg dafür ist der laufende Renderer
+  (`ui:smoke` treibt ihn ohnehin).
+* **Aufwand:** (1) mittel, (2) klein, (3) gross — alle erledigt.
 
 ### B-45 · Stromplanung, die diesen Namen verdient
 
