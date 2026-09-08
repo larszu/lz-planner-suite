@@ -93,7 +93,8 @@ import { istCircuitKind } from '../types/circuit'
 import { normalisePatternChecks } from '../types/patternCheck'
 import { normaliseHubSwitches } from '../types/hubSwitch'
 import { normalisePlannedCrosspoints } from '../lib/deviceCrosspoints'
-import { istControlProtocol, istControlRole } from '../types/switcherControl'
+import { istControlProtocol, istControlTarget, istControlRole } from '../types/switcherControl'
+import { normalisiereAdapter, normalisiereKann } from '../types/adapter'
 import { pruefeVorlage } from '../lib/textProtocol'
 import { pruefeCompanion } from '../lib/companionControl'
 
@@ -933,6 +934,40 @@ const healProjectPositions = (
       if (item.controlProtocol !== undefined && !istControlProtocol(item.controlProtocol)) {
         onDrop?.({ kind: 'crosspoint', reason: 'invalid-value', label: item.name })
         item = (({ controlProtocol: _weg, ...rest }) => rest)(item) as EquipmentItem
+      }
+      // S-5 — das erklaerte Ziel. Wie beim Protokoll: ein Wert, den dieser
+      // Stand nicht kennt, faellt WEG. Er faellt dabei bewusst auf `'device'`
+      // zurueck und nicht auf `'simulator'` — die Vorgabe muss die
+      // vorsichtige sein: ein Beleg, der faelschlich „Anlage" sagt, laesst
+      // jemanden nachsehen; einer, der faelschlich „Pruefstand" sagt, laesst
+      // ihn es lassen.
+      if (item.controlTarget !== undefined && !istControlTarget(item.controlTarget)) {
+        onDrop?.({ kind: 'crosspoint', reason: 'invalid-value', label: item.name })
+        item = (({ controlTarget: _weg, ...rest }) => rest)(item) as EquipmentItem
+      }
+      // B-46 — der Adapter. Ein unvollstaendiger Datensatz faellt hier in die
+      // GEFAEHRLICHE Richtung, wenn man ihn stehen laesst: fehlt `richtung`,
+      // ist `spec.richtung === 'unbekannt'` schlicht `false`, und die
+      // Beurteilung faellt bis ans Ende durch — auf „traegt". Ein fehlendes
+      // Feld ergaebe damit einen gruenen Haken auf einer Strecke, ueber die
+      // niemand etwas weiss. `normalisiereAdapter` setzt deshalb auf
+      // `unbekannt` herunter und wirft nur weg, was nicht einmal sagen kann,
+      // WAS der Adapter ist (eine fehlende Steckerseite).
+      if (item.adapter !== undefined) {
+        const geheilt = normalisiereAdapter(item.adapter)
+        if (!geheilt) {
+          onDrop?.({ kind: 'equipment-adapter', reason: 'invalid-value', label: item.name })
+          item = (({ adapter: _weg, ...rest }) => rest)(item) as EquipmentItem
+        } else {
+          item = { ...item, adapter: geheilt }
+        }
+      }
+      // B-46 — die erklaerten Merkmale. Leer und fehlend bedeuten dasselbe
+      // („nicht erklaert"); zwei Schreibweisen dafuer liessen jeden Vergleich
+      // zweimal danach fragen.
+      if (item.kann !== undefined) {
+        const geheilt = normalisiereKann(item.kann)
+        item = geheilt ? { ...item, kann: geheilt } : ((({ kann: _weg, ...rest }) => rest)(item) as EquipmentItem)
       }
       // S-3 — die erklaerte Befehlszeile. Eine Vorlage, die die Pruefung
       // nicht besteht (kein {out}, kein {in}, unbekannter Platzhalter),

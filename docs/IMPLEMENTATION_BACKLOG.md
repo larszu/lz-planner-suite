@@ -1922,6 +1922,291 @@ belegbar, dort sind sie erprobt.
   Beleg festgehalten, auch der gescheiterte; und der Plan wird dabei nicht
   nachgezogen, weil sonst die Abweichung unsichtbar wird.
 
+### B-44 · Touch, Schliessen, Umbruch — die Bedienung selbst
+
+* **Status:** Teil 1 (Schliessen) und Teil 2 (Touch) GEBAUT — `cable#780`.
+  Teil 3 (Umbruch) offen, jetzt gemessen (siehe Befund 3). **Wunsch des
+  Eigentümers, 2026-09-08:** „Die ganze Anwendung ist auch noch nicht touch
+  optimiert. Menüs schließen ist auch nicht immer intuitiv. Oft muss man auf
+  ein x klicken und nicht auch in eine leere Fläche. Und auch nicht alles ist
+  responsive."
+
+* **Befund 1 — Schliessen (GEMESSEN 2026-09-08, cable-planner).** Es gibt
+  `components/shared/ModalShell.tsx`, und der kann es: `closeOnBackdrop`
+  steht dort auf `true` als Vorgabe, dazu Escape, Focus-Trap und
+  Fokus-Rückgabe über `useDialogA11y`. Benutzt wird er von den grossen
+  Dialogen aber nicht — **24 Dateien bauen ihr Overlay selbst** (`fixed
+  inset-0`), und **sechs davon hatten keinerlei Behandlung des
+  Hintergrund-Drucks**: `LibraryPanel` (zwei Unter-Dialoge),
+  `CableLibraryPanel`, `CableDialog`, `RackBuilderDialog`,
+  `RackImageCropDialog`, `NewRentmanDeviceWizard`.
+* **KORREKTUR zur ersten Fassung dieses Eintrags (2026-09-08).** Hier stand
+  **15**, und die Zahl war falsch: das Suchmuster verlangte den Bezeichner
+  `onClose`, und die Hälfte der Dialoge nennt ihre Schliessfunktion `close`,
+  `onCancel` oder `setOpen(false)`. Sie steht hier trotzdem, weil sie beinahe
+  zu einem Rasenmäher-Umbau geführt hätte — und weil die Berichtigung den
+  Befund erst scharf macht: **die sechs, die wirklich fehlten, sind ausnahmslos
+  Dialoge mit Entwurf.** Genau dort ist ein „schliesst einfach" am
+  gefährlichsten, und genau deshalb ist der Schutz unten keine Kür.
+  Das ist also **kein fehlendes Bauteil, sondern ein nicht benutztes** — und
+  damit die billigste Sorte Reparatur, solange man sie nicht mit dem
+  Rasenmäher macht.
+* **GEBAUT (`cable#780`).** `hooks/useBackdropClose.ts` ist die eine Stelle,
+  an der die Regel steht; `ModalShell` gibt seine eigene Fassung der Bedingung
+  dafür auf, sonst wären es `zwei-rechnungen`. Die Entscheidung selbst ist
+  eine reine Funktion (`backdropEntscheidung`), damit sie ohne
+  Render-Umgebung prüfbar ist. Gehorcht wird auf **`mousedown`, nicht
+  `click`** — sonst schliesst eine Textmarkierung, die man über den Rand
+  hinauszieht, den Dialog. Ergebnis: alle **26 Overlays in 24 Dateien**
+  schliessen auf dem Hintergrund, **sieben** fragen vorher, weil sie einen
+  Entwurf halten. Der Wächter (`tests/dialogSchliessen.test.ts`) hält **keine
+  Zahl** fest, sondern die Frage — trägt das Element mit `fixed inset-0`
+  selbst eine Behandlung? Eine Zahl wäre nach dem nächsten neuen Dialog
+  falsch, ohne dass jemand es merkt.
+* **Und der Grund, warum ein Rasenmäher hier falsch wäre:** ein Dialog, der
+  eine begonnene Eingabe hält, darf bei einem Fehlklick daneben NICHT
+  zumachen. Wer im `RackBuilderDialog` zwanzig Höheneinheiten bestückt hat
+  oder im `NewRentmanDeviceWizard` auf Seite drei steht, verliert sonst
+  Arbeit — und das ist schlimmer als ein Kreuz, das man suchen muss. Die
+  Regel muss deshalb lauten: **Hintergrund-Klick schliesst, ausser der Dialog
+  hält ungesicherte Eingaben; dann fragt er.** Genau das ist zu bauen, nicht
+  ein `onClick={onClose}` an fünfzehn Stellen.
+* **Befund 2 — Touch.** Keine einzige Stelle im Renderer fragt
+  `pointer: coarse` ab; die einzigen Touch-Behandlungen sind
+  `CanvasArea.tsx` (Pan/Zoom, `clientX/Y` für Maus ODER Touch) und
+  `PanelWindowMenu.tsx` (`touchAction: 'none'`). Alles andere ist auf Maus
+  gebaut: Hover-Menüs, Drag-Griffe von wenigen Pixeln, Kontextmenüs auf
+  Rechtsklick. **Zu messen, bevor gebaut wird:** wie viele Bedienelemente
+  unter der 44-px-Marke liegen und wo eine Funktion NUR über Hover oder
+  Rechtsklick erreichbar ist — eine Funktion ohne Touch-Weg ist auf einem
+  Tablet nicht vorhanden.
+* **GEMESSEN, dann GEBAUT (`cable#780`).** Die Messung fand **drei**
+  Bedienreihen, die nur per `group-hover` erschienen (Bibliotheks-Eintrag,
+  Rack-Karte, Gruppen-Karte — dort sitzen „Bearbeiten" und „Löschen"), und
+  **drei** Funktionen, die ausschliesslich am Rechtsklick hingen
+  (Kabel-Wegpunkt, Ebenen-Chip, Seitenverweis-Knoten). **Ersatz: null.** Diese
+  sechs Funktionen waren auf einem Tablet nicht schwer erreichbar, sondern
+  nicht vorhanden.
+  * `.cp-hover-actions` in `index.css` mit `@media (pointer: coarse)` — die
+    Regel steht dort, weil die Abfrage genau die Frage beantwortet, um die es
+    geht: *kann dieses Gerät überhaupt schweben?* `:focus-within` bleibt,
+    sonst entstünde dieselbe Lücke für die Tastatur.
+  * `hooks/useLongPress.ts` — der Rechtsklick für Geräte, die keinen haben.
+    Auf `pointerdown` statt `touchstart`, weil ein Stift auf einem
+    Grafiktablett genau der Fall ist, in dem jemand zeichnet und kein Menü
+    bekommt; die Maus ist ausgenommen, sie hat ihren Rechtsklick. **Zwei
+    Bedingungen, beide müssen halten:** ≥ 500 ms gedrückt UND dabei < 10 px
+    gewandert — auf einem Canvas ist „gedrückt halten" der Anfang von fast
+    allem, und ein Menü, das bei jedem begonnenen Zug aufgeht, ist schlimmer
+    als keines. Gemessen wird **schräg** (`Math.hypot`), nicht je Achse: 8 und
+    8 sind einzeln unter 10, zusammen 11,3.
+  * **Die eine Stelle, die es nicht bekommt,** ist der Kabel-Wegpunkt: dort
+    sitzt auf demselben `pointerdown` schon das Ziehen, ein langer Druck
+    daneben hiesse „wer zögert, hat gelöscht". Sie steht im Wächter als
+    benannte Ausnahme, samt einer Zusicherung, die verlangt, dass die Ausnahme
+    gestrichen wird, sobald sie gelöst ist — sonst hält der Nächste eine
+    erledigte Sache für offen. Der Weg dorthin ist ein sichtbarer kleiner
+    Löschgriff auf grobem Zeiger, und der ist **offen**.
+  * **Was die 44-px-Marke angeht:** sie ist NICHT gemessen worden. Eine
+    Trefferfläche misst man am gerenderten Element, nicht an Klassennamen —
+    `px-1 py-0.5` sagt nichts über die Fläche, solange Zeilenhöhe, Icon-Grösse
+    und `gap` mitreden. Hier eine Zahl aus dem Quelltext zu erfinden wäre
+    schlimmer als keine: sie sähe aus wie eine Messung. Der Weg dafür ist der
+    laufende Renderer (`ui:smoke` treibt ihn ohnehin), und er ist offen.
+* **Befund 3 — Umbruch (GEMESSEN 2026-09-08, cable-planner/src/renderer).**
+  Der Verdacht stimmt, und in einem Punkt ist es schärfer als vermutet:
+  * **63 feste `max-w-*`-Breiten — und KEINE EINZIGE Breakpoint-Fassung
+    davon.** `sm:max-w-`, `md:max-w-`, `lg:max-w-`, `xl:max-w-` kommen im
+    ganzen Renderer **null** mal vor. Keine dieser Breiten ändert sich also
+    jemals mit der Fensterbreite; auf einem schmalen Gerät steht der Dialog
+    genau so breit da wie auf dem Desktop.
+  * **19 Raster mit `grid-cols-3` bis `-9`**, davon **14 in 13 Dateien ohne
+    jede Breakpoint-Fassung**. Die übrigen 17 Dateien haben Umbruchpunkte —
+    das Werkzeug ist also da und wird nur nicht durchgehend benutzt, was die
+    Reparatur billig macht.
+  * Die Mobile-Ansicht (`src/mobile/`) ist davon nicht betroffen — sie ist
+    eigenständig gebaut.
+  * **KORREKTUR zu einer Zwischenzahl.** In der Sitzung standen zuerst „52
+    feste Breiten und 18 Raster". Das war ein anderes Muster (es zählte auch
+    `max-w-full`/`-none` nicht mit und griff Dateien statt Vorkommen ab). Die
+    Zahlen oben sind die nachgezählten; die alte steht hier, damit niemand die
+    Differenz für eine Veränderung am Code hält.
+* **Reihenfolge:** (1) Schliessen — ERLEDIGT; (2) Touch — ERLEDIGT bis auf
+  den Löschgriff am Kabel-Wegpunkt und die 44-px-Messung am gerenderten
+  Element; (3) Umbruch — OFFEN, und zwar als Regel und nicht als Sweep: eine
+  Breite ohne Breakpoint ist kein Fehler an sich (ein Bestätigungsdialog darf
+  schmal bleiben), ein **Dialog mit Eingabefeldern** ohne einen ist einer. Der
+  Wächter muss also fragen, was der Dialog enthält, nicht bloss zählen.
+* **Aufwand:** (1) mittel — erledigt, (2) klein — erledigt, (3) gross.
+
+### B-45 · Stromplanung, die diesen Namen verdient
+
+* **Status:** offen. **Wunsch des Eigentümers, 2026-09-08:** „Zudem fehlen
+  noch die Möglichkeiten für ordentliche Stromplanung. Powerlock Kabel zieht
+  man einzeln. Die müssen auch die Adern Farben bekommen. Und auch
+  Lichtschalter und so müssen integrierbar sein."
+
+* **Was schon steht (gemessen 2026-09-08):**
+  * `types/circuit.ts` + `lib/circuitSolver.ts` (aus `cable#771`) kennen
+    **Einspeisung, Aus-Schalter, Wechselschalter, Kreuzschalter, Dimmer,
+    Leuchte und Klemmstelle**, jeweils mit Klemmennummern am Port statt an
+    der Port-Reihenfolge. Bedienbar in
+    `components/Properties/sections/CircuitSection.tsx`. **Der Wunsch
+    „Lichtschalter und so" ist damit im Kern erfüllt** — was fehlt, ist die
+    Fortsetzung: Schütz/Relais, Taster mit Stromstossschalter, Not-Aus,
+    Fehlerstrom- und Leitungsschutzschalter als eigene Bauarten.
+  * `powerPhase` (L1/L2/L3) am Gerät, `powerConsumptionWatts`,
+    `types/powerStandard.ts`, und `Powerlock`, `CEE16/32/63`, `Socapex`,
+    `Harting`, `PowerCON`, `Schuko`, `IEC` als Steckertypen.
+* **Was fehlt — und das ist der Kern des Wunsches: DIE EINZELADER.** Heute
+  ist ein Kabel im Plan **eine** Verbindung von Port zu Port. Powerlock ist
+  aber genau das nicht: man zieht **je Leiter ein eigenes Kabel**, und
+  welcher Leiter das ist, steht in seiner Farbe. Ein 400-A-Anschluss sind
+  fünf einzelne Leitungen — L1, L2, L3, N, PE —, jede mit eigener Länge,
+  eigenem Weg und eigenem Steckerpaar. Wer das als „ein Kabel" plant, hat
+  weder die richtige Stückliste noch das richtige Gewicht noch die richtige
+  Ziehliste; und auf der Baustelle liegen fünf Leitungen, von denen der Plan
+  eine kennt.
+* **Und die Farbe ist keine Kosmetik.** Sie ist die einzige Angabe, an der
+  auf der Baustelle hängt, welcher Leiter wohin gehört. Ein vertauschter
+  Aussenleiter dreht ein Drehfeld; ein als N gezogener Aussenleiter ist eine
+  Gefahr. Die Farbe gehört deshalb an die Ader, nicht an eine Beschriftung,
+  und sie muss auf die Ziehliste, auf das Kabel-Etikett und in die Prüfung.
+* **Was zu klären ist, bevor gebaut wird (nicht zu raten):**
+  * **Farbnorm.** Welche Zuordnung gilt für dieses Haus? Die deutsche
+    Neuinstallation, die alte Farbgebung mit anderen Aussenleiter-Farben und
+    die nordamerikanische Zuordnung sind drei verschiedene Sätze, und ein
+    falsch voreingestellter kostet mehr, als er spart. **Deshalb: keine
+    eingebaute Vorgabe raten** — die Norm wird gewählt, und die Auswahl
+    trägt ihre Herkunft im Klartext (dieselbe Regel wie bei den
+    Text-Protokoll-Vorlagen, Invariante 18).
+  * **Powerlock-Kodierung.** Die Farbringe und die mechanische Kodierung der
+    Powerlock-Steckverbinder (Quelle/Senke, Erde-Sonderform) stehen im
+    Herstellerdokument. Sie aus dem Gedächtnis einzutragen wäre genau der
+    Fehler, den Invariante 18 benennt — bis ein Dokument vorliegt, trägt der
+    Nutzer die Kodierung ein.
+* **Vorschlag für die Bauform:** ein Kabel bekommt optional **Adern**
+  (`conductors`), jede mit Rolle (L1/L2/L3/N/PE, oder frei) und Farbe. Für
+  ein normales Kabel bleibt das Feld leer und alles ist wie heute. Für den
+  Einzelader-Fall gibt es eine **Bündel-Beziehung**: fünf Kabel, die
+  denselben Anschluss bilden, wissen voneinander — damit Stückliste,
+  Ziehliste und Prüfung sie als eine Sache zeigen können und die Prüfung
+  merkt, wenn eine Ader fehlt. Vier gezogene Leitungen bei fünf geplanten
+  sind der Fehler, den ein Plan finden muss.
+* **Aufwand:** gross.
+
+### B-46 · Steck- und Kabeladapter als eigene Objekte
+
+* **Status:** GEBAUT — `cable#781`. **Wunsch des Eigentümers, 2026-09-08:**
+  „Ebenso fehlen Steck und Kabeladapter wie zum Beispiel Micro HDMI auf HDMI
+  Adapter oder USB C auf DisplayPort."
+
+* **Befund (gemessen 2026-09-08):** Adapter kommen im Code nur als **Text in
+  Warnungen** vor — `types/cableSpec.ts` sagt „… need an adapter" und „use a
+  matching cable/adapter". Ein Adapter als Objekt gibt es nicht. Damit ist er
+  auch nicht in der Stückliste, nicht im Gewicht, nicht in der Kiste und
+  nicht auf der Packliste — und genau daran scheitert ein Aufbau: das Kabel
+  ist da, der Adapter nicht.
+* **KORREKTUR zu diesem Befund (2026-09-08, beim Bauen nachgemessen).** Der
+  letzte Satz stimmt nicht. `lib/planDemandExtras.ts` **leitet seit Bedarf 17
+  Adapter-Zeilen für die Kommissionierliste ab** — aus `cable.needsConverter`
+  und aus ungleichen LWL-Steckertypen. Auf der Packliste stand der Adapter
+  also sehr wohl.
+  Die Korrektur macht den eigentlichen Befund erst scharf, statt ihn zu
+  entkräften: die abgeleitete Zeile heisst „Adapter HDMI ↔ USB-C", **weil
+  zwei Steckertypen nicht zusammenpassen**. Sie ist aus dem MANGEL gebaut und
+  nicht aus einer Angabe — genau der Schluss, den ADR-002 für folgenreiche
+  Entscheidungen ausschliesst. Sie kann deshalb nicht sagen, in welche
+  Richtung der Adapter geht, was er durchlässt oder ob er Strom braucht, und
+  sie liegt nirgends im Signalweg. Was fehlte, war nicht die Zeile, sondern
+  **das Ding**.
+* **Und `Micro-HDMI` fehlt sogar als Steckertyp.** `ALL_CONNECTOR_TYPES`
+  kennt `HDMI` und `Mini-HDMI`, aber nicht `Micro-HDMI` (Typ D) — das
+  Beispiel des Eigentümers lässt sich heute nicht einmal benennen.
+* **Warum ein Adapter kein Kabel mit zwei Enden ist.** Er ist eine
+  **Wandlung** und trägt drei Aussagen, die ein Kabel nicht trägt:
+  1. **Richtung.** USB-C auf DisplayPort geht in genau eine Richtung und nur,
+     wenn die Quelle den DisplayPort-Alternate-Mode kann. Ein Adapter, den
+     der Plan als „passt" zeichnet, obwohl der Rechner es nicht kann, ist die
+     gefährlichste Sorte grüner Haken.
+  2. **Grenze.** Ein passiver Adapter kann die Bandbreite begrenzen; ein
+     aktiver braucht Strom. Beides gehört an das Objekt, nicht in eine
+     Fussnote.
+  3. **Er liegt im Weg.** Der Signalweg (`lib/signalChain.ts`) muss ihn als
+     Station kennen, sonst rechnet die Formatprüfung an ihm vorbei.
+* **GEBAUT (`cable#781`).** `types/adapter.ts` trägt die `AdapterSpec` am
+  Gerät (`EquipmentItem.adapter`): die beiden Steckerseiten, Richtung,
+  Speisung, die durchgelassene Höchst-Grenze und was der Adapter an der
+  Quelle voraussetzt. Damit fallen Stückliste, Packliste, Signalweg und
+  Formatprüfung ohne Sonderbehandlung an.
+  * **DREI Urteile und nicht zwei** — `passt`, `passt-nicht`, `offen`. Die
+    dritte ist die, um die es geht: „trägt nicht" und „ist nicht erklärt"
+    sehen auf dem Blatt gleich aus und bedeuten das Gegenteil. Wer sie
+    zusammenwirft, macht aus jeder Lücke einen Fehler oder aus jeder Lücke
+    ein OK; die zweite Richtung ist die gefährliche. Das steht jetzt als
+    **Invariante 21** in `docs/architecture.md`.
+  * **Der Fall aus dem Wunsch.** „USB-C auf DisplayPort" arbeitet nur an
+    einem Anschluss mit DisplayPort-Alternate-Mode. Das **Quellgerät**
+    erklärt das unter `kann`; steht dort nichts, lautet das Urteil `offen`.
+    Aus dem Modellnamen darauf zu schliessen wäre der Namensabgleich aus
+    ADR-002, und die falsche Antwort ist hier ein grüner Haken auf einer
+    Strecke, die schwarz bleibt.
+  * **Der halbe Datensatz.** Ohne Heilung ist `spec.richtung === 'unbekannt'`
+    bei einem fehlenden Feld schlicht `false`, und die Beurteilung fällt bis
+    ans Ende durch — auf `passt`. `normalisiereAdapter` setzt deshalb auf
+    `unbekannt` **herunter**, statt stehen zu lassen.
+  * **Standards nur innerhalb ihrer Familie.** „Ist HDMI-2.0 mehr als
+    DP-1.4?" hat keine Antwort, die stimmt; `vergleicheStandard` sagt dann
+    `nicht-vergleichbar`, und die erfundene Zahl steht nicht in einem Befund.
+  * **`Micro-HDMI` (Typ D)** ist Steckertyp — vorher stand er nur in einem
+    Kommentar. Die `Record<ConnectorType, string>`-Farbtabelle hat die
+    fehlende Farbe beim Übersetzen gemeldet, wie sie soll.
+  * **Signalweg**: eigene Station `adapter` und nicht `converter` — sonst
+    stünde „Wandler" an einer Stelle, an der ein Steckadapter sitzt, und wer
+    den Weg abgeht, sucht ein Gerät mit Netzteil.
+  * **Packliste**: ein erklärter Adapter verdrängt die geratene Zeile,
+    sonst wäre es `zwei-rechnungen` und die Kommissionierung packt zwei.
+* **Was offen bleibt:** die Fortsetzung aus der Bauform-Frage — ob ein
+  Adapter mit mehr als einem Ausgang (Splitter im Steckergehäuse) eine eigene
+  Bauart braucht. Heute endet der Weg dort als `mehrdeutig`, benannt.
+* **Aufwand:** mittel — erledigt.
+
+### B-47 · Der Monitor weiss, was er kann — ein virtuelles EDID
+
+* **Status:** offen. **Wunsch des Eigentümers, 2026-09-08:** „Auch sind
+  Monitore noch nicht intelligent. Man bräuchte quasi auch ein virtuelles
+  EDID."
+
+* **Befund (gemessen 2026-09-08):** Der Begriff EDID kommt im gesamten
+  Quelltext nicht vor. Ein Monitor trägt genau **ein** Feld zu dem, was er
+  kann: `resolution?: string` — eine Zeichenkette, mit der nichts gerechnet
+  wird. `types/videoFormat.ts` kennt Formate und `SdiCapabilities` für die
+  SDI-Seite; für Displays gibt es kein Gegenstück.
+* **Was ein virtuelles EDID im PLANER leistet — und was nicht.** Es ersetzt
+  nicht die Aushandlung am Kabel; die passiert zwischen zwei Geräten und
+  nicht in einer Planungssoftware. Es beantwortet die Frage, die man vorher
+  stellt: **kommt das Bild dort an, das ich schicken will?** Also: welche
+  Timings, Bildwiederholraten, Farbtiefen und HDR-Fassungen die Senke
+  erklärt — und ob die Quelle, das Kabel, der Adapter (B-46) und jede
+  Zwischenstation auf dem Weg das tragen. Das ist dieselbe Rechnung wie beim
+  Prüfbild-Weg (B-42), nur mit Formaten statt mit Kreuzpunkten.
+* **Der Fallstrick, den es zu vermeiden gilt.** Ein Feld namens „EDID", das
+  eine Zeichenkette hält, sähe nach einer Zusicherung aus und wäre keine. Und
+  eine EDID, die die App **rät** (aus dem Modellnamen, aus der Auflösung),
+  wäre die Defektform, gegen die dieses Repo an sechs Stellen schon steht:
+  eine Vermutung, die als Messung gelesen wird. Also: entweder die
+  Fähigkeiten sind **erklärt** (der Nutzer trägt sie ein oder importiert
+  eine echte EDID-Datei), oder das Gerät sagt „unbekannt" — und ein Weg zu
+  einem unbekannten Ziel ist ein offener Weg, kein grüner.
+* **Woher echte Daten kommen könnten:** eine ausgelesene EDID ist eine
+  128-Byte-Struktur (mit Erweiterungsblöcken), und Auslesewerkzeuge gibt es
+  auf jedem Betriebssystem. Ein Import „Datei rein, Fähigkeiten raus" ist
+  damit machbar — **die Feldbedeutungen gehören aber aus der Spezifikation
+  belegt und nicht aus dem Gedächtnis** (Invariante 18). Bis dahin: erklärte
+  Fähigkeiten von Hand.
+* **Aufwand:** gross. Sinnvoll erst nach B-46, weil der Adapter die
+  interessanteste Station auf dem Weg ist.
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden

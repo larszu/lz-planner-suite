@@ -3436,6 +3436,10 @@ export const en: Dict = {
   'canvas.hubSwitch.title': 'Switch path',
   'canvas.hubSwitch.warning':
     'This is an intervention in the live installation, not a display. Only the crosspoints listed below are sent; every other output stays untouched. The plan does not change.',
+  'canvas.hubSwitch.warningSimulator':
+    'The target is a test rig, not an installation. The emulator acknowledges like a switcher, but there is no signal behind the switched output \u2014 the trial shows that the command is built correctly, and nothing beyond that. The record notes that it was the test rig.',
+  'canvas.hubSwitch.warningMixed':
+    'CAUTION: this path runs across devices with different targets \u2014 one of them is the live installation.',
   'canvas.hubSwitch.nothing':
     'No path from this source runs through a router — there is nothing to switch.',
   'canvas.hubSwitch.pick': 'Where should the image go?',
@@ -3456,7 +3460,20 @@ export const en: Dict = {
   'switching.summaryCount': '{n} of {total} outputs',
   'switching.summaryNone': 'cannot switch',
   'switching.unset': 'not planned',
+  // B-44 — der Hintergrund schliesst, und wo ein Entwurf liegt, wird gefragt.
+  'common.closeUnsaved': 'Close dialog and discard your input?',
+  'common.closeUnsavedBody': 'Anything not yet applied here will be lost.',
+  'common.closeDiscard': 'Discard',
+  'common.closeKeep': 'Keep editing',
+  'cableDialog.closeUnsaved': 'Discard cable settings?',
+  'graphml.closeUnsaved': 'Discard import?',
+  'greengo.importOverlay.close': 'Discard import?',
+  'library.closeUnsaved': 'Cancel creating and discard your input?',
+  'rackBuilder.closeUnsaved': 'Discard rack draft?',
+  'rackCrop.closeUnsaved': 'Discard image crop?',
+  'rentmanWizard.closeUnsaved': 'Cancel the wizard and discard your input?',
   'switching.protocol': 'Control protocol',
+  'switching.target': 'Target',
   'switching.protocolNone': 'none \u2014 nothing will be sent',
   'switching.protocolHint':
     'Without a protocol nothing is sent to this device. Which one a device speaks cannot be read off its name \u2014 a device called \u201cVideohub spare\u201d would otherwise get a Videohub command, and nobody knows what is really listening there.',
@@ -3521,6 +3538,29 @@ export const en: Dict = {
     'This device has no connectors. Without them no line can be attached, and the circuit stays empty at this point.',
   'circuit.terminalHint':
     'The terminal belongs to the connector, not to its position in the list — reordering does not rewire the circuit.',
+  // B-46 — die Adapter-Angaben am Geraet (Eigenschaften-Panel).
+  'adapter.title': 'Adapter',
+  'adapter.none': 'not an adapter',
+  'adapter.isAdapter': 'This device is an adapter',
+  'adapter.noneHint':
+    'An adapter belongs in the plan as a device of its own — otherwise it is neither in the signal path nor on the pick list, and it is missing on the build day.',
+  'adapter.von': 'Side facing the source',
+  'adapter.nach': 'Side facing the sink',
+  'adapter.richtung': 'Direction',
+  'adapter.speisung': 'Power',
+  'adapter.grenze': 'Passes at most',
+  'adapter.grenzeNone': 'not declared',
+  'adapter.grenzeHint':
+    'Two HDMI adapters that look alike can be 1.4 and 2.1. Without the entry the plan does not check the ceiling — but it does not claim it holds, either.',
+  'adapter.setztVoraus': 'Requires at the source',
+  'adapter.setztVorausPlaceholder': 'e.g. DisplayPort Alternate Mode',
+  'adapter.setztVorausHint':
+    'If something is entered here, the source device must list it under "Can" — otherwise the plan check says "open" instead of "fits". Two USB-C sockets look the same; only one carries a picture.',
+  'adapter.notiz': 'Note',
+  'adapter.kann': 'Can (declared capabilities of this device)',
+  'adapter.kannPlaceholder': 'DisplayPort Alternate Mode, USB-PD',
+  'adapter.kannHint':
+    'Empty means "not declared", not "cannot". The plan says exactly that, instead of putting a green tick on a path that stays black.',
   // E-3 — die Anlagen-Zugangscodes hinter einem eigenen Code.
   'mobile.dialog.pincode': 'Make system access codes retrievable',
   'mobile.dialog.pincode.none': 'This project carries no intercom configuration with access codes.',

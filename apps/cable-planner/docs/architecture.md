@@ -5,7 +5,7 @@ Invarianten der App. Sie ist die Pflicht-Lektüre, bevor strukturelle Änderunge
 gemacht werden. Für die interaktive Modul-Übersicht siehe [`app-structure.html`](./app-structure.html),
 für einen Wettbewerber-Vergleich [`comparison.html`](./comparison.html).
 
-Stand: v9.0.1 · ~572 TS/TSX-Module · ~168.4k LOC
+Stand: v8.3.1 · ~610 TS/TSX-Module · ~176.4k LOC
 
 ---
 
@@ -95,7 +95,7 @@ Vier Stores in `src/renderer/store/`. Jeder hat einen klar abgegrenzten Concern.
 
 #### 3.1.1 · Slice-Komposition (#308)
 
-`projectStore.ts` ist intern in **17 Slices** unter `src/renderer/store/slices/`
+`projectStore.ts` ist intern in **19 Slices** unter `src/renderer/store/slices/`
 zerlegt, die alle in den Haupt-Store komponiert werden:
 
 ```
@@ -753,6 +753,52 @@ Das Wichtigste in Listenform. Niemals brechen ohne expliziten Architektur-Review
     Und die Rückmeldung bleibt genau: „Companion hat die Aufrufe angenommen"
     ist NICHT „das Gerät hat geschaltet" — was hinter der Schaltfläche
     passiert, meldet Companion an dieser Stelle nicht zurück.
+20. **Ein Befehl an einen Prüfstand ist im Beleg als solcher zu erkennen.**
+    Zum Prüfen, ob ein geschalteter Weg dort ankommt, wo der Plan ihn
+    erwartet, gibt es Emulatoren, die das Protokoll sprechen
+    (`docs/atem-pruefstand.md`). Sie sind die richtige Antwort auf „ich will
+    schalten, aber nicht an der laufenden Anlage" — und sie schaffen genau
+    eine neue Verwechslungsgefahr: eine Probe am Emulator sieht in
+    `project.hubSwitches` aus wie ein Eingriff. Gleiche Uhrzeit, gleicher
+    Gerätename, gleiche Nummern, gleiches „angenommen". Der Datensatz
+    beantwortet aber die Frage „wer hat den Ausgang umgeschaltet?", gestellt
+    nach einer Sendung von jemandem, der nicht dabei war — und eine Probe,
+    die dort als Eingriff steht, schickt ihn an eine Stelle, an der nie
+    jemand war.
+    Deshalb: das Ziel wird **erklärt** (`EquipmentItem.controlTarget`), nicht
+    aus der Adresse geschlossen — ein Prüfstand kann im Produktionsnetz
+    stehen und ein echter Mischer über einen Tunnel auf `127.0.0.1` liegen,
+    und ein Adress-Vergleich wäre derselbe Fehlschluss wie der
+    Namensabgleich aus ADR-002. Es wird an **einer** Stelle angeheftet
+    (`controlActions`, nicht in den rund fünfzehn Bauplätzen der vier
+    Protokolle, wo ein vergessener still auf „Anlage" fiele). Es fährt in
+    jeden Beleg und steht auf dem Blatt. Und die Vorgabe ist „Anlage", weil
+    die beiden Irrtümer nicht gleich viel kosten: ein Beleg, der fälschlich
+    „Anlage" sagt, lässt jemanden nachsehen; einer, der fälschlich
+    „Prüfstand" sagt, lässt ihn es lassen.
+21. **Eine fehlende Angabe ist kein grüner Haken.** Ein Adapter
+    (`types/adapter.ts`, B-46) sitzt im Signalweg und entscheidet, ob eine
+    Strecke überhaupt trägt: „USB-C auf DisplayPort" arbeitet nur an einem
+    Anschluss mit DisplayPort-Alternate-Mode, und zwei USB-C-Buchsen sehen
+    gleich aus. Die Beurteilung hat deshalb **drei** Ausgänge und nicht zwei —
+    `passt`, `passt-nicht` und `offen`. Die dritte ist die, um die es geht:
+    „trägt nicht" und „ist nicht erklärt" sehen auf dem Blatt gleich aus und
+    bedeuten das Gegenteil, das eine ist ein Befund, das andere eine fehlende
+    Angabe. Wer sie zusammenwirft, macht aus jeder Lücke einen Fehler oder aus
+    jeder Lücke ein OK; die zweite Richtung ist die gefährliche.
+    Daraus folgt, wie ein halber Datensatz behandelt wird: `normalisiereAdapter`
+    setzt fehlende Felder auf `unbekannt` **herunter**, statt sie stehen zu
+    lassen. Ungeheilt wäre `spec.richtung === 'unbekannt'` schlicht `false`,
+    die Beurteilung fiele bis ans Ende durch — auf `passt` —, und ein
+    fehlendes Feld ergäbe genau den grünen Haken, den diese Invariante
+    verbietet.
+    Und keine dieser Angaben wird aus den Steckertypen abgeleitet: aus
+    „USB-C auf DisplayPort" folgt nicht, dass der Adapter einweg ist, aus
+    „HDMI auf HDMI" nicht, dass er 2.1 durchlässt. Das ist derselbe
+    Fehlschluss wie der Namensabgleich aus ADR-002, nur mit Steckern statt
+    Namen. Standards werden aus demselben Grund nur **innerhalb ihrer
+    Familie** verglichen; „ist HDMI-2.0 mehr als DP-1.4?" hat keine Antwort,
+    die stimmt, und die erfundene stünde danach in einem Befund.
 
 ---
 
@@ -763,7 +809,7 @@ Diese Themen sind diskutiert, aber noch nicht entschieden / umgesetzt.
 ### 9.1 · Store-Slicing — **erledigt** ✓ (#308)
 
 Implementiert. `projectStore.ts` von 2178 LOC auf ~1146 reduziert durch
-17 Slices unter `store/slices/`. Siehe §3.1.1.
+19 Slices unter `store/slices/`. Siehe §3.1.1.
 
 ### 9.2 · Komponenten-Splits — **teilweise** ✓ (#306, #307)
 
@@ -816,7 +862,7 @@ optionales Cloud-Backend (`y-websocket`, Auth/Permissions) bleiben offen.
 `vitest` ist eingerichtet (`npm test` / `npm run test:watch`); dazu kommen
 gezielte Node-Checks (`npm run test:crdt`, `npm run test:signaling`), ein
 UI-Smoke-Skript (`npm run ui:smoke`) und ein headless Drag-/Interaktions-Test
-(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~168.4k LOC
+(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~176.4k LOC
 bleibt der Ausbau der Abdeckung wichtig — empfohlene Schwerpunkte:
 - Snapshot-Tests auf `healProjectPositions` mit echten
   Beispiel-Projekt-JSONs.

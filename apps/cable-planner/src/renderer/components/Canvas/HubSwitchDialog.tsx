@@ -13,6 +13,7 @@ import {
   sendebereit,
 } from '../../lib/controlActions'
 import { useTranslation } from '../../lib/i18n'
+import { useBackdropClose } from '../../hooks/useBackdropClose'
 
 /**
  * „Diesen Weg schalten" — der Eingriff am Gerät (B-42 Ink. 3 / S-2).
@@ -78,6 +79,14 @@ export function HubSwitchDialog({ onClose }: { onClose: () => void }) {
   )
   const bereit = sendebereit(plan, verstanden)
 
+  // S-5 — WOHIN dieser Weg geht. Gerechnet aus den Aktionen und nicht aus
+  // einem einzelnen Geraet: ein Weg kann ueber mehrere laufen, und dann ist
+  // die Auskunft „teils Anlage" — nicht „Pruefstand", weil eines davon die
+  // Anlage ist und genau das die gefaehrliche Haelfte waere.
+  const ziele = new Set(plan.actions.map((a) => a.target))
+  const nurPruefstand = plan.actions.length > 0 && ziele.size === 1 && ziele.has('simulator')
+  const gemischtesZiel = ziele.size > 1
+
   const schalten = async () => {
     if (!sendebereit(plan, verstanden) || !gewaehlt) return
     setLaeuft(true)
@@ -112,8 +121,14 @@ export function HubSwitchDialog({ onClose }: { onClose: () => void }) {
     setLaeuft(false)
   }
 
+  // B-44 — der Hintergrund schliesst, aus derselben Quelle wie ueberall.
+  const backdrop = useBackdropClose(onClose)
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+    <div
+      {...backdrop}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6"
+    >
       <div
         ref={panelRef}
         aria-labelledby={titleId}
@@ -124,13 +139,39 @@ export function HubSwitchDialog({ onClose }: { onClose: () => void }) {
           {t('canvas.hubSwitch.title', 'Weg schalten')}
         </h3>
 
-        <PanelHint
-          className="mb-3 rounded border border-cp-danger/50 bg-cp-danger/10 p-2 text-[12px] text-cp-text-secondary"
-          text={t(
-            'canvas.hubSwitch.warning',
-            'Das ist ein Eingriff in die laufende Anlage, keine Anzeige. Gesendet werden nur die unten aufgeführten Kreuzpunkte; alle anderen Ausgänge bleiben unberührt. Der Plan ändert sich dadurch nicht.',
-          )}
-        />
+        {/*
+          S-5 — WELCHE der beiden Warnungen hier steht, haengt am erklaerten
+          Ziel. Sie zu mischen waere schlimmer als jede einzelne: „Eingriff in
+          die laufende Anlage" ueber einer Probe am Emulator liest sich wie
+          eine Warnung, die man schon kennt, und beim naechsten Mal ueberliest
+          man sie auch dort, wo sie stimmt.
+        */}
+        {nurPruefstand ? (
+          <PanelHint
+            className="mb-3 rounded border border-cp-accent/50 bg-cp-accent/10 p-2 text-[12px] text-cp-text-secondary"
+            text={t(
+              'canvas.hubSwitch.warningSimulator',
+              'Ziel ist ein Prüfstand, keine Anlage. Der Emulator quittiert wie ein Mischer, aber hinter dem geschalteten Ausgang liegt kein Signal — die Probe zeigt, dass der Befehl richtig gebaut ist, und nichts darüber hinaus. Der Beleg hält fest, dass es der Prüfstand war.',
+            )}
+          />
+        ) : (
+          <PanelHint
+            className="mb-3 rounded border border-cp-danger/50 bg-cp-danger/10 p-2 text-[12px] text-cp-text-secondary"
+            text={
+              t(
+                'canvas.hubSwitch.warning',
+                'Das ist ein Eingriff in die laufende Anlage, keine Anzeige. Gesendet werden nur die unten aufgeführten Kreuzpunkte; alle anderen Ausgänge bleiben unberührt. Der Plan ändert sich dadurch nicht.',
+              ) +
+              (gemischtesZiel
+                ? ' ' +
+                  t(
+                    'canvas.hubSwitch.warningMixed',
+                    'ACHTUNG: Auf diesem Weg liegen Geräte mit verschiedenen Zielen — eines davon ist die Anlage.',
+                  )
+                : '')
+            }
+          />
+        )}
 
         {wege.length === 0 ? (
           <p className="text-[12px] text-cp-text-muted">
