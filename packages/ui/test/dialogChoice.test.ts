@@ -27,9 +27,15 @@ import { resolve } from 'node:path'
 // Zusage („dismissed importiert nicht") steht an zwei Stellen im Aufrufer,
 // nicht im Dialog.
 //
+// STAND 2026-09-08: die beiden LAGER-Aufrufer sind weiter — sie fragen gar
+// nicht mehr, sondern zeigen eine Vorschau (E-15). Was `dialog.tsx` zusagt,
+// gilt unveraendert und wird hier weiter geprueft; es traegt die zehn
+// uebrigen Aufrufer. Der Lager-Teil dieses Waechters prueft jetzt die
+// schaerfere Nachfolge-Zusicherung, siehe unten.
+//
 // GEGENGEPROBT: `onDone('dismissed')` in Escape/Backdrop zurueck auf
-// `'cancel'` -> rot; die `dismissed`-Rueckkehr in einem der beiden
-// Lager-Dialoge entfernt -> rot.
+// `'cancel'` -> rot; die Vorschau-Verdrahtung in einem der beiden
+// Lager-Dialoge zurueckgebaut -> rot.
 // ---------------------------------------------------------------------------
 
 const lies = (rel: string): string =>
@@ -56,31 +62,51 @@ describe('B-22: Weggehen ist keine Antwort', () => {
     expect(dialog).toMatch(/await choiceDialog\(title, options\)\) === 'ok'/)
   })
 
-  it('beide Lager-Importe brechen bei `dismissed` ab, ohne zu schreiben', () => {
+  it('kein Lager-Import fragt noch per Ja/Nein — er zeigt eine Vorschau', () => {
+    // ABGELOEST, NICHT AUFGEGEBEN (E-15, light#97 / multicam#111).
+    //
+    // Hier stand bis 2026-09-08, dass beide Aufrufer `choiceDialog` benutzen
+    // und bei `dismissed` abbrechen. Das war das ZWISCHENMASS aus suite#154,
+    // und es war fuer genau diesen Tag angekuendigt: „bleibt, bis die
+    // Vorschau es abloest." Sie loest es ab, und dieser Waechter wurde an
+    // einer RICHTIGEN Aenderung rot.
+    //
+    // Ein Waechter, der das tut, wird geaendert statt gelesen — aber nicht
+    // ersatzlos: die Zusicherung dahinter ist dieselbe geblieben und hier
+    // SCHAERFER zu haben. Sie hiess „keine Geste, die ueberall sonst nichts
+    // tut, schreibt in den Bestand". Jetzt gilt: das LESEN einer Datei
+    // schreibt ueberhaupt nichts. Geschrieben wird nur aus einem eigenen
+    // Knopf heraus, den jemand nach den Zahlen drueckt.
     for (const rel of [
       'apps/light-planner/src/inventory/InventoryDialog.tsx',
       'apps/multicam-planner/src/inventory/InventoryDialog.tsx',
     ]) {
+      // OHNE KOMMENTARZEILEN. Der Aufrufer erklaert in seinem Kopf, was er
+      // ABGELOEST hat, und zitiert dabei `window.confirm`. Ein Waechter, der
+      // Prosa liest, ist von einem Satz zu haben — und faellt hier ueber
+      // einen, der ausdruecklich sagt, dass es den Aufruf nicht mehr gibt.
       const src = lies(rel)
-      expect(src, rel).toMatch(/const wahl = await choiceDialog\(/)
-      // Der Abbruch steht VOR dem Schreiben — sonst importiert er doch.
-      const abbruch = src.indexOf("if (wahl === 'dismissed')")
-      const schreiben = src.indexOf('importSnapshot(snap')
-      expect(abbruch, `${rel}: kein Abbruch bei dismissed`).toBeGreaterThan(-1)
-      expect(schreiben, `${rel}: kein Import gefunden`).toBeGreaterThan(-1)
-      expect(abbruch, rel).toBeLessThan(schreiben)
-      // Und `cancel` schreibt weiterhin zusammenfuehrend — der Zweitknopf ist
-      // eine Absicht, kein Abbruch.
-      expect(src, rel).toMatch(/importSnapshot\(snap, wahl === 'ok' \? 'replace' : 'merge'\)/)
-    }
-  })
+        .split('\n')
+        .filter((z) => !/^\s*(\/\/|\*|\/\*)/.test(z))
+        .join('\n')
+      // Keine Ja/Nein-Frage mehr, in keiner der beiden Bauformen.
+      expect(src, rel).not.toMatch(/await confirmDialog\(/)
+      expect(src, rel).not.toMatch(/await choiceDialog\(/)
+      expect(src, rel).not.toMatch(/window\.confirm/)
 
-  it('kein Lager-Import benutzt mehr das zweiwertige confirmDialog', () => {
-    for (const rel of [
-      'apps/light-planner/src/inventory/InventoryDialog.tsx',
-      'apps/multicam-planner/src/inventory/InventoryDialog.tsx',
-    ]) {
-      expect(lies(rel), rel).not.toMatch(/await confirmDialog\(/)
+      // Das Lesen legt die Datei nur BEREIT.
+      expect(src, rel).toMatch(/setPending\(\{ snap, mode: 'merge' \}\)/)
+
+      // Und geschrieben wird genau einmal, mit dem Modus, den die gezeigte
+      // Vorschau gerechnet hat.
+      const schreibstellen = [...src.matchAll(/importSnapshot\(/g)].length
+      expect(schreibstellen, `${rel}: mehr als eine Schreibstelle`).toBe(1)
+      expect(src, rel).toMatch(/importSnapshot\(pending\.snap, pending\.mode\)/)
+
+      // Der Knopf, der sie ausloest, ist ein eigener — und daneben steht
+      // einer, der nichts tut.
+      expect(src, rel).toMatch(/onClick=\{doImportConfirm\}/)
+      expect(src, rel).toMatch(/onClick=\{\(\) => setPending\(null\)\}/)
     }
   })
 })

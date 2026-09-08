@@ -50,18 +50,48 @@ export const inventory: Record<string, string> = {
   // ── Import/Export ────────────────────────────────────────────────────────
   'inventory.import': 'Import',
   'inventory.importErr': 'Not a valid inventory file (avplan-inventory).',
-  // ABWEICHUNG ZU UPSTREAM, UND ZWAR NOETIG. Upstream (light-planner) fragt
-  // mit `window.confirm`, dessen Knöpfe "OK" und "Abbrechen" heißen — dort
-  // steht deshalb "Cancel = merge" im Text, und das stimmt. Die Suite ersetzt
-  // den Aufruf durch `confirmDialog` mit eigenen Beschriftungen ("Ersetzen" /
-  // "Zusammenführen"). Der Satz beschriebe dann einen Knopf, den es nicht mehr
-  // gibt. Die Beschriftungen sagen es jetzt selbst, der Text fragt nur noch.
-  'inventory.importConfirm': 'Replace the existing inventory?',
-  'inventory.importReplace': 'Replace',
-  'inventory.importMerge': 'Merge',
-  'inventory.importBody': 'Merge keeps both. Escape or a click outside changes nothing.',
+  // DIE FRAGE IST WEG, DIE VORSCHAU HAT SIE ABGELOEST (E-15, light#97).
+  //
+  // Hier standen fuenf Schluessel fuer den `choiceDialog` aus suite#154:
+  // `importConfirm`, `importReplace`, `importMerge`, `importBody` und
+  // `importCancelled`. Das war das Zwischenmass — es hat verhindert, dass
+  // Escape und der Klick daneben zusammenfuehren, aber gefragt hat es immer
+  // noch, bevor jemand sehen konnte, worueber er entscheidet. Genau dafuer
+  // war es angekuendigt: „bleibt, bis die Vorschau es abloest". Sie loest es
+  // jetzt ab, und die Schluessel gehen mit — ein Schluessel ohne Aufrufer ist
+  // eine Uebersetzung fuer einen Knopf, den es nicht gibt.
+  //
+  // ABWEICHUNG ZU UPSTREAM, BEWUSST. Dort steht an dieser Stelle ein
+  // Kommentar, der die entfallene Rueckfrage im Wortlaut zitiert
+  // („REPLACE the existing inventory? Cancel = merge."). Diese Kopie hatte
+  // diesen Wortlaut nie: `suite#154` hatte ihn schon durch `choiceDialog`
+  // mit eigenen Beschriftungen ersetzt. Den Satz mitzuvendorieren hiesse,
+  // ueber DIESE Kopie etwas Falsches zu behaupten — deshalb steht hier die
+  // Geschichte dieser Kopie und nicht die der anderen. Der Drift-Guard
+  // meldet die drei Zeilen als „nicht uebernommen"; sie sind mit
+  // `--write-baseline --force` begraben, und das hier ist die Begruendung.
   'inventory.importFull': '{n} objects read but NOT saved: local storage is full. Free some space, then import again.',
-  'inventory.importCancelled': 'Import cancelled — nothing changed.',
+
+  // ── Import-Vorschau (E-15) ───────────────────────────────────────────────
+  'inventory.previewTitle': 'What this import changes',
+  'inventory.previewMerge': 'Merge',
+  'inventory.previewReplace': 'Replace',
+  'inventory.previewMergeHint': 'Carried forward — nothing is dropped.',
+  'inventory.previewReplaceHint': 'The existing inventory is discarded.',
+  'inventory.previewNew': 'new',
+  'inventory.previewChanged': 'changed',
+  'inventory.previewSame': 'unchanged',
+  'inventory.previewRemoved': 'dropped',
+  'inventory.previewUntouched': 'kept',
+  'inventory.previewCancel': 'Cancel',
+  'inventory.previewApply': 'Import',
+  // Der Platzhalter {n} wird vom Aufrufer ersetzt und muss stehen bleiben.
+  'inventory.previewRemoves': '{n} existing records will be dropped. This cannot be undone.',
+  'inventory.previewNothing': 'This file changes nothing in the inventory.',
+  'inventory.sorte.items': 'Items',
+  'inventory.sorte.nodes': 'Locations / cases',
+  'inventory.sorte.sets': 'Sets',
+  'inventory.sorte.units': 'Units',
   // Der Platzhalter {n} wird vom Aufrufer ersetzt und muss stehen bleiben.
   'inventory.importDone': '{n} items imported.',
   'inventory.export': 'Export',

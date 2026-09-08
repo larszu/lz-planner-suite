@@ -23,19 +23,19 @@
     "drift": 25,
     "total": 41,
     "missingUpstream": false,
-    "upstreamSha": "433291970212"
+    "upstreamSha": "40adb1e88a8e"
   },
   "light-planner": {
     "only-upstream": 0,
     "only-suite": 5,
-    "two-way": 17,
+    "two-way": 16,
     "upstream-ahead": 0,
     "suite-ahead": 1,
-    "expected-overlay": 14,
+    "expected-overlay": 15,
     "dead-upstream": 4,
-    "drift": 23,
+    "drift": 22,
     "total": 41,
     "missingUpstream": false,
-    "upstreamSha": "06435b65bb3a"
+    "upstreamSha": "c6f0308d6feb"
   }
 }
