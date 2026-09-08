@@ -94,6 +94,7 @@ export const overview: Record<string, string> = {
   'rundown.audience.department': 'Department',
   'rundown.audience.signage': 'Signage',
   'rundown.audience.showcaller': 'Show caller',
+  'rundown.sheet.gear': 'Gear times',
   'overview.card.crew.title': 'Crew',
   'overview.card.crew.complete': 'complete',
   'overview.card.budget.title': 'Budget',

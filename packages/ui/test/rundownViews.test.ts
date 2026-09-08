@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   GEAR_GONE,
+  NOT_IN_RUNDOWN,
   NO_GEAR_ON_SHEET,
   NO_TIME_ON_SHEET,
   RUNDOWN_AUDIENCES,
+  gearSheet,
   rundownView,
   rundownViewCsv,
 } from '../src/rundownViews'
@@ -208,6 +210,91 @@ describe('Eine Quelle, N Sichten', () => {
   it('rechnet ohne Uhr', () => {
     expect(quelle).not.toContain('new Date')
     expect(quelle).not.toContain('Date.now')
+  })
+})
+
+describe('gearSheet — dasselbe, um neunzig Grad gedreht (B-34)', () => {
+  const FRUEH = item({
+    id: 'r1',
+    cue: '0',
+    title: 'Soundcheck',
+    startMin: 600,
+    durationMin: 90,
+    refs: [{ kind: 'camera', id: 'c1', mentionedAs: 'Kamera 1' }],
+  })
+  const ZEITLOS = item({
+    id: 'r3',
+    title: 'Abbau',
+    startText: 'nach Ende',
+    refs: [{ kind: 'camera', id: 'c1', mentionedAs: 'Kamera 1' }],
+  })
+
+  it('sagt zu jedem Gegenstand, wann er zuerst und wann er zuletzt vorkommt', () => {
+    const blatt = gearSheet(rd([FRUEH, PUNKT]), seed())
+    const kamera = blatt.rows.find((r) => r[0] === 'Kamera 1')!
+    expect(kamera[2]).toBe('10:00')
+    expect(kamera[3]).toBe('14:20')
+    // Die Dauer des LETZTEN Punktes, nicht die Summe: was ein Geraet nach
+    // seinem Auftritt noch braucht, weiss dieser Ablauf nicht.
+    expect(kamera[4]).toBe(20)
+  })
+
+  it('nennt keine Spalte „bis"', () => {
+    // Es gibt keine Endzeit in diesen Daten. Eine Spalte, die so heisst,
+    // waere eine Zusage, die niemand gegeben hat.
+    const blatt = gearSheet(rd([PUNKT]), seed())
+    expect(blatt.headers.some((h) => /^bis$/i.test(h))).toBe(false)
+    expect(blatt.headers).toContain('Letzter Punkt')
+  })
+
+  it('zaehlt zeitlose Punkte, statt sie in die Spanne zu ziehen', () => {
+    const blatt = gearSheet(rd([FRUEH, ZEITLOS]), seed())
+    const kamera = blatt.rows.find((r) => r[0] === 'Kamera 1')!
+    expect(kamera[2]).toBe('10:00')
+    expect(kamera[3]).toBe('10:00')
+    expect(kamera[6]).toBe(1)
+  })
+
+  it('fuehrt auch die Gegenstaende, die in keinem Punkt vorkommen', () => {
+    const blatt = gearSheet(rd([PUNKT]), seed())
+    const leuchte = blatt.rows.find((r) => r[0] === 'Key Host')!
+    expect(leuchte[2]).toBe(NOT_IN_RUNDOWN)
+    expect(leuchte[5]).toBe(NOT_IN_RUNDOWN)
+  })
+
+  it('sortiert nach dem ersten Punkt, die zeitlosen ans Ende', () => {
+    const blatt = gearSheet(rd([FRUEH, PUNKT]), seed())
+    expect(blatt.rows.map((r) => r[0])).toEqual(['Kamera 1', 'Mischer', 'Key Host'])
+  })
+
+  it('ist KEIN sechster Empfaenger', () => {
+    // Die fuenf Sichten sind Spalten-Auswahlen aus einer Zeilenmenge. Dieses
+    // Blatt hat eine andere Zeilenachse; es dort einzureihen machte den
+    // Waechter „genau fuenf Empfaenger" stillschweigend weicher.
+    expect(RUNDOWN_AUDIENCES).toHaveLength(5)
+    expect(quelle).not.toMatch(/'gear'\s*,?\s*\n\s*\]/)
+    expect(gearSheet(rd([PUNKT]), seed())).not.toHaveProperty('audience')
+  })
+
+  it('erfindet keine Zelle, die nicht im Ablauf oder Plan steht', () => {
+    // Dieselbe Regel wie fuer die fuenf Sichten.
+    const erlaubt = new Set<string>([
+      'Kamera 1', 'Mischer', 'Key Host',
+      'Kamera', 'Gerät', 'Leuchte', 'Kabel',
+      '10:00', '14:20', 'Soundcheck', 'Panel', 'Soundcheck, Panel',
+      '20', '90', '0', '', NOT_IN_RUNDOWN, NO_TIME_ON_SHEET,
+    ])
+    for (const zelle of gearSheet(rd([FRUEH, PUNKT]), seed()).rows.flat()) {
+      expect(erlaubt.has(String(zelle)), String(zelle)).toBe(true)
+    }
+  })
+
+  it('traegt Legende und Stand wie jedes andere Blatt', () => {
+    const blatt = gearSheet(rd([PUNKT]), seed())
+    expect(blatt.legend.map((l) => l.column)).toEqual(blatt.headers)
+    const csv = rundownViewCsv(blatt)
+    expect(csv.split('\n')[0]).toContain('ablauf.csv')
+    expect(csv).toContain('Legende')
   })
 })
 

@@ -5,6 +5,7 @@ import {
   Modal,
   parseDelimited,
   previewRundown,
+  gearSheet,
   rundownCoverage,
   rundownFindings,
   rundownFromPreview,
@@ -409,28 +410,39 @@ const AUDIENCE_LABEL: Record<RundownAudience, string> = {
 
 function RundownExports({ rundown, seed }: { rundown: Rundown; seed: SuiteSeed }) {
   const t = useT()
-  const lade = (audience: RundownAudience) => {
-    const view = rundownView(rundown, seed, audience)
-    const blob = new Blob([rundownViewCsv(view)], { type: 'text/csv;charset=utf-8' })
+  const speichere = (name: string, text: string) => {
+    const blob = new Blob([text], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `ablauf-${audience}.csv`
+    a.download = name
     a.click()
     URL.revokeObjectURL(url)
   }
   return (
-    <div className="mb-2 flex flex-wrap gap-1">
+    <div className="mb-2 flex flex-wrap items-center gap-1">
       {RUNDOWN_AUDIENCES.map((a) => (
         <button
           key={a}
           type="button"
           className="av-focus rounded-av-control border border-av-border px-1.5 py-0.5 text-[11px] text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
-          onClick={() => lade(a)}
+          onClick={() => speichere(`ablauf-${a}.csv`, rundownViewCsv(rundownView(rundown, seed, a)))}
         >
           {t(`rundown.audience.${a}`, AUDIENCE_LABEL[a])}
         </button>
       ))}
+      {/* B-34 — abgesetzt, weil es KEIN sechster Empfaenger ist: die fuenf
+          links sind Spalten-Auswahlen aus einer Zeile je Ablauf-Punkt, dieses
+          Blatt hat eine Zeile je Gegenstand. In dieselbe Reihe gestellt liesse
+          es sich fuer eine sechste Sicht halten. */}
+      <span className="mx-0.5 h-3 w-px bg-av-border" aria-hidden />
+      <button
+        type="button"
+        className="av-focus rounded-av-control border border-av-border px-1.5 py-0.5 text-[11px] text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
+        onClick={() => speichere('geraete-zeiten.csv', rundownViewCsv(gearSheet(rundown, seed)))}
+      >
+        {t('rundown.sheet.gear', 'Geräte-Zeiten')}
+      </button>
     </div>
   )
 }

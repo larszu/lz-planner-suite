@@ -9,6 +9,7 @@ import {
   rundownCoverage,
   rundownFindings,
   rundownFromPreview,
+  rundownSchedule,
   suggestMapping,
   type ColumnMapping,
   type RundownFindingKind,
@@ -338,6 +339,89 @@ describe('rundownCoverage — eine Zahl statt eines Befundes', () => {
       total: 5,
       unreferenced: ['Kamera 2', 'Key Host', 'Mischer', 'SDI 1'],
     })
+  })
+})
+
+describe('rundownSchedule — die Umkehrung: wann wird DIESES Objekt gebraucht (B-34)', () => {
+  const dreiPunkte = () =>
+    previewRundown(
+      KOPF,
+      [
+        ['1', 'Soundcheck', '10:00', '90', 'Kamera 1'],
+        ['2', 'Panel', '14:20', '60', 'Kamera 1; Mischer'],
+        ['3', 'Abbau', 'nach Ende', '', 'Kamera 1'],
+      ],
+      ZUORDNUNG,
+      seed(),
+    )
+
+  it('nennt die Punkte eines Objekts in Ablauf-Reihenfolge', () => {
+    const plan = rundownSchedule(rundown(dreiPunkte().items), seed())
+    const k1 = plan.find((o) => o.id === 'c1')!
+    expect(k1.points.map((p) => p.title)).toEqual(['Soundcheck', 'Panel', 'Abbau'])
+    expect(k1.points.map((p) => p.cue)).toEqual(['1', '2', '3'])
+  })
+
+  it('spannt vom fruehesten bis zum spaetesten Punkt MIT Zeit', () => {
+    const k1 = rundownSchedule(rundown(dreiPunkte().items), seed()).find((o) => o.id === 'c1')!
+    expect(k1.firstMin).toBe(10 * 60)
+    expect(k1.lastMin).toBe(14 * 60 + 20)
+    // Die Dauer des LETZTEN Punktes mit Zeit steht daneben, wird aber nicht
+    // aufaddiert: was ein Geraet nach seinem Auftritt noch braucht — Abbau,
+    // Reserve, Umbau —, weiss dieser Ablauf nicht.
+    expect(k1.lastDurationMin).toBe(60)
+  })
+
+  it('zaehlt Punkte ohne lesbare Zeit, statt sie in die Spanne zu ziehen', () => {
+    // „nach Ende" ist keine Zeit. Sie stillschweigend zu ueberspringen waere
+    // die kleinere Luege; sie als Ende zu nehmen die groessere.
+    const k1 = rundownSchedule(rundown(dreiPunkte().items), seed()).find((o) => o.id === 'c1')!
+    expect(k1.pointsWithoutTime).toBe(1)
+    expect(k1.points).toHaveLength(3)
+  })
+
+  it('sagt „kommt vor, aber niemand weiss wann", wenn ALLE Punkte zeitlos sind', () => {
+    const p = previewRundown(KOPF, [['1', 'Ruestzeit', 'offen', '', 'Kamera 2']], ZUORDNUNG, seed())
+    const k2 = rundownSchedule(rundown(p.items), seed()).find((o) => o.id === 'c2')!
+    expect(k2.points).toHaveLength(1)
+    expect(k2.firstMin).toBeNull()
+    expect(k2.lastMin).toBeNull()
+    expect(k2.lastDurationMin).toBeNull()
+  })
+
+  it('fuehrt auch die Objekte, die in KEINEM Punkt vorkommen', () => {
+    // Eine Liste nur der verplanten Objekte laesst den Leser glauben, es
+    // gaebe keine anderen. `points: []` ist eine Aussage, ein fehlender
+    // Eintrag ist keine.
+    const plan = rundownSchedule(rundown(dreiPunkte().items), seed())
+    expect(plan).toHaveLength(5)
+    const ohne = plan.filter((o) => o.points.length === 0).map((o) => o.name)
+    expect(ohne).toEqual(['Kamera 2', 'Key Host', 'SDI 1'])
+  })
+
+  it('zaehlt ein Objekt einmal, auch wenn ein Punkt es zweimal nennt', () => {
+    const p = previewRundown(
+      KOPF,
+      [['1', 'Panel', '14:20', '20', 'Kamera 1; Kamera 1']],
+      ZUORDNUNG,
+      seed(),
+    )
+    const k1 = rundownSchedule(rundown(p.items), seed()).find((o) => o.id === 'c1')!
+    expect(k1.points).toHaveLength(1)
+  })
+
+  it('meldet keine Luecke — auch hier ist es eine Liste und kein Befund', () => {
+    // Derselbe Grund wie bei `coverage`: auf einem halb eingelesenen Ablauf
+    // waere jede Meldung ein Fehlalarm.
+    const plan = rundownSchedule(rundown(dreiPunkte().items), seed())
+    expect(Object.keys(plan[0])).not.toContain('severity')
+    expect(quelle).not.toMatch(/kind: 'never-needed'/)
+  })
+
+  it('kommt mit einem leeren Ablauf zurecht', () => {
+    const plan = rundownSchedule(rundown([]), seed())
+    expect(plan).toHaveLength(5)
+    expect(plan.every((o) => o.points.length === 0 && o.firstMin === null)).toBe(true)
   })
 })
 

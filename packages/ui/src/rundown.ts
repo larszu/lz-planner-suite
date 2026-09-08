@@ -553,6 +553,112 @@ export function rundownFindings(rundown: Rundown, seed: SuiteSeed): RundownFindi
   return out
 }
 
+/**
+ * B-34 — DIE UMKEHRUNG: wann wird DIESES Objekt gebraucht?
+ *
+ *   > Kein Datensatz in keinem der acht Repos kann sagen, WANN ein Gerät,
+ *   > eine Kamera oder ein Fixture gebraucht wird.
+ *
+ * Der Ablauf oben beantwortet die Frage der Regie: „was passiert um 14:20".
+ * Die Frage der Technik ist die andere Richtung — „ab wann brauche ich
+ * Kamera 3, und wann bin ich mit ihr fertig". Beides steht in denselben
+ * Daten; was fehlte, war der Index.
+ *
+ * `rundownCoverage` zaehlt nur, ob ein Objekt ueberhaupt vorkommt. Diese
+ * Funktion sagt, WO — und macht damit aus der Verknuepfung eine Auskunft.
+ *
+ * ─── DREI DINGE, DIE SIE BEWUSST NICHT TUT ────────────────────────────────
+ *
+ * SIE ERFINDET KEINE ZEIT. Ein Punkt ohne lesbare Zeit (`startMin == null`)
+ * geht in `points` ein, aber nicht in `firstMin`/`lastMin`. Ein Geraet, das
+ * NUR in zeitlosen Punkten vorkommt, bekommt deshalb `firstMin: null` — und
+ * das ist die richtige Auskunft: es kommt vor, aber niemand weiss wann. Eine
+ * Spanne, die zeitlose Punkte stillschweigend ueberspringt, sieht aus wie
+ * eine Zusage.
+ *
+ * SIE RECHNET KEINE „BRAUCHT-VON-BIS"-SPANNE MIT PUFFER. `lastMin` ist der
+ * BEGINN des letzten Punktes, nicht sein Ende, und die Dauer wird nicht
+ * addiert. Was ein Geraet nach seinem letzten Auftritt noch braucht — Abbau,
+ * Reserve, Umbau —, weiss dieser Ablauf nicht, und es zu schaetzen hiesse,
+ * eine Dispositionsentscheidung zu treffen, die woanders hingehoert.
+ * `lastDurationMin` steht daneben, damit wer will selbst addieren kann.
+ *
+ * SIE MELDET KEINE LUECKE. Ein Objekt ohne einen einzigen Punkt bekommt eine
+ * leere Liste, keinen Befund — aus genau dem Grund, aus dem `coverage` eine
+ * Zahl ist und kein Befund: auf einem halb eingelesenen Ablauf waere jede
+ * Meldung ein Fehlalarm.
+ */
+export interface ObjectSchedule {
+  kind: RundownRefKind
+  id: string
+  name: string
+  /** Die Ablauf-Punkte, in denen das Objekt vorkommt — in Ablauf-Reihenfolge. */
+  points: ReadonlyArray<{ itemId: string; cue?: string; title: string; startMin?: number }>
+  /** Beginn des fruehesten Punktes MIT lesbarer Zeit; sonst null. */
+  firstMin: number | null
+  /** Beginn des spaetesten Punktes MIT lesbarer Zeit; sonst null. */
+  lastMin: number | null
+  /** Dauer eben dieses spaetesten Punktes, falls die Quelle sie trug. */
+  lastDurationMin: number | null
+  /** Punkte, in denen das Objekt vorkommt, deren Zeit aber unlesbar war. */
+  pointsWithoutTime: number
+}
+
+/**
+ * Der Index Objekt -> Ablauf-Punkte, fuer ALLE Objekte des Seeds.
+ *
+ * Auch fuer die, die nirgends vorkommen: eine Liste, die nur die
+ * verplanten Objekte enthaelt, laesst den Leser glauben, es gaebe keine
+ * anderen. `points: []` ist eine Aussage, ein fehlender Eintrag ist keine.
+ *
+ * Die Reihenfolge der Punkte ist die des Ablaufs, nicht die der Zeit — ein
+ * Ablauf kann Punkte ohne Zeit zwischen zwei zeitlichen tragen, und sie
+ * ans Ende zu sortieren waere eine Behauptung darueber, wann sie liegen.
+ */
+export function rundownSchedule(rundown: Rundown, seed: SuiteSeed): ObjectSchedule[] {
+  const punkteJeObjekt = new Map<string, ObjectSchedule['points'][number][]>()
+  for (const item of rundown.items) {
+    // Ein Punkt, der dasselbe Objekt zweimal nennt, zaehlt einmal — sonst
+    // stuende „Kamera 1" doppelt auf dem Blatt, ohne dass etwas doppelt ist.
+    const gesehen = new Set<string>()
+    for (const ref of item.refs) {
+      const key = `${ref.kind}:${ref.id}`
+      if (gesehen.has(key)) continue
+      gesehen.add(key)
+      const eintrag: ObjectSchedule['points'][number] = {
+        itemId: item.id,
+        title: item.title,
+        ...(item.cue !== undefined ? { cue: item.cue } : {}),
+        ...(item.startMin !== undefined ? { startMin: item.startMin } : {}),
+      }
+      const liste = punkteJeObjekt.get(key)
+      if (liste) liste.push(eintrag)
+      else punkteJeObjekt.set(key, [eintrag])
+    }
+  }
+
+  const dauerJeItem = new Map(rundown.items.map((i) => [i.id, i.durationMin]))
+
+  return seedObjects(seed).map((o) => {
+    const points = punkteJeObjekt.get(`${o.kind}:${o.id}`) ?? []
+    const mitZeit = points.filter((p) => p.startMin != null)
+    const spaetester = mitZeit.reduce<(typeof mitZeit)[number] | null>(
+      (max, p) => (max == null || (p.startMin as number) > (max.startMin as number) ? p : max),
+      null,
+    )
+    return {
+      kind: o.kind,
+      id: o.id,
+      name: o.name,
+      points,
+      firstMin: mitZeit.length ? Math.min(...mitZeit.map((p) => p.startMin as number)) : null,
+      lastMin: spaetester ? (spaetester.startMin as number) : null,
+      lastDurationMin: spaetester ? (dauerJeItem.get(spaetester.itemId) ?? null) : null,
+      pointsWithoutTime: points.length - mitZeit.length,
+    }
+  })
+}
+
 export interface RundownCoverage {
   /** Wie viele Seed-Objekte in mindestens einem Ablauf-Punkt vorkommen. */
   referenced: number

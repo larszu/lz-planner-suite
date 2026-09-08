@@ -1,6 +1,6 @@
 # Implementierungs-Backlog — AV Planner Suite
 
-**Stand: 2026-09-04.** Gegenstück zu
+**Stand: 2026-09-08.** Gegenstück zu
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md): dort steht, was ist —
 hier, was fehlt.
 
@@ -228,22 +228,62 @@ ist selbst ein Ergebnis.
   `formatVersion` ab, statt sie halb zu lesen. Gedeckt von
   `tests/intercomAustauschformat.test.ts`.
 
-### B-9 · Plan ↔ As-built für die Verkabelung
+### B-9 · ~~Plan ↔ As-built für die Verkabelung~~
 
-* **Status:** offen (hängt an einer Eigentümer-Entscheidung)
+* **Status:** ~~offen (hängt an einer Eigentümer-Entscheidung)~~
+  **erledigt** (2026-09-08, `cable#764`).
 * **Befund:** Für den **Gerätezustand** existiert der Abgleich
   (`lib/atemLiveCompare.ts`, genutzt in Audio-Router- und MV-Dialog). Für die
   **Verkabelung** gibt es die Datenspur (`checkState.ports`, seit `cable#654`
   auch im Plan-Fingerabdruck), aber keine Gegenüberstellung Soll-Kabel gegen
   gesteckte Ports.
-* **Offene Frage:** Wo wohnt der As-built-Zustand — eigene Spur je Feld, oder
-  Plan-Überschreiben mit Revisionen? Entscheidet, ob `Provenance` einen fünften
-  Wert braucht.
-* **Aufwand:** groß
+* **Was schon da war, und warum es den Befund nicht erledigte
+  (nachgesehen 2026-09-08):** `lib/asBuilt.ts` (Bedarf 126, `cable#712`)
+  führt seit Anfang September **vier** Quellen auf einem Blatt zusammen —
+  Netz-Scan, Mischer, Kreuzpunkte, Vermietung. Alle vier befragen **Geräte**.
+  Keines von ihnen weiß, ob ein Kabel steckt; ein Mischer meldet seine
+  Kreuzpunkte, nicht sein SDI-Blech. Die Verkabelung war exakt die fehlende
+  fünfte Quelle — und die Ablesung lag die ganze Zeit im Projekt, sie ging
+  nur in kein Dokument ein.
+* **Gebaut:** `fromCabling(cables, equipment, checkState)` als fünfter
+  Zubringer auf **dasselbe** Blatt (ein zweites „As-built (Kabel)" wäre genau
+  die Vervielfachung, gegen die das Modul gebaut ist). Drei Urteile, und nur
+  drei — `match`, `not-verified`, `unexpected`. `missing` und `differs` sind
+  aus einem **binären** Haken nicht herleitbar: `false` heißt „noch nicht
+  abgehakt", nicht „nicht gesteckt". Der Fall, der die Arbeit trägt, ist
+  `unexpected`: ein Haken an einem Kabel, das der Plan nicht mehr kennt —
+  der Plan hat sich geändert, nachdem die Crew losgezogen ist, und draußen
+  steckt das Kabel weiterhin.
+* **Neues Feld `checkState.receivedAt`:** Das Blatt verlangt zu jeder
+  Ablesung einen Zeitpunkt; `checkState` hatte keinen. Gesetzt wird er in
+  `mobileSyncSlice.setCheckState`, also beim **Empfang** der Handy-Meldung —
+  nicht beim Aufrufer, denn wer ihn setzen darf, kann „nachgesehen"
+  behaupten, ohne nachgesehen zu haben. Bewusst **ohne** Default in
+  `healProjectPositions`: ein altes Projekt hat Haken, deren Alter niemand
+  kennt, und das Blatt sagt dort „nicht nachgesehen" statt eine Zeit zu
+  erfinden.
+* **Die offene Frage ist beantwortet, und zwar rückwirkend:** Gefragt war,
+  wo der As-built-Zustand wohnt — eigene Spur je Feld oder Plan-Überschreiben
+  mit Revisionen — und ob `Provenance` einen fünften Wert braucht.
+  `lib/asBuilt.ts` hat das entschieden, bevor die Frage hier gestellt wurde:
+  der Zustand wohnt in einer **eigenen Spur** (`AsBuiltEntry` mit
+  `ReadingSource`), das Blatt stellt Absicht und Beobachtung nebeneinander
+  und schreibt nichts in den Plan zurück. `Provenance` sagt, woher eine
+  Angabe **im Plan** stammt — eine Ablesung wird nie eine Angabe im Plan.
+  **Kein fünfter Wert.**
+* **Gegengeprobt** (sechs Eingriffe, alle rot, zurückgebaut grün):
+  Port-Haken werden ignoriert · erfundener Zeitpunkt für alte Projekte ·
+  `false` gilt als abgehakt · der Dialog stellt den Zeitpunkt selbst ·
+  kein Stempel beim Empfang · Verkabelung nicht auf dem Blatt.
+* **Aufwand:** ~~groß~~ mittel — der große Teil (das Blatt, die Urteilsregel,
+  das Zusammenführen) stand schon; zu bauen war die fünfte Quelle und ihr
+  Zeitstempel.
 
-### B-10 · Delivery-/Streaming-Kette
+### B-10 · ~~Delivery-/Streaming-Kette~~
 
-* **Status:** offen
+* **Status:** ~~offen~~ **erledigt** (2026-09-08) — die zweite Hälfte war
+  bereits gebaut, der Eintrag war stehengeblieben. Siehe „Was offen
+  blieb" unten.
 * **Befund (korrigiert 2026-09-03):** Die Roadmap führte „nur Katalog-Treffer,
   kein Signalfluss-Modell" — das war falsch. NDI, NDI-HX, Dante, AES67 und
   ST2110-20/30/40 sind vollwertige `SignalStandard`-Mitglieder mit Bandbreite
@@ -259,11 +299,35 @@ ist selbst ein Ergebnis.
   `linkCapacityMbpsForStandard`: ein Ausspielweg ist Last, keine Leitung — die
   Verwechslung genau dieser beiden Begriffe war der Befund hinter
   `tests/netzBudgetLastNichtKapazitaet.test.ts`.
-* **Was offen bleibt:** das **Ziel** jenseits des Hauses. Ein CDN oder ein
-  Streaming-Endpunkt ist kein Gerät im Raum, und der Plan hat heute keinen Ort
-  dafür. Das ist ein Datenmodell-Schritt (wo wohnt ein Ausspielziel, was steht
-  an ihm, wie erscheint es im Signalfluss) und keine weitere Bandbreitenzeile.
-* **Aufwand:** groß
+* **Was offen blieb (Stand 2026-09-04):** das **Ziel** jenseits des Hauses.
+  Ein CDN oder ein Streaming-Endpunkt ist kein Gerät im Raum, und der Plan
+  hatte damals keinen Ort dafür. Das ist ein Datenmodell-Schritt (wo wohnt ein
+  Ausspielziel, was steht an ihm, wie erscheint es im Signalfluss) und keine
+  weitere Bandbreitenzeile.
+* **Nachgesehen 2026-09-08 — das ist inzwischen gebaut, und der Eintrag war
+  schlicht veraltet.** Alle drei Teilfragen sind beantwortet, jede an einem
+  benennbaren Ort:
+  * *Wo wohnt ein Ausspielziel?* — `types/delivery.ts`:
+    `DeliveryDestination` mit `DeliveryTransport` (SRT/RTMP/HLS),
+    `EncodingProfile`, `SrtMode` und `DeliveryPlatform`. Am Projekt hängt es
+    als `project.deliveryDestinations` (`types/project.ts`).
+  * *Was steht an ihm?* — Encoder-Profil, Plattform, Modus; der Stream-Key
+    ausdrücklich **nicht** (der liegt im OS-Credential-Store, das Projekt
+    trägt nur die Tatsache, dass einer hinterlegt ist).
+  * *Wie erscheint es im Signalfluss?* — `lib/deliveryPath.ts`: die Naht ist
+    ein Feld, `encoderEquipmentId` zeigt auf das Gerät, das ausspielt, und
+    von dort läuft die Rückwärtssuche im Kabelgraph (`resolveSignalSource`,
+    ADR-001). Ein Ausspielziel ist damit kein zweiter Graph neben dem Plan,
+    sondern ein Endpunkt **im** Plan.
+  * Dazu die Prüfungen: Machbarkeit des Encoders, Ausweichplan, Parität
+    (`deliveryPath`/`deliveryParity`/`encoderFeasibility`/`fallbackPlan`,
+    zusammen 101 Tests). Gebaut in `cable#703`, `cable#707`, `cable#710`
+    (Bedarfe 30–34, 36).
+* **Lehre für diese Datei:** Ein „was offen bleibt", das nach dem Bau der
+  Sache nicht angefasst wird, ist schlimmer als kein Eintrag — er schickt
+  jemanden los, etwas zu bauen, das schon steht. Wer eine Hälfte erledigt,
+  liest die andere Hälfte des Eintrags mit.
+* **Aufwand:** ~~groß~~ erledigt
 
 ### B-11 · Sechs Kataloge ohne Beleg
 
@@ -501,9 +565,11 @@ ist selbst ein Ergebnis.
 
 ---
 
-### B-21 · Der Versions-Vergleich sieht 6 von 14 Kategorien
+### B-21 · ~~Der Versions-Vergleich sieht 6 von 14 Kategorien~~
 
-* **Status:** offen (Entscheidung beim Eigentümer, siehe E-14)
+* **Status:** ~~offen (Entscheidung beim Eigentümer, siehe E-14)~~
+  **erledigt** (2026-09-08) — beide Hälften: `light#91` (Aussage eingrenzen)
+  und `light#95` (die acht fehlenden Kategorien).
 * **Befund (nachgeprüft 2026-09-04, light-planner):** `diffProjects`
   (`src/core/diff.ts:112-120`) vergleicht genau sechs Kategorien —
   `fixtures`, `persons`, `trusses`, `walls`, `stageElements`, `ceilings`.
@@ -525,6 +591,34 @@ ist selbst ein Ergebnis.
   Unterschiede" darf nicht mehr behaupten, als der Vergleich abdeckt —
   verlustfrei-oder-laut gilt auch für eine Aussage über einen Vergleich.
 * **Aufwand:** klein (Aussage eingrenzen) / mittel (Kategorien ergänzen)
+* **Warum die Eigentümer-Entscheidung doch keine war (2026-09-08):** Die
+  Produktfrage lautete „welche Felder machen eine Änderung aus". Sie ist
+  beantwortbar, ohne zu raten — nämlich aus dem, was die Oberfläche selbst
+  schon als Eigenschaft eines Objekts führt. Zu entscheiden gab es nur einen
+  echten Fall, und der hat eine richtige Antwort: die Reihenfolge in
+  `fixtureGroups.fixtureIds` bedeutet nichts, also wird **sortiert**
+  verglichen. Ohne das hätte jede Umsortierung eine Änderung gemeldet —
+  eine Falschmeldung, die den ganzen Vergleich unglaubwürdig macht, und
+  damit derselbe Schaden wie der ursprüngliche Befund, nur andersherum.
+  Die Gegenprobe dazu steht im Wächter.
+* **Was tatsächlich gebaut wurde:**
+  * Acht neue `FieldSpec`-Sätze; die drei Nicht-Listen (`layers`, `floor`,
+    `sun`) über ein eigenes `diffSingle` — sie haben keine Identität über
+    eine `id`, sondern genau ein Vorher und ein Nachher.
+  * `ALLE_KATEGORIEN` als **die eine Liste**, aus der `total`, die Ansicht
+    (`DiffView.tsx`) und die Zusammenfassung ihre Kategorien ziehen. Vorher
+    stand in der Ansicht eine handgepflegte Zweitliste mit sechs Einträgen,
+    die beim nächsten Zuwachs still veraltet wäre. Ein `satisfies`-Constraint
+    bindet die Liste an die Schlüssel von `ProjectDiff`.
+  * `unnamedDifferences` rechnet jetzt den **Rest** aus statt zu raten: jeder
+    Schlüssel in `ProjectData`, der weder verglichen wird noch in
+    `KEINE_KATEGORIE` steht (vier Ausnahmen, je mit geschriebenem Grund).
+    Damit meldet sich der Vergleich von selbst, wenn jemand ein neues Feld
+    ins Projekt legt und den Vergleich vergisst — der Befund von B-21 kann
+    sich nicht ein zweites Mal unbemerkt bilden.
+* **Gegengeprobt** (alle vier rot, zurückgebaut grün): Szenen wieder ohne
+  Vergleich · eine Kategorie fehlt in `ALLE_KATEGORIEN` · Umsortierung in
+  einer Gruppe gilt als Änderung · zweite Kategorie-Liste in der Ansicht.
 
 ### B-22 · Der Lager-Import kennt kein Abbrechen
 
@@ -918,9 +1012,11 @@ ist selbst ein Ergebnis.
   Provenienz-Register, und das Register prüft beide Richtungen.
 * **Aufwand:** klein bis mittel
 
-### B-34 · Die Zeitachse fehlt in allen acht Repos
+### B-34 · ~~Die Zeitachse fehlt in allen acht Repos~~
 
-* **Status:** offen
+* **Status:** ~~offen~~ **erledigt** (2026-09-08) — in zwei Schritten, von
+  denen der erste schon lag: `suite#142` (Ablauf einlesen und verknüpfen)
+  und der hier (die Umkehrung: wann wird DIESES Objekt gebraucht).
 * **Befund (2026-09-04, Korpus-Durchgang):** **Kein Datensatz in keinem der acht
   Repos kann sagen, WANN ein Gerät, eine Kamera oder ein Fixture gebraucht
   wird.** `cable-planner` führt an Projekt und Gerät nur `updatedAt` und
@@ -939,7 +1035,49 @@ ist selbst ein Ergebnis.
   nicht auf. Das ist eine Eigenschaft der Tabelle, nicht des Bedarfs.
 * **DoD:** Eigentümer-Entscheidung zuerst (E-18) — ob die Suite die Zeitachse
   überhaupt besetzt. Erst danach ein Datenmodell.
-* **Aufwand:** groß
+* **E-18 ist seit 2026-09-07 entschieden: NUR LESEN.** Damit war die DoD-Sperre
+  weg, und `suite#142` hat das Datenmodell gebaut: `packages/ui/src/rundown.ts`
+  (`Rundown`, `RundownItem` mit `startMin`/`durationMin`, `RundownRef` auf
+  Seed-Objekte **über deren Id**, `ref-missing` als Befund) plus fünf
+  Empfänger-Sichten in `rundownViews.ts`. Der Ablauf wird eingelesen, nicht
+  hier geführt — die Autorenschaft bleibt in der Tabelle des Kunden.
+* **Was danach noch fehlte, und wonach der Befund wörtlich fragt:** die
+  **Umkehrung**. Der eingelesene Ablauf beantwortet die Frage der Regie („was
+  passiert um 14:20"). Der Befund fragt die der Technik — „**WANN** wird ein
+  Gerät gebraucht" —, und dafür gab es keinen Index: `rundownCoverage` zählt
+  nur, **ob** ein Objekt überhaupt vorkommt.
+* **Gebaut 2026-09-08:**
+  * `rundownSchedule(rundown, seed)` — je Objekt des Plans die Ablauf-Punkte,
+    in denen es vorkommt, dazu `firstMin`, `lastMin`, `lastDurationMin` und
+    die Zahl der Punkte ohne lesbare Zeit. **Auch für Objekte ohne einen
+    einzigen Punkt:** `points: []` ist eine Aussage, ein fehlender Eintrag
+    ist keine.
+  * `gearSheet(rundown, seed)` — dasselbe als Blatt, mit Legende und
+    Stand-Zeile, über denselben CSV-Schreiber wie die fünf Sichten. In der
+    Shell als Knopf „Geräte-Zeiten", **abgesetzt** von den fünf: es ist kein
+    sechster Empfänger, sondern dieselbe Quelle um neunzig Grad gedreht (eine
+    Zeile je Gegenstand statt je Ablauf-Punkt). In die Empfänger-Liste
+    gestellt hätte es den Wächter „genau fünf Empfänger, Spalten-Auswahlen
+    aus einer Zeilenmenge" stillschweigend weicher gemacht.
+* **Drei Dinge, die das Blatt bewusst nicht behauptet:** Es gibt **keine
+  Spalte „bis"** — `lastMin` ist der BEGINN des letzten Punktes, und wann ein
+  Gerät frei wird, sagt dieser Ablauf nicht; die Dauer eben dieses Punktes
+  steht daneben, aufaddiert wird sie nicht. Punkte ohne lesbare Zeit werden
+  **gezählt**, nicht übersprungen — ein Gegenstand, der nur in zeitlosen
+  Punkten vorkommt, bekommt „ohne Zeit" statt einer erfundenen Spanne. Und es
+  meldet **keine Lücke**: dieselbe Begründung wie bei `coverage` — auf einem
+  halb eingelesenen Ablauf wäre jede Meldung ein Fehlalarm.
+* **Was weiterhin NICHT stimmt und auch nicht soll:** die Planer-Objekte
+  selbst tragen weiterhin kein Zeitfenster (`cable-planner`s `EquipmentItem`
+  hat keine Bedarfs-Spanne, `multicam`s `Shotlist` keine Uhr). Das ist die
+  Folge von E-18 und kein Rest: die Zeit gehört dem Ablauf des Kunden, und
+  sie in jedes Planer-Objekt zu kopieren hieße, sie zweimal zu führen — mit
+  genau der Gabelung, gegen die Bedarf 7 gebaut ist.
+* **Gegengeprobt** (fünf Eingriffe, alle rot, zurückgebaut grün): zeitlose
+  Punkte gehen in die Spanne ein · nur verplante Objekte in der Liste ·
+  doppelte Nennung zählt doppelt · die Spalte heißt wieder „bis" · die Spanne
+  wird aufaddiert statt der Dauer des letzten Punktes.
+* **Aufwand:** ~~groß~~ erledigt
 
 ### B-35 · Vier der acht Repos sind aus der Suite nicht erreichbar
 
@@ -1462,7 +1600,7 @@ gehalten, nicht als Versäumnis:
 | E-1 | Trägt ein vom Modell erfundenes **Kabel** eine Kennzeichnung? `Cable` hat kein `specSource` | eine erfundene Verbindung behauptet mehr als eine erfundene Port-Zahl |
 | E-2 | Intercom-Vokabular: gemeinsames Paket oder `GreenGoConfig` als Wahrheit? | vierter `.avplan`-Slot (B-7) |
 | E-3 | Soll der Techniker vor Ort den **Anlagen-Pincode** über die Mobile-Ansicht bekommen? | `cable#656` hat das Leck geschlossen, die Workflow-Frage nicht beantwortet |
-| E-4 | Wo wohnt der **As-built-Zustand**? | B-9, fünfter `Provenance`-Wert |
+| ~~E-4~~ | ~~Wo wohnt der **As-built-Zustand**?~~ | **beantwortet 2026-09-08 — und zwar rückwirkend, durch Code, der die Frage nicht kannte.** `lib/asBuilt.ts` (Bedarf 126, `cable#712`) hatte die Entscheidung längst getroffen: der As-built-Zustand wohnt in einer **eigenen Spur** — `AsBuiltEntry` mit `ReadingSource` und Zeitpunkt —, das Blatt stellt Absicht und Beobachtung nebeneinander, und in den Plan zurück schreibt es ausdrücklich nichts („was der Hub gerade tut, ist eine Beobachtung, was im Plan steht, eine Absicht"). Damit ist auch die Folgefrage beantwortet: **`Provenance` braucht keinen fünften Wert.** `Provenance` sagt, woher eine Angabe IM PLAN stammt; eine Ablesung wird nie eine Angabe im Plan, sie steht daneben. `cable#764` hat die Verkabelung als fünfte Quelle auf dasselbe Blatt gesetzt (`fromCabling`) und dabei nichts am Modell ändern müssen — das ist der Beleg, dass die Spur trägt. **Lehre:** eine als Eigentümer-Frage geführte Entscheidung kann durch Bauarbeit an anderer Stelle beantwortet werden, ohne dass jemand die Tabelle anfasst. Wer eine Frage hier stehen lässt, prüft, ob der Code sie inzwischen entschieden hat |
 | ~~E-5~~ | ~~Woher kommen **Subnetze** — abgeleitet oder projektweiter Pool?~~ | **entschieden 2026-09-07: BEIDES, als zwei Typen EINES Modells.** Die Frage war falsch gestellt — „abgeleitet ODER Pool" sind keine Alternativen, sondern zwei Sorten Präfix. Nachgesehen an der Quelle, die dieser Planer ohnehin importiert (NetBox, `netbox:*`-IPC): dort steht über der Hierarchie ein **Aggregate** („the portions of IP space that are interesting to us", überschneidungsfrei), darunter **Prefixes**, die ineinander verschachtelt sind. Ein Prefix mit `status: container` „exists merely as a container for organizing child prefixes" — das ist der ABGELEITETE Fall. Ein Prefix mit `is_pool` macht erste und letzte Adresse nutzbar — das ist der POOL-Fall. Beide tragen dieselben Felder: eine funktionale **Rolle** und optional ein **VLAN** („A VLAN may have multiple prefixes assigned to it"). Darunter liegen **IP Ranges** und einzelne Adressen. Und die für uns wichtigste Zeile: **NetBox vergibt nicht selbst.** Es meldet freien Raum, den ein Mensch oder ein API-Aufruf beansprucht; ein als `populated` markierter Range verbietet sogar das Anlegen einzelner Adressen darin, weil ihn ein DHCP von aussen führt. Genau die Haltung, die `addressPlan.ts` heute schon hat — sie bekommt jetzt nur ein Modell darunter statt einer Leerstelle. Quellen: [prefix.md](https://raw.githubusercontent.com/netbox-community/netbox/main/docs/models/ipam/prefix.md), [aggregate.md](https://raw.githubusercontent.com/netbox-community/netbox/main/docs/models/ipam/aggregate.md), [iprange.md](https://raw.githubusercontent.com/netbox-community/netbox/main/docs/models/ipam/iprange.md). **Nicht** als Vorbild genommen: Cisco Packet Tracer — es übt die VLSM-Arithmetik an einer Aufgabe („design a VLSM addressing scheme given a network address and host requirements"), führt aber keinen Adressraum; es ist ein Lehrsimulator und kein Modell, das man abschreiben kann. **GEBAUT 2026-09-07 in `cable#750`** (`types/addressTemplate.ts`, `lib/addressTemplate.ts`) — mit EINER Berichtigung an dieser Zeile: die Art heisst dort `assignable` und ausdruecklich NICHT `pool`. Der Satz oben („ein Prefix mit `is_pool` … das ist der POOL-Fall") liest NetBox' Flag als „hier wird vergeben", und das ist es nicht. Die Quelle sagt woertlich: *„If selected, the first and last IP addresses within the prefix (normally reserved as the network and broadcast addresses, respectively) will be considered usable."* — also eine Aussage ueber ZWEI ADRESSEN, nicht ueber Vergabe. Dieselbe Wortmarke fuer beide Bedeutungen haette ein Import aus NetBox oder einen Export dorthin auf ein gleichnamiges Feld mit anderer Bedeutung abgebildet; der Fehler faellt dann Jahre spaeter auf. `is_pool` gibt es im Code trotzdem — als `firstLastUsable`, mit der geliehenen Bedeutung und ohne den geliehenen Namen, und ein Test prueft die Typ-Union darauf |
 | E-6 | Was zählt als **Beleg** für einen Steckertyp / eine Funkkomponente? | B-11 |
 | E-7 | Liefert der Planer den Pi **direkt** oder bleibt die Datei der Weg? | B-6 |
@@ -1473,7 +1611,7 @@ gehalten, nicht als Versäumnis:
 | E-11 | Soll der Cross-Link bis **in** die eingebetteten Planer reichen? | B-18 — braucht einen gemeinsamen Id-Raum zwischen Shell-Seed-Modell und den Planer-Projekten |
 | E-12 | Wo wohnt Lexware architektonisch — Shell oder Planer? | B-19 — eigene Shell-Domäne (dann braucht Cable es nicht mehr) vs. Preload für den eingebetteten Planer |
 | E-13 | Bleibt die Shell-Vorschau ein eigenständiges Übersichtsmodell? | B-20 — wenn ja, fehlt eine sichtbare Kennzeichnung; wenn nein, müssen die Modelle zusammengeführt werden |
-| E-14 | Welche Kategorien soll der Versions-Vergleich zeigen, und welche Felder machen darin eine Änderung aus? | B-21 — betrifft acht heute unsichtbare Kategorien; `layers`/`floor`/`sun` sind keine Listen und brauchen eine eigene Vergleichsform |
+| ~~E-14~~ | ~~Welche Kategorien soll der Versions-Vergleich zeigen, und welche Felder machen darin eine Änderung aus?~~ | **entschieden 2026-09-08** (`light#95`): **alle vierzehn**, und die Felder sind die, die die Oberfläche ohnehin schon als Eigenschaft eines Objekts führt — da war nichts zu erfinden. Echt zu entscheiden gab es genau einen Fall, und der hat eine richtige Antwort: die Reihenfolge in `fixtureGroups.fixtureIds` bedeutet nichts, also wird **sortiert** verglichen; sonst meldete jede Umsortierung eine Änderung, und das ist derselbe Schaden wie der ursprüngliche Befund, nur andersherum. `layers`/`floor`/`sun` bekamen mit `diffSingle` ihre eigene Vergleichsform — sie sind keine Listen, haben also kein `id`-Paar, sondern genau ein Vorher und ein Nachher. Gegen ein Wiederauftreten steht `ALLE_KATEGORIEN` als einzige Liste (`satisfies` gegen die Schlüssel von `ProjectDiff`) plus ein Rest-Test in `unnamedDifferences`: ein neues Feld im Projekt, das niemand in den Vergleich aufnimmt, meldet sich selbst |
 | E-15 | Wie sieht das **Abbrechen** eines Lager-Imports aus — Drei-Wege-Dialog, Vorschau-Schritt oder Undo für den Lager-Store? | B-22 — heute importieren Escape und Backdrop-Klick still zusammenführend, und der Schreibvorgang ist nicht rücknehmbar |
 | E-16 | Werden `PrintDialog` und `TitleBlock` **verdrahtet** oder **gelöscht**? | B-24 — 21 KB Code und 48 übersetzte Zeichenketten, deren Funktion es woanders schon gibt |
 | E-17 | Welche Sprache ist die Quellsprache von `sony-camera-bridge`? | B-26 — davon hängt ab, ob 32 Stellen übersetzt oder 140 umgeschrieben werden |

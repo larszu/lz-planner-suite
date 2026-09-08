@@ -51,7 +51,7 @@
 // REIN: keine Uhr, kein IO.
 // ───────────────────────────────────────────────────────────────────────────
 
-import type { Rundown, RundownItem, RundownRefKind } from './rundown'
+import { rundownSchedule, type Rundown, type RundownItem, type RundownRefKind } from './rundown'
 import type { SuiteSeed } from './seed'
 
 /** Fuer wen das Blatt ist. */
@@ -213,6 +213,108 @@ export function rundownView(
   }
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// B-34 — DAS SECHSTE BLATT, UND WARUM ES KEIN SECHSTER EMPFAENGER IST
+//
+// Die fuenf Sichten oben sind Spalten-Auswahlen aus DERSELBEN Zeilenmenge:
+// eine Zeile je Ablauf-Punkt. Dieses Blatt ist um neunzig Grad gedreht — eine
+// Zeile je GEGENSTAND. Es als `RundownAudience` einzureihen hiesse, die Regel
+// „N Sichten, EINE Zeilenmenge" zu brechen, und der Waechter, der genau das
+// prueft, wuerde stillschweigend weicher.
+//
+// Es ist trotzdem KEIN zweites Dokument im Sinne des Bedarfs: jede Zelle
+// stammt aus dem Ablauf oder aus dem Plan, nichts wird hier erfunden und
+// nichts hier gefuehrt. Es ist dieselbe Quelle, anders herum gelesen.
+//
+// WOFUER. Die fuenf Sichten beantworten die Frage der Regie („was passiert um
+// 14:20"). Die Technik fragt anders herum — „ab wann brauche ich Kamera 3" —,
+// und das war der Kern von B-34: kein Datensatz im ganzen Baum konnte sagen,
+// WANN ein Geraet gebraucht wird.
+//
+// WAS DIE SPALTEN NICHT BEHAUPTEN. Es gibt keine Spalte „bis". `lastMin` ist
+// der BEGINN des letzten Punktes, nicht sein Ende, und was ein Geraet danach
+// noch braucht — Abbau, Reserve, Umbau — weiss dieser Ablauf nicht. Die
+// Spalte heisst deshalb „Letzter Punkt", und die Dauer eben dieses Punktes
+// steht daneben, damit wer will selbst addiert. Eine Spalte „verfuegbar ab"
+// waere eine Dispositionsentscheidung, und die faellt woanders.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** Was auf dem Geraete-Blatt steht, wo der Ablauf nichts sagt. */
+export const NOT_IN_RUNDOWN = 'in keinem Punkt'
+
+/** Ein Blatt ohne Empfaenger — dieselben Bestandteile, andere Zeilenachse. */
+export type GearSheet = Omit<RundownView, 'audience'>
+
+const KIND_LABEL: Readonly<Record<RundownRefKind, string>> = {
+  camera: 'Kamera',
+  fixture: 'Leuchte',
+  device: 'Gerät',
+  cable: 'Kabel',
+}
+
+const GEAR_HEADERS = [
+  'Gegenstand',
+  'Art',
+  'Erster Punkt',
+  'Letzter Punkt',
+  'Dauer des letzten Punktes',
+  'Punkte',
+  'ohne Zeit',
+] as const
+
+const GEAR_LEGEND: Readonly<Record<(typeof GEAR_HEADERS)[number], string>> = {
+  Gegenstand: 'Der Name aus dem technischen Plan von heute — nicht der, unter dem er im Ablauf steht.',
+  Art: 'Kamera, Leuchte, Gerät oder Kabel.',
+  'Erster Punkt':
+    'Der Beginn des frühesten Ablauf-Punktes, in dem der Gegenstand vorkommt und der eine lesbare Zeit trägt.',
+  'Letzter Punkt':
+    'Der BEGINN des spätesten solchen Punktes — nicht sein Ende. Wann der Gegenstand frei wird, sagt dieser Ablauf nicht.',
+  'Dauer des letzten Punktes':
+    'Die geplante Dauer eben dieses Punktes, falls die Tabelle sie trug. Bewusst nicht aufaddiert.',
+  Punkte: 'Alle Ablauf-Punkte, in denen der Gegenstand vorkommt, in der Reihenfolge des Ablaufs.',
+  'ohne Zeit':
+    'Wie viele dieser Punkte keine lesbare Zeit trugen. Sie zählen mit, gehen aber in die beiden Zeit-Spalten nicht ein.',
+}
+
+const minutenAlsUhr = (min: number | null): string =>
+  min == null
+    ? NO_TIME_ON_SHEET
+    : `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+
+/**
+ * Wann welcher Gegenstand gebraucht wird — eine Zeile je Objekt des Plans.
+ *
+ * AUCH DIE, DIE IN KEINEM PUNKT VORKOMMEN. Ein Blatt nur der verplanten
+ * Gegenstaende laesst den Leser glauben, es gaebe keine anderen; „in keinem
+ * Punkt" ist eine Aussage, eine fehlende Zeile ist keine.
+ *
+ * Sortiert nach dem ersten Punkt, die zeitlosen ans Ende — das ist die
+ * Reihenfolge, in der jemand das Blatt abarbeitet. Innerhalb gleicher Zeit
+ * nach Namen, damit zwei Laeufe dasselbe Blatt ergeben.
+ */
+export function gearSheet(rundown: Rundown, seed: SuiteSeed): GearSheet {
+  const zeilen = [...rundownSchedule(rundown, seed)].sort((a, b) => {
+    const az = a.firstMin ?? Number.POSITIVE_INFINITY
+    const bz = b.firstMin ?? Number.POSITIVE_INFINITY
+    if (az !== bz) return az - bz
+    return a.name.localeCompare(b.name, 'de')
+  })
+  return {
+    headers: [...GEAR_HEADERS],
+    rows: zeilen.map((o) => [
+      o.name,
+      KIND_LABEL[o.kind],
+      o.points.length === 0 ? NOT_IN_RUNDOWN : minutenAlsUhr(o.firstMin),
+      o.points.length === 0 ? NOT_IN_RUNDOWN : minutenAlsUhr(o.lastMin),
+      o.lastDurationMin ?? '',
+      o.points.map((p) => p.title).join(', ') || NOT_IN_RUNDOWN,
+      o.pointsWithoutTime,
+    ]),
+    legend: GEAR_HEADERS.map((h) => ({ column: h, text: GEAR_LEGEND[h] })),
+    stand: `Ablauf aus ${rundown.source.filename}, eingelesen ${rundown.source.importedAt}`,
+  }
+}
+
 /**
  * Das Blatt als CSV-Text, mit Legende und Stand-Zeile im Blatt selbst.
  *
@@ -220,7 +322,7 @@ export function rundownView(
  * Weg zum Empfaenger verloren; der Bedarf verlangt „self-explaining", und
  * das ist eine Eigenschaft der Datei, nicht des Anhangs.
  */
-export function rundownViewCsv(view: RundownView): string {
+export function rundownViewCsv(view: GearSheet): string {
   const feld = (v: string | number): string => {
     const s = String(v ?? '')
     return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
