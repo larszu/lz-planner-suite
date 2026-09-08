@@ -1080,7 +1080,7 @@ ist selbst ein Ergebnis.
 
 ### B-36 · Der Defektformen-Sweep über die fünf Nicht-cable-Repos ist NICHT abgeschlossen
 
-* **Status:** offen — **zwei von fünf Formen sind durchgearbeitet** (2026-09-07, je fünf bestätigte und behobene Befunde, siehe unten). Der ursprüngliche Lauf blieb ausdrücklich **ohne verwertbares Ergebnis**.
+* **Status:** offen — **drei von fünf Formen sind durchgearbeitet** (2026-09-07/08, je fünf bestätigte und behobene Befunde, siehe unten). Der ursprüngliche Lauf blieb ausdrücklich **ohne verwertbares Ergebnis**.
 * **Was lief (2026-09-04):** ein Sweep über fünf wiederkehrende Defektformen
   dieser Sitzung (`guard-umgangen`, `zwei-rechnungen`, `vertrag-nur-feldnamen`,
   `fixture-erreicht-grenze-nicht`, `zustand-nach-fehler`) in
@@ -1155,13 +1155,42 @@ ist selbst ein Ergebnis.
   Wächter prüfen seither das, was die Form angreift: „doppelte Amplitude
   liest sich doppelt so hoch", und „`Math.sqrt` steht an genau einer Stelle".
 
-* **Was offen bleibt:** die Formen `vertrag-nur-feldnamen` und
-  `fixture-erreicht-grenze-nicht` sind in diesem Durchgang nur gestreift
-  worden. Sie bleiben zu wiederholen — mit demselben Verfahren.
+* **Dritte Form durch: `vertrag-nur-feldnamen` (2026-09-07/08), fünf
+  bestätigte Befunde, einer je Repo.** Die Form lautet: *ein Vertrag prüft,
+  wie die Felder heißen, und nie, was sie bedeuten.* Alle fünf Fundstellen
+  hatten einen Wächter, und alle fünf Wächter waren gründlich — in genau
+  einer Richtung.
+
+  | Repo | Befund | PR |
+  | --- | --- | --- |
+  | `multicam-planner` | `parseCameraList` prüfte Marker, Version und „`cameras` ist ein Array" und gab dann **`data as CameraListExchange`** zurück. Der Cast war die ganze Zusicherung: `cameras: [null, 42, {}, {id: 5, x: "links"}]` kam als wohlgeformte Datei beim Cable-Planner an, der aus jedem Eintrag einen Equipment-Knoten baut. Der Guard daneben heißt „Wire-Contract" und fror die **Feldnamen** ein — auf beiden Seiten, sogar aus dem Interface-Rumpf gelesen. | `#109` |
+  | `light-planner` | Dasselbe in `parseVenueExchange` und `parseAvPlan`: `venue: 42` kam durch, weil `!42` falsch ist. Dahinter ist `fromVenueExchange` bei den **optionalen** Feldern sorgfältig (`?? 0.5`, `?? 270`) und vertraut den **Pflicht**-Feldern blind — eine Person ohne `x` wird zu `{ x: undefined }`, und die Lichtrechnung rechnet ab da mit NaN. | `#93` |
+  | `pi-media-station` | Der Vertrag war buchstäblich eine Tabelle **Feldname → Typ**. `gpio_trigger: 99`, `threshold_m: -5`, `web_port: 0`, `web_port: true` (`int(True)` ist 1) gingen durch. Der lehrreichste Fall: `gpio_echo == gpio_trigger` — **kein Feld für sich ist falsch**, und ein Feldnamen-Vertrag kann so etwas grundsätzlich nicht sehen. | `#8` |
+  | `Broadcast-intercom` | `parseIntercomPlan` prüfte `typeof o.version !== "number"` — Name und Typ — und verglich die Zahl danach **mit nichts**. Alle Schwester-Formate lehnen eine zu neue Version ab; dieses eine nicht, und was hier falsch verstanden wird, sind Sprechberechtigungen. Zweite Hälfte: unlesbare Einträge fielen per `continue` still aus der Liste, und der Abgleich — der genau dafür da ist, vorher zu zeigen was passiert — sagte „nichts zu tun". | `#14` |
+  | `tally-pi` | Zwei Listen über **dieselben physischen Leitungen** (`tally.json`, `bindings.json`), zwei ordentliche Wächter, und jeder kennt nur seine eigenen Feldnamen. Eine Companion-Bindung durfte auf dem Pin einer Tally-Lampe sitzen; libgpiod gibt eine Leitung nur einmal heraus, der zweite Dienst bekommt EBUSY und fällt still aus. Beide Oberflächen zeigen ihre Zeile als gespeichert und gültig. | `#15` |
+
+* **Und zum dritten Mal hat eine Gegenprobe den Wächter erwischt statt den
+  Fix** (`tally-pi`): der Test gab der Numato-Bindung nur `channel`, kein
+  `bcm` — dann greift der `source`-Filter gar nicht, und seine Entfernung
+  blieb unbemerkt. Der scharfe Fall ist ein `bcm`, das vom Umstellen im
+  Formular stehengeblieben ist. Über drei Formen hinweg ist das jetzt fünf
+  Mal passiert, immer nach demselben Muster: **der Wächter prüft den Fall,
+  den der Fix herstellt, statt den, den der Defekt braucht.**
+
+* **Ein Widerspruch wurde ausdrücklich NICHT behoben, sondern benannt**
+  (`tally-pi`): `USABLE_BCMS` lässt 17 Pins zu, `BCM_TO_PIN` alle 26 — eine
+  Bindung darf auf BCM 14 (UART TX) sitzen, ein Tally-Ausgang nicht. Enger zu
+  ziehen würde laufende Installationen ungültig machen, die SPI abgeschaltet
+  haben und BCM 7..11 zu Recht benutzen. Der Unterschied steht jetzt im
+  Quelltext, und ein Test hält fest, dass er bekannt ist.
+
+* **Was offen bleibt:** die Form `fixture-erreicht-grenze-nicht` ist in diesem
+  Durchgang nur gestreift worden. Sie bleibt zu wiederholen — mit demselben
+  Verfahren.
 
 * **Aufwand:** ~~mittel (Wiederholung, sobald Kontingent da ist)~~ ~~eine Form
-  von fünf ist durch; drei stehen aus~~ zwei Formen von fünf sind durch; zwei
-  stehen aus
+  von fünf ist durch; drei stehen aus~~ ~~zwei Formen von fünf sind durch;
+  zwei stehen aus~~ drei Formen von fünf sind durch; eine steht aus
 
 ---
 
