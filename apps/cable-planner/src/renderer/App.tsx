@@ -70,6 +70,7 @@ import { BulkConnectDialog } from './components/Canvas/BulkConnectDialog'
 import { AnalysisDialog } from './components/Analysis/AnalysisDialog'
 import { DeliveryDialog } from './components/Delivery/DeliveryDialog'
 import { AdernDialog } from './components/Power/AdernDialog'
+import { OscEmpfangPanel } from './components/ShowControl/OscEmpfangPanel'
 import { ReconcileDialog } from './components/Network/ReconcileDialog'
 import { setStreamKeyDropper } from './store/slices/deliverySlice'
 import { PlanCheckPanel } from './components/Analysis/PlanCheckPanel'
@@ -1414,6 +1415,7 @@ export default function App() {
       <WirelessRigDialog />
       <DeliveryDialog />
       <AdernDialog />
+      <OscEmpfangPanel />
       <ReconcileDialog />
       <LocationBomDialog />
       {rackEditorOpen && (

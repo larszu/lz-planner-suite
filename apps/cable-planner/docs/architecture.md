@@ -5,7 +5,7 @@ Invarianten der App. Sie ist die Pflicht-Lektüre, bevor strukturelle Änderunge
 gemacht werden. Für die interaktive Modul-Übersicht siehe [`app-structure.html`](./app-structure.html),
 für einen Wettbewerber-Vergleich [`comparison.html`](./comparison.html).
 
-Stand: v8.3.1 · ~615 TS/TSX-Module · ~178.1k LOC
+Stand: v8.3.1 · ~620 TS/TSX-Module · ~179.3k LOC
 
 ---
 
@@ -67,6 +67,7 @@ Alle IPC-Channels sind nach Domäne präfixiert. Definitionen in
 | `signaling:*` | `signalingIpc.ts` | LAN-Signaling-Relay für die Yjs/WebRTC-Kollaboration (#413) |
 | `collabDiscovery:*` | `collabDiscoveryIpc.ts` | Bonjour/mDNS-Discovery von Kollaborations-Peers im LAN |
 | `receipt:*` | `receiptIpc.ts` | `pick`, `attach`, `read`, `reveal` — die Belegdatei einer Auslagenzeile (Bedarf 97). Die Datei liegt in `Belege/` **neben** dem Projekt und nicht im Projekt-File: ein Foto von zwei Megabyte in jeder `.avplan` verteuerte jede Speicherung und jeden Versand. Gespeichert wird unter dem SHA-256 des Inhalts, damit derselbe Beleg nur einmal liegt. Der Dateidialog läuft in main, der gewählte absolute Pfad erreicht den Renderer gar nicht; `reveal` zeigt den Ordner (`showItemInFolder`) statt die Datei zu öffnen — sie kommt von außen. |
+| `showControl:*` | `showControlIpc.ts` | `start`, `stop`, `state`, `clear` + Ereignis `showControl:update` — der eingehende OSC-Hörer (E-23). **Vier Auflagen stehen im Code und nicht in der Prosa:** aus als Vorgabe (dieses Modul startet nichts von selbst), je Projekt eingeschaltet, eine Adresse, die der Nutzer nennt (eine leere wird zurückgewiesen — `0.0.0.0` als Vorgabe lauscht auf jeder Schnittstelle, auch der im Kundennetz), und ein sichtbarer Befund, wenn nicht gebunden werden konnte. `start` gibt IMMER einen Zustand zurück, auch den gescheiterten: ein stiller Nicht-Empfang sieht aus wie „keine Cues", und das ist die Entwarnung durch die Hintertür. Gelesen wird aus dem Paket NUR die Adresse und die Länge dessen, was dahinter steht — Argumente zu entziffern hiesse, aus fremden Bytes Zahlen zu machen (Invariante 23). |
 | `documentLog:*` | `documentLogIpc.ts` | `append`, `read`, `clear` — das Register der ausgegebenen Dokumente (ADR-004). Es überdauert die Sitzung und gehört damit auf die Platte. |
 | `lexware:*` | `lexwareIpc.ts` | **Nur in der Suite-Kopie** (`av-planner-suite/apps/cable-planner`): Brücke zwischen Renderer/Shell und dem Lexware-Office-Client. Der API-Key bleibt in `main` (keytar), der Renderer sieht ihn nie. Diese Domäne gibt es upstream nicht — sie ist Teil des Suite-Overlays. |
 
@@ -253,7 +254,7 @@ die Wahl der Quelle.
 
 ### 3.2 · Komponenten
 
-`src/renderer/components/` ist in 28 Subdomänen aufgeteilt:
+`src/renderer/components/` ist in 29 Subdomänen aufgeteilt:
 
 ```
 About/         Analysis/      Annotations/   Atem/          Cable/
@@ -289,6 +290,11 @@ prüfen, ob das gemeinsame Konzept nach `shared/` gehört.
 - `LocationNode.tsx` (Rahmen mit Move-Contents-Logik)
 - `LayerVisibilityChips.tsx` (Layer-Filter mit Count-Badges)
 - `pathfinding.ts` (Orthogonal-Routing zwischen Ports)
+- `cableApproach.ts` (die Anfahrt an das Geraet: Stummel an beiden Enden,
+  Form gewaehlt statt angenommen — der Weg macht nicht kehrt, und der Pfeil
+  faehrt gerade in die Buchse). Wer eine zweite Stelle baut, an der ein
+  Kabelweg zusammengesetzt wird, hebelt das aus: `CableEdge.tsx` hatte genau
+  deshalb zwei Fassungen, und nur eine setzte einen Stummel.
 
 ### 3.4 · 3D
 
@@ -903,7 +909,7 @@ optionales Cloud-Backend (`y-websocket`, Auth/Permissions) bleiben offen.
 `vitest` ist eingerichtet (`npm test` / `npm run test:watch`); dazu kommen
 gezielte Node-Checks (`npm run test:crdt`, `npm run test:signaling`), ein
 UI-Smoke-Skript (`npm run ui:smoke`) und ein headless Drag-/Interaktions-Test
-(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~178.1k LOC
+(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~179.3k LOC
 bleibt der Ausbau der Abdeckung wichtig — empfohlene Schwerpunkte:
 - Snapshot-Tests auf `healProjectPositions` mit echten
   Beispiel-Projekt-JSONs.
