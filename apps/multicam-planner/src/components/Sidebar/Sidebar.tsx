@@ -230,7 +230,7 @@ function CameraCard({
   const [presetName, setPresetName] = useState('');
   const [presetSegment, setPresetSegment] = useState('');
 
-  const { customCameras, addCustomCamera } = useStore();
+  const { customCameras, addCustomCamera, libraryStorageFull } = useStore();
   const camDef = getCameraById(cam.cameraId, customCameras);
   const lensDef = getLensById(cam.lensId) ?? customLenses.find((l) => l.id === cam.lensId);
   // Die PTZ-Eigenschaft kommt aus dem Katalog-Datensatz und nicht aus dem
@@ -612,6 +612,18 @@ function CameraCard({
               <option value="__new_custom__">{t('sidebar.cam.addCustomCamera', '＋ Custom+ Add custom camera…')}</option>
             </select>
           </label>
+
+          {/* Der Speicher ist voll — die eigene Kamera/Optik steht in der Liste,
+              aber nicht auf der Platte. Dieselbe Meldung wie bei den
+              Shotlisten, aus demselben Grund: ein stiller Verlust von
+              handgetippten Sensormassen ist der teuerste, den diese App hat. */}
+          {libraryStorageFull && (
+            <div className="text-[10px] text-bc-red mt-1">
+              Speicher voll — die letzte Änderung an der Bibliothek wurde nicht dauerhaft
+              gesichert. Nicht mehr gebrauchte eigene Kameras/Optiken löschen oder das
+              Projekt exportieren.
+            </div>
+          )}
 
           {/* Inline custom camera creation form (Custom+ entry in the dropdown) */}
           {showNewCustomCam && (

@@ -1078,9 +1078,9 @@ ist selbst ein Ergebnis.
 
 ---
 
-### B-36 · Der Defektformen-Sweep über die fünf Nicht-cable-Repos ist NICHT abgeschlossen
+### B-36 · Der Defektformen-Sweep über die fünf Nicht-cable-Repos
 
-* **Status:** offen — **drei von fünf Formen sind durchgearbeitet** (2026-09-07/08, je fünf bestätigte und behobene Befunde, siehe unten). Der ursprüngliche Lauf blieb ausdrücklich **ohne verwertbares Ergebnis**.
+* **Status:** ~~offen~~ **erledigt** (2026-09-08) — alle **fünf Formen** sind durchgearbeitet, **24 bestätigte und behobene Befunde**, jeder gegengeprobt. Der ursprüngliche Lauf (2026-09-04) blieb ausdrücklich **ohne verwertbares Ergebnis**; was ihn ersetzt hat, steht weiter unten unter „Was die Wiederholung methodisch geändert hat“.
 * **Was lief (2026-09-04):** ein Sweep über fünf wiederkehrende Defektformen
   dieser Sitzung (`guard-umgangen`, `zwei-rechnungen`, `vertrag-nur-feldnamen`,
   `fixture-erreicht-grenze-nicht`, `zustand-nach-fehler`) in
@@ -1184,13 +1184,53 @@ ist selbst ein Ergebnis.
   haben und BCM 7..11 zu Recht benutzen. Der Unterschied steht jetzt im
   Quelltext, und ein Test hält fest, dass er bekannt ist.
 
-* **Was offen bleibt:** die Form `fixture-erreicht-grenze-nicht` ist in diesem
-  Durchgang nur gestreift worden. Sie bleibt zu wiederholen — mit demselben
-  Verfahren.
+* **Vierte Form durch: `fixture-erreicht-grenze-nicht` (2026-09-08), vier
+  bestätigte Befunde — und eine ehrliche Fehlanzeige.** Die Form lautet: *die
+  Prüfung existiert, sie ist sogar sorgfältig — nur reicht das Fixture nicht
+  bis an die Grenze, die sie prüfen soll.*
+
+  | Repo | Befund | PR |
+  | --- | --- | --- |
+  | `light-planner` | `autoPatch` hat genau **einen** interessanten Zweig — den Übergang ins nächste Universe bei 512 Kanälen. Er ist **nie** gelaufen: der einzige Lauf, der `autoPatch` überhaupt aufrief, war ein Entwicklerskript mit einer Handvoll Leuchten, das nicht einmal in `package.json` stand. Beim Hinsehen fiel der zweite Fall auf, den nie jemand erreicht hat: ein Profil mit **mehr** als 512 Kanälen bekam `universe = n, address = 1` und belegte rechnerisch 513…fp eines Universes, das dort aufhört. | `#94` |
+  | `tally-pi` | `log_event` dreht das Ereignis-Log bei 1 MB — nie getestet, weil kein Lauf je so viel schrieb. Und weil der Zweig nie lief, ist nie aufgefallen, dass der **Leser ihm nicht folgt**: in dem Moment, in dem die Datei dreht, zeigt das Log-Fenster, in dem gerade jemand 200 Ereignisse las, **eine**. | `#16` |
+  | `Broadcast-intercom` | Der Smoke-Test — 58 Prüfungen — berührt keine der Lautstärke-Aktionen. Die Grenze bei −60 dB war deshalb nie erreicht, und dort steckten zwei Fehler: **Stumm war eine Einbahnstraße** (kein `unmute`, für den Eingang auch kein `volume_up` — auf der Companion-Taste nur über die Weboberfläche zu lösen), und **−60 dB hieß zweierlei**: Stumm-Wert *und* unteres Ende des Bereichs. | `#15` |
+  | `pi-media-station` | Der Ablauf bewachte den **Zeitstempel**, das **Mittelwertfenster** niemand. Nach einem Ausfall wurde der erste neue Messwert mit vier Werten von *vor* dem Ausfall gemittelt und galt sofort als frisch: aus „leer, dann steht jemand da" wurden 2,5 m. Die vorhandenen Tests lagen bei 0,5 s (weit darunter) und `STALE_AFTER_S + 0,5` (weit darüber) — dazwischen liegt die Grenze. | `#9` |
+
+* **`multicam-planner`: Fehlanzeige, und das ist ein Ergebnis.** Die Grenzen,
+  die es dort gibt, werden **an** ihrer Grenze geprüft: `TAKE_MAX_SAMPLES`
+  (Liste exakt voll), `PATTERN_ROWS_MAX`, `textureSize(400, 3)` gegen den
+  2048-px-Deckel, `clampHeight`/`clampTrack` mit 99 und −99, und der
+  `MAX_DT_S`-Fall ist im Test sogar mit dem Tab-Wechsel begründet, der ihn
+  auslöst. Nachgesehen wurden außerdem `motionProfile`, `rigLimits`, `uiZoom`,
+  `wallSurface` und `storyboard`. Eine erfundene Fundstelle wäre hier
+  schlimmer als keine — genau das war die Lehre aus dem abgebrochenen ersten
+  Lauf.
+  Der PR dort (`#110`) trägt stattdessen einen **Nachzügler der Form
+  `zustand-nach-fehler`**: die handgepflegte Bibliothek (eigene Kameras,
+  Optiken, Vorlagen) lief weiter über das stille `saveJSON`. Dieselbe Form,
+  die dieser Sweep in demselben Repo schon zweimal gefunden hat, eine Ebene
+  weiter — und das ist der eigentliche Befund an ihr: **das Mittel dagegen lag
+  jedesmal im selben Repo, nur nicht an dieser Stelle.**
+
+* **Die Gegenproben-Bilanz über alle fünf Formen: sieben Mal hat eine
+  Gegenprobe den WÄCHTER erwischt statt den Fix**, und immer nach demselben
+  Muster — der Wächter prüft den Fall, den der *Fix* herstellt, statt den, den
+  der *Defekt* braucht. Zuletzt in `Broadcast-intercom`, wo die erste Fassung
+  einen Zweig traf, den es unter dem neuen Umschalter gar nicht mehr gibt: der
+  Vorbehalt war unerreichbar und ist raus. Und in `pi-media-station`, wo ein
+  Quelltext-Wächter wörtlich `= time.monotonic()` verlangte und bei einer
+  folgenlosen Umschreibung rot wurde — ein Wächter, der das tut, wird beim
+  nächsten Mal angepasst statt gelesen.
+
+* **Status der fünf Formen:** `zustand-nach-fehler`, `guard-umgangen`,
+  `zwei-rechnungen`, `vertrag-nur-feldnamen` und
+  `fixture-erreicht-grenze-nicht` sind durchgearbeitet. **Der Sweep ist
+  abgeschlossen** — 24 bestätigte und behobene Befunde, jeder gegengeprobt.
 
 * **Aufwand:** ~~mittel (Wiederholung, sobald Kontingent da ist)~~ ~~eine Form
   von fünf ist durch; drei stehen aus~~ ~~zwei Formen von fünf sind durch;
-  zwei stehen aus~~ drei Formen von fünf sind durch; eine steht aus
+  zwei stehen aus~~ ~~drei Formen von fünf sind durch; eine steht aus~~
+  **erledigt**
 
 ---
 
