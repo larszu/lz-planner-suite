@@ -116,17 +116,24 @@ Tastendruck. `sendTally` postet und ruft danach `refreshAll()`. Das kostet einen
 sieht wie eine überflüssige Anfrage aus; es ist die Regel in Codeform, und wer sie später
 „optimiert", baut genau den open-loop-Zustand ein, den fünf Marktsegmente beklagen.
 
-**Eine Stelle bleibt offen** (`bridge.ts`, `fetchTally`): antwortet die Bridge ohne `tally`-Feld,
-setzt das Modul `{program: false, preview: false, isoRec: false}` — es *erfindet* also „alle Lampen
+**Eine Stelle war offen** (`bridge.ts`, `fetchTally`): antwortete die Bridge ohne `tally`-Feld,
+setzte das Modul `{program: false, preview: false, isoRec: false}` — es *erfand* also „alle Lampen
 dunkel". Das ist die gefährliche Richtung: eine Kamera, die auf Sendung ist, erschiene als nicht auf
-Sendung. Ehrlich wäre, die Antwort ohne Nutzlast wie die anderen Fehlerpfade zu behandeln (werfen →
-`ConnectionFailure`), damit der Operator „Bridge antwortet nicht" sieht statt einer falschen
-Gewissheit.
+Sendung.
 
-Nicht gebaut, und der Grund gehört dazu: der Entwicklungszweig dieses Repos trägt derzeit den noch
-offenen Lizenz-PR (`sony-camera-bridge#8`), der eine Entscheidung des Eigentümers braucht. Einen
-sachfremden Fix daraufzusetzen würde diese Entscheidung mit fremdem Inhalt vermengen. Der Fix wartet
-darauf, dass der Zweig frei ist — er ist klein und hängt an nichts anderem.
+**Gebaut in `sony-camera-bridge#9` (Commit `6511f10`), nachdem der Lizenz-PR (`#8`) geschlossen war
+und der Zweig frei wurde.** Nachgesehen am Code, nicht fortgeschrieben: `fetchTally` meldet heute
+`UNKNOWN_TALLY` (`{}` — kein Feld gesetzt) und ruft `onError` mit „Bridge antwortete auf
+`/api/tally` ohne tally-Feld — Zustand unbekannt."; `main.ts` startet mit `{ ...UNKNOWN_TALLY }`
+statt mit einem Literal, und `formatTally(undefined)` liefert `unknown`.
+
+**Anders als dieser Abschnitt vorschlug, und aus einem Grund, der dazugehört.** Der Entwurf wollte
+werfen (`ConnectionFailure`) — die Antwort ohne Nutzlast wie einen Verbindungsfehler behandeln. Das
+wäre die zweite Lüge in die andere Richtung gewesen: Die Bridge antwortet ja, sie sagt nur nichts
+über Tally. „Bridge antwortet nicht" schickt den Operator zum Netzwerk, während das Gerät erreichbar
+ist. Der gebaute Weg trennt beides — Verbindung steht, Tally unbekannt —, und genau diese
+Unterscheidung ist es, die ADR-003 verlangt: **unbestätigt ist ein eigener Zustand, nicht der
+nächstbeste bekannte.**
 
 
 ## Inkrement 2 — und warum das Messen den Zuschnitt geändert hat

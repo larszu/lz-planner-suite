@@ -163,9 +163,26 @@ konkrete Folgen, von denen zwei nichts mit Farben zu tun haben:
 3. Die Kommissionier-Liste enthält **keine** Vorschläge. Wer kommissioniert, soll nicht unterwegs
    entscheiden müssen, ob eine Zuordnung stimmt.
 
-### Was offen bleibt
+### ~~Was offen bleibt~~ — beide Hälften stehen
 
-Der Weg aus `unmatched` heraus ist heute ein Hinweis in der Tabelle („ohne Katalog-Typ"), keine
-Aktion. Ein Knopf, der einem Plan-Gerät den Katalog-Typ zuweist und die Bestätigung eines
-Vorschlags als `deviceTypeId` festschreibt, wäre der nächste Schritt — dann wandert die Deckung
-Zeile für Zeile von *Vorschlag* nach *Tatsache*, und zwar dauerhaft.
+Der Weg aus `unmatched` heraus war ein Hinweis in der Tabelle („ohne Katalog-Typ"), keine Aktion.
+Dieser Abschnitt verlangte zwei Dinge, und sie sind **einzeln** gebaut worden:
+
+1. **Die Bestätigung eines Vorschlags als `deviceTypeId`** — `useTypBestaetigen` schreibt die
+   Katalog-Identität auf die **Lager-Position**, Knopf „Bestätigen" in der Geräte-Stückliste.
+2. **Der Griff, der einem Plan-Gerät den Katalog-Typ zuweist** — `cable#767`: Auswahlfeld
+   „Typ zuweisen…" in derselben Tabelle, auf der **Plan**-Seite.
+
+**Warum die zweite Hälfte mehr ist als Bequemlichkeit, und das war beim Schreiben dieses
+Abschnitts nicht gesehen:** Der Namensvergleich greift nur, wenn die *Lager*-Position keine
+Typ-Identität trägt (`byModel` entsteht aus `untyped`). Ein sauber gepflegtes Lager und ein
+Plan-Gerät ohne Typ ergeben deshalb nicht einmal einen Vorschlag, sondern `unmatched` — die Kamera
+steht im Regal und fehlt auf der Kommissionier-Liste. Der Satz „dann wandert die Deckung von
+*Vorschlag* nach *Tatsache*" unterschätzte den Fall: Sie wandert von *Fehlbestand* nach *Tatsache*.
+
+**Und eine Unterscheidung, die der Bau erzwungen hat.** Die Zeile weiß, welche Geräte sie ausmachen
+— aber `equipmentIds` enthält bei einem Rack-Innenleben die Id des **Racks** (mehr weiß der
+Snapshot nicht) und bei einem Zusatz-Bedarf gar keine. Eine Zuweisung daraus schriebe dem FOH-Rack
+den Typ des Pults in seinem Bauch. Deshalb trägt `DemandLine` seither ein zweites Feld,
+`typeTargetIds`: die Geräte, die **für sich selbst stehen**. Wo es keine gibt, erscheint das
+Auswahlfeld nicht — ein Griff, der ins Leere schreibt, wäre schlimmer als keiner.
