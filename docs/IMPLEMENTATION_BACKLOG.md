@@ -1662,7 +1662,7 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-42 · „Wo kommt was an?" — Prüfbild, Erwartung, Rückmeldung
 
-* **Status: ERLEDIGT.** Alle drei Inkremente gebaut und vendoriert — 1 in `cable#772`, 2 in `cable#773`, 3 in `cable#774`. Der Schaltbild-Teil aus `cable#771` (Strom) ist ebenfalls gebaut und vendoriert. Was offen bleibt, ist ausdrücklich kein Rest dieses Bedarfs, sondern eine Grenze der Anlage: der ATEM kennt bis heute keinen Schnitt-Befehl (`atem:*` kann Namen, Multiviewer und Audio), und ein Live-Videobild im Plan kommt nicht — dafür fehlt nicht die Zeit, sondern der Eingang.
+* **Status: ERLEDIGT.** Alle Inkremente gebaut — 1 in `cable#772`, 2 in `cable#773`, 2b in `cable#776`, 3 in `cable#774` (und der Schalt-Weg auf alle Hersteller erweitert in `cable#775`, siehe B-43). Der Schaltbild-Teil aus `cable#771` (Strom) ist ebenfalls gebaut und vendoriert. Was offen bleibt, ist ausdrücklich kein Rest dieses Bedarfs, sondern eine Grenze der Anlage: der ATEM kennt bis heute keinen Schnitt-Befehl (`atem:*` kann Namen, Multiviewer und Audio), und ein Live-Videobild im Plan kommt nicht — dafür fehlt nicht die Zeit, sondern der Eingang.
 * **Der Wunsch (Eigentümer, 2026-09-08):** „Kann man auch als Quelle
   Testpattern generieren mit dem Namen der Quelle und ner SMPTE bar und dann
   an Displays nen Mini Monitor Feld einfügen, sodass man auch den
@@ -1751,10 +1751,37 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   — die Folge ihres Wegfalls wäre eine geratene Nummer, die als Befehl an eine
   laufende Anlage ginge — und wird jetzt **direkt** geprüft. Das ist die Regel
   dahinter: eine Zusicherung, die kein Gegenversuch rot machen kann, ist keine.
-* **Inkrement 2b — die Rückmeldung vom Telefon (offen).** Die Mobile-Ansicht
-  zeigt je Monitor die Erwartung und schreibt die Antwort über `/checks`
-  zurück. Der Schreibweg ist token-gesichert und steht bereits; was fehlt, ist
-  die Ansicht und die Abbildung auf `PatternCheck`.
+* **Inkrement 2b — die Rückmeldung vom Telefon (gebaut, `cable#776`).** Der
+  Techniker steht vor dem Monitor, nicht vor dem Rechner. Bisher konnte er nur
+  am Canvas melden — also erst hinterher, aus dem Gedächtnis, und genau dabei
+  geht die eine Angabe verloren, auf die es ankommt: WELCHER Name auf dem
+  falschen Bild stand.
+  * **Ein eigener Rückweg, nicht `/checks`.** Der dort geschickte `CheckState`
+    ist ein *vollständiger Zustand* und ersetzt den vorigen — richtig für
+    Häkchen an Ports, falsch für eine Beobachtung. Eine Sichtprüfung wird
+    ANGEHÄNGT; ein Ersetzen löschte „gestern ging es, heute nicht". Also
+    `POST /pattern-checks`, an derselben Engstelle wie die drei anderen
+    Schreibwege (Token, Schreibmodus, Show-Abgleich).
+  * **Die Rechnung bleibt an einer Stelle.** Das Telefon bekommt die fertige
+    Liste über `GET /pattern.json`, gebaut im Renderer aus `patternRouting`.
+    Eine zweite Traversierung auf dem Gerät liefe bei der ersten Kreuzschiene
+    ohne gesetzten Kreuzpunkt auseinander — und dann stünde am Telefon ein
+    Ankunftsort, den der Plan am Rechner nicht kennt. Wer davor steht, sucht
+    dann einen Fehler in der Anlage, den es nicht gibt.
+  * **Kein Zeitstempel vom Telefon.** Dessen Uhr kann beliebig falsch gehen;
+    der Renderer stempelt beim Empfang. Ein Beleg mit erfundener Uhrzeit ist
+    schlimmer als einer mit der Empfangszeit — während eines Rundgangs ist der
+    Unterschied Sekunden.
+  * **Invariante 16 gilt auch auf dem kleinen Schirm.** Über der Liste steht,
+    dass es der PLAN ist und dass diese App kein Bild sieht; je Ankunftsort
+    steht „Laut Plan müsste hier stehen". Das Feld heisst `erwartung` und
+    nicht `bild` — ein Telefon, das eine Erwartung wie eine Rückmeldung
+    darstellt, ist die gefährlichste Sorte Anzeige.
+  * **Die offenen Wege fahren mit**, mit ihrem Grund, und ein „503 statt leer",
+    wenn am Rechner keine Quelle gewählt ist: „keine Quelle gewählt" und
+    „nirgends erwartet" sind verschiedene Aussagen.
+  * Im Nur-Lesen-Modus **sagt** die Seite das, statt die Knöpfe wegzulassen —
+    dieselbe Regel wie bei Bedarf 109 auf der Patchliste.
 * **Was ausdrücklich NICHT kommt:** ein Live-Videobild im Plan. Dafür fehlt
   nicht die Zeit, sondern der Eingang.
 
