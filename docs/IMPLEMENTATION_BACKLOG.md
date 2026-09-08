@@ -2451,6 +2451,64 @@ belegbar, dort sind sie erprobt.
   Gegenprobe, die nichts ändert, ist keine Gegenprobe.
 * **Aufwand:** mittel — erledigt.
 
+### B-52 · Passive Port-Träger: Verteiler, Steckdosenleiste, Durchgangsbuchse — und wo die Patchblende steckt
+
+* **Status:** Befund erhoben und beantwortet 2026-09-08, **Bau offen**.
+  **Nutzer-Frage, 2026-09-08:** „es gibt noch keinen guten weg um
+  stromverteiler in den plan einzuzeichnen und auch noch keine patchblenden
+  und durchgangsbuchsen und keine mehrfachsteckdosen. sollten das geräte
+  sein?"
+
+* **Nachgesehen, bevor geantwortet wurde — und der wichtigste Befund war eine
+  Korrektur der Frage.** Patchblenden **gibt es**: `isPatchPanel` am Gerät,
+  `lib/patchPanel.ts` leitet die positionsweise Durchleitung ab (Issue #664).
+  Nur: die **einzige** Stelle, die eine anlegt, ist
+  `components/Rack/PatchPanelCreateDialog.tsx`; der andere Weg ist, irgendein
+  Gerät anzulegen und in `Properties/sections/DisplayFlagsSection.tsx` ein
+  Häkchen zu setzen. **Wer auf dem Canvas plant und den Rack-Builder nie
+  öffnet, begegnet ihr nie.** Das ist kein Modell-Problem, sondern ein
+  Auffindbarkeits-Problem — und es hätte sich nicht zeigen lassen, ohne
+  nachzusehen, wo das Ding entsteht.
+* **Was es wirklich nicht gibt:** Stromverteiler und Steckdosenleisten.
+  `CircuitKind` kennt `feed`, `switch`, `changeover`, `crossover`, `dimmer`,
+  `lamp`, `junction` — keinen Verteiler mit abgesicherten Abgängen, keine
+  Leiste. In keinem Gerätekatalog steht ein Strom-Gerät. Die
+  Durchgangsbuchse ist signalseitig eine Patchblende der Grösse 1 und hat
+  keinen eigenen Begriff.
+
+* **Die Antwort auf „sollten das Geräte sein?": ja — weil alles, was diese
+  Anwendung gut kann, an PORTS AM GERÄT hängt.** Kabelwege, Kommissionier-
+  liste, Patchliste, Adressplan, Längenrechnung, Rack-Layout: jede dieser
+  Rechnungen beginnt an einem Port eines Geräts. Eine Steckdosenleiste ist
+  genau „ein Eingang, sechs Ausgänge"; ein Verteiler dasselbe plus
+  Absicherung je Abgang. Dass sie passiv sind, spricht nicht dagegen — die
+  Patchblende ist es auch, und ihre Durchleitung wird aus der **Bauart**
+  abgeleitet statt geschaltet.
+* **Die Absicherung gehört an den PORT, nicht in ein neues Objekt.** Sonst
+  gibt es zwei Orte für dieselbe Aussage, und beim Umsortieren laufen sie
+  auseinander — derselbe Befund, den B-33 für die Port-Nummerierung und
+  `circuitTerminal` für die Klemmennummer festhalten.
+* **Die Ausnahme:** eine Blind*blende* ohne Buchsen ist **kein** Gerät,
+  sondern Rack-Geometrie (`components/Rack/`). Sie taucht in keinem
+  Signalfluss auf; sie als Knoten zu führen hiesse, den Plan mit etwas zu
+  füllen, das nichts verbindet.
+
+* **Zuschnitt in zwei Teilen, und Teil 1 ist der, nach dem gefragt wurde:**
+  1. **Ein Ort auf dem Canvas für passive Port-Träger** — Patchblende,
+     Durchgangsbuchse, Steckdosenleiste, Verteiler — aus der Bibliothek
+     platzierbar, dort wo man Geräte platziert. Die Patchblende ist dabei
+     kein Neubau, sondern ein zweiter Weg zu dem, was
+     `PatchPanelCreateDialog` schon kann; ein dritter Ort, der dasselbe
+     Gerät anders erzeugt, wäre `zwei-rechnungen`.
+  2. **Der Verteiler als Bauart im Schaltbild.** Dafür gilt die Regel aus
+     `types/circuit.ts`: die Bauart wird **angegeben, nie aus der Kategorie
+     geraten** (ADR-002). Ein neuer `CircuitKind` braucht ein eigenes Feld
+     und einen Eintrag in der `satisfies Record<CircuitKind, …>`-Tabelle,
+     sonst ist er nicht wählbar, obwohl der Rechner ihn beherrscht. Gehört
+     in dieselbe Runde wie die schon vorgemerkten Bauarten aus B-45
+     (Schütz, Relais, Taster, Not-Aus, FI, LS).
+* **Aufwand:** mittel.
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden

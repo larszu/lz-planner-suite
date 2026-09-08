@@ -5,7 +5,7 @@ Invarianten der App. Sie ist die Pflicht-Lektüre, bevor strukturelle Änderunge
 gemacht werden. Für die interaktive Modul-Übersicht siehe [`app-structure.html`](./app-structure.html),
 für einen Wettbewerber-Vergleich [`comparison.html`](./comparison.html).
 
-Stand: v8.3.1 · ~620 TS/TSX-Module · ~179.3k LOC
+Stand: v8.3.1 · ~622 TS/TSX-Module · ~179.6k LOC
 
 ---
 
@@ -63,13 +63,13 @@ Alle IPC-Channels sind nach Domäne präfixiert. Definitionen in
 | `streamKey:*` | `credentialsIpc.ts` | `get`, `has`, `save`, `delete` je Ausspielziel (Initiative 9). Eigener Namensraum neben `credentials:*`, weil ein Kanal eine Domäne ist: dort wohnen die Integrationen (Rentman, NetBox), hier die Ziele des Projekts. Ein Account je Ziel (`stream-key:<id>`) — ein gemeinsamer Blob nähme beim Löschen eines Ziels entweder alle Keys mit oder keinen. |
 | `graphml:*` | `graphmlIpc.ts` | `open-file` |
 | `print:*` | `printIpc.ts` | `pdf-bytes` |
+| `lexware:*` | `lexwareIpc.ts` | **Nur in der Suite-Kopie** (`av-planner-suite/apps/cable-planner`): Brücke zwischen Renderer/Shell und dem Lexware-Office-Client. Der API-Key bleibt in `main` (keytar), der Renderer sieht ihn nie. Diese Domäne gibt es upstream nicht — sie ist Teil des Suite-Overlays. |
 | `logs:*` | `logIpc.ts` | `renderer-error` (Renderer → Main, one-way) |
 | `signaling:*` | `signalingIpc.ts` | LAN-Signaling-Relay für die Yjs/WebRTC-Kollaboration (#413) |
 | `collabDiscovery:*` | `collabDiscoveryIpc.ts` | Bonjour/mDNS-Discovery von Kollaborations-Peers im LAN |
 | `receipt:*` | `receiptIpc.ts` | `pick`, `attach`, `read`, `reveal` — die Belegdatei einer Auslagenzeile (Bedarf 97). Die Datei liegt in `Belege/` **neben** dem Projekt und nicht im Projekt-File: ein Foto von zwei Megabyte in jeder `.avplan` verteuerte jede Speicherung und jeden Versand. Gespeichert wird unter dem SHA-256 des Inhalts, damit derselbe Beleg nur einmal liegt. Der Dateidialog läuft in main, der gewählte absolute Pfad erreicht den Renderer gar nicht; `reveal` zeigt den Ordner (`showItemInFolder`) statt die Datei zu öffnen — sie kommt von außen. |
 | `showControl:*` | `showControlIpc.ts` | `start`, `stop`, `state`, `clear` + Ereignis `showControl:update` — der eingehende OSC-Hörer (E-23). **Vier Auflagen stehen im Code und nicht in der Prosa:** aus als Vorgabe (dieses Modul startet nichts von selbst), je Projekt eingeschaltet, eine Adresse, die der Nutzer nennt (eine leere wird zurückgewiesen — `0.0.0.0` als Vorgabe lauscht auf jeder Schnittstelle, auch der im Kundennetz), und ein sichtbarer Befund, wenn nicht gebunden werden konnte. `start` gibt IMMER einen Zustand zurück, auch den gescheiterten: ein stiller Nicht-Empfang sieht aus wie „keine Cues", und das ist die Entwarnung durch die Hintertür. Gelesen wird aus dem Paket NUR die Adresse und die Länge dessen, was dahinter steht — Argumente zu entziffern hiesse, aus fremden Bytes Zahlen zu machen (Invariante 23). |
 | `documentLog:*` | `documentLogIpc.ts` | `append`, `read`, `clear` — das Register der ausgegebenen Dokumente (ADR-004). Es überdauert die Sitzung und gehört damit auf die Platte. |
-| `lexware:*` | `lexwareIpc.ts` | **Nur in der Suite-Kopie** (`av-planner-suite/apps/cable-planner`): Brücke zwischen Renderer/Shell und dem Lexware-Office-Client. Der API-Key bleibt in `main` (keytar), der Renderer sieht ihn nie. Diese Domäne gibt es upstream nicht — sie ist Teil des Suite-Overlays. |
 
 **Invarianten**:
 1. **Ein Channel = eine Domäne**. Niemals einen Channel quer durch Domänen
@@ -247,10 +247,35 @@ Plan nicht weiter" ist bei einer Inbetriebnahme die nützlichere Auskunft als
 eine kurze Liste, die vollständig aussieht — genau dort steht der Monitor,
 an dem später niemand versteht, warum kein Bild kommt.
 
-**Noch nicht gebaut, und mit Absicht getrennt:** die Rückmeldung („stimmt" /
-„falsches Bild, es steht X drauf" / „kein Bild"). Sie ist eine Beobachtung
-mit Zeitpunkt und gehört damit ins Projekt — wie `TallyCheck` und anders als
-die Wahl der Quelle.
+**Die Rückmeldung — und warum sie ins Projekt gehört.** „Stimmt" /
+„falsches Bild, es steht X drauf" / „kein Bild" / „kein Monitor" wird am
+Ankunftsort erfasst und liegt als `PatternCheck` **im Projekt**: sie ist ein
+BELEG mit Zeitpunkt und Prüfer, die Antwort auf „habt ihr das abgenommen?".
+Dieselbe Einordnung wie `TallyCheck`, und der Gegenpol zur Wahl der Quelle,
+die ein Vorgang ist. Angehängt, nie ersetzt — „gestern ging es, heute nicht"
+ist die Auskunft, die den Fehler findet.
+
+**Der gesehene Name ist ein eigenes Feld**, und daran hängt der ganze
+Nutzen. „Falsches Bild" ist ein Symptom; „es steht KAMERA 3 drauf" ist ein
+Befund; und wenn am anderen Monitor umgekehrt KAMERA 1 steht, ist es die
+Ursache: **zwei Ausgänge sind vertauscht.** `lib/patternDiagnose.ts` macht
+genau diese Verdichtung — und rät dabei nichts zurecht: der Name wird nur
+über Gross-/Kleinschreibung und Randleerzeichen normalisiert, ein doppelt
+vergebener Name löst gar nicht auf. Wer hier unscharf verglichen (Präfix,
+„enthält", Levenshtein) machte aus einer Beobachtung eine Vermutung, und die
+stünde dann als Befund da.
+
+**„Kein Monitor" ist ein eigener Wert** und nicht „kein Bild": es ist ein
+Befund über den PLAN, nicht über das Signal. Wer ihn als „kein Bild"
+meldete, schickte jemanden auf die Suche nach einem Kabelfehler, den es
+nicht gibt.
+
+**Ungeprüfte Orte stehen in der Liste**, mit eigenem Befund. Eine Liste, die
+nur die geprüften zeigt, sieht nach abgeschlossener Abnahme aus, sobald
+jemand drei von zwölf Monitoren angesehen hat.
+
+**Noch offen:** die Erfassung über die Mobile-Ansicht (der Weg dafür steht:
+`/checks` ist token-gesichert) und das Setzen von Kreuzpunkten aus dem Plan.
 
 ### 3.2 · Komponenten
 
@@ -462,6 +487,7 @@ gehören hier rein, nicht in einzelne Komponenten.
 | **Beobachtungen (Tally, Kreuzpunkte)** | **nirgends — `liveStore`, nur im Speicher** | — |
 | **Schalterstellungen im Schaltbild** | **nirgends — `circuitStore`, nur im Speicher** | — |
 | **Gewählte Prüfbild-Quelle** | **nirgends — `patternStore`, nur im Speicher** | — |
+| Sichtprüfungen vom Prüfbild-Rundgang | im Projekt (`patternChecks`) | — |
 
 Die letzten beiden Zeilen stehen hier, weil sie Entscheidungen sind und
 keine Versäumnisse. Was die Anlage vor einer Stunde tat, weiß diese App nach
@@ -909,7 +935,7 @@ optionales Cloud-Backend (`y-websocket`, Auth/Permissions) bleiben offen.
 `vitest` ist eingerichtet (`npm test` / `npm run test:watch`); dazu kommen
 gezielte Node-Checks (`npm run test:crdt`, `npm run test:signaling`), ein
 UI-Smoke-Skript (`npm run ui:smoke`) und ein headless Drag-/Interaktions-Test
-(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~179.3k LOC
+(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~179.6k LOC
 bleibt der Ausbau der Abdeckung wichtig — empfohlene Schwerpunkte:
 - Snapshot-Tests auf `healProjectPositions` mit echten
   Beispiel-Projekt-JSONs.
