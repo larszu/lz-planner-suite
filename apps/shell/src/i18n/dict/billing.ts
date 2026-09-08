@@ -47,5 +47,8 @@ export const billing: Record<string, string> = {
   'billing.sentOk': 'Created in Lexware Office',
   'billing.openInLexware': 'Open in Lexware',
   'billing.sendHint': 'Sending runs through the open Signal planner (Cable), which holds the API key. Open it first and store the key there.',
-  'billing.needSignal': 'Open the Signal planner to send (it holds the Lexware key).',
+  // E-12 — der Beleg geht nicht mehr ueber den Signal-Planer. Zwei Auskuenfte
+  // statt einer, weil sie zwei verschiedene Abhilfen haben.
+  'billing.needDesktop': 'Documents are sent from the desktop app — that is where the key lives.',
+  'billing.needKey': 'No Lexware key stored — add it in Settings.',
 }

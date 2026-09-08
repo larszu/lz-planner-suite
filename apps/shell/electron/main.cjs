@@ -135,6 +135,17 @@ ipcMain.handle('suiteHost:project:open', (e) =>
   projectFiles.oeffne(BrowserWindow.fromWebContents(e.sender)),
 )
 
+// Lexware als eigene Shell-Domaene (E-12) -- siehe `lexware.cjs`. Der Beleg-Weg
+// lief vorher ueber den eingebetteten Planer und war dort in jeder
+// ausgelieferten Konfiguration durchtrennt (B-19).
+const lexware = require('./lexware.cjs')
+ipcMain.handle('suiteHost:lexware:ping', () => lexware.ping())
+ipcMain.handle('suiteHost:lexware:create', (_e, doc) => lexware.createDocument(doc))
+ipcMain.handle('suiteHost:lexware:setKey', (_e, key) => lexware.setKey(key))
+ipcMain.handle('suiteHost:lexware:deleteKey', () => lexware.deleteKey())
+ipcMain.handle('suiteHost:lexware:hasKey', () => lexware.hasKey())
+
+
 app.whenReady().then(() => {
   registerPlannerProtocols()
   createWindow()

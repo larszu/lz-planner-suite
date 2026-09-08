@@ -42,6 +42,21 @@ contextBridge.exposeInMainWorld('__suiteProjectFiles', {
   open: () => ipcRenderer.invoke('suiteHost:project:open'),
 })
 
+// Lexware als eigene Shell-Domaene (E-12). AN KEINE BETRIEBSART GEBUNDEN, und
+// das ist der ganze Punkt: der alte Weg lief ueber den eingebetteten Planer
+// und war dadurch in JEDER ausgelieferten Konfiguration durchtrennt (B-19).
+// Hier haengt er an nichts ausser dem Hauptprozess.
+//
+// Der API-Key geht NIE durch diese Bruecke nach draussen. `hatKey` meldet die
+// Tatsache, `setzeKey` nimmt einen entgegen -- gelesen wird er nur in main.
+contextBridge.exposeInMainWorld('__suiteLexware', {
+  ping: () => ipcRenderer.invoke('suiteHost:lexware:ping'),
+  createDocument: (doc) => ipcRenderer.invoke('suiteHost:lexware:create', doc),
+  setzeKey: (key) => ipcRenderer.invoke('suiteHost:lexware:setKey', key),
+  loescheKey: () => ipcRenderer.invoke('suiteHost:lexware:deleteKey'),
+  hatKey: () => ipcRenderer.invoke('suiteHost:lexware:hasKey'),
+})
+
 if (nativeCable) {
   contextBridge.exposeInMainWorld('__suiteNativeHost', {
     cable: {

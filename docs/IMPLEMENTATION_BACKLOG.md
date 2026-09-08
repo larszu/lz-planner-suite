@@ -524,7 +524,44 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-19 · Lexware: zwei Bedingungen, die sich gegenseitig ausschließen
 
-* **Status:** offen — **entschieden (E-12, 2026-09-08): eigene Shell-Domäne; der Planer-Handler entfällt**
+* **Status:** **erledigt 2026-09-08** — `suite#187`. Entschieden (E-12): eigene
+  Shell-Domäne; der Planer-Handler entfällt.
+* **Gebaut:** `apps/shell/electron/lexware.cjs` als eigene Domäne im
+  Hauptprozess, `__suiteLexware` in der Preload-Brücke — **an keine
+  Betriebsart gebunden**, wie `__suiteTally` und `__suiteProjectFiles`. Genau
+  daran war der alte Weg gescheitert: er hing an „eingebettet" und war deshalb
+  im ausgelieferten Standard-Build tot.
+* **Die alte Bus-Route ist ENTFERNT, nicht stillgelegt.** `requestLexware`,
+  `connectShellLexware` und die beiden Nachrichten-Typen sind aus
+  `packages/ui/src/embed.ts` und aus dem Export von `@avplan/ui` verschwunden,
+  ebenso `shellLexware.ts` im Planer. Ein Bus-Weg, den niemand fährt, ist
+  einer, den jemand später wieder befährt — und dann steht er vor denselben
+  zwei Bedingungen.
+* **Und der zweite Weg gleich mit:** `cableHost.cjs` registrierte Cables
+  `lexwareIpc` im nativen Modus. Das ist raus — sonst gäbe es zwei Wege zu
+  derselben API, und der Nutzer hätte je nach Fenster einen anderen unter
+  denselben Knöpfen.
+* **Der Schlüssel:** genau EIN Eintrag im Schlüsselbund, und er behält seinen
+  historischen Namen (`cable-planner` / `lexware-api-key`). Ihn umzubenennen,
+  weil die Domäne umgezogen ist, liesse jeden schon hinterlegten Schlüssel
+  unauffindbar zurück — die Anwendung meldete „kein Key hinterlegt", ohne zu
+  sagen, dass sie nur woanders sucht. Zwei Einträge beantworteten dieselbe
+  Frage verschieden. Herausgegeben wird nur die TATSACHE, nie der Wert, auch
+  nicht gekürzt.
+* **Drei Zustände, nicht zwei:** hinterlegt, nicht hinterlegt, und „konnte
+  nicht nachsehen" (kein Schlüsselbund erreichbar). Den dritten als „nicht
+  hinterlegt" zu zeigen hiesse, dem Nutzer zu sagen, sein Schlüssel sei weg.
+* **Der Dialog nennt jetzt die richtige Abhilfe.** Vorher gab es eine einzige
+  Meldung („Signal-Planer öffnen, um zu senden") — die Anleitung zu einem Weg,
+  den es nicht gab. Jetzt sind es zwei getrennte Auskünfte, weil sie zwei
+  verschiedene Abhilfen haben: fehlende Desktop-Brücke gegen fehlenden
+  Schlüssel.
+* **Neu erreichbar:** der Schlüssel lässt sich in den Shell-Einstellungen
+  eintragen, prüfen und entfernen. Vorher ging das nur in den Einstellungen des
+  Cable-Planers — und der Beleg-Weg lief danach trotzdem nicht.
+* **Sieben Gegenproben, alle rot** (`apps/shell/test/lexwareShellDomaene.test.ts`).
+* **Damit ist Bedarf 99 nicht mehr blockiert** — Mahnketten hängen an dieser
+  Domäne, und sie steht jetzt.
 * **Befund (nachgeprüft 2026-09-04):** Der Key-Weg (hinterlegen + Verbindung
   testen) ist echt und vollständig — bis zum HTTPS-Aufruf gegen
   `api.lexoffice.io`. Der **Beleg-Weg**, über den überhaupt erst ein Angebot
@@ -2388,7 +2425,7 @@ belegbar, dort sind sie erprobt.
 | 54 | P2 | **WON'T, bereits entschieden.** Steht in der E-18-Zeile unter „WON'T, weil sie Autorenschaft brauchen": geteilter Ablauf mit Spaltenrechten je Rolle. Der Ablauf wird gelesen, nicht geführt. |
 | 56 | P2 | **WON'T, bereits entschieden.** Dieselbe Zeile: Ist-Zeiten mit einem Tipp erfassen setzt Autorenschaft am Ablauf voraus. |
 | 93 | P2 | **Blockiert wie E-24, aus demselben Grund.** Der Spektrum-Plan ist gebaut (`spectrumPlan.ts`, Bedarf 95) und gibt eine CSV-Tabelle aus. Was der Bedarf will, ist der Austausch mit Wireless Workbench / WSM / IAS — und deren Dateiformate sind nicht dokumentiert öffentlich. Ein aus dem Gedächtnis gebauter Schreiber wäre eine ungeprüfte Zusicherung (Invariante 18). Sobald eine Beispieldatei vorliegt, ist das dieselbe Bauform wie der Ablauf-Leser. |
-| 99 | P3 | **Offen.** `packages/lexware-core` legt Belege an; Mahnketten mit gesetzlichen Fristen und Verzugszinsen auf dem Dokument gibt es nicht. Hängt an E-12 (Lexware als eigene Shell-Domäne), das entschieden und noch nicht gebaut ist. |
+| 99 | P3 | **Offen, aber nicht mehr blockiert.** `packages/lexware-core` legt Belege an; Mahnketten mit gesetzlichen Fristen und Verzugszinsen auf dem Dokument gibt es nicht. Hing an E-12 — das ist seit `suite#187` gebaut: die Beleg-Domäne läuft im Hauptprozess der Shell und ist in beiden Betriebsarten erreichbar. Was jetzt fehlt, ist die Mahnstufe selbst; die Fristen sind gesetzlich und gehören ANGEGEBEN, nicht geraten. |
 | 117 | P4 | **Offen, und ohne Schema nicht baubar.** Eine Rechnung, die den E-Invoicing-Validator des Kunden besteht, heisst XRechnung oder ZUGFeRD — beides Formate mit Spezifikation, die dieses Repo nicht vorliegen hat. Wie 93: erst die Fundstelle, dann der Schreiber. |
 | 118 | P4 | **Erledigt 2026-09-08** — `cable#789`, plus `multicam#114` und `light#100` fürs Format. **Die Zeile hier war falsch:** sie sagte, das Lager-Modul sei „inzwischen ein eigenes Repo" — nachgesehen liegt es weiter in `cable-planner/src/renderer/lager/` (die Auslagerung steht noch aus). Gebaut wurde deshalb dort. **Zwei der drei Artefakte gab es schon:** der Lieferschein ist seit den Bedarfen 15/16/136 der Ausgabeschein samt Quittung. Neu ist die WERT-Hälfte: `InventoryUnit.anschaffung` und `.versicherungswert` (zwei Zahlen, **kein Zeitwert** — die Abschreibungsregel gehört dem Versicherer), `InventoryItem.ursprungsland`, `Geldbetrag` mit Währung am Betrag. Daraus die **Versicherungsliste** (Summe je Währung, und die Einheiten ohne Wert namentlich darunter — eine Summe, die ihre Lücke verschweigt, ist die stille Unterversicherung) und das **Carnet-Datenblatt** (die Spalten, nicht das Zolldokument). Format-Version 3 → 4 in allen drei Repos. Elf Gegenproben. |
 | 119 | P4 | **Offen, und der Zuschnitt ist jetzt schaerfer.** Mit Bedarf 120 ist die eine Haelfte da: die Nachweise liegen als Paket vor, samt Deckblatt. Was fehlt, sind die **Stammdaten** (Steuernummer, Bankverbindung) auf demselben Blatt — und genau die sind der Grund, warum hier nicht weitergebaut wurde: Bankdaten in einen localStorage zu legen, den niemand als Tresor angelegt hat, ist eine Entscheidung des Eigentuemers und keine, die beim Bauen nebenbei faellt (dieselbe Frage wie bei den Stream-Keys, die deshalb im keytar liegen). **Der zweite Teil des Bedarfs ist ohnehin nicht baubar:** „ohne weiteres Konto aufgenommen werden" betrifft das System des KUNDEN; diese Anwendung kann dort nichts abschalten. Der Bedarf ist zudem der am schwaechsten belegte des Dossiers — „the forums carrying it were unreachable" — und wurde ausdruecklich heruntergestuft. |

@@ -160,6 +160,23 @@ export const chrome: Record<string, string> = {
   'chrome.runtime.changeAddress': 'Change address',
   'chrome.runtime.openNewTab': 'Open in a new tab',
   'chrome.settings.runtimes': 'Devices on the network',
+  // E-12 — Lexware als eigene Shell-Domaene.
+  'chrome.settings.lexware': 'Lexware Office',
+  'chrome.settings.lexwareHint':
+    'Quotes and invoices are built from the project and go to Lexware from here. The key lives in this machine’s keychain, never leaves the main process, and is shown nowhere.',
+  'chrome.settings.lexwareNoBridge':
+    'The key is stored in the desktop app — a browser has no keychain.',
+  'chrome.settings.lexwareHas': 'A key is stored.',
+  'chrome.settings.lexwareNone': 'No key stored.',
+  'chrome.settings.lexwareUnknown': 'The keychain could not be read — whether a key is stored is open.',
+  'chrome.settings.lexwarePh': 'Enter API key',
+  'chrome.settings.lexwareSave': 'Store',
+  'chrome.settings.lexwareSaved': 'Key stored.',
+  'chrome.settings.lexwareRemove': 'Remove',
+  'chrome.settings.lexwareRemoved': 'Key removed.',
+  'chrome.settings.lexwareTest': 'Test connection',
+  'chrome.settings.lexwareTesting': 'Testing …',
+  'chrome.settings.lexwareOk': 'Connection works.',
   'chrome.settings.runtimesBadge': 'Tally · Camera · Intercom · Media',
   'chrome.settings.runtimesHint':
     'These four applications run on their own — on a Pi on the network or as a separate service. The suite shows their interface as soon as the address is right.',

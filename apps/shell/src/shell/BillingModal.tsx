@@ -14,7 +14,7 @@ import {
 import { format, useT } from '../i18n'
 import { billToContact, resolveBilling, type BillingSettings, type InvoiceRecord, type SuiteProject } from '../data/project'
 import { addDaysIso, deriveLineItems, toBillingContact, type LineSource } from '../data/billing'
-import { canSendLexware, sendLexware } from '../embed/lexwareBridge'
+import { canSendLexware, lexwareBridge, sendLexware } from '../embed/lexwareBridge'
 
 const eur = (n: number) => n.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
 
@@ -119,14 +119,41 @@ function BillingBody({ project, onPersistSettings, onRecordInvoice }: { project:
   const [result, setResult] = useState<{ ok: boolean; webUrl?: string; error?: string } | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
 
-  // Reaktive Verfügbarkeit des Signal-Planers: er kann geöffnet/geschlossen
-  // werden, während der Dialog offen ist — daher periodisch nachsehen.
-  const [plannerAvailable, setPlannerAvailable] = useState(canSendLexware)
+  // E-12 — ZWEI FRAGEN, NICHT EINE. Ob gesendet werden KANN, hing hier früher
+  // daran, ob ein Signal-Planer offen ist; das war der alte Weg über das
+  // iframe (B-19) und die einzige Auskunft, die der Dialog gab. Jetzt sind es
+  // zwei getrennte Auskünfte, weil sie zwei verschiedene Abhilfen haben:
+  //
+  //   * die BRÜCKE — läuft die Shell überhaupt als Desktop-App? („in der
+  //     Desktop-App öffnen")
+  //   * der SCHLÜSSEL — ist einer hinterlegt? („in den Einstellungen
+  //     eintragen")
+  //
+  // Sie zusammenzufassen hiesse, dem Nutzer eine Abhilfe zu nennen, die sein
+  // Problem nicht löst. Der Schlüssel wird nur EINMAL nachgefragt, nicht im
+  // Takt: er ändert sich nicht, während ein Dialog offen ist, und ein
+  // Sekundentakt gegen den Schlüsselbund wäre Lärm ohne Anlass.
+  const bridgeVorhanden = canSendLexware()
+  const [keyVorhanden, setKeyVorhanden] = useState<boolean | null>(null)
   useEffect(() => {
-    // Anfangswert deckt der useState-Initializer ab; hier nur periodisch neu prüfen.
-    const id = setInterval(() => setPlannerAvailable(canSendLexware()), 1500)
-    return () => clearInterval(id)
+    let abgebrochen = false
+    const bridge = lexwareBridge()
+    // Ohne Bruecke bleibt der Anfangswert `null` stehen — „konnte nicht
+    // nachsehen". Ihn hier noch einmal zu setzen waere ein Zustandswechsel
+    // ohne Zustandsaenderung.
+    if (!bridge) return
+    void bridge.hatKey().then((r) => {
+      // Ein nicht lesbarer Schlüsselbund ist NICHT „kein Schlüssel": `null`
+      // heisst „konnte nicht nachsehen", und der Knopf bleibt bedienbar,
+      // damit der Fehler beim Senden im Klartext ankommt statt als
+      // ausgegrauter Knopf ohne Grund.
+      if (!abgebrochen) setKeyVorhanden(r.ok ? r.vorhanden === true : null)
+    })
+    return () => {
+      abgebrochen = true
+    }
   }, [])
+  const sendenMoeglich = bridgeVorhanden && keyVorhanden !== false
 
   // Beleg-Einstellungen dauerhaft ins Projekt schreiben, wenn der Dialog
   // schließt und sich etwas geändert hat. Ohne das gingen Steuerart, Zahlungs-
@@ -255,11 +282,6 @@ function BillingBody({ project, onPersistSettings, onRecordInvoice }: { project:
   }
   const doSend = async () => {
     if (!doc || !valid) return
-    if (!canSendLexware()) {
-      setPlannerAvailable(false)
-      setResult({ ok: false, error: t('billing.needSignal', 'Signal-Planer öffnen, um zu senden (er hält den Lexware-Key).') })
-      return
-    }
     setSending(true)
     setResult(null)
     const r = await sendLexware(doc)
@@ -268,7 +290,13 @@ function BillingBody({ project, onPersistSettings, onRecordInvoice }: { project:
     setResult(
       r.ok
         ? { ok: true, webUrl: r.webUrl }
-        : { ok: false, error: r.error === 'needSignal' ? t('billing.needSignal', 'Signal-Planer öffnen, um zu senden (er hält den Lexware-Key).') : r.error },
+        : {
+            ok: false,
+            error:
+              r.error === 'noBridge'
+                ? t('billing.needDesktop', 'Belege werden aus der Desktop-App gesendet — dort liegt der Schlüssel.')
+                : r.error,
+          },
     )
   }
 
@@ -465,14 +493,24 @@ function BillingBody({ project, onPersistSettings, onRecordInvoice }: { project:
       {/* Primäraktion: Senden */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[11px] text-av-warn">
-          {!plannerAvailable && t('billing.needSignal', 'Signal-Planer öffnen, um zu senden (er hält den Lexware-Key).')}
+          {!bridgeVorhanden
+            ? t('billing.needDesktop', 'Belege werden aus der Desktop-App gesendet — dort liegt der Schlüssel.')
+            : keyVorhanden === false
+              ? t('billing.needKey', 'Kein Lexware-Schlüssel hinterlegt — in den Einstellungen eintragen.')
+              : ''}
         </span>
         <div className="flex items-center gap-2">
           {flash && <span className="text-[11px] text-av-text-muted">{flash}</span>}
           <button
             type="button"
-            disabled={!valid || !plannerAvailable || sending}
-            title={!plannerAvailable ? t('billing.needSignal', 'Signal-Planer öffnen, um zu senden (er hält den Lexware-Key).') : undefined}
+            disabled={!valid || !sendenMoeglich || sending}
+            title={
+              !bridgeVorhanden
+                ? t('billing.needDesktop', 'Belege werden aus der Desktop-App gesendet — dort liegt der Schlüssel.')
+                : keyVorhanden === false
+                  ? t('billing.needKey', 'Kein Lexware-Schlüssel hinterlegt — in den Einstellungen eintragen.')
+                  : undefined
+            }
             className="av-focus rounded-av-control bg-av-accent px-3.5 py-1.5 text-[12.5px] font-medium text-av-accent-text disabled:opacity-40"
             onClick={doSend}
           >

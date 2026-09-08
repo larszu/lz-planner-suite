@@ -22,7 +22,11 @@ const CABLE_URL = 'planner-signal://app/index.html'
 const IPC_MODULES = [
   ['credentialsIpc.js', 'registerCredentialsIpc'],
   ['rentmanIpc.js', 'registerRentmanIpc'],
-  ['lexwareIpc.js', 'registerLexwareIpc'],
+  // E-12: KEIN lexwareIpc mehr. Lexware ist seit dieser Entscheidung eine
+  // eigene Shell-Domaene (`lexware.cjs`), und die laeuft in BEIDEN
+  // Betriebsarten. Cables Handler hier zusaetzlich zu registrieren gaebe zwei
+  // Wege zu derselben API — und im nativen Modus haette der Nutzer je nach
+  // Fenster einen anderen Beleg-Weg unter denselben Knoepfen.
   ['projectIpc.js', 'registerProjectIpc'],
   ['atemIpc.js', 'registerAtemIpc'],
   ['videohubIpc.js', 'registerVideohubIpc'],

@@ -12,7 +12,6 @@ import './index.css'
 import { connectShellTheme } from '@avplan/ui/embed'
 import { initShellSettings } from './lib/shellSettings'
 import { initShellHistory } from './lib/shellHistory'
-import { initShellLexware } from './lib/shellLexware'
 import { initShellSeed } from './lib/shellSeedBridge'
 import { initShellTally } from './lib/shellTally'
 import { initShellReveal } from './lib/shellRevealBridge'
@@ -47,7 +46,6 @@ initShellSettings()
 // Undo/Redo der Shell an die projectHistory weiterreichen.
 initShellHistory()
 // Lexware-Office-Belege der Shell an den Lexware-IPC im Main weiterreichen.
-initShellLexware()
 // Projekt der Shell uebernehmen und eigene Aenderungen zurueckmelden.
 initShellSeed()
 // Tally-Karte aus dem Plan auf Anfrage der Shell liefern (Weg zum Pi).

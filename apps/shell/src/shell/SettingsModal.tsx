@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge, Icon, Modal, type ThemePreference } from '@avplan/ui'
 import { MODULES, type ModuleId } from '../modules/registry'
 import { useT, type TFunc } from '../i18n'
@@ -8,6 +8,7 @@ import { runtimeUrl, type RuntimeAddresses } from './runtimeHosts'
 import { loadBackendConfig, saveBackendConfig, type BackendConfig } from '../data/backendConfig'
 import { testConnection } from '../data/syncClient'
 import { syncNow } from '../data/projectStore'
+import { lexwareBridge } from '../embed/lexwareBridge'
 import {
   APP_MODULE_IDS,
   APP_SETTINGS_SCHEMA,
@@ -103,6 +104,7 @@ function SettingsBody({
   return (
     <>
       <RuntimeSection addresses={runtimeAddresses} onChange={onChangeRuntimeAddresses} t={t} />
+      <LexwareSection t={t} />
 
       {/* Gemeinsame Einstellungen — gelten für Shell + alle Planer */}
       <section className="mb-5">
@@ -524,6 +526,151 @@ function Segmented({
   )
 }
 
+
+/**
+ * Der Lexware-Schlüssel — die Shell-Domäne aus E-12.
+ *
+ * WARUM ER HIER STEHT UND NICHT MEHR IM PLANER. Buchhaltung hängt am Projekt
+ * und nicht am Signalfluss; sie ist für alle Module dieselbe. Vorher liess sich
+ * der Schlüssel nur in den Einstellungen des Cable-Planers eintragen — und der
+ * Beleg-Weg lief dann trotzdem nicht (B-19).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * WAS DIESE SEKTION ÜBER DEN SCHLÜSSEL SAGT — UND WAS NICHT
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Sie zeigt ihn NIE. Auch nicht gekürzt, auch nicht als Punktereihe fester
+ * Länge: die Länge eines Schlüssels ist eine Auskunft über den Schlüssel. Der
+ * Hauptprozess gibt nur die TATSACHE heraus, dass einer hinterlegt ist.
+ *
+ * Und diese Tatsache hat DREI Zustände, nicht zwei: hinterlegt, nicht
+ * hinterlegt, und „konnte nicht nachsehen" (kein Schlüsselbund erreichbar).
+ * Den dritten als „nicht hinterlegt" zu zeigen hiesse, dem Nutzer zu sagen,
+ * sein Schlüssel sei weg.
+ */
+function LexwareSection({ t }: { t: TFunc }) {
+  const bridge = lexwareBridge()
+  const [eingabe, setEingabe] = useState('')
+  const [lage, setLage] = useState<'unbekannt' | 'da' | 'keiner' | 'unlesbar'>('unbekannt')
+  const [meldung, setMeldung] = useState<string | null>(null)
+  const [pruefe, setPruefe] = useState(false)
+
+  const nachsehen = async () => {
+    if (!bridge) return
+    const r = await bridge.hatKey()
+    setLage(!r.ok ? 'unlesbar' : r.vorhanden ? 'da' : 'keiner')
+    if (!r.ok && r.error) setMeldung(r.error)
+  }
+  // Einmal beim Oeffnen nachsehen — nicht im Takt: ob ein Schluessel
+  // hinterlegt ist, aendert sich nicht, waehrend der Dialog offen steht, und
+  // ein Sekundentakt gegen den Schluesselbund waere Laerm ohne Anlass.
+  useEffect(() => {
+    if (!bridge) return
+    let abgebrochen = false
+    void bridge.hatKey().then((r) => {
+      if (abgebrochen) return
+      setLage(!r.ok ? 'unlesbar' : r.vorhanden ? 'da' : 'keiner')
+      if (!r.ok && r.error) setMeldung(r.error)
+    })
+    return () => {
+      abgebrochen = true
+    }
+  }, [bridge])
+
+  if (!bridge) {
+    return (
+      <section className="mb-5">
+        <span className="text-[12px] font-semibold uppercase tracking-wider text-av-text-muted">
+          {t('chrome.settings.lexware', 'Lexware Office')}
+        </span>
+        <p className="mt-1 text-[12px] text-av-text-muted">
+          {t(
+            'chrome.settings.lexwareNoBridge',
+            'Der Schlüssel wird in der Desktop-App hinterlegt — im Browser gibt es keinen Schlüsselbund.',
+          )}
+        </p>
+      </section>
+    )
+  }
+
+  const speichern = async () => {
+    const r = await bridge.setzeKey(eingabe)
+    setMeldung(r.ok ? t('chrome.settings.lexwareSaved', 'Schlüssel hinterlegt.') : (r.error ?? null))
+    if (r.ok) setEingabe('')
+    await nachsehen()
+  }
+  const loeschen = async () => {
+    const r = await bridge.loescheKey()
+    setMeldung(r.ok ? t('chrome.settings.lexwareRemoved', 'Schlüssel entfernt.') : (r.error ?? null))
+    await nachsehen()
+  }
+  const testen = async () => {
+    setPruefe(true)
+    const r = await bridge.ping()
+    setPruefe(false)
+    setMeldung(r.ok ? t('chrome.settings.lexwareOk', 'Verbindung steht.') : (r.error ?? null))
+  }
+
+  const lageText =
+    lage === 'da'
+      ? t('chrome.settings.lexwareHas', 'Ein Schlüssel ist hinterlegt.')
+      : lage === 'keiner'
+        ? t('chrome.settings.lexwareNone', 'Kein Schlüssel hinterlegt.')
+        : lage === 'unlesbar'
+          ? t('chrome.settings.lexwareUnknown', 'Der Schlüsselbund liess sich nicht lesen — ob einer hinterlegt ist, ist offen.')
+          : ''
+
+  return (
+    <section className="mb-5">
+      <div className="mb-1 flex items-center gap-2">
+        <span className="text-[12px] font-semibold uppercase tracking-wider text-av-text-muted">
+          {t('chrome.settings.lexware', 'Lexware Office')}
+        </span>
+        <Badge tone={lage === 'da' ? 'accent' : 'neutral'}>{lageText}</Badge>
+      </div>
+      <p className="mt-1 text-[12px] text-av-text-muted">
+        {t(
+          'chrome.settings.lexwareHint',
+          'Angebote und Rechnungen entstehen aus dem Projekt und gehen von hier nach Lexware. Der Schlüssel liegt im Schlüsselbund des Rechners und verlässt den Hauptprozess nie — angezeigt wird er nirgends.',
+        )}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <input
+          type="password"
+          value={eingabe}
+          onChange={(e) => setEingabe(e.target.value)}
+          placeholder={t('chrome.settings.lexwarePh', 'API-Schlüssel eintragen')}
+          className="av-focus min-w-[16rem] flex-1 rounded-av-control border border-av-border bg-av-surface-2 px-2.5 py-1.5 text-[13px] text-av-text"
+        />
+        <button
+          type="button"
+          disabled={!eingabe.trim()}
+          onClick={() => void speichern()}
+          className="av-focus rounded-av-control bg-av-accent px-3 py-1.5 text-[12.5px] font-semibold text-av-accent-text disabled:opacity-50"
+        >
+          {t('chrome.settings.lexwareSave', 'Hinterlegen')}
+        </button>
+        <button
+          type="button"
+          disabled={pruefe}
+          onClick={() => void testen()}
+          className="av-focus rounded-av-control border border-av-border bg-av-surface-3 px-3 py-1.5 text-[12.5px] text-av-text-secondary disabled:opacity-50"
+        >
+          {pruefe ? t('chrome.settings.lexwareTesting', 'Prüfe …') : t('chrome.settings.lexwareTest', 'Verbindung prüfen')}
+        </button>
+        <button
+          type="button"
+          disabled={lage !== 'da'}
+          onClick={() => void loeschen()}
+          className="av-focus rounded-av-control border border-av-border bg-av-surface-3 px-3 py-1.5 text-[12.5px] text-av-text-secondary disabled:opacity-50"
+        >
+          {t('chrome.settings.lexwareRemove', 'Entfernen')}
+        </button>
+      </div>
+      {meldung && <p className="mt-2 text-[12px] text-av-text-secondary">{meldung}</p>}
+    </section>
+  )
+}
 
 /**
  * „Geraete im Netz" — die Adressen der vier Laufzeit-Anwendungen.

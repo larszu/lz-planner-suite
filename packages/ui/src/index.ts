@@ -54,13 +54,11 @@ export {
   connectShellTheme,
   connectShellSettings,
   connectShellHistory,
-  connectShellLexware,
   declareNoHistory,
   postThemeToFrame,
   postSettingsToFrame,
   postCommandToFrame,
   publishShellSetting,
-  requestLexware,
   onShellMessage,
   type ShellMessage,
   type ThemeMessage,
@@ -71,9 +69,6 @@ export {
   type HistoryMessage,
   type HistoryHandlers,
   type SettingChangedMessage,
-  type LexwareRequestMessage,
-  type LexwareResultMessage,
-  type LexwareRequestResult,
 } from './embed'
 
 export {
