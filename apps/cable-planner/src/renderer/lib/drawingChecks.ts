@@ -23,6 +23,8 @@ import { effectiveWatts } from './equipmentSelectors'
 import { deriveDrumChannels } from './drumMicing'
 import { labelTargetIssues } from './labelDerivation'
 import { beurteileAdapter } from '../types/adapter'
+import { anschlussBefunde, type AnschlussLeitung } from '../types/conductor'
+import { beurteileBild } from '../types/displayCapability'
 
 export type CheckSeverity = 'error' | 'warning' | 'info'
 
@@ -81,6 +83,11 @@ export interface DrawingCheckInput {
   drumKit?: DrumKitPlan
   /** ADR-001 — Signalquellen-Rollen; speisen die Label-/UMD-Checks. */
   sourceIdentities?: import('../types/sourceIdentity').SourceIdentity[]
+  /** B-45 — die Anschluesse und die gewaehlten Farbnormen. */
+  anschlussListe?: import('../types/conductor').Anschluss[]
+  farbnormen?: import('../types/conductor').Farbnorm[]
+  /** B-47 — das Format, das gilt, wo das Kabel keines nennt. */
+  defaultVideoFormat?: import('../types/videoFormat').VideoFormatId
 }
 
 export interface DrawingCheckResult {
@@ -95,7 +102,15 @@ export interface DrawingCheckResult {
  * (errors zuerst). Pure function — leicht testbar, kein Store-Zugriff.
  */
 export const runDrawingChecks = (
-  { equipment, cables, drumKit, sourceIdentities }: DrawingCheckInput,
+  {
+    equipment,
+    cables,
+    drumKit,
+    sourceIdentities,
+    anschlussListe,
+    farbnormen,
+    defaultVideoFormat,
+  }: DrawingCheckInput,
 ): DrawingCheckResult => {
   const findings: CheckFinding[] = []
   const eqById = new Map(equipment.map((e) => [e.id, e]))
@@ -732,6 +747,91 @@ export const runDrawingChecks = (
         })
       }
     }
+  }
+
+  // — Check 22: Adernbündel — liegt jeder geplante Leiter? (B-45) ----------
+  //
+  // Der Fehler, den ein Plan finden MUSS: vier gezogene Leitungen bei fünf
+  // geplanten. Powerlock zieht man je Leiter einzeln, und ohne das `soll` am
+  // Bündel könnte hier nur gezählt werden, was da ist — nie, was fehlt.
+  //
+  // Die Schwere folgt der Bedeutung und nicht der Sortierung: eine fehlende
+  // Ader ist eine Leitung, die auf der Baustelle nicht liegt (`error`); eine
+  // fehlende Farbnorm ist eine Angabe, die niemand eingetragen hat (`info`).
+  // Wer beide gleich zeigt, lässt die erste in der zweiten untergehen.
+  const SCHWERE: Record<string, CheckSeverity> = {
+    'ader-fehlt': 'error',
+    'ader-doppelt': 'error',
+    'farbe-widerspricht': 'error',
+    'leitung-stumm': 'warning',
+    'norm-offen': 'info',
+  }
+  for (const anschluss of anschlussListe ?? []) {
+    const leitungen: AnschlussLeitung[] = cables
+      .filter((c) => c.anschlussId === anschluss.id)
+      .map((c) => ({
+        cableId: c.id,
+        bezeichnung: c.cableNumber?.trim() || c.name?.trim() || c.type || c.id,
+        adern: c.adern ?? [],
+      }))
+    const norm = (farbnormen ?? []).find((n) => n.id === anschluss.farbnormId)
+    for (const b of anschlussBefunde(anschluss, leitungen, norm)) {
+      findings.push({
+        id: `anschluss-${b.art}:${b.anschlussId}${b.cableId ? `:${b.cableId}` : ''}:${b.text.length}`,
+        severity: SCHWERE[b.art] ?? 'info',
+        category: 'Adernbündel',
+        message: b.text,
+        ...(b.cableId ? { cableId: b.cableId } : {}),
+      })
+    }
+  }
+
+  // — Check 23: kommt das Bild an, das geschickt wird? (B-47) --------------
+  //
+  // Der Wunsch des Eigentümers war „Monitore sind noch nicht intelligent" —
+  // und die Frage dahinter ist nicht die Aushandlung am Kabel (die passiert
+  // zwischen zwei Geräten und nicht in einer Planungssoftware), sondern die,
+  // die man VORHER stellt: nimmt die Senke an, was ich schicke?
+  //
+  // Ein Monitor OHNE erklärtes Profil ergibt einen `info`-Befund und nicht
+  // nichts. Nichts hiesse auf dem Blatt „geprüft und in Ordnung", und genau
+  // das ist er nicht — über ihn ist schlicht nichts bekannt.
+  //
+  // WAS HIER NICHT NOCHMAL GERECHNET WIRD: die Grenze eines Adapters auf dem
+  // Weg. Die steht in Check 21 und würde hier ein zweites Mal beantwortet —
+  // `zwei-rechnungen`, und die beiden liefen beim nächsten Umbau auseinander.
+  for (const c of cables) {
+    if (c.wireless) continue
+    const senke = eqById.get(c.toEquipmentId)
+    if (!senke) continue
+    // WORAN DIESER CHECK ANSPRINGT — und woran ausdrücklich nicht.
+    //
+    // Die erste Fassung nahm zusätzlich `category.includes('monitor')` als
+    // Hinweis, dass ein Gerät eine Anzeige ist. Das ist ein Namensabgleich,
+    // und ADR-002 schliesst ihn für folgenreiche Entscheidungen aus: eine
+    // „Regie-Monitorwand" bekäme Befunde, ein „Display Wall Controller"
+    // keine, und beides wäre eine Aussage über die Schreibweise der
+    // Kategorie und nicht über das Gerät.
+    //
+    // Angesprungen wird deshalb nur, wo jemand etwas ERKLÄRT hat:
+    //   • die Senke trägt ein Profil  -> gegen den Projekt-Vorgabewert prüfen
+    //   • das Kabel nennt ein Format  -> jemand sagt „hier läuft Bild", also
+    //                                    ist ein fehlendes Profil eine Lücke
+    // Ohne beides schweigt der Check. Der Projekt-Vorgabewert allein reicht
+    // NICHT: er gilt für jede Strecke, und ein „nicht erklärt" an jeder
+    // Steckdose wäre Rauschen, in dem die echten Befunde untergehen.
+    const formatId = c.videoFormat ?? (senke.senkenprofil ? defaultVideoFormat : undefined)
+    if (!formatId) continue
+    const urteil = beurteileBild(senke.senkenprofil, { formatId }, senke.name)
+    if (urteil.art === 'passt') continue
+    findings.push({
+      id: `bild-${urteil.art}:${c.id}`,
+      severity: urteil.art === 'passt-nicht' ? 'error' : 'info',
+      category: 'Bildformat',
+      message: urteil.text,
+      equipmentId: senke.id,
+      cableId: c.id,
+    })
   }
 
   // Sortierung: error → warning → info, innerhalb stabil nach category.

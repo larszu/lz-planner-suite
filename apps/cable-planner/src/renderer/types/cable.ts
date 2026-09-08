@@ -44,6 +44,32 @@ export interface Cable {
   cableSpecId?: string
   /** Chosen signal standard if applicable (e.g. SDI-12G). */
   standard?: SignalStandard
+  /**
+   * B-45 — welche Leiter DIESE Leitung fuehrt.
+   *
+   * Ein mehradriges Kabel fuehrt mehrere; eine Powerlock-Leitung genau eine.
+   * Leer heisst „nicht eingetragen" und nicht „keine" — die Pruefung sagt
+   * genau das, statt eine ungeprüfte Leitung als geprueft zu zeigen.
+   */
+  /**
+   * B-47 — welches Bild ueber DIESE Strecke laufen soll.
+   *
+   * Ohne Eintrag gilt `project.metadata.defaultVideoFormat`. Der eigene
+   * Eintrag ist noetig, weil nicht jede Strecke das Programmformat fuehrt:
+   * ein Regie-Monitor haengt oft an einem anderen als der Havariemitschnitt,
+   * und ein Plan, der alle gleich rechnet, meldet entweder falsche Fehler
+   * oder gar keine.
+   */
+  videoFormat?: import('./videoFormat').VideoFormatId
+  adern?: import('./conductor').Ader[]
+  /**
+   * B-45 — zu welchem Anschluss diese Leitung gehoert.
+   *
+   * Powerlock zieht man je Leiter einzeln: fuenf Leitungen bilden EINEN
+   * 400-A-Anschluss. Ohne diese Zugehoerigkeit sind es fuenf unabhaengige
+   * Kabel, und niemand merkt, dass das vierte fehlt.
+   */
+  anschlussId?: string
   /** true if the planner flagged this connection as incompatible/needing a converter. */
   needsConverter?: boolean
   /** Line routing style. Defaults to orthogonal. */

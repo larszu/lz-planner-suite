@@ -2031,6 +2031,38 @@ belegbar, dort sind sie erprobt.
     `max-w-full`/`-none` nicht mit und griff Dateien statt Vorkommen ab). Die
     Zahlen oben sind die nachgezählten; die alte steht hier, damit niemand die
     Differenz für eine Veränderung am Code hält.
+* **ZWEITE KORREKTUR, und diesmal an der FRAGE (2026-09-08, beim Bauen).**
+  Die Zahl „63 feste `max-w-*` und keine einzige Breakpoint-Fassung" stimmt —
+  aber sie **misst die falsche Eigenschaft**, und der Eintrag las sich
+  dadurch dramatischer, als er ist.
+
+  In Tailwind bedeutet `max-w-2xl` *„höchstens so breit"*. Zusammen mit
+  `w-full` schrumpft das Element auf schmalen Geräten sehr wohl — genau das
+  macht `ModalShell` (`flex max-h-[90vh] w-full ${MAX_WIDTH_CLASS[…]}`).
+  Ein fehlender Breakpoint ist dort **kein** Fehler.
+
+  Nachgezählt, jetzt an der richtigen Frage — *kann das Element schmaler
+  werden?*:
+  * **31 der 63** festen `max-w-*` stehen mit `w-full` im selben
+    `className` und schrumpfen damit. Für sie war nie etwas zu tun.
+  * **21** stehen ohne `w-full`; die sind einzeln anzusehen.
+  * **13 Dateien** haben `grid-cols-3` bis `-9` ohne jeden Umbruchpunkt —
+    das bleibt, ein mehrspaltiges Raster ohne Breakpoint läuft über.
+  * **23 Dateien** enthalten ein `<table>` **ohne** `overflow-x` irgendwo in
+    der Datei. Das ist der grösste und konkreteste Befund und stand in der
+    ersten Messung überhaupt nicht drin: eine breite Tabelle ohne eigenen
+    Scrollbereich schiebt das ganze Blatt zur Seite.
+  * Genau **eine** Stelle hat eine echte Pixelbreite an einem Dialog-Panel
+    (`w-[560px]` in `App.tsx`). Die übrigen `w-NN`-Treffer sind kleine
+    Bedienelemente (`w-14`, `w-12`, `w-28`) und in Ordnung.
+
+  **Warum das hier steht und nicht stillschweigend berichtigt wird:** die
+  falsche Zahl ist bereits in einem gemergten Suite-PR und in einer Antwort
+  an den Eigentümer gelandet. Wer sie später wiederfindet und die neue
+  daneben sieht, muss den Unterschied erklärt bekommen — sonst hält er ihn
+  für eine Veränderung am Code. Und der Fehler selbst ist lehrreich: er ist
+  dieselbe Form wie die beiden Fehlmessungen davor — ein Muster, das
+  *irgendetwas* zählt, statt die Frage zu stellen, um die es geht.
 * **Reihenfolge:** (1) Schliessen — ERLEDIGT; (2) Touch — ERLEDIGT bis auf
   den Löschgriff am Kabel-Wegpunkt und die 44-px-Messung am gerenderten
   Element; (3) Umbruch — OFFEN, und zwar als Regel und nicht als Sweep: eine
@@ -2041,7 +2073,7 @@ belegbar, dort sind sie erprobt.
 
 ### B-45 · Stromplanung, die diesen Namen verdient
 
-* **Status:** offen. **Wunsch des Eigentümers, 2026-09-08:** „Zudem fehlen
+* **Status:** Kern GEBAUT — `cable#782`; die Schalter-Bauarten offen. **Wunsch des Eigentümers, 2026-09-08:** „Zudem fehlen
   noch die Möglichkeiten für ordentliche Stromplanung. Powerlock Kabel zieht
   man einzeln. Die müssen auch die Adern Farben bekommen. Und auch
   Lichtschalter und so müssen integrierbar sein."
@@ -2085,15 +2117,26 @@ belegbar, dort sind sie erprobt.
     Herstellerdokument. Sie aus dem Gedächtnis einzutragen wäre genau der
     Fehler, den Invariante 18 benennt — bis ein Dokument vorliegt, trägt der
     Nutzer die Kodierung ein.
-* **Vorschlag für die Bauform:** ein Kabel bekommt optional **Adern**
-  (`conductors`), jede mit Rolle (L1/L2/L3/N/PE, oder frei) und Farbe. Für
-  ein normales Kabel bleibt das Feld leer und alles ist wie heute. Für den
-  Einzelader-Fall gibt es eine **Bündel-Beziehung**: fünf Kabel, die
-  denselben Anschluss bilden, wissen voneinander — damit Stückliste,
-  Ziehliste und Prüfung sie als eine Sache zeigen können und die Prüfung
-  merkt, wenn eine Ader fehlt. Vier gezogene Leitungen bei fünf geplanten
-  sind der Fehler, den ein Plan finden muss.
-* **Aufwand:** gross.
+* **GEBAUT (`cable#782`).** `types/conductor.ts` trägt zwei Bauteile, weil es
+  zwei Fragen sind:
+  * **Ader** am Kabel (`Cable.adern`) — was führt *diese* Leitung. Ein
+    mehradriges Kabel mehrere, eine Powerlock-Leitung genau eine.
+  * **Anschluss** im Projekt (`project.anschlussListe`) — welche Leitungen
+    bilden zusammen einen Anschluss, und welche Leiter muss er haben. Das
+    **Soll** ist der ganze Zweck: ohne es könnte die Prüfung nur zählen, was
+    da ist. „Vier gezogene Leitungen bei fünf geplanten" ist der Fehler, den
+    ein Plan finden muss — Check 22, `error`.
+  * **Keine eingebaute Farbnorm.** `EINGEBAUTE_FARBNORMEN` ist leer, und das
+    ist die Entscheidung: eine geratene Vorgabe sähe aus wie eine geprüfte
+    Angabe, färbte jede Ader, und die Prüfung bestätigte sie anschliessend
+    gegen sich selbst. Die Norm wird eingetragen, `herkunft` ist Pflicht, und
+    eine ohne wird beim Laden verworfen (**Invariante 22**).
+  * Die Farbe steht auf der **Ziehliste** („L1 (braun)"), nicht nur im Plan.
+  * Die Powerlock-Kodierung ist Freitext — sie steht im Herstellerdokument.
+* **Was offen bleibt:** die Fortsetzung im Schaltbild-Rechner — Schütz/Relais,
+  Taster mit Stromstossschalter, Not-Aus, Fehlerstrom- und
+  Leitungsschutzschalter als eigene Bauarten.
+* **Aufwand:** gross — der Kern erledigt.
 
 ### B-46 · Steck- und Kabeladapter als eigene Objekte
 
@@ -2173,7 +2216,7 @@ belegbar, dort sind sie erprobt.
 
 ### B-47 · Der Monitor weiss, was er kann — ein virtuelles EDID
 
-* **Status:** offen. **Wunsch des Eigentümers, 2026-09-08:** „Auch sind
+* **Status:** Kern GEBAUT — `cable#783`; der Datei-Import offen. **Wunsch des Eigentümers, 2026-09-08:** „Auch sind
   Monitore noch nicht intelligent. Man bräuchte quasi auch ein virtuelles
   EDID."
 
@@ -2204,8 +2247,24 @@ belegbar, dort sind sie erprobt.
   damit machbar — **die Feldbedeutungen gehören aber aus der Spezifikation
   belegt und nicht aus dem Gedächtnis** (Invariante 18). Bis dahin: erklärte
   Fähigkeiten von Hand.
-* **Aufwand:** gross. Sinnvoll erst nach B-46, weil der Adapter die
-  interessanteste Station auf dem Weg ist.
+* **GEBAUT (`cable#783`).** `types/displayCapability.ts`: ein `Senkenprofil`
+  am Gerät sagt, welche Formate es annimmt — in welchen Farbtiefen,
+  Farbräumen und Dynamik-Fassungen. `herkunft` ist Pflicht.
+  * **Drei Urteile** (`passt` / `passt-nicht` / `offen`), und eine **leere
+    Achse** heisst „dazu ist nichts erklärt" → `offen`, nie ein stilles „na
+    klar, 8 Bit RGB SDR". Auch die Maske belegt nichts vor.
+  * Ein **Befund geht der fehlenden Angabe vor** — sonst meldet der Plan
+    „nichts erklärt" und verschweigt, dass die Senke die Farbtiefe
+    nachweislich nicht annimmt. Die Gegenprobe dazu kam zuerst grün zurück:
+    der erste Test unterschied die Reihenfolge gar nicht.
+  * **Kein EDID-Parser.** Ein falsch gelesenes Byte ergibt keine
+    Fehlermeldung, sondern eine plausible Zahl. `tests/edid.test.ts` hält
+    fest, dass hier nichts entziffert wird (**Invariante 23**).
+  * Check 23 springt nur an, wo jemand etwas erklärt hat; ein Namensabgleich
+    auf die Kategorie stand kurz drin und ist wieder heraus (ADR-002).
+* **Was offen bleibt:** der Import einer echten EDID-Datei — sinnvoll, sobald
+  die Feldbedeutungen aus der Spezifikation belegt sind.
+* **Aufwand:** gross — der Kern erledigt.
 
 ## Eigentümer-Entscheidungen
 

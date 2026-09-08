@@ -431,6 +431,11 @@ const defaults: PersistedUiState = {
     // die Sektion fuer jeden unerreichbar, der die App schon einmal
     // geoeffnet hat.
     'adapter',
+    // Das Formatprofil (B-47) hinter dem Adapter: beide beantworten
+    // dieselbe Frage von zwei Seiten -- traegt der Weg das Bild. Bestands-
+    // nutzer bekommen den Eintrag ueber die Vollstaendigkeits-Schleife
+    // weiter unten nachgetragen.
+    'sink-profile',
     'dimensions',
     'display',
     'network-config',
@@ -813,6 +818,9 @@ interface UiState extends PersistedUiState {
   /** Initiative 9 — Register der Ausspielziele. */
   deliveryOpen: boolean
   setDeliveryOpen: (open: boolean) => void
+  /** B-45 — Farbnormen und Anschluss. */
+  adernOpen: boolean
+  setAdernOpen: (open: boolean) => void
   /** Bedarf 21 — Plan gegen Vorgefundenes. */
   reconcileOpen: boolean
   setReconcileOpen: (open: boolean) => void
@@ -1343,6 +1351,8 @@ export const useUiStore = create<UiState>((set) => ({
   setWirelessRigOpen: (open) => set({ wirelessRigOpen: open }),
   deliveryOpen: false,
   setDeliveryOpen: (open) => set({ deliveryOpen: open }),
+  adernOpen: false,
+  setAdernOpen: (open) => set({ adernOpen: open }),
   reconcileOpen: false,
   setReconcileOpen: (open) => set({ reconcileOpen: open }),
   atemMvLayout: { open: false },

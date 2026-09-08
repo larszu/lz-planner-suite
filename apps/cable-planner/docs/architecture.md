@@ -5,7 +5,7 @@ Invarianten der App. Sie ist die Pflicht-Lektüre, bevor strukturelle Änderunge
 gemacht werden. Für die interaktive Modul-Übersicht siehe [`app-structure.html`](./app-structure.html),
 für einen Wettbewerber-Vergleich [`comparison.html`](./comparison.html).
 
-Stand: v8.3.1 · ~610 TS/TSX-Module · ~176.4k LOC
+Stand: v8.3.1 · ~615 TS/TSX-Module · ~178.1k LOC
 
 ---
 
@@ -95,7 +95,7 @@ Vier Stores in `src/renderer/store/`. Jeder hat einen klar abgegrenzten Concern.
 
 #### 3.1.1 · Slice-Komposition (#308)
 
-`projectStore.ts` ist intern in **19 Slices** unter `src/renderer/store/slices/`
+`projectStore.ts` ist intern in **20 Slices** unter `src/renderer/store/slices/`
 zerlegt, die alle in den Haupt-Store komponiert werden:
 
 ```
@@ -253,7 +253,7 @@ die Wahl der Quelle.
 
 ### 3.2 · Komponenten
 
-`src/renderer/components/` ist in 27 Subdomänen aufgeteilt:
+`src/renderer/components/` ist in 28 Subdomänen aufgeteilt:
 
 ```
 About/         Analysis/      Annotations/   Atem/          Cable/
@@ -799,6 +799,47 @@ Das Wichtigste in Listenform. Niemals brechen ohne expliziten Architektur-Review
     Namen. Standards werden aus demselben Grund nur **innerhalb ihrer
     Familie** verglichen; „ist HDMI-2.0 mehr als DP-1.4?" hat keine Antwort,
     die stimmt, und die erfundene stünde danach in einem Befund.
+22. **Eine Farbnorm wird gewählt, nicht mitgeliefert.** Powerlock zieht man je
+    Leiter einzeln (`types/conductor.ts`, B-45): fünf Leitungen bilden einen
+    400-A-Anschluss, und welcher Leiter welche ist, steht in seiner Farbe.
+    Die Farbe ist deshalb keine Kosmetik — ein vertauschter Aussenleiter dreht
+    ein Drehfeld, ein als N gezogener ist eine Gefahr —, und genau darum ist
+    `EINGEBAUTE_FARBNORMEN` **leer**. Die deutsche Neuinstallation, die ältere
+    Farbgebung und die nordamerikanische Zuordnung sind drei verschiedene
+    Sätze; welcher für eine Anlage gilt, steht nicht im Programm. Eine
+    geratene Vorgabe wäre schlimmer als keine: sie sähe aus wie eine geprüfte
+    Angabe, sie färbte jede Ader, und die Prüfung bestätigte sie anschliessend
+    gegen sich selbst. Jede Norm trägt ihre `herkunft` im Klartext, und eine
+    ohne wird beim Laden verworfen statt mit leerem Feld gezeigt (dieselbe
+    Regel wie bei den Protokoll-Vorlagen, Invariante 18).
+    Das **Soll** am Anschluss ist der zweite Teil und der eigentliche Zweck:
+    ohne die Angabe, welche Leiter er haben muss, könnte die Prüfung nur
+    zählen, was da ist, und nie merken, dass die vierte von fünf Leitungen
+    fehlt. Genau dieser Fehler muss auffallen — deshalb ist eine fehlende Ader
+    ein `error` und eine fehlende Norm ein `info`: wer beide gleich zeigt,
+    lässt die erste in der zweiten untergehen. Und der Anschluss ist NICHT
+    `multicoreName`: der sagt „zähle diese Kabel als ein Stück", nur der
+    Anschluss sagt „er muss diese Leiter haben".
+23. **Eine EDID wird erklärt, nicht entziffert.** Ein Senkenprofil
+    (`types/displayCapability.ts`, B-47) sagt, welche Formate ein Gerät
+    annimmt — in welchen Farbtiefen, Farbräumen und Dynamik-Fassungen. Es
+    ersetzt nicht die Aushandlung am Kabel; es beantwortet die Frage, die man
+    vorher stellt: kommt das Bild dort an, das ich schicken will?
+    **Aus `resolution` folgt es nicht** — zwei Monitore mit „3840x2160"
+    können verschiedene Bildwiederholraten und HDR-Fassungen annehmen —, und
+    **aus einer EDID-Datei wird es hier nicht gelesen.** Eine ausgelesene
+    EDID ist eine 128-Byte-Struktur mit Erweiterungsblöcken, deren
+    Feldbedeutungen in einer Spezifikation stehen, die aus dieser Umgebung
+    nicht erreichbar ist. Sie aus dem Gedächtnis zu entziffern wäre schlimmer
+    als ein nachgebautes Protokoll (Invariante 18): ein falsch gelesenes Byte
+    ergibt keine Fehlermeldung, sondern eine plausible Zahl. Ein Gerät bekäme
+    „nimmt 2160p60 an", weil ein Offset um eins daneben lag.
+    Eine **leere Achse heisst „dazu ist nichts erklärt"** und führt zu
+    `offen`, nie zu einem stillen „na klar, 8 Bit RGB SDR". Und der Check
+    springt nur an, wo jemand etwas erklärt hat — ein Namensabgleich auf die
+    Kategorie („Monitor") stand kurz drin und ist wieder heraus: er wäre eine
+    Aussage über die Schreibweise der Kategorie und nicht über das Gerät
+    (ADR-002).
 
 ---
 
@@ -809,7 +850,7 @@ Diese Themen sind diskutiert, aber noch nicht entschieden / umgesetzt.
 ### 9.1 · Store-Slicing — **erledigt** ✓ (#308)
 
 Implementiert. `projectStore.ts` von 2178 LOC auf ~1146 reduziert durch
-19 Slices unter `store/slices/`. Siehe §3.1.1.
+20 Slices unter `store/slices/`. Siehe §3.1.1.
 
 ### 9.2 · Komponenten-Splits — **teilweise** ✓ (#306, #307)
 
@@ -862,7 +903,7 @@ optionales Cloud-Backend (`y-websocket`, Auth/Permissions) bleiben offen.
 `vitest` ist eingerichtet (`npm test` / `npm run test:watch`); dazu kommen
 gezielte Node-Checks (`npm run test:crdt`, `npm run test:signaling`), ein
 UI-Smoke-Skript (`npm run ui:smoke`) und ein headless Drag-/Interaktions-Test
-(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~176.4k LOC
+(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~178.1k LOC
 bleibt der Ausbau der Abdeckung wichtig — empfohlene Schwerpunkte:
 - Snapshot-Tests auf `healProjectPositions` mit echten
   Beispiel-Projekt-JSONs.
