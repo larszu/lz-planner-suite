@@ -344,6 +344,36 @@ Heilungsschritte sind aber **nicht** blind anzuschliessen — erst ist je Schrit
 überhaupt etwas verwirft. Ein Kanal, der Meldungen über Nicht-Verluste trägt, ist so schädlich wie
 gar keiner: er gewöhnt den Nutzer daran, das Banner wegzuklicken.
 
+### Der Durchgang, den dieser Absatz verlangt — gemacht (`cable#768`)
+
+Jeder Heilungsschritt einzeln angesehen. **Zwei** verwarfen ganze Datensätze, und zwar wortlos:
+
+| Schritt | Was still wegfiel | Was das kostet |
+| --- | --- | --- |
+| `normaliseTallyPositions` (Bedarf 105) | ein Datensatz ohne Rolle, einer mit doppelter Rolle, und in `healProjectPositions` einer, dessen Rolle es nicht mehr gibt | Er trägt die `checks` — die Beobachtungen, die **jemand an der Kamera aufgenommen hat**. Danach steht die Position auf dem Vor-Show-Blatt als „nie geprüft", und jemand läuft denselben Weg noch einmal. Oder eben nicht, weil er sich erinnert, dort schon gewesen zu sein. |
+| `normaliseAddressLayers` (Bedarf 20) | ein Bereich mit unlesbarem CIDR; eine Ebene ohne Id nahm **alle** ihre Bereiche mit | Der Bereich ist der Vorrat, aus dem jede Geräte-Adresse kommt. Der nächste Adresslauf vergibt aus einem Plan, in dem dieses Netz nie stand — und der Widerspruch fällt erst auf, wenn zwei Geräte im Rack dieselbe Adresse tragen. |
+
+**Und die Bedingung dieses Absatzes hat gehalten**, sie hat nämlich etwas *ausgeschlossen*: Der
+Gateway-Zeiger eines Segments und das Gateway eines Adressbereichs sind **Felder an einem Datensatz,
+der überlebt** — kein Verlust im Sinne dieses Kanals. `normaliseNamingScheme` ist eine Einstellung,
+kein Nutzer-Datensatz. Hätte man alle Schritte blind angeschlossen, trüge das Banner ab jetzt drei
+Sorten Nicht-Verlust. Eine Zusicherung hält die Grenze fest, damit sie nicht beim nächsten Durchgang
+verrutscht.
+
+**Ein neuer Grund, `dangling-ref`.** „Pflichtfeld fehlt" schickt jemanden in seine Datei, um einen
+Namen nachzutragen; „der Verweis zeigt ins Leere" sagt ihm, dass das *Ziel* gelöscht wurde. Wer das
+Erste liest und das Zweite braucht, sucht am falschen Ende. Er gilt nur, wo das Verwerfen selbst
+richtig ist — wo ein Datensatz ohne sein Ziel noch etwas aussagt, bleibt er und bekommt einen Befund
+(`override-orphan`, `anchor-orphan`, `rate-missing`).
+
+**Die Bauform, die den nächsten Fall verhindert.** Die Beschriftung des Ladeberichts war eine Kette
+aus zwölf verschachtelten Ternäroperatoren, deren letzter Zweig „Signalquelle" hieß — der
+Fall-Through als Default. Wer eine Sorte anhängte und die Kette vergaß, bekam keinen Fehler, sondern
+eine Zeile, die den Nutzer die *falsche Sorte* Datensatz suchen lässt. Genau davor warnte der
+Kommentar an der Kette; die Kette war die Bauform, die es zulässt. Jetzt `satisfies
+Record<LoadDropKind, …>`: eine vergessene Beschriftung ist ein Typfehler. Dieselbe Lehre wie bei
+ADR-006 — **die Domäne ist der Typ, nicht eine Liste im Wächter.**
+
 **Keine der drei Apps reicht eine unbekannte `.avplan`-Domäne durch.** Nachgelesen und nachgezählt:
 
 | App | `avForeign` |
