@@ -1760,6 +1760,80 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ---
 
+### B-43 · Mischer und Kreuzschienen wirklich schalten — alle, nicht nur die zwei
+
+* **Status:** S-1 und S-2 gebaut (`cable#775`), S-3 gebaut (`cable#776`).
+  Herstellereigene Treiber über die zwei hinaus sind offen und stehen unten
+  mit der Bedingung, unter der sie gebaut werden.
+* **Der Auftrag (Eigentümer, 2026-09-08):** „Man braucht ja auch keinen
+  Eingang. Man kann ja Kameras und andere Geräte die ein Signal erstellen als
+  Quelle benutzen. Aber die Videomischer-Schaltung und so muss trotzdem das
+  Signal korrekt weiterleiten. Erstmal beim Atem integrieren, dann aber auch
+  bei allen am Markt üblichen Mischern und Kreuzschienen. Funktionsfähig
+  machen."
+* **Der Befund, der die erste Hälfte bestimmt:** im Plan leitete bis dahin
+  **nur ein Videohub** weiter, über eine Tabelle Ausgangs-*Index* auf
+  Eingangs-*Index*. Ein Mischer schaltet dieselbe Sorte Kreuzpunkt, aber seine
+  Nummern sind andere — beim ATEM ist der Programm-Bus kein Ausgangs-Index,
+  sondern ein Mix-Effect. Der Weg „Kamera → Mischer → Aux → Monitor" existierte
+  deshalb im Plan gar nicht.
+
+**S-1 — der Mischer leitet weiter (gebaut).** `plannedCrosspoints[outputPortId]
+= inputPortId`, herstellerneutral, ausgewertet an **einer** Stelle
+(`lib/deviceCrosspoints.ts`) zusammen mit der alten Index-Tabelle. Die
+ausdrückliche Angabe gewinnt je *Ausgang*, nicht je Gerät. Ein Mischer ohne
+Eintrag bleibt das Ziel — geraten wird nichts, denn ein aus dem Namen
+abgeleitetes „Programm liegt auf Eingang 1" ergäbe einen vollständigen Weg zu
+einem Monitor, an dem etwas anderes steht.
+
+**S-2 — der ATEM (gebaut).** Drei Schichten: der Plan kennt Anschlüsse,
+`lib/controlActions.ts` übersetzt sie in Protokoll-Adressen, ein Treiber je
+Protokoll spricht. Beim Videohub *ist* die Position die Nummer (so legt es das
+Protokoll fest), beim ATEM nicht — dort steht sie am Anschluss, und fehlt sie,
+wird nicht gesendet. Das Protokoll selbst wird **deklariert, nie erkannt**
+(ADR-002).
+
+**S-3 — alle übrigen, und warum NICHT ein Treiber je Hersteller (gebaut).**
+Der naheliegende Weg wäre gewesen, Ross, Panasonic, Roland, Sony, Evertz,
+Grass Valley einzeln nachzubauen. Er wurde aus einem Grund nicht genommen, der
+schwerer wiegt als Aufwand: **die verbindliche Beschreibung dieser Protokolle
+liegt im Handbuch des jeweiligen Geräts.** Beim Nachsehen war die Quellenlage
+eindeutig: die Hersteller-Dokumentationsseiten sind aus dieser Umgebung nicht
+erreichbar, und die frei zugänglichen Umsetzungen sind Nachbauten, keine
+Spezifikationen. In einer davon hängt der Sender an jeden Befehl ein
+Semikolon, das im Befehl schon steht — wer sie abschreibt, schreibt den Fehler
+mit ab, und der geht dann an eine laufende Anlage (Invariante 17).
+
+Fast alle diese Protokolle sind aber **zeilenorientierter Text über TCP** und
+unterscheiden sich in vier Angaben: Form der Zeile, Zeilenanfang, Zeilenende,
+Zählweise. Die stehen im Handbuch, das der Nutzer neben dem Gerät liegen hat.
+Also trägt er sie ein (`lib/textProtocol.ts`), die App zeigt vor dem Senden den
+Text — Steuerzeichen benannt, weil ein unsichtbares STX der Unterschied
+zwischen „verstanden" und „keine Antwort" ist — und schickt genau ihn. Damit
+ist **jedes textgesteuerte Gerät bedienbar, auch eines, das es noch nicht
+gibt**, ohne dass ein Byte erfunden wird.
+
+Mitgeliefert ist genau **eine** Vorlage (Quartz/Evertz), und sie trägt ihre
+Herkunft im Klartext: nach einer verbreiteten Umsetzung, **nicht** nach dem
+Herstellerdokument, gegen das Handbuch zu prüfen. Eine Vorlage aus dem
+Gedächtnis wäre schlimmer als keine — sie sähe aus wie geprüftes Wissen.
+
+**Was offen bleibt, und woran es hängt:**
+
+| Gerät | Was fehlt | Was es entblockt |
+| --- | --- | --- |
+| Ross (Carbonite, Acuity, Ultrix) | RossTalk-Befehlsliste | Das Handbuch oder eine erreichbare Herstellerseite. Ohne das: das erklärte Text-Protokoll benutzen, die Zeile steht im Handbuch. |
+| Panasonic (AV-HS/AW) | Befehlsliste der externen Schnittstelle | dito |
+| Roland (V-Serie) | Befehlsliste LAN/RS-232 | dito. Die frei zugängliche Umsetzung trägt den oben genannten Semikolon-Fehler und taugt nicht als Vorlage. |
+| Sony, Grass Valley, Lawo | SW-P-08 bzw. NMOS IS-05 | **Kein** Text-Protokoll: SW-P-08 ist binär, IS-05 ist HTTP/JSON. Beide brauchen einen eigenen Treiber und eine erreichbare Spezifikation. |
+| ATEM: Schnitt und Übergang | nichts — `atem-connection` kann `cut()` und `autoTransition()` | Ein eigener Bedienweg im Plan. Der Kreuzpunkt-Weg braucht sie nicht: er setzt Program/Preview/Aux direkt. |
+
+* **Die Regel, die daraus wurde:** Invariante 17 in `docs/architecture.md` —
+  ein Befehl an eine laufende Anlage nennt nur, was er meint; der Nutzer liest
+  vorher den Klartext **und** den wortwörtlichen Befehl; jeder Versuch wird als
+  Beleg festgehalten, auch der gescheiterte; und der Plan wird dabei nicht
+  nachgezogen, weil sonst die Abweichung unsichtbar wird.
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden

@@ -91,6 +91,10 @@ import { isNetworkInterfaceRole, normaliseNetworkInterface } from '../lib/networ
 import type { NetworkInterface } from '../types/network'
 import { istCircuitKind } from '../types/circuit'
 import { normalisePatternChecks } from '../types/patternCheck'
+import { normaliseHubSwitches } from '../types/hubSwitch'
+import { normalisePlannedCrosspoints } from '../lib/deviceCrosspoints'
+import { istControlProtocol, istControlRole } from '../types/switcherControl'
+import { pruefeVorlage } from '../lib/textProtocol'
 
 const CUSTOM_LIB_KEY = STORAGE_KEYS.customLibrary
 const PROJECT_AUTOSAVE_KEY = STORAGE_KEYS.projectAutosave
@@ -558,6 +562,16 @@ export interface ProjectState {
   recordPatternCheck: (
     check: import('../types/patternCheck').PatternCheck,
   ) => 'unknown-equipment' | undefined
+  /** B-42 Inkrement 3 — einen gesendeten Kreuzpunkt-Befehl aufzeichnen.
+   *
+   *  Angehaengt wie die Sichtpruefung, und aus demselben Grund. Aufgezeichnet
+   *  wird AUCH der abgelehnte Befehl (`ok: false`): dass jemand geschaltet
+   *  HAT, ist die Auskunft, nicht nur dass es geklappt hat. Der Plan bleibt
+   *  unangetastet — hier wird nichts an `videohubRouting.planned` geschrieben,
+   *  weil sonst die Abweichung zwischen Plan und Anlage verschwaende. */
+  recordHubSwitch: (
+    eintrag: import('../types/hubSwitch').HubSwitch,
+  ) => 'unknown-equipment' | undefined
   renameSourceIdentity: (
     id: string,
     newName: string,
@@ -810,6 +824,11 @@ const healProjectPositions = (
   const patternChecks = normalisePatternChecks(project.patternChecks, geraeteIds, (d) =>
     onDrop?.({ kind: 'pattern-check', reason: d.reason, label: d.label }),
   )
+  // B-42 Inkrement 3 — die Eingriffe. Regel in `normaliseHubSwitches`
+  // (types/hubSwitch.ts), dort am VERHALTEN geprueft.
+  const hubSwitches = normaliseHubSwitches(project.hubSwitches, geraeteIds, (d) =>
+    onDrop?.({ kind: 'hub-switch', reason: d.reason, label: d.label }),
+  )
   const networkSegments = normaliseNetworkSegments(project.networkSegments).map((s) =>
     s.gatewayEquipmentId && !geraeteIds.has(s.gatewayEquipmentId)
       ? (({ gatewayEquipmentId: _weg, ...rest }) => rest)(s)
@@ -903,6 +922,65 @@ const healProjectPositions = (
       if (item.circuitKind !== undefined && !istCircuitKind(item.circuitKind)) {
         onDrop?.({ kind: 'equipment-circuit', reason: 'invalid-value', label: item.name })
         item = (({ circuitKind: _weg, ...rest }) => rest)(item) as EquipmentItem
+      }
+
+      // S-2 — das erklaerte Steuer-Protokoll. Ein Wert, den dieser Stand nicht
+      // kennt, faellt WEG statt stehenzubleiben: die Oberflaeche schluege
+      // sonst in `PROTOCOL_INFO[wert]` ins Leere, und schlimmer — ein
+      // spaeterer Stand koennte denselben Namen anders belegen und einen
+      // Befehl an ein Geraet schicken, das ihn nie erklaert bekam.
+      if (item.controlProtocol !== undefined && !istControlProtocol(item.controlProtocol)) {
+        onDrop?.({ kind: 'crosspoint', reason: 'invalid-value', label: item.name })
+        item = (({ controlProtocol: _weg, ...rest }) => rest)(item) as EquipmentItem
+      }
+      // S-3 — die erklaerte Befehlszeile. Eine Vorlage, die die Pruefung
+      // nicht besteht (kein {out}, kein {in}, unbekannter Platzhalter),
+      // faellt WEG statt stehenzubleiben: sie stuende sonst in der
+      // Oberflaeche wie eine gueltige Angabe, und der Fehler faellt erst
+      // beim Senden auf — vor dem Geraet, unter Zeitdruck.
+      if (item.controlText !== undefined) {
+        try {
+          pruefeVorlage(item.controlText)
+        } catch {
+          onDrop?.({ kind: 'crosspoint', reason: 'invalid-value', label: item.name })
+          item = (({ controlText: _weg, ...rest }) => rest)(item) as EquipmentItem
+        }
+      }
+      // Dito je Anschluss: eine unbekannte Rolle oder eine krumme Nummer
+      // ergaebe einen Befehl an einen Bus, den es nicht gibt.
+      {
+        const heileControl = (p: Port): Port => {
+          const c = p.control
+          if (c === undefined) return p
+          if (istControlRole(c.role) && Number.isInteger(c.address) && c.address >= 0) return p
+          onDrop?.({ kind: 'crosspoint', reason: 'invalid-value', label: `${item.name} · ${p.name}` })
+          return (({ control: _weg, ...rest }) => rest)(p)
+        }
+        const inputs = item.inputs.map(heileControl)
+        const outputs = item.outputs.map(heileControl)
+        if (inputs.some((p, i) => p !== item.inputs[i]) || outputs.some((p, i) => p !== item.outputs[i])) {
+          item = { ...item, inputs, outputs }
+        }
+      }
+
+      // S-1 (2026-09-08) — die herstellerneutrale Kreuzpunkt-Tabelle. Regel in
+      // `normalisePlannedCrosspoints` (lib/deviceCrosspoints.ts), dort am
+      // VERHALTEN geprueft. Angefasst wird das Feld nur, wenn es da ist:
+      // eine leere Tabelle auf jedem Geraet waere Ballast in jedem Projektfile.
+      //
+      // Warum eine Zeile ins Leere faellt und nicht stehenbleibt: sie ist ein
+      // WEITERWEG. Im Signalweg endete er stumm an einem geloeschten
+      // Anschluss, und im Schaltbefehl (B-42 Inkrement 3) wuerde daraus eine
+      // geratene Nummer, die an eine laufende Anlage ginge.
+      if (item.plannedCrosspoints !== undefined) {
+        const outIds = new Set(item.outputs.map((p) => p.id))
+        const inIds = new Set(item.inputs.map((p) => p.id))
+        const geheilt = normalisePlannedCrosspoints(item.plannedCrosspoints, outIds, inIds, (d) =>
+          onDrop?.({ kind: 'crosspoint', reason: d.reason, label: `${item.name} · ${d.label}` }),
+        )
+        item = geheilt
+          ? { ...item, plannedCrosspoints: geheilt }
+          : ((({ plannedCrosspoints: _weg, ...rest }) => rest)(item) as EquipmentItem)
       }
 
       // ADR-001 / Inkrement 0 — Videohub-Routing-Migration: der Kreuzpunkt-
@@ -1049,6 +1127,7 @@ const healProjectPositions = (
     // zwaenge jeden Leser zu einer zweiten Fallunterscheidung.
     tallyPositions,
     patternChecks,
+    hubSwitches,
     // Bedarf 116 — dito.
     networkSegments,
     // Bedarf 20 — dito.
