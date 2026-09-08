@@ -52,6 +52,14 @@ jobs:
       - name: Herkunfts-Vokabular (beide Planer-Kopien)
         run: npm run spec:vocab
 
+      # E-17/E-20: jedes Repo erklaert seine Quellsprache und MISST sie. Drei
+      # Planer fuehren dafuer denselben Klassifizierer in eigenen Kopien; hier
+      # liegen sie im selben Baum. Die Wortlisten enthalten nur Woerter, die es
+      # in der anderen Sprache nicht gibt — traegt jemand in EINER Kopie ein
+      # mehrdeutiges nach, meldet dieses Repo Fehlalarme und wird abgeschaltet.
+      - name: Quellsprachen-Klassifizierer (drei Planer-Kopien)
+        run: npm run lang:parity
+
       # Der Stand-Stempel (ADR-004) liegt in drei Kopien -- eine je Planer. Die
       # acht Hex-Zeichen darauf sind nur zum Vergleichen da; rechnen zwei Apps
       # sie verschieden, vergleicht jemand am Telefon zwei Zahlen, die nichts
