@@ -162,6 +162,46 @@ export interface TallyResultMessage {
   error?: string
 }
 
+/**
+ * Shell → iframe: das Objekt mit dieser Id im geoeffneten Planer zeigen (E-11).
+ *
+ * DER ID-RAUM IST DER DES SEED-PROTOKOLLS und kein zweiter. Die Shell schickt
+ * genau die Id, die sie in `suite-seed` hineingegeben hat — `SeedDevice.id`,
+ * `SeedCable.id`, `SeedCamera.id`, `SeedFixture.id`. Ein eigener Id-Raum fuer
+ * den Sprung waere die zweite Wahrheit, gegen die ADR-001 geschrieben ist:
+ * zwei Nummern fuer dasselbe Ding laufen beim ersten Import auseinander, und
+ * dann zeigt der Sprung auf das falsche Geraet, ohne es zu merken.
+ *
+ * `kind` sagt, womit die Shell rechnet — der Planer darf widersprechen. Es ist
+ * ein Hinweis zum Suchen, keine Zusicherung: findet er unter der Id etwas
+ * anderes, ist das seine Antwort, nicht seine Pflicht.
+ */
+export interface RevealMessage {
+  type: 'avplan:reveal'
+  id: string
+  kind?: 'device' | 'cable' | 'camera' | 'fixture'
+}
+
+/**
+ * iframe → Shell: gefunden oder nicht. NIE STUMM.
+ *
+ * Das ist die eigentliche Auflage aus E-11: „wo eine App ein Objekt nicht
+ * kennt, wechselt sie das Modul und sagt, dass sie es nicht gefunden hat —
+ * sichtbar, statt stumm irgendwo zu landen." Ein Sprung, der nichts sagt,
+ * sieht aus wie ein Sprung, der gelungen ist; der Nutzer sucht dann in einem
+ * Planer nach einem Objekt, das dort nie ankam.
+ *
+ * Deshalb ist `found: false` eine Antwort und kein Fehler — und `grund` gehoert
+ * dazu, damit die Shell mehr sagen kann als „ging nicht".
+ */
+export interface RevealResultMessage {
+  type: 'avplan:revealResult'
+  app: string
+  id: string
+  found: boolean
+  grund?: string
+}
+
 export type ShellMessage =
   | ThemeMessage
   | ReadyMessage
@@ -177,6 +217,8 @@ export type ShellMessage =
   | SeedPatchMessage
   | TallyRequestMessage
   | TallyResultMessage
+  | RevealMessage
+  | RevealResultMessage
 
 const isShellMessage = (data: unknown): data is ShellMessage =>
   !!data && typeof data === 'object' && typeof (data as { type?: unknown }).type === 'string' &&
@@ -211,6 +253,69 @@ export function postCommandToFrame(frame: Window | null | undefined, command: 'u
   } catch {
     /* iframe noch nicht bereit */
   }
+}
+
+/** Shell → iframe: ein Objekt im Planer zeigen (E-11). */
+export function postRevealToFrame(
+  frame: Window | null | undefined,
+  id: string,
+  kind?: RevealMessage['kind'],
+): void {
+  try {
+    frame?.postMessage({ type: 'avplan:reveal', id, kind } satisfies RevealMessage, '*')
+  } catch {
+    /* iframe noch nicht bereit */
+  }
+}
+
+/**
+ * Planer-Seite: auf `avplan:reveal` hoeren und antworten.
+ *
+ * `zeige` gibt zurueck, ob das Objekt gefunden wurde — und bei `false` optional
+ * einen Grund. Wer hier `void` zurueckgibt, kann nicht antworten, und genau das
+ * soll nicht gehen: der Rueckgabetyp ist die Stelle, an der die Auflage aus
+ * E-11 im Typsystem steht.
+ *
+ * ANTWORTEN WIRD NICHT DEM PLANER UEBERLASSEN. Diese Funktion schickt die
+ * Antwort selbst, auch wenn `zeige` wirft — ein Planer, der beim Suchen
+ * abstuerzt, laesst die Shell sonst im Glauben, es habe geklappt.
+ *
+ * No-op im Standalone-Betrieb. Gibt eine Cleanup-Funktion zurueck.
+ */
+export function connectShellReveal(
+  zeige: (id: string, kind?: RevealMessage['kind']) => { found: boolean; grund?: string },
+): () => void {
+  try {
+    if (typeof window === 'undefined' || window.parent === window) return () => {}
+  } catch {
+    return () => {}
+  }
+  const onMessage = (e: MessageEvent) => {
+    if (!isShellMessage(e.data) || e.data.type !== 'avplan:reveal') return
+    const { id, kind } = e.data
+    let antwort: { found: boolean; grund?: string }
+    try {
+      antwort = zeige(id, kind)
+    } catch (err) {
+      antwort = { found: false, grund: err instanceof Error ? err.message : String(err) }
+    }
+    try {
+      window.parent.postMessage(
+        {
+          type: 'avplan:revealResult',
+          app: document.title || 'planner',
+          id,
+          found: antwort.found,
+          grund: antwort.grund,
+        } satisfies RevealResultMessage,
+        '*',
+      )
+    } catch {
+      /* egal */
+    }
+  }
+  window.addEventListener('message', onMessage)
+  return () => window.removeEventListener('message', onMessage)
 }
 
 /**

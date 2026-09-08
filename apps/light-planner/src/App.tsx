@@ -7,6 +7,7 @@ import { DEFAULT_PROTOCOL, type DmxProtocol } from './core/universeIdentity';
 import { DEFAULT_TEMPLATE, type PhaseTemplate } from './core/powerDistribution';
 import { DEFAULT_FLOOR } from './core/surfaceTextures';
 import { useShellSeed } from './core/useShellSeed';
+import { useShellReveal } from './core/useShellReveal';
 import { convexHull } from './core/geometry';
 import { resolveSun, defaultSunSettings } from './core/sun';
 import TopBar from './components/TopBar';
@@ -189,6 +190,10 @@ const App: React.FC = () => {
   // SUITE-OVERLAY: Projekt-Fluss Shell -> Light-Planer und zurueck. No-op im
   // Standalone-Betrieb (dort ist `window.parent === window`).
   useShellSeed({ fixtures, setFixtures, haengehoehe: defaultMountingHeight, eigene: customFixtures });
+  // E-11 — der Cross-Link reicht bis hier herein: die Shell zeigt auf eine
+  // Seed-Id, dieser Planer waehlt den Scheinwerfer aus. Kennt er die Id nicht,
+  // sagt er es — die Shell zeigt es dem Nutzer.
+  useShellReveal({ fixtures, setSelectedIds });
   const host = useHost(); // platform seam: files / export / AI
 
   // ── Undo / Redo ──

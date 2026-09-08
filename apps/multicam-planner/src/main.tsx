@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { connectShellTheme, declareNoHistory } from '@avplan/ui/embed';
 import { initShellSeed } from './utils/shellSeedBridge';
+import { initShellReveal } from './utils/shellRevealBridge';
 import { initShellSettings } from './shellSettings';
 import App from './App';
 import './index.css';
@@ -37,6 +38,11 @@ connectShellTheme({
 declareNoHistory();
 // Projekt der Shell uebernehmen und eigene Aenderungen zurueckmelden.
 initShellSeed();
+
+// E-11 — der Cross-Link reicht bis hier herein: die Shell zeigt auf eine
+// Seed-Id, dieser Planer waehlt die Kamera aus. Kennt er die Id nicht, sagt
+// er es — die Shell zeigt es dem Nutzer.
+initShellReveal();
 // Suite-Einstellungen (FOV, Edit-Modus, Wand-Snap, Zoom …) von der Shell übernehmen.
 initShellSettings();
 

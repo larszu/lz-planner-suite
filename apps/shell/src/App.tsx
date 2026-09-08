@@ -33,7 +33,7 @@ import {
 } from './data/projectStore'
 import { ProjectHubModal } from './shell/ProjectHubModal'
 import { projectFromTemplateId } from './data/templateStore'
-import { sendPlannerCommand } from './embed/plannerBridge'
+import { sendPlannerCommand, sendPlannerReveal } from './embed/plannerBridge'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
 import { BillingModal } from './shell/BillingModal'
@@ -566,13 +566,62 @@ export function App() {
         if (moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht') {
           changeAppSetting(moduleId, msg.key, msg.value as SettingValue)
         }
+      } else if (msg.type === 'avplan:revealResult' && !msg.found) {
+        // E-11, die eigentliche Auflage: „wo eine App ein Objekt nicht kennt,
+        // wechselt sie das Modul und sagt, dass sie es nicht gefunden hat —
+        // sichtbar, statt stumm irgendwo zu landen." Ein gefundenes Objekt
+        // meldet sich nicht: der Nutzer sieht es ja. Ein nicht gefundenes muss
+        // es, sonst sucht er in einem Planer nach etwas, das dort nie ankam.
+        pushToast(
+          msg.grund
+            ? format(tt('shell.reveal.notFoundReason', 'Im Planer nicht gefunden: {grund}'), {
+                grund: msg.grund,
+              })
+            : tt('shell.reveal.notFound', 'Der Planer kennt dieses Objekt nicht.'),
+          { tone: 'warn' },
+        )
       }
     })
-  }, [changeAppSetting, moduleId])
+  }, [changeAppSetting, moduleId, pushToast, tt])
+
+  /**
+   * E-11 — womit die Shell rechnet, wenn sie diese Id in einen Planer schickt.
+   *
+   * Abgeleitet aus dem, was die Shell selbst fuehrt, und nicht aus dem Namen:
+   * eine Id, die in `project.cables` steht, ist ein Kabel, egal wie sie heisst.
+   * `undefined` heisst „ich weiss es nicht" — der Planer sucht dann ueberall,
+   * statt dass die Shell raet (ADR-002).
+   */
+  const revealKind = useCallback(
+    (id: string): 'device' | 'cable' | 'camera' | 'fixture' | undefined => {
+      if (!project) return undefined
+      if (project.cables.some((c) => c.id === id)) return 'cable'
+      if (project.nodes.some((n) => n.id === id)) return 'device'
+      if (project.cameras.some((c) => c.id === id)) return 'camera'
+      if (project.fixtures.some((f) => f.id === id)) return 'fixture'
+      return undefined
+    },
+    [project],
+  )
 
   const selectItem = useCallback(
-    (id: string) => setSelected((s) => ({ ...s, [moduleId]: id })),
-    [moduleId],
+    (id: string) => {
+      setSelected((s) => ({ ...s, [moduleId]: id }))
+      // E-11 — der Sprung reicht bis IN den eingebetteten Planer. Nur wenn dort
+      // gerade einer steht: ist keiner gemountet, gibt es nichts zu zeigen, und
+      // eine Bitte ins Leere waere der stumme Sprung, den E-11 verbietet.
+      // `sendPlannerReveal` sagt, ob ueberhaupt jemand zugehoert hat.
+      if (!plannerActive) return
+      if (!sendPlannerReveal({ id, kind: revealKind(id) })) {
+        pushToast(
+          tt(
+            'shell.reveal.noFrame',
+            'Der Planer ist noch nicht bereit — das Objekt konnte dort nicht gezeigt werden.',
+          ),
+        )
+      }
+    },
+    [moduleId, plannerActive, revealKind, pushToast, tt],
   )
   const toggleMount = useCallback(
     () => setMounted((m) => ({ ...m, [moduleId]: !m[moduleId] })),

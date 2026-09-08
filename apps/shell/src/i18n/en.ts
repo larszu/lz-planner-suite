@@ -10,6 +10,7 @@ import { config } from './dict/config'
 import { billing } from './dict/billing'
 import { hub } from './dict/hub'
 import { seed } from './dict/seed'
+import { querverweis } from './dict/querverweis'
 
 export const en: Record<string, string> = {
   ...chrome,
@@ -20,4 +21,5 @@ export const en: Record<string, string> = {
   ...billing,
   ...hub,
   ...seed,
+  ...querverweis,
 }

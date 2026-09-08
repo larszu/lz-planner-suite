@@ -7,13 +7,14 @@ import {
 import {
   onShellMessage,
   postCommandToFrame,
+  postRevealToFrame,
   postSeedToFrame,
   postSettingsToFrame,
   postThemeToFrame,
   type SeedPatch,
   type SuiteSeed,
 } from '@avplan/ui/embed'
-import { onPlannerCommand } from './plannerBridge'
+import { onPlannerCommand, onPlannerReveal } from './plannerBridge'
 import { useT, format } from '../i18n'
 
 /** Shell-Tokens, die als Palette an die Planer gehen (Farb-Konsistenz). */
@@ -81,6 +82,16 @@ export function PlannerFrame({ url, title, theme, settings, onHistory, seed, onS
 
   // Undo/Redo aus der Shell an dieses iframe weiterreichen.
   useEffect(() => onPlannerCommand((cmd) => postCommandToFrame(ref.current?.contentWindow, cmd)), [])
+
+  // E-11 — „zeig mir dieses Objekt" an dieses iframe weiterreichen. Der Rahmen
+  // hoert erst ab `ready` zu: davor steht der Message-Listener des Planers noch
+  // nicht, und eine Bitte, die im Nichts landet, waere genau der stumme Sprung,
+  // den E-11 verbietet. Die Shell erfaehrt das ueber `sendPlannerReveal`, das
+  // `false` zurueckgibt, wenn niemand zuhoert.
+  useEffect(() => {
+    if (state !== 'ready') return
+    return onPlannerReveal((req) => postRevealToFrame(ref.current?.contentWindow, req.id, req.kind))
+  }, [state])
 
   // „Bereit" kommt aus dem avplan:ready-Handshake des Planers — nicht aus
   // onLoad, das auch für Fehler-/Fremdseiten feuert. Bei ready Theme+Settings

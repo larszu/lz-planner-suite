@@ -15,6 +15,7 @@ import { initShellHistory } from './lib/shellHistory'
 import { initShellLexware } from './lib/shellLexware'
 import { initShellSeed } from './lib/shellSeedBridge'
 import { initShellTally } from './lib/shellTally'
+import { initShellReveal } from './lib/shellRevealBridge'
 import App from './App'
 import { ErrorBoundary } from './ErrorBoundary'
 import { cablePlannerApi } from './lib/bridge'
@@ -51,6 +52,11 @@ initShellLexware()
 initShellSeed()
 // Tally-Karte aus dem Plan auf Anfrage der Shell liefern (Weg zum Pi).
 initShellTally()
+
+// E-11 — der Cross-Link reicht bis hier herein: die Shell zeigt auf eine
+// Seed-Id, dieser Planer waehlt das Objekt aus und faehrt den Ausschnitt hin.
+// Kennt er die Id nicht, sagt er es — die Shell zeigt es dem Nutzer.
+initShellReveal()
 // Eingebettet: das Canvas-Theme dem Shell-Theme folgen lassen, damit Cable
 // vollständig hell/dunkel mitschaltet (App.tsx setzt data-theme aus canvasTheme).
 try {
