@@ -5,7 +5,7 @@ Invarianten der App. Sie ist die Pflicht-Lektüre, bevor strukturelle Änderunge
 gemacht werden. Für die interaktive Modul-Übersicht siehe [`app-structure.html`](./app-structure.html),
 für einen Wettbewerber-Vergleich [`comparison.html`](./comparison.html).
 
-Stand: v9.0.1 · ~566 TS/TSX-Module · ~167.5k LOC
+Stand: v9.0.1 · ~572 TS/TSX-Module · ~168.4k LOC
 
 ---
 
@@ -168,6 +168,88 @@ und **nichts** über anliegendes Signal. Deshalb gibt es `routed` als eigenen
 Zustand neben `carrying`. Der Kreuzpunkt steht auch dann, wenn upstream die
 Kamera aus ist; ihn als „Signal liegt an" zu zeigen machte aus einer
 Router-Einstellung eine Aussage über die Anlage.
+
+#### 3.1c · `circuitStore` — die PROBIER-Spur des Schaltbilds
+
+Dieselbe Trennung ein zweites Mal, aus einem anderen Anlass. Seit
+2026-09-08 rechnet `lib/circuitSolver.ts`, welche Leuchte bei welcher
+Schalterstellung brennt. Dafür braucht er zwei Sorten Angaben, und sie
+gehören an verschiedene Orte:
+
+| Was | Wo | Warum |
+|---|---|---|
+| Die **Verdrahtung**: welches Gerät ein Wechselschalter ist (`EquipmentItem.circuitKind`), an welcher Klemme welcher Anschluss hängt (`Port.circuitTerminal`) | `projectStore`, gespeichert | Das ist der Plan. Er steht auf dem Blatt und geht durch Undo/Redo |
+| Die **Schalterstellung** und der Dimmerwert | `circuitStore`, **nicht persistiert** | Umlegen ist Ausprobieren, kein Planen |
+
+**Warum die Stellung nicht ins Projekt darf.** Wer am Schaltbild einen
+Schalter umlegt, fragt „was passiert dann". Läge die Stellung im
+`projectStore`, wäre jedes Umlegen ein Undo-Schritt, ein Autospeichern und
+eine Änderung an der Projektdatei: zwei Minuten Ausprobieren fräsen die
+Undo-Historie leer, und die Datei trüge hinterher eine Schalterstellung,
+die niemand entschieden hat. Dieselbe Wurzel wie beim `liveStore`
+(`cable#647`).
+
+**Die Bauart wird angegeben, nie geraten.** Sie aus der Kategorie zu
+schliessen („Leuchte" → `lamp`) wäre der Namensabgleich, gegen den ADR-001
+und ADR-002 stehen — und hier fällt er in die gefährliche Richtung: ein
+Gerät namens „Wandleuchte" bekäme keinen Knoten, und der Rechner sagte
+„brennt nicht". Das sieht aus wie eine Antwort. Ohne `circuitKind` ist ein
+Gerät für das Schaltbild **nicht vorhanden**, und der `CircuitChip` nennt
+die Zahl derer, die an einem Strom-Kabel hängen und keine tragen.
+
+**Die Klemme hängt am Port, nicht an seiner Position.** Eine
+Wechselschaltung unterscheidet Klemme 1 von Klemme 2 — vertauscht man sie,
+brennt die Leuchte bei genau den umgekehrten Stellungen. Aus der
+Port-Reihenfolge abgeleitet wäre sie eine stille Umverdrahtung bei jedem
+Umsortieren (derselbe Befund wie B-33).
+
+**Was der Rechner NICHT ist:** eine elektrotechnische Berechnung oder ein
+Sicherheitsnachweis. Der Rückleiter fehlt absichtlich — ein
+Wechselschaltungs-Plan zeigt den geschalteten Außenleiter.
+
+#### 3.1d · `patternStore` — die PRÜFBILD-Erwartung
+
+Die dritte nicht persistierte Spur, und sie beantwortet die Frage, die bei
+jeder Inbetriebnahme zuerst kommt: **wo kommt was an?**
+
+Der Ablauf ist der aus der Praxis: eine Quelle bekommt ein Prüfbild, jemand
+geht die Monitore ab. Was diese App dazu beiträgt, sind zwei Dinge — und die
+Grenze dazwischen ist die ganze Entscheidung:
+
+| | |
+|---|---|
+| **SOLL** | Was der Plan vorsieht: `lib/patternRouting.ts` rechnet ab der Quelle über Blenden, Verteiler und den GEPLANTEN Kreuzpunkt der Kreuzschiene. Braucht keine Anlage, keine Verbindung, keinen Strom |
+| **IST** | Was jemand vor dem Monitor gesehen hat. Steht hier **nicht** und wird nicht behauptet |
+
+**Die App hat keinen Videoeingang.** Sie sieht kein Bild und kann keines
+sehen. Das Feld auf der Geräte-Karte ist deshalb die **Erwartung** und
+ausdrücklich beschriftet: „Erwartung laut Plan". Ein Mini-Monitor, der so
+täte, wäre die teuerste Sorte Falschaussage — man erkennt Farbbalken, hält
+sie für eine Rückmeldung und hat in Wahrheit den Plan zweimal gelesen.
+
+**Warum der NAME auf dem Bild der eigentliche Inhalt ist.** Farbbalken allein
+beantworten nichts: zwei vertauschte Kreuzpunkte sehen mit Balken auf beiden
+Wegen völlig richtig aus. Steht auf dem Monitor „KAMERA 3", wo der Plan
+„KAMERA 1" vorsieht, ist die Vertauschung in dem Moment gefunden, in dem
+jemand hinsieht — ohne Messgerät und ohne zweiten Techniker am Funk.
+`lib/testPattern.ts` erzeugt das Bild, `patternRouting` sagt, wo es stehen
+müsste.
+
+**Gerechnet wird mit `signalChains`** — derselben Traversierung, die die
+Patchliste und die Mehr-Ebenen-Ansicht benutzen. Ein zweiter Weg durch
+dieselbe Kreuzschiene wäre die Defektform `zwei-rechnungen`: er liefe beim
+nächsten Sonderfall auseinander, und dann widersprächen sich zwei Ansichten
+desselben Plans.
+
+**Die offenen Wege stehen gleichberechtigt daneben.** „Von hier weiss der
+Plan nicht weiter" ist bei einer Inbetriebnahme die nützlichere Auskunft als
+eine kurze Liste, die vollständig aussieht — genau dort steht der Monitor,
+an dem später niemand versteht, warum kein Bild kommt.
+
+**Noch nicht gebaut, und mit Absicht getrennt:** die Rückmeldung („stimmt" /
+„falsches Bild, es steht X drauf" / „kein Bild"). Sie ist eine Beobachtung
+mit Zeitpunkt und gehört damit ins Projekt — wie `TallyCheck` und anders als
+die Wahl der Quelle.
 
 ### 3.2 · Komponenten
 
@@ -372,11 +454,16 @@ gehören hier rein, nicht in einzelne Komponenten.
 | Sync-Lock | `<shared-pfad>/.cable-planner-sync.lock` | JSON (TTL 2h) |
 | Kategorie-Übersetzungen | `localStorage[categoryTranslations]` | JSON-Map |
 | **Beobachtungen (Tally, Kreuzpunkte)** | **nirgends — `liveStore`, nur im Speicher** | — |
+| **Schalterstellungen im Schaltbild** | **nirgends — `circuitStore`, nur im Speicher** | — |
+| **Gewählte Prüfbild-Quelle** | **nirgends — `patternStore`, nur im Speicher** | — |
 
-Die letzte Zeile steht hier, weil sie eine Entscheidung ist und kein
-Versäumnis: was die Anlage vor einer Stunde tat, weiß diese App nach einem
-Neustart nicht mehr, und das ist die richtige Aussage. Ein persistierter
-Beobachtungsstand sähe beim nächsten Öffnen aus wie ein aktueller.
+Die letzten beiden Zeilen stehen hier, weil sie Entscheidungen sind und
+keine Versäumnisse. Was die Anlage vor einer Stunde tat, weiß diese App nach
+einem Neustart nicht mehr, und das ist die richtige Aussage — ein
+persistierter Beobachtungsstand sähe beim nächsten Öffnen aus wie ein
+aktueller. Und wie die Schalter beim letzten Ausprobieren standen, will
+niemand wiederhaben; gespeichert wäre es eine Angabe, die niemand
+entschieden hat.
 
 ---
 
@@ -592,6 +679,25 @@ Das Wichtigste in Listenform. Niemals brechen ohne expliziten Architektur-Review
     anschließt, hält sich an dieselbe Grenze: melden, was das Gerät WIRKLICH
     sagt (`routed` ist nicht `carrying`), mit Zeitstempel, und beim Ausfall
     nur die eigene Hälfte räumen.
+15. **Was der Nutzer ausprobiert, ist keine Planänderung.** Die
+    Schalterstellungen des Schaltbilds liegen im `circuitStore` und nie im
+    Projekt; ein Klick auf einen Schalter erzeugt keinen Undo-Schritt, keine
+    Autospeicherung und keine Änderung an der Datei. Die VERDRAHTUNG dagegen
+    ist Plan und steht im Projekt (`circuitKind`, `circuitTerminal`). Wer
+    eine weitere Probier-Ansicht baut — eine zweite Ausspiel-Variante, ein
+    „was wäre wenn" auf der Kreuzschiene — trennt genauso: das Ergebnis darf
+    gerechnet und gezeigt werden, die Eingabe dafür wird nicht gespeichert,
+    und die Ansicht sagt, dass sie gerechnet ist.
+16. **Ein BILD auf dem Plan ist die gefährlichste Behauptung von allen.** Ein
+    Vorschaufeld auf einer Geräte-Karte sieht aus wie eine Rückmeldung von
+    diesem Gerät, und Farbbalken sehen überzeugend nach „Signal ist da" aus.
+    Diese App hat **keinen Videoeingang** — was sie zeigt, ist die Erwartung
+    aus dem Plan und trägt diese Beschriftung am Feld selbst, nicht nur im
+    Streifen. Wer ein weiteres Vorschaufeld baut, hält sich daran: entweder
+    es kommt aus einer belegten Quelle mit Zeitstempel, oder es ist als
+    Erwartung beschriftet. Es gibt keine dritte Möglichkeit, und „sieht man
+    doch" ist keine — die ganze Schwierigkeit ist, dass man es eben nicht
+    sieht.
 
 ---
 
@@ -655,7 +761,7 @@ optionales Cloud-Backend (`y-websocket`, Auth/Permissions) bleiben offen.
 `vitest` ist eingerichtet (`npm test` / `npm run test:watch`); dazu kommen
 gezielte Node-Checks (`npm run test:crdt`, `npm run test:signaling`), ein
 UI-Smoke-Skript (`npm run ui:smoke`) und ein headless Drag-/Interaktions-Test
-(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~167.5k LOC
+(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~168.4k LOC
 bleibt der Ausbau der Abdeckung wichtig — empfohlene Schwerpunkte:
 - Snapshot-Tests auf `healProjectPositions` mit echten
   Beispiel-Projekt-JSONs.

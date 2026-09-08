@@ -1660,6 +1660,51 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Ansatzpunkt, wenn der IP-Plan (Initiative 8) gebaut wird. **Bis dahin ist
   hier nichts zu tun**, und das ist jetzt aufgeschrieben statt vermutet.
 
+### B-42 · „Wo kommt was an?" — Prüfbild, Erwartung, Rückmeldung
+
+* **Status:** Inkrement 1 gebaut und vendoriert (`cable#772`), Inkrement 2 und 3 offen. Der Schaltbild-Teil aus `cable#771` (Strom) ist ebenfalls gebaut und vendoriert.
+* **Der Wunsch (Eigentümer, 2026-09-08):** „Kann man auch als Quelle
+  Testpattern generieren mit dem Namen der Quelle und ner SMPTE bar und dann
+  an Displays nen Mini Monitor Feld einfügen, sodass man auch den
+  Videomischer und Router quasi in den Plan benutzen und steuern kann, um zu
+  sehen wo was ankommt?"
+* **Der Befund, der die Bauform bestimmt:** die App hat **keinen
+  Videoeingang**. Sie kann kein Bild sehen — nicht vom Mischer (der
+  Multiviewer ist ein Videoausgang, kein Datenstrom), nicht vom Router (ein
+  Videohub meldet Kreuzpunkte und sonst nichts). Ein Mini-Monitor, der so
+  täte, wäre die teuerste Sorte Falschaussage: man erkennt Farbbalken, hält
+  sie für eine Rückmeldung und hat in Wahrheit den Plan zweimal gelesen.
+* **Warum der NAME auf dem Bild der eigentliche Inhalt ist:** Farbbalken
+  allein beantworten nichts — zwei vertauschte Kreuzpunkte sehen mit Balken
+  auf beiden Wegen völlig richtig aus. Erst der Name macht daraus einen
+  Befund.
+* **Inkrement 1 — gebaut:** `lib/testPattern.ts` (Bild mit Namen, Zusatzzeile
+  und ADR-004-Stempel), `lib/patternRouting.ts` („wo müsste es ankommen",
+  gerechnet mit **derselben** `signalChains`-Traversierung wie Patchliste und
+  Mehr-Ebenen-Ansicht), das Erwartungsfeld auf der Geräte-Karte mit
+  Pflicht-Beschriftung, der Streifen in der Werkzeugleiste, Export von Bild
+  und Prüfblatt. Die gewählte Quelle liegt im nicht persistierten
+  `patternStore`. **Invariante 16** hält die Regel fest.
+* **Inkrement 2 — die Rückmeldung (offen).** „Stimmt" / „falsches Bild, es
+  steht X drauf" / „kein Bild", je Ankunftsort, mit Zeitpunkt und Prüfer.
+  Das ist eine **Beobachtung** und gehört damit ins Projekt (wie
+  `TallyCheck`), anders als die Wahl der Quelle. Der Weg dafür steht schon:
+  die Mobile-Ansicht hat mit `/checks` einen token-gesicherten
+  Schreibrückweg — der Techniker geht mit dem Telefon herum, sieht je Monitor
+  die Erwartung und tippt die Antwort. **Der Gewinn liegt in der zweiten
+  Antwort:** wer „es steht KAMERA 3 drauf" meldet, hat die Vertauschung
+  benannt, und der Plan kann sagen, welcher Kreuzpunkt das erklärt.
+* **Inkrement 3 — steuern (offen, und mit einer Auflage).** `videohub:send`
+  kann Kreuzpunkte **setzen**; damit wäre „schalte den Router aus dem Plan"
+  buildbar. Das ist ein Eingriff in eine laufende Anlage, kein Anzeigen:
+  er braucht eine Bestätigung mit Klartext („Ausgang 3 von Kamera 1 auf
+  Kamera 2"), einen Eintrag im Dokument-Register und die Regel aus ADR-001,
+  dass der gelesene Ist-Zustand den Plan nicht überschreibt. Beim ATEM fehlt
+  der Weg heute ganz: `atem:*` kennt Namen, Multiviewer und Audio, aber
+  keinen Schnitt-Befehl.
+* **Was ausdrücklich NICHT kommt:** ein Live-Videobild im Plan. Dafür fehlt
+  nicht die Zeit, sondern der Eingang.
+
 ---
 
 ## Eigentümer-Entscheidungen
