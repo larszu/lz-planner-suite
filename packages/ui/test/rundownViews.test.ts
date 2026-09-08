@@ -8,6 +8,7 @@ import {
   gearSheet,
   rundownView,
   rundownViewCsv,
+  rundownViewRows,
 } from '../src/rundownViews'
 import { rundownFromPreview, type Rundown, type RundownItem } from '../src/rundown'
 import { emptySeed, type SuiteSeed } from '../src/seed'
@@ -314,5 +315,46 @@ describe('Meldungstexte in richtigem Deutsch', () => {
       /(Geraet|gehoert|ueber|waere|wuerde|fuer |Schluessel|laesst|traegt|aeuss|fuehrt|koenn|muess|naechst|loesch|groess|zurueck|Laenge|Groesse|Aenderung|unveraendert)/
     const schlecht = literale.filter((l) => ersatz.test(l))
     expect(schlecht, `ASCII-Ersatz in Texten: ${schlecht.join(' | ')}`).toEqual([])
+  })
+})
+
+// ── Bedarf 4 — eine Tabelle, zwei Ausgaben ─────────────────────────────────
+
+describe('rundownViewRows — die gemeinsame Form jeder Ausgabe', () => {
+  const BLATT = {
+    stand: 'Stand: X',
+    headers: ['Zeit', 'Punkt'],
+    rows: [['14:20', 'Panel'], ['14:50', 'Pause']],
+    legend: [{ column: 'Zeit', text: 'geplanter Start' }],
+  }
+
+  it('traegt Stand, Kopfzeile, Zeilen und Legende in dieser Reihenfolge', () => {
+    expect(rundownViewRows(BLATT)).toEqual([
+      ['Stand: X'],
+      [''],
+      ['Zeit', 'Punkt'],
+      ['14:20', 'Panel'],
+      ['14:50', 'Pause'],
+      [''],
+      ['Legende'],
+      ['Zeit', 'geplanter Start'],
+    ])
+  })
+
+  it('ist die Grundlage der CSV — nicht eine zweite Tabelle daneben', () => {
+    // Der Punkt der Auslagerung: Sobald XLSX dazukommt, koennten die beiden
+    // auseinanderlaufen. Diese Zeile haelt fest, dass sie es nicht koennen.
+    const ausZeilen = rundownViewRows(BLATT)
+      .map((z) => z.map((c) => (/[";\n]/.test(String(c)) ? '"' + String(c).replace(/"/g, '""') + '"' : String(c))).join(';'))
+      .join('\n')
+    expect(rundownViewCsv(BLATT)).toBe(ausZeilen)
+  })
+
+  it('kopiert die Zeilen, statt sie durchzureichen', () => {
+    // Wer die Tabelle bekommt, gibt sie an einen Schreiber weiter. Reichte
+    // sie die Original-Arrays durch, koennte der Schreiber das Blatt aendern.
+    const zeilen = rundownViewRows(BLATT)
+    zeilen[3][0] = 'geaendert'
+    expect(BLATT.rows[0][0]).toBe('14:20')
   })
 })

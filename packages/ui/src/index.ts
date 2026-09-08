@@ -115,6 +115,7 @@ export {
   GEAR_GONE,
   rundownView,
   rundownViewCsv,
+  rundownViewRows,
   gearSheet,
   NOT_IN_RUNDOWN,
   type RundownAudience,

@@ -327,14 +327,34 @@ export function rundownViewCsv(view: GearSheet): string {
     const s = String(v ?? '')
     return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
-  const zeile = (cells: (string | number)[]): string => cells.map(feld).join(';')
+  return rundownViewRows(view)
+    .map((cells) => cells.map(feld).join(';'))
+    .join('\n')
+}
+
+/**
+ * Dasselbe Blatt als Zeilen — die gemeinsame Form fuer JEDE Ausgabe.
+ *
+ * Bedarf 4 verlangt das Blatt in der Tabelle, in der der Ablauf lebt, und das
+ * heisst mehr als CSV. Sobald es eine zweite Ausgabe gibt (XLSX), gibt es auch
+ * die Gelegenheit, dass die beiden auseinanderlaufen: eine Zeile mehr im
+ * einen, die Legende im anderen weggelassen, und zwei Empfaenger halten
+ * verschiedene Blaetter fuer dasselbe. Deshalb entsteht die Tabelle EINMAL;
+ * die Ausgaben unterscheiden sich nur noch darin, wie sie eine Zelle
+ * schreiben.
+ *
+ * Rein: keine Datei, kein Netz, keine Bibliothek. Wer XLSX braucht, nimmt
+ * diese Zeilen und gibt sie seinem Schreiber — die Kenntnis des Formats
+ * gehoert in die App, nicht in dieses Paket.
+ */
+export function rundownViewRows(view: GearSheet): (string | number)[][] {
   return [
-    zeile([view.stand]),
-    '',
-    zeile(view.headers),
-    ...view.rows.map(zeile),
-    '',
-    zeile(['Legende']),
-    ...view.legend.map((l) => zeile([l.column, l.text])),
-  ].join('\n')
+    [view.stand],
+    [''],
+    [...view.headers],
+    ...view.rows.map((r) => [...r]),
+    [''],
+    ['Legende'],
+    ...view.legend.map((l) => [l.column, l.text]),
+  ]
 }

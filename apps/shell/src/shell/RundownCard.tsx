@@ -11,10 +11,12 @@ import {
   rundownFromPreview,
   rundownView,
   rundownViewCsv,
+  rundownViewRows,
   suggestMapping,
   RUNDOWN_AUDIENCES,
   RUNDOWN_FIELDS,
   type ColumnMapping,
+  type GearSheet,
   type Rundown,
   type RundownField,
   type RundownAudience,
@@ -25,6 +27,11 @@ import {
 // dort ist es zuhause (`@avplan/ui/embed` re-exportiert `seed.ts`), und es
 // zweimal zu exportieren gaebe zwei Namen fuer denselben Typ.
 import type { SuiteSeed } from '@avplan/ui/embed'
+import {
+  arbeitsmappeAusZeilen,
+  istArbeitsmappe,
+  parseArbeitsmappe,
+} from './rundownXlsx'
 import { Card } from './dashboard'
 import { useT, format } from '../i18n'
 
@@ -220,8 +227,13 @@ function RundownImportDialog({
   )
 
   const lies = async (f: File) => {
-    const text = await f.text()
-    const { headers: h, rows: r } = parseDelimited(text)
+    // Bedarf 4 — die Mappe ist das, was der Kunde schickt. Die Endung
+    // entscheidet, welcher Leser drankommt; ab da ist der Weg derselbe
+    // (`suggestMapping` → `previewRundown`). Ein zweiter Zuordnungs-Pfad
+    // waere die Gelegenheit, dass CSV und XLSX auseinanderlaufen.
+    const { headers: h, rows: r } = istArbeitsmappe(f.name)
+      ? parseArbeitsmappe(await f.arrayBuffer())
+      : parseDelimited(await f.text())
     setFilename(f.name)
     setHeaders(h)
     setRows(r)
@@ -242,14 +254,14 @@ function RundownImportDialog({
         <p className="text-av-text-muted">
           {t(
             'rundown.import.hint',
-            'CSV, TSV oder ein aus der Tabelle kopierter Bereich. Die Spalten werden vorgeschlagen — was nicht passt, wird hier gelegt. Übernommen wird erst am Ende.',
+            'Excel-Mappe, CSV, TSV oder ein aus der Tabelle kopierter Bereich. Aus einer Mappe wird das erste Blatt gelesen, Uhrzeiten so, wie sie dort stehen. Die Spalten werden vorgeschlagen — was nicht passt, wird hier gelegt. Übernommen wird erst am Ende.',
           )}
         </p>
 
         <input
           ref={datei}
           type="file"
-          accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+          accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv,text/tab-separated-values,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           onChange={(e) => {
             const f = e.target.files?.[0]
             if (f) void lies(f)
@@ -410,14 +422,23 @@ const AUDIENCE_LABEL: Record<RundownAudience, string> = {
 
 function RundownExports({ rundown, seed }: { rundown: Rundown; seed: SuiteSeed }) {
   const t = useT()
-  const speichere = (name: string, text: string) => {
-    const blob = new Blob([text], { type: 'text/csv;charset=utf-8' })
+  // Bedarf 4 — dasselbe Blatt in beiden Formaten. Welches, entscheidet der
+  // Empfaenger: die Regie will die Mappe, das Foyer-Display den Text.
+  const [alsMappe, setAlsMappe] = useState(false)
+  const gib = (name: string, blob: Blob) => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = name
     a.click()
     URL.revokeObjectURL(url)
+  }
+  const speichere = (basis: string, view: GearSheet) => {
+    // Aus DERSELBEN Zeilen-Tabelle: `rundownViewCsv` baut sie sich intern
+    // ebenfalls aus `rundownViewRows`. Zwei Ausgaben, ein Blatt.
+    if (alsMappe) gib(`${basis}.xlsx`, arbeitsmappeAusZeilen(rundownViewRows(view), basis))
+    else
+      gib(`${basis}.csv`, new Blob([rundownViewCsv(view)], { type: 'text/csv;charset=utf-8' }))
   }
   return (
     <div className="mb-2 flex flex-wrap items-center gap-1">
@@ -426,7 +447,7 @@ function RundownExports({ rundown, seed }: { rundown: Rundown; seed: SuiteSeed }
           key={a}
           type="button"
           className="av-focus rounded-av-control border border-av-border px-1.5 py-0.5 text-[11px] text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
-          onClick={() => speichere(`ablauf-${a}.csv`, rundownViewCsv(rundownView(rundown, seed, a)))}
+          onClick={() => speichere(`ablauf-${a}`, rundownView(rundown, seed, a))}
         >
           {t(`rundown.audience.${a}`, AUDIENCE_LABEL[a])}
         </button>
@@ -439,10 +460,20 @@ function RundownExports({ rundown, seed }: { rundown: Rundown; seed: SuiteSeed }
       <button
         type="button"
         className="av-focus rounded-av-control border border-av-border px-1.5 py-0.5 text-[11px] text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
-        onClick={() => speichere('geraete-zeiten.csv', rundownViewCsv(gearSheet(rundown, seed)))}
+        onClick={() => speichere('geraete-zeiten', gearSheet(rundown, seed))}
       >
         {t('rundown.sheet.gear', 'Geräte-Zeiten')}
       </button>
+      {/* Das Format ist eine Eigenschaft der Ausgabe, nicht des Blattes —
+          deshalb EIN Schalter neben den Knoepfen statt zwoelf Knoepfe. */}
+      <label className="ml-1 flex items-center gap-1 text-[11px] text-av-text-secondary">
+        <input
+          type="checkbox"
+          checked={alsMappe}
+          onChange={(e) => setAlsMappe(e.target.checked)}
+        />
+        {t('rundown.sheet.asXlsx', 'als Excel-Mappe')}
+      </label>
     </div>
   )
 }

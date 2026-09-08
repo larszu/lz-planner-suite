@@ -71,7 +71,7 @@ export const overview: Record<string, string> = {
   'overview.card.rundown.coverage': '{n} of {m} objects in the plan appear in the running order',
   'rundown.import.title': 'Import running order',
   'rundown.import.hint':
-    'CSV, TSV or a range copied out of the spreadsheet. Columns are suggested \u2014 anything that does not fit is assigned here. Nothing is taken over until you confirm.',
+    'An Excel workbook, CSV, TSV or a range copied out of the spreadsheet. From a workbook the first sheet is read, clock times exactly as they appear there. Columns are suggested \u2014 anything that does not fit is assigned here. Nothing is taken over until you confirm.',
   'rundown.import.ignore': 'do not import',
   'rundown.import.count': 'Items: {n} · skipped: {s} · unresolved mentions: {u}',
   'rundown.import.skipped': 'Row {row}: {reason}',
@@ -95,6 +95,8 @@ export const overview: Record<string, string> = {
   'rundown.audience.signage': 'Signage',
   'rundown.audience.showcaller': 'Show caller',
   'rundown.sheet.gear': 'Gear times',
+  // Bedarf 4 — dasselbe Blatt, zweites Format.
+  'rundown.sheet.asXlsx': 'as an Excel workbook',
   'overview.card.crew.title': 'Crew',
   'overview.card.crew.complete': 'complete',
   'overview.card.budget.title': 'Budget',
