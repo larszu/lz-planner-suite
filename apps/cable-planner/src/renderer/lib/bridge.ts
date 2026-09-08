@@ -317,6 +317,12 @@ type CablePlannerApi = {
     send: (
       action: import('../types/switcherControl').ControlAction,
     ) => Promise<{ ok: boolean; message: string }>
+    /** S-4 — die eingerichteten Verbindungen einer Companion-Instanz. */
+    companionConnections: (params: { host: string; port: number }) => Promise<{
+      ok: boolean
+      message: string
+      connections: unknown
+    }>
   }
   videohub: {
     sendRouting: (params: { host: string; port: number; block: string }) => Promise<{ ok: boolean; message: string }>
@@ -402,6 +408,8 @@ type CablePlannerApi = {
     setProject: (project: unknown) => Promise<{ ok: boolean }>
     /** Bedarf 39 — der fertige Crew-Kalender fuer den abonnierbaren Feed. */
     setCrewCalendar: (ics: string | null) => Promise<{ ok: boolean }>
+    /** B-42 Inkrement 2b — der berechnete Pruefbild-Plan fuer den Rundgang. */
+    setPatternPlan: (json: string | null) => Promise<{ ok: boolean }>
     /** Bedarf 109 — ob das Handy zurueckschreiben darf. Vorgabe: nur lesen. */
     setWriteMode: (
       mode: 'read-only' | 'contribute',
@@ -429,6 +437,18 @@ type CablePlannerApi = {
      *  Wird vom Renderer registriert; der Main-Prozess schickt
      *  'mobileShare:checksUpdate' Events sobald POST /checks
      *  reinkommt. Gibt eine Unsubscribe-Funktion zurück. */
+    /** B-42 Inkrement 2b — eine Sichtpruefung vom Rundgang, vom Telefon. */
+    onPatternCheck: (
+      cb: (check: {
+        quelleId: string
+        equipmentId: string
+        portId?: string
+        gesehen: string
+        gesehenerName?: string
+        by?: string
+        note?: string
+      }) => void,
+    ) => () => void
     onChecksUpdate: (
       cb: (checks: { ports: Record<string, boolean>; cables: Record<string, boolean> }) => void,
     ) => () => void
@@ -960,6 +980,11 @@ const webFallbackApi: CablePlannerApi = {
       ok: false,
       message: 'Schalten erfordert die Desktop-App.',
     }),
+    companionConnections: async () => ({
+      ok: false,
+      message: 'Companion abfragen erfordert die Desktop-App.',
+      connections: [],
+    }),
   },
   videohub: {
     sendRouting: async () => ({
@@ -1028,6 +1053,7 @@ const webFallbackApi: CablePlannerApi = {
     status: async () => ({ running: false, port: 0, urls: [], hasProject: false, withheld: [] }),
     setProject: async () => ({ ok: true }),
     setCrewCalendar: async () => ({ ok: true }),
+    setPatternPlan: async () => ({ ok: true }),
     // Im Browser gibt es keinen Server — und damit auch keinen Schreibweg.
     setWriteMode: async () => ({ ok: true, writeMode: 'read-only' as const }),
     getWriteMode: async () => ({ writeMode: 'read-only' as const }),
@@ -1040,6 +1066,7 @@ const webFallbackApi: CablePlannerApi = {
       throw new Error('Handy-Zugriff erfordert die Desktop-App.')
     },
     onChecksUpdate: () => () => {},
+    onPatternCheck: () => () => {},
     onCableAdded: () => () => {},
     onPendingChange: () => () => {},
   },

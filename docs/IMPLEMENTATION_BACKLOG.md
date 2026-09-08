@@ -1845,14 +1845,57 @@ Herkunft im Klartext: nach einer verbreiteten Umsetzung, **nicht** nach dem
 Herstellerdokument, gegen das Handbuch zu prüfen. Eine Vorlage aus dem
 Gedächtnis wäre schlimmer als keine — sie sähe aus wie geprüftes Wissen.
 
+**S-4 — Bitfocus Companion, und damit alle Hersteller (gebaut, `cable#777`).**
+Der Eigentümer hat am 2026-09-08 nachgefragt: *„Kannst du nicht bitfocus
+companion integrieren dafür? Oder direkt die Hersteller Protokolle?"* — und
+das war die bessere Idee als beides einzeln.
+
+Companion ist MIT-lizenziert, kostenlos, läuft auf Windows, macOS und Linux
+und pflegt rund **fünfhundert Hersteller-Module**, jedes von Leuten, die das
+Gerät auf dem Tisch haben. Das schlägt jeden eigenen Nachbau, und es löst
+genau das Problem, an dem S-3 hängen blieb: die Protokolle sind hier nicht
+belegbar, dort sind sie erprobt.
+
+* **Wie es angebunden ist.** Companions HTTP-API kann Schaltflächen drücken
+  und Custom-Variablen setzen — nachgesehen in
+  `companion/lib/Service/HttpApi.ts` (main, 2026-09-08): die Routen sind
+  `location/:page/:row/:column/press|down|up|rotate-*|step|style`,
+  `custom-variable/:name/value`, `variable/:label/:name/value`,
+  `surfaces/rescan` und `connections`. **Eine Route „führe Aktion X mit
+  diesen Argumenten aus" gibt es nicht** — daher der Umweg, den die
+  Companion-Welt selbst benutzt: EINE Schaltfläche, deren Route-Aktion ihre
+  Argumente aus zwei Custom-Variablen zieht. Der Plan setzt die beiden und
+  drückt. Eine Schaltfläche je Kreuzpunkt wäre bei 40×40 sechzehnhundert
+  Schaltflächen.
+* **Die Reihenfolge ist die ganze Zusicherung** (Invariante 19). Schlägt eine
+  Variable fehl, darf der Druck nicht passieren — sonst schaltet die
+  Schaltfläche den *vorigen* Kreuzpunkt, und es sieht aus wie ein gelungener
+  Befehl.
+* **`GET /api/connections`** listet, was in der Companion des Nutzers
+  eingerichtet ist (Label + Modul-Id). Der Dialog zeigt es beim Einrichten,
+  damit niemand Modulnamen abtippt. Die notierte Verbindung ist ausdrücklich
+  eine **Notiz** und keine Zusicherung: Companion prüft nicht, ob die
+  Schaltfläche zu ihr gehört.
+* **Standardport 8000**, belegt in `shared-lib/lib/LaunchOptions.ts`
+  (`adminPort`, `default: 8000`); `http_api_enabled` steht in
+  `companion/lib/Data/UserConfig.ts` auf `true`.
+* **Was ausdrücklich NICHT gemacht wurde: Companion-Module einbetten.** Sie
+  liegen nicht auf npm, sondern kommen aus Companions eigenem Modul-Store,
+  und sie laufen gegen einen Host, den Companion stellt (`@companion-module/
+  base`, MIT, npm). Diesen Host nachzubauen hiesse, Aktionen, Feedbacks,
+  Variablen, Presets und Upgrade-Skripte samt ihrer Versionierung
+  mitzuschleppen — viel Fläche für einen Weg, den drei HTTP-Aufrufe schon
+  gehen. Sollte sich das ändern (etwa weil Companion eine Aktions-Route
+  bekommt), gehört das hierher.
+
 **Was offen bleibt, und woran es hängt:**
 
 | Gerät | Was fehlt | Was es entblockt |
 | --- | --- | --- |
-| Ross (Carbonite, Acuity, Ultrix) | RossTalk-Befehlsliste | Das Handbuch oder eine erreichbare Herstellerseite. Ohne das: das erklärte Text-Protokoll benutzen, die Zeile steht im Handbuch. |
-| Panasonic (AV-HS/AW) | Befehlsliste der externen Schnittstelle | dito |
-| Roland (V-Serie) | Befehlsliste LAN/RS-232 | dito. Die frei zugängliche Umsetzung trägt den oben genannten Semikolon-Fehler und taugt nicht als Vorlage. |
-| Sony, Grass Valley, Lawo | SW-P-08 bzw. NMOS IS-05 | **Kein** Text-Protokoll: SW-P-08 ist binär, IS-05 ist HTTP/JSON. Beide brauchen einen eigenen Treiber und eine erreichbare Spezifikation. |
+| Ross (Carbonite, Acuity, Ultrix) | eigener Treiber | **Über Companion bedienbar, sofern dort ein Modul für das Gerät eingerichtet ist** — welche Module es gibt, sagt die eigene Companion-Instanz (`GET /api/connections` listet sie im Dialog); von hier aus war die Modul-Liste nicht abrufbar, deshalb steht hier keine Modul-Kennung. Alternativ das erklärte Text-Protokoll. Ein eigener Treiber bräuchte das Handbuch und hätte wenig Mehrwert. |
+| Panasonic (AV-HS/AW) | eigener Treiber | dito — über Companion, sofern dort ein Modul dafür eingerichtet ist. |
+| Roland (V-Serie) | eigener Treiber | dito. Die frei zugängliche Umsetzung trägt den oben genannten Semikolon-Fehler und taugt nicht als Vorlage. |
+| Sony, Grass Valley, Lawo | SW-P-08 bzw. NMOS IS-05 | **Kein** Text-Protokoll: SW-P-08 ist binär, IS-05 ist HTTP/JSON. Über Companion erreichbar, wo dort ein Modul dafür eingerichtet ist; ein eigener Treiber bräuchte eine erreichbare Spezifikation. |
 | ATEM: Schnitt und Übergang | nichts — `atem-connection` kann `cut()` und `autoTransition()` | Ein eigener Bedienweg im Plan. Der Kreuzpunkt-Weg braucht sie nicht: er setzt Program/Preview/Aux direkt. |
 
 * **Die Regel, die daraus wurde:** Invariante 17 in `docs/architecture.md` —

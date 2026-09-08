@@ -586,12 +586,21 @@ einzige unreine Zeile des Wegs.
 liefert `src/mobile/` an Smartphones im LAN. Bidirektional:
 - Main → Mobile: aktuelle Projekt-Snapshot (Pull-Endpunkt), Passwörter und
   Schlüssel vorher via `stripSecrets` entfernt.
-- Mobile → Main: **drei** Schreibwege, nicht einer —
+- Mobile → Main: **vier** Schreibwege, nicht einer —
   Bauteam-Häkchen (POST `/checks`), neu angelegte Kabel (POST `/cables`,
-  v7.9.54) und Feld-Rückmeldungen (POST `/pending-changes`).
-  Alle drei sind token-gated (`authed`, Token aus der QR-Code-URL).
+  v7.9.54), Feld-Rückmeldungen (POST `/pending-changes`) und die
+  Sichtprüfung vom Prüfbild-Rundgang (POST `/pattern-checks`, B-42
+  Inkrement 2b). Alle vier sind token-gated (`authed`, Token aus der
+  QR-Code-URL), gehen durch `writeAllowed` (Bedarf 109) und durch
+  `showOk` (Bedarf 127).
+  Der vierte ist bewusst KEIN Zweig von `/checks`: der dort geschickte
+  `CheckState` ist ein vollständiger Zustand und ersetzt den vorigen —
+  richtig für Häkchen, falsch für eine Beobachtung, die angehängt gehört.
+- Main → Mobile, zusätzlich: die Prüfbild-Erwartung (GET `/pattern.json`),
+  im Renderer aus `patternRouting` gerechnet und hier nur gehalten. Eine
+  zweite Traversierung auf dem Telefon wäre `zwei-rechnungen`.
 
-**Mobile ist kein Editor** — aber auch nicht read-only: die drei Wege oben
+**Mobile ist kein Editor** — aber auch nicht read-only: die vier Wege oben
 ändern das Projekt am Desktop. Wer das anders formuliert findet, korrigiert
 es; der Dialog-Hinweis sagte bis v7.9.x fälschlich „kann nur lesen, nichts
 schreiben", was für eine Sicherheits-Entscheidung des Nutzers die falsche
@@ -698,6 +707,52 @@ Das Wichtigste in Listenform. Niemals brechen ohne expliziten Architektur-Review
     Erwartung beschriftet. Es gibt keine dritte Möglichkeit, und „sieht man
     doch" ist keine — die ganze Schwierigkeit ist, dass man es eben nicht
     sieht.
+17. **Ein Befehl an eine laufende Anlage nennt nur, was er meint.** Wer aus
+    dem Plan heraus schaltet, sendet GENAU die Kreuzpunkte, um die es geht —
+    nie den ganzen Zustand des Geräts. Der Unterschied ist kein Stilfrage:
+    `buildVideohubRoutingCommand` schreibt eine Zeile für jeden Ausgang und
+    setzt fehlende Einträge auf Eingang 0, was für einen vollständigen Export
+    richtig und für „schalte Ausgang 7" das Schwarzschalten fremder,
+    womöglich sendender Ausgänge wäre. `buildCrosspointCommand` hat deshalb
+    **kein `totalOutputs` und keinen Default**: ein Ausgang, über den niemand
+    etwas gesagt hat, kommt im Befehl nicht vor. Dazu drei Bedingungen, die
+    für jeden weiteren Steuerweg gelten (ATEM, Beleuchtung, was auch immer):
+    der Nutzer liest vor dem Bestätigen den **Klartext mit Namen** und den
+    **wortwörtlich gesendeten Text**; jeder Versuch wird als Beleg im Projekt
+    festgehalten, **auch der gescheiterte** („wer hat geschaltet?" ist die
+    Frage, die er beantwortet); und der Plan wird dabei **nicht nachgezogen**
+    (Invariante 14 in die andere Richtung — zöge das Senden den Plan mit,
+    gäbe es hinterher keine Abweichung mehr zu sehen).
+18. **Ein Protokoll, das nicht belegt ist, wird nicht nachgebaut.** Die
+    Versuchung ist gross: die meisten Mischer und Kreuzschienen sprechen
+    zeilenorientierten Text, und die Zeile „weiss man doch". Man weiss sie
+    nicht — die verbindliche Beschreibung steht im Handbuch des Geräts, und
+    frei zugängliche Nachbauten sind Nachbauten (in einem davon hängt der
+    Sender an jeden Befehl ein Semikolon, das im Befehl schon steht). Ein aus
+    dem Gedächtnis geschriebener Treiber ist deshalb keine Bequemlichkeit,
+    sondern eine ungeprüfte Zusicherung, die als Befehl an eine laufende
+    Anlage geht. Wo eine Beschreibung vorliegt, gehört ein eigener Treiber
+    her; wo nicht, trägt der NUTZER die vier Angaben ein, die im Handbuch
+    stehen (`lib/textProtocol.ts`), und die App zeigt vor dem Senden, was
+    rausgeht — Steuerzeichen benannt. Eine mitgelieferte Vorlage trägt ihre
+    Herkunft im Klartext und behauptet nie, vom Hersteller zu stammen, wenn
+    sie es nicht tut.
+19. **Wer das Protokoll nicht kennt, delegiert — und sagt, an wen.** Bitfocus
+    Companion (MIT) pflegt rund fünfhundert Hersteller-Module, jedes von
+    Leuten mit dem Gerät auf dem Tisch. Das ist die bessere Antwort auf „alle
+    Hersteller" als jeder eigene Nachbau, und `switcherControl/
+    companionDriver.ts` nutzt sie: zwei Custom-Variablen setzen, dann die
+    eine Schaltfläche drücken, deren Route-Aktion sie liest.
+    **Die Reihenfolge ist dabei die ganze Zusicherung.** Schlägt eine
+    Variable fehl, darf der Druck NICHT passieren — sonst feuert die
+    Schaltfläche mit den Werten von vorhin und schaltet den *vorigen*
+    Kreuzpunkt, auf einer laufenden Anlage, und es sieht aus wie ein
+    gelungener Befehl. Deshalb steht die Folge als Datenstruktur
+    (`CompanionSchritt[]` mit `abbruchBeiFehler`) und nicht als Ablauf im
+    Treiber: einen Ablauf baut jemand um, ohne die Folge zu bedenken.
+    Und die Rückmeldung bleibt genau: „Companion hat die Aufrufe angenommen"
+    ist NICHT „das Gerät hat geschaltet" — was hinter der Schaltfläche
+    passiert, meldet Companion an dieser Stelle nicht zurück.
 
 ---
 
