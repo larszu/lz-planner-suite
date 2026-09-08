@@ -11,6 +11,7 @@ import { billing } from './dict/billing'
 import { hub } from './dict/hub'
 import { seed } from './dict/seed'
 import { querverweis } from './dict/querverweis'
+import { bedienoberflaeche } from './dict/bedienoberflaeche'
 
 export const en: Record<string, string> = {
   ...chrome,
@@ -22,4 +23,5 @@ export const en: Record<string, string> = {
   ...hub,
   ...seed,
   ...querverweis,
+  ...bedienoberflaeche,
 }

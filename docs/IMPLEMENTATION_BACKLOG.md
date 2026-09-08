@@ -2356,6 +2356,101 @@ belegbar, dort sind sie erprobt.
   dann in dieselbe Richtung.
 * **Aufwand:** mittel — erledigt.
 
+### B-49 · Bedarfs-Audit: die siebzehn, die nirgends stehen
+
+* **Status:** Audit **erledigt 2026-09-08**; die daraus folgende Arbeit steht
+  unten je Zeile. Anlass: Weisung des Nutzers, „mit allen needs aus den
+  GitHub-Docs weiterzumachen" — also
+  `docs/research/synthesis/USER-NEED-DATABASE.md`, 150 Bedarfe.
+
+* **DIE ERSTE MESSUNG WAR FALSCH, UND ZWAR AUF DIESELBE ART WIE B-44 BEFUND 3.**
+  Gezählt wurde „wie oft steht `Bedarf N` in den beiden Backlog-Dateien" —
+  Ergebnis: 66 genannt, **84 offen**. Die Zahl misst die falsche Eigenschaft.
+  Ein Bedarf gilt nicht als bearbeitet, weil er in einer Markdown-Datei steht,
+  sondern weil im Code etwas dazu passiert ist, und der Vermerk steht oft
+  genau dort: `addressTemplate.ts` trägt „BEDARF 20 — die zwei Ebenen
+  auflösen" im Kopf und in keinem Backlog. Über **alle acht Repos**, Code und
+  Doku, neu gemessen: **133 von 150 sind belegt, 17 stehen nirgends.**
+  Die 84 waren nie 84.
+
+* **Warum das Audit überhaupt geschrieben wird, statt nur die Lücken zu
+  bauen:** ein Bedarf, der erfüllt ist und nirgends vermerkt, wird beim
+  nächsten Durchgang als neu wiederentdeckt und ein zweites Mal gebaut — und
+  dann steht dieselbe Sache zweimal im Code (`zwei-rechnungen`). Ein Bedarf,
+  der bewusst nicht gebaut wird, wird ohne Vermerk beim nächsten Durchgang
+  zum Kandidaten. Beides kostet mehr als die Zeile hier.
+
+| # | Prio | Befund nach Nachsehen im Code |
+| --- | --- | --- |
+| 18 | P1 | **Erfüllt, nur nicht vermerkt.** Der Bedarf verlangt „network facets on the existing device record rather than a separate IP module". Genau das steht: `EquipmentItem.networkInterfaces`, und `addressPlan.ts`, `networkSegments.ts`, `crewNetworkSheet.ts`, `venueNetworkRequest.ts` leiten **alle** aus `project.equipment` ab. Es gibt kein zweites Netz-Dokument. |
+| 44 | P2 | **Vier von fünf Zielen gebaut.** `types/sourceIdentity.ts` + `labelDerivation.ts` (ADR-001, Inkrement 1) leiten Mischer-Eingangslabel, Router-Quelle/-Ziel, MV-UMD und Tally-Name aus EINEM Datensatz ab; `labelTargets.ts` hält die belegten Ziele. Das fünfte Ziel — **der Text auf der Bedienoberfläche** — fehlt und ist genau Bedarf 45. |
+| 45 | P2 | **Frei geworden.** Stand in der E-18-Zeile als „hängt an anderer Frage → E-23"; E-23 ist seit `cable#785` entschieden UND gebaut. Wird als nächstes gebaut, siehe B-50. |
+| 54 | P2 | **WON'T, bereits entschieden.** Steht in der E-18-Zeile unter „WON'T, weil sie Autorenschaft brauchen": geteilter Ablauf mit Spaltenrechten je Rolle. Der Ablauf wird gelesen, nicht geführt. |
+| 56 | P2 | **WON'T, bereits entschieden.** Dieselbe Zeile: Ist-Zeiten mit einem Tipp erfassen setzt Autorenschaft am Ablauf voraus. |
+| 93 | P2 | **Blockiert wie E-24, aus demselben Grund.** Der Spektrum-Plan ist gebaut (`spectrumPlan.ts`, Bedarf 95) und gibt eine CSV-Tabelle aus. Was der Bedarf will, ist der Austausch mit Wireless Workbench / WSM / IAS — und deren Dateiformate sind nicht dokumentiert öffentlich. Ein aus dem Gedächtnis gebauter Schreiber wäre eine ungeprüfte Zusicherung (Invariante 18). Sobald eine Beispieldatei vorliegt, ist das dieselbe Bauform wie der Ablauf-Leser. |
+| 99 | P3 | **Offen.** `packages/lexware-core` legt Belege an; Mahnketten mit gesetzlichen Fristen und Verzugszinsen auf dem Dokument gibt es nicht. Hängt an E-12 (Lexware als eigene Shell-Domäne), das entschieden und noch nicht gebaut ist. |
+| 117 | P4 | **Offen, und ohne Schema nicht baubar.** Eine Rechnung, die den E-Invoicing-Validator des Kunden besteht, heisst XRechnung oder ZUGFeRD — beides Formate mit Spezifikation, die dieses Repo nicht vorliegen hat. Wie 93: erst die Fundstelle, dann der Schreiber. |
+| 118 | P4 | **Offen.** Ein persönliches Geräteregister mit Serien, Kaufpreis und Versicherungswert. Das Lager-Modul ist inzwischen ein eigenes Repo; dort gehört es hin, nicht in den Verkabelungsplaner. |
+| 119 | P4 | **Offen.** „Ohne weiteres Konto in ein Kundensystem aufgenommen werden" — der kontolose Teilen-Weg steht (`mobileShareServer`, Bedarf 1), die Gegenrichtung nicht. |
+| 120 | P4 | **Offen.** Ein tragbares Nachweis-Paket (Zertifikate, Versicherung, Qualifikationen) ist ein Dokumenten-Bündel und berührt den Signalfluss nicht. |
+| 122 | P4 | **Erfüllt, nur nicht vermerkt.** `tallyMap.ts` leitet die Tally-/UMD-Zuordnung aus dem Plan ab — Router eingeschlossen, seit der Korrektur der Eingangsnummer. Keine handgepflegte Tabelle. |
+| 123 | P4 | **Erfüllt, nur nicht vermerkt.** Der geteilte Plan zwischen Maschinen läuft über die CRDT-Synchronisation (`sync:*`, `signaling:*`) und nicht über Export/Import von Hand. |
+| 124 | P4 | **Erfüllt als REGEL, und die Regel ist stärker als der Bedarf.** ADR-005 „Verlustfrei oder laut": ein Import, der ein Feld nicht bewahren kann, muss verweigern statt es zu verwerfen. Der Bedarf verlangt nur, dass ein Rundlauf keine von Hand gefüllte Spalte zerstört; Bedarf 29 (`cable#711`) hat das für den CSV-Weg eingelöst. |
+| 128 | P4 | **Offen, und nachgesehen: es gibt keine einzige `@media print`-Regel im Renderer.** Ein monochrom sicherer Ausdruck ist damit nicht bloss unschön, sondern ungeprüft — ein Plan, dessen Ebenen sich nur durch Farbe unterscheiden, ist auf einem Schwarzweiss-Drucker unlesbar. Kleiner Aufwand, klarer Nutzen. |
+| 131 | P4 | **Offen.** Arbeitsschutz-, Rigging- und Bestuhlungs-Papiere mit vorhandenen Daten füttern, ohne die Dokumente zu besitzen. Dieselbe Haltung wie E-18 beim Ablauf; sinnvoll, sobald jemand ein konkretes Blatt benennt. |
+| 134 | P4 | **Ist selbst ein WON'T** und wird als solches notiert: „do NOT build supplier coordination, crew scheduling or invoicing". Er steht hier, damit niemand ihn als Bauauftrag liest — ein negativer Bedarf, der nirgends vermerkt ist, sieht beim nächsten Durchgang aus wie eine Lücke. |
+
+* **Aufwand:** klein (Audit) — die daraus folgende Arbeit steht in B-50 und in
+  den Zeilen oben.
+
+### B-50 · Bedarf 45 — vom Inhalt des Ablaufs auf die Bedienoberfläche
+
+* **Status:** **erledigt 2026-09-08** — `suite#183`. Freigeworden durch E-23:
+  der Bedarf stand in der E-18-Zeile als „bleibt an anderer Frage hängen → E-23",
+  und E-23 ist seit `cable#785` entschieden **und** gebaut.
+* **Der Befund, an zwei Trackern zugleich belegt:** die Companion-Anbindungen
+  von Ontime sind „exclusively timer-related" (#1841, #1835, #1484, #2079), und
+  eine Suche nach „rundown" in Companions eigenem Tracker ergibt „effectively
+  nothing". **Die Uhr des Ablaufs kommt auf der Oberfläche an, sein Inhalt
+  nicht.** Wer die Taste beschriftet, tippt ab — und tippt beim nächsten
+  Umbenennen erneut ab.
+* **Damit zugleich das fünfte Ziel aus Bedarf 44.** Nachgesehen: vier der fünf
+  Ziele jenes Bedarfs stehen (`sourceIdentity` + `labelDerivation`,
+  ADR-001 Inkrement 1 — Mischer-Eingangslabel, Router-Quelle/-Ziel, MV-UMD,
+  Tally-Name). Das fünfte, **der Text auf der Bedienoberfläche**, fehlte. Er
+  ist jetzt eine Ableitung: wird die Kamera im Plan umbenannt, folgt die
+  Beschriftung.
+* **Was ausdrücklich NICHT ausgegeben wird: eine Companion-Importdatei.** Die
+  Grenze steht seit S-4 in `companionControl.ts` und ist dort am Quelltext
+  nachgelesen (`companion/lib/Service/HttpApi.ts`, main, 2026-09-08):
+  Companions HTTP-Schnittstelle kann Schaltflächen **drücken** und
+  Custom-Variablen **setzen** — es gibt keine Aktions-Route. Eine Datei mit
+  erfundenen Aktionen sähe importierbar aus und wäre eine ungeprüfte
+  Zusicherung (Invariante 18). Ausgegeben wird deshalb ein **Belegungsplan**:
+  welche Taste zu welchem Ablauf-Punkt gehört und wie sie heisst. Die Aktion
+  legt der Bediener einmal von Hand; die Beschriftung kommt ab dann aus dem
+  Plan. Genau dieser Teil fehlt heute überall.
+* **Das Raster wird gesagt, nicht angenommen.** Ein Stream Deck hat 15 Tasten,
+  ein XL 32, eine Companion-Seite im Browser so viele wie eingestellt. Eine im
+  Modul eingebaute Zahl wäre eine Annahme über fremde Hardware, die auf dem
+  Blatt wie eine Tatsache aussieht (ADR-002). Der Aufrufer nennt sie; 8×4 ist
+  eine **Vorauswahl im Eingabefeld**, und die Stand-Zeile schreibt hin, mit
+  welchem Raster gerechnet wurde — ohne das ist ein ausgedrucktes Blatt gegen
+  eine andere Oberfläche nicht mehr lesbar.
+* **Was keine Taste bekommt, steht da** (Bedarf 65): ein Ablauf-Punkt ohne
+  einen einzigen Verweis in den Plan bekommt keine — eine Taste ohne Technik
+  dahinter tut nichts, und dreissig davon machen den Plan unlesbar. Gezählt
+  und namentlich in der Stand-Zeile. „Kein Punkt ausgelassen" ist ebenfalls
+  eine Aussage; ein fehlender Satz ist keine.
+* **Ein Blatt, ein CSV-Schreiber.** Die Rückgabe hat die Form `GearSheet`,
+  damit `rundownViewCsv` und `rundownViewRows` unverändert weiterlaufen. Ein
+  zweiter CSV-Schreiber wäre `zwei-rechnungen`.
+* **Sieben Gegenproben, alle rot** — eine davon kam zuerst grün zurück, und
+  zwar nicht wegen des Codes: das Suchmuster der Gegenprobe traf die Zeile
+  nicht (`join(", ")` gegen `join(', ')`), sie war also ein No-Op. Eine
+  Gegenprobe, die nichts ändert, ist keine Gegenprobe.
+* **Aufwand:** mittel — erledigt.
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden

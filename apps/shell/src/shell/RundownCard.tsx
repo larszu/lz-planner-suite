@@ -6,6 +6,7 @@ import {
   parseDelimited,
   previewRundown,
   gearSheet,
+  surfacePlan,
   rundownCoverage,
   rundownFindings,
   rundownFromPreview,
@@ -425,6 +426,15 @@ function RundownExports({ rundown, seed }: { rundown: Rundown; seed: SuiteSeed }
   // Bedarf 4 — dasselbe Blatt in beiden Formaten. Welches, entscheidet der
   // Empfaenger: die Regie will die Mappe, das Foyer-Display den Text.
   const [alsMappe, setAlsMappe] = useState(false)
+  // Bedarf 45 — das Raster der Bedienoberflaeche. Voreingestellt 8x4, weil das
+  // die Form des groessten verbreiteten Geraets ist; es ist eine VORAUSWAHL im
+  // Feld und keine Annahme im Code — der Bediener aendert sie, und das Blatt
+  // sagt in der Stand-Zeile, mit welchem Raster es gerechnet wurde.
+  const [raster, setRaster] = useState({ spalten: 8, zeilen: 4 })
+  const klemme = (roh: string, alt: number): number => {
+    const n = Number.parseInt(roh, 10)
+    return Number.isFinite(n) && n >= 1 && n <= 16 ? n : alt
+  }
   const gib = (name: string, blob: Blob) => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -464,6 +474,42 @@ function RundownExports({ rundown, seed }: { rundown: Rundown; seed: SuiteSeed }
       >
         {t('rundown.sheet.gear', 'Geräte-Zeiten')}
       </button>
+      {/* Bedarf 45 — der Weg vom INHALT des Ablaufs auf die Bedienoberflaeche.
+          Ebenfalls abgesetzt und ebenfalls kein sechster Empfaenger: eine
+          Zeile je TASTE, nicht je Ablauf-Punkt (Punkte ohne Technik bekommen
+          keine). Das Raster steht daneben, weil nur der Bediener weiss, welche
+          Oberflaeche vor ihm liegt — 15 Tasten am Stream Deck, 32 am XL, in
+          Companion frei einstellbar. Eine eingebaute Zahl waere eine Annahme
+          ueber fremde Hardware, die auf dem Blatt wie eine Tatsache aussieht. */}
+      <button
+        type="button"
+        className="av-focus rounded-av-control border border-av-border px-1.5 py-0.5 text-[11px] text-av-text-secondary hover:bg-av-surface-2 hover:text-av-text"
+        onClick={() => speichere('bedienoberflaeche', surfacePlan(rundown, seed, raster).blatt)}
+      >
+        {t('rundown.sheet.surface', 'Bedienoberfläche')}
+      </button>
+      <label className="flex items-center gap-1 text-[11px] text-av-text-secondary">
+        {t('rundown.sheet.grid', 'Raster')}
+        <input
+          type="number"
+          min={1}
+          max={16}
+          value={raster.spalten}
+          onChange={(e) => setRaster((r) => ({ ...r, spalten: klemme(e.target.value, r.spalten) }))}
+          aria-label={t('rundown.sheet.gridCols', 'Spalten je Seite')}
+          className="w-10 rounded-av-control border border-av-border bg-av-surface-3 px-1 py-0.5 text-av-text"
+        />
+        ×
+        <input
+          type="number"
+          min={1}
+          max={16}
+          value={raster.zeilen}
+          onChange={(e) => setRaster((r) => ({ ...r, zeilen: klemme(e.target.value, r.zeilen) }))}
+          aria-label={t('rundown.sheet.gridRows', 'Zeilen je Seite')}
+          className="w-10 rounded-av-control border border-av-border bg-av-surface-3 px-1 py-0.5 text-av-text"
+        />
+      </label>
       {/* Das Format ist eine Eigenschaft der Ausgabe, nicht des Blattes —
           deshalb EIN Schalter neben den Knoepfen statt zwoelf Knoepfe. */}
       <label className="ml-1 flex items-center gap-1 text-[11px] text-av-text-secondary">

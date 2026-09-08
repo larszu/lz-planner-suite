@@ -123,6 +123,14 @@ export {
   type GearSheet,
 } from './rundownViews'
 
+// Bedarf 45/44 — der Belegungsplan der Bedienoberflaeche aus dem Ablauf.
+export {
+  surfacePlan,
+  type SurfaceGrid,
+  type SurfacePlanErgebnis,
+  type AusgelassenerPunkt,
+} from './surfacePlan'
+
 // Die verbindlichen Oberflaechen-Werte (ADR-007). Apps, die keine CSS-
 // Variablen lesen koennen — Canvas, Print, SVG-Export, Konva —, holen sie
 // hier, statt einen zweiten Satz Hexwerte zu fuehren.
