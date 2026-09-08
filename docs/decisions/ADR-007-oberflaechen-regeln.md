@@ -207,22 +207,34 @@ Von aussen nach innen:
 Die Regeln gelten ab sofort fuer **neuen** Code. Bestehende Oberflaechen
 werden in dieser Reihenfolge nachgezogen — jede Stufe ist fuer sich lieferbar:
 
-1. **`@avplan/ui`** — erledigt mit diesem ADR (Tokens, Primitive, Test).
-2. **Shell** — liest die Tokens bereits ueber `--av-*`; nichts zu tun ausser
-   der Kopflinie in den Panels.
-3. **cable-planner** — die `--cp-*`-Schicht zeigt auf Tailwinds `slate`. Sie
-   wird auf die Marken-Werte umgehaengt; die Utilities (`bg-cp-surface-1`,
-   `text-cp-muted`, …) bleiben unveraendert, weil genau dafuer die
-   Token-Schicht angelegt wurde.
-4. **multicam-planner, light-planner** — dieselbe Umhaengung; beide fuehren
-   noch rohe Hexwerte in den Canvas-Komponenten.
-5. **tally-pi, Broadcast-intercom, sony-camera-bridge, pi-media-station** —
-   kleine Oberflaechen; hier zaehlt vor allem der Live-/Aufnahme-Zustand in
-   Tally-Rot, der dort seine eigentliche Bedeutung hat.
+1. ~~**`@avplan/ui`**~~ — **erledigt** mit diesem ADR (Tokens, Primitive, Test).
+2. ~~**Shell**~~ — **erledigt** (`suite#151`, Rahmen und Kopflinie; `suite#153`
+   die Kommandopalette). Las die Tokens schon ueber `--av-*`; offen war nur
+   die Kopflinie in den Panels.
+3. ~~**cable-planner**~~ — **erledigt** (`cable#760` Tokens, `cable#762`
+   Kopfzeile 40 px / Statusleiste 24 px / Dialog-Kopflinie). Die `--cp-*`-Schicht
+   zeigte auf Tailwinds `slate` und traegt jetzt die Marken-Werte
+   (`--cp-surface-2: #1D324F`, Zumpe Navy); die Utilities blieben
+   unveraendert — genau dafuer war die Token-Schicht da.
+4. ~~**multicam-planner, light-planner**~~ — **erledigt** (`multicam#104`/`#105`,
+   `light#88`/`#89`). Dieselbe Umhaengung, dazu die rohen Hexwerte in den
+   Canvas-Komponenten.
+5. ~~**tally-pi, Broadcast-intercom, sony-camera-bridge, pi-media-station**~~ —
+   **erledigt** (`tally-pi#12`, `Broadcast-intercom#11`,
+   `sony-camera-bridge#18`, `pi-media-station#5`). `tally-pi` und
+   `pi-media-station` halten die Palette zusaetzlich mit einem eigenen Test
+   fest (`tests/test_brand_tokens.py`) — dort gibt es keine Token-Schicht, an
+   der ein Rueckfall auffiele.
 
-Was **nicht** passiert: eine grosse Umbau-Runde durch alle Repos an einem
-Tag. Die Token-Schicht ist genau deshalb da, dass die Umstellung pro App eine
-Datei ist.
+**Alle fuenf Stufen stehen** (nachgesehen am Code, 2026-09-08: `#1D324F` liegt
+in allen acht Repos). Dieser Abschnitt hat die Reihenfolge vorgegeben und
+haette danach ohne Vermerk dagestanden — ein Uebernahmeplan, der nach der
+Uebernahme nicht angefasst wird, schickt den naechsten Leser los, etwas zu
+bauen, das schon steht.
+
+Was **nicht** passiert ist: eine grosse Umbau-Runde durch alle Repos an einem
+Tag. Die Token-Schicht war genau dafuer da, dass die Umstellung pro App eine
+Datei ist — und in den fuenf Stufen war sie es auch.
 
 ---
 
