@@ -2509,6 +2509,25 @@ belegbar, dort sind sie erprobt.
      (Schütz, Relais, Taster, Not-Aus, FI, LS).
 * **Aufwand:** mittel.
 
+* **TEIL 1 ERLEDIGT 2026-09-08** — `cable#787`. `lib/passiveCatalog.ts`:
+  Patchblenden (12/24/48× BNC, 24× RJ45, 24× XLR), Durchgangsbuchsen (BNC,
+  XLR, RJ45), Steckdosenleisten (6-/8-fach Schuko, 8-fach IEC) und Verteiler
+  (CEE32, CEE63) — aus der Bibliothek platzierbar. Die Blenden tragen
+  dasselbe `isPatchPanel` wie die aus dem Rack-Builder und laufen damit durch
+  dieselbe Durchleitungs-Ableitung; ein zweiter Blenden-Begriff wäre
+  `zwei-rechnungen`. Neu am Port: `absicherungA`. Verdrahtet über die
+  Seed-Liste in `runLibraryMigration` mit angehobener `LIB_MIGRATION_VERSION`
+  — ohne die wären die Vorlagen gebaut und für bestehende Nutzer unsichtbar.
+* **Zwei Wächter haben dabei zugeschlagen, beide zu Recht.** Die
+  ASCII-Drift-Prüfung fand „Rueckseite" in einem String-Literal (geändert
+  wurde der Wert, nicht der Wächter). Und `catalogSourceUrls` wäre von acht
+  auf neun „Kataloge ohne Beleg" gesprungen — das hätte den neuen Katalog als
+  **Recherche-Lücke** ausgewiesen, obwohl er absichtlich keinen Hersteller
+  behauptet. Statt die Zahl hochzuzählen gibt es jetzt `GENERISCHE_KATALOGE`,
+  erklärt statt abgeleitet, plus eine Prüfung, dass darin wirklich keine
+  `manufacturerUrl` steht — sonst verdeckte die Ausnahme eine echte Lücke.
+* **Teil 2 bleibt offen:** der Verteiler als Bauart im Schaltbild.
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden
