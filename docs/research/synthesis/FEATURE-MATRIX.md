@@ -121,9 +121,26 @@ none of them holds a technical specification of the show.
 >
 > Die übrigen sieben `WON'T`-Zeilen dieses Blocks wurden bei derselben
 > Gelegenheit am Quelltext nachgeprüft und halten. Eine Hälfte einer Zeile
-> bleibt offen: „Media playback — YES as a planned endpoint" ist im
-> `cable-planner` nicht eingelöst; `pi-media-station` kommt dort als Gerät oder
+> blieb offen: „Media playback — YES as a planned endpoint" war im
+> `cable-planner` nicht eingelöst; `pi-media-station` kam dort als Gerät oder
 > Endpunkt nicht vor.
+>
+> **Eingelöst 2026-09-08 (`cable#765`).** `lib/mediaStationCatalog.ts` führt
+> die Station als platzierbares Gerät — eingehängt in die Typ-Auflösung, die
+> Belegkette und die Bibliotheks-Saat. Damit taucht sie in Stückliste,
+> Kommissionierliste und Kabelplan auf, statt vor Ort von Hand mitgedacht zu
+> werden. Die **erste** Hälfte der Zeile bleibt unberührt und ist im Test
+> festgehalten: der Katalog kennt keine Abspiellisten, keine Zonen, keinen
+> Cue — wer damit anfängt, kippt das `WON'T`, ohne es zu entscheiden.
+>
+> Die Arbeit an dem Eintrag steckt in dem, was **nicht** drinsteht: keine
+> analoge Klinke (der Pi 5 hat sie nicht mehr, der Pi 4 hat sie — das Repo
+> legt kein Board fest, und ein Port, den die Hälfte der Boards nicht besitzt,
+> erzeugt ein Kabel, das vor Ort ins Leere geht), kein zweiter HDMI (die
+> Software treibt eine Anzeige), kein Sensor-Port (Innenverkabelung). Jede
+> der drei Auslassungen ist im Quelltext begründet, und ein Test hält fest,
+> dass sie es sind: eine Auslassung ohne Grund liest sich wie ein
+> Versäumnis, und der Nächste trägt sie „nach".
 
 > **Nachtrag, 2026-09-04 — wo diese vier Zeilen tatsächlich laufen (B-35).**
 > `Broadcast-intercom`, `sony-camera-bridge`, `tally-pi` und `pi-media-station`

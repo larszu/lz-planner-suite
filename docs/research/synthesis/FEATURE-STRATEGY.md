@@ -117,7 +117,7 @@ Prosa unten war an mehreren Stellen älter als das Repository.
 
 | # | Initiative | Score | Stand | Belegt durch |
 | --- | --- | --- | --- | --- |
-| 0 | Fork konsolidieren | 20 | **teilweise** | Drift von 56/72/26 auf **18/19/17** gesenkt (cable/multicam/light, Stand `scripts/planner-drift-baseline.json`), CI-bewacht (`scripts/planner-drift.mjs`). **Die Zahlen hier veralten bei jedem Vendor-Schritt** — massgeblich ist die Baseline-Datei, nicht diese Zeile. Die Suite vendort weiterhin Kopien — verwaltet, nicht konsolidiert |
+| 0 | Fork konsolidieren | 20 | **teilweise** | Drift von anfangs 56/72/26 deutlich gesenkt und CI-bewacht (`scripts/planner-drift.mjs`). **Der Betrag steht hier absichtlich nicht** — er veraltet bei jedem Vendor-Schritt, und der Bericht sagt das selbst: *„Do not copy them into prose — that is how they go stale."* Massgeblich ist `scripts/planner-drift-baseline.json`. Der Guard faellt bei WACHSTUM gegen diese Baseline, nicht gegen eine feste Zielzahl. Die Suite vendort weiterhin Kopien — verwaltet, nicht konsolidiert |
 | 1 | Identitäts-Spine + Label-Projektion | 27 | **fertig** (nachgemessen 2026-09-06) | Gebaut und erreichbar: `SourceIdentity` als Rolle neben den Geräten, CRUD-Slice, Migration in `healProjectPositions`, Eigenschaften-Sektion an jedem Gerät, `LabelTargetSpec` mit fünf Zeichenbudgets, Kollisions-Befunde im Plan-Check, `.avsourcemap` mit Provenienz, Tally-Tab. **Die beiden in Runde 10 benannten Hälften sind beide zu.** (a) Der Router-Durchgang steht: `feedingInput` liest den persistierten Kreuzpunkt (`device.videohubRouting?.planned`) und läuft durch den Videohub hindurch, statt an ihm abzubrechen — Kamera→Videohub→ATEM löst damit die Kamera auf, nicht den Router. (b) Die Rolle besitzt die beiden Zielsysteme: `exportVideohub` nimmt `roleLabels` aus `roleLabelsByPort` (elf Fundstellen, `cable#682`/B-28), und `AtemDialog` baut Lang- und Kurznamen aus derselben Karte, bevor `shortenForAtem` zuschneidet. Ein Rename ändert damit ATEM- und Videohub-Text, nicht nur UMD, `.avsourcemap` und Tally-CSV. **Was offen bleibt, ist bewusst offen:** ISO-Präfix und Comms-Kanal warten auf ein belegtes Zielsystem in `labelTargets.ts` — Regel *kein Anker ohne Ziel-Spec* |
 | 2 | Tally-Map aus dem Plan | 24 | **fertig** (nachgemessen 2026-09-06) | `lib/tallyMap.ts` (`buildTallyMap`, `tallyMapCsv`, `toTallyPiDevices`) ist gebaut, erreichbar über den Export-Dialog und getestet. Die drei in Runde 10 benannten Mängel sind alle behoben: der Wertebereich der Rollen-Id (`cable#674` — die 36-stellige `uuidv4()` fiel gegen `^[A-Za-z0-9_-]{1,32}$` in `guide_server.py:310`, und tally-pi wies die ganze Datei zurück), der fehlende Transport (`suite#99` — die Karte geht per `POST /tally-config` aus dem Main-Prozess an den Pi, mit Abgleich neu/geändert/entfällt davor), und die falsche Eingangsnummer bei Kamera→Videohub→ATEM: `switcherLinkFor` nimmt jetzt nur MISCHER-Senken und in deterministischer Reihenfolge, wo vorher zwei Kopien eines `sources.find()` den ersten besten Router-Eingang griffen. Gibt es keinen Mischer-Link, steht **keine** Zahl da — eine erfundene Pin-Nummer schaltet die falsche Lampe |
 | 3 | Stückliste / Kommissionier-Liste | 24 | **fertig** | `lib/planBom.ts` (ADR-002 Inkrement 4) |
@@ -441,12 +441,21 @@ Measured at the time of writing: 56 divergent paths in cable-planner, 72 in mult
 light-planner. The suite's cable-planner has no NetBox import at all; the standalone cable-planner
 has no Lexware billing; the suite's multicam-planner is missing 8,145 lines and ten test files.
 
-> **Stand 2026-09-03:** die Zahlen sind auf **18 / 19 / 17** gesenkt und werden von
+> **Stand 2026-09-03:** die Zahlen sind deutlich gesenkt und werden von
 > `scripts/planner-drift.mjs` in der CI bewacht; der Rest ist zum grossen Teil deklarierter
 > Overlay (`@avplan/*`-Pakete, Shell-Bridge, i18n) statt Auseinanderlaufen. Der Guard beantwortet
 > seit einer Nachbesserung auch die zweite Frage — *welche Upstream-Aenderung ist hier noch nicht
 > angekommen* —, weil ein uebersprungener Vendoring-Commit an den reinen Drift-Zahlen
 > vorbeigerutscht war. Die Suite vendort weiterhin Kopien: verwaltet, nicht konsolidiert.
+>
+> **Die Zahl steht hier bewusst nicht mehr (2026-09-08).** Sie stand als „18 / 19 / 17" in diesem
+> Absatz und war es laengst nicht mehr; massgeblich ist
+> [`scripts/planner-drift-baseline.json`](../../../scripts/planner-drift-baseline.json), das die
+> CI pflegt. Der Drift-Bericht sagt diese Regel selbst in seinem Kopf — *„Do not copy them into
+> prose — that is how they go stale"* —, und genau dagegen war hier verstossen worden. Eine Zahl
+> in Prosa, die niemand nachzieht, ist schlimmer als keine: sie sieht aus wie eine Messung.
+> Wichtiger als ihr Betrag ist ohnehin die Richtung, und die bewacht der Guard: er faellt bei
+> WACHSTUM gegen die Baseline, nicht gegen eine feste Zielzahl.
 
 An identity spine that spans modules cannot be built on three hand-synced copies of the domain
 model — still less on three copies that already disagree. This is the same defect we are attacking
