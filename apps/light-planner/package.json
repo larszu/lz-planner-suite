@@ -2,7 +2,7 @@
   "name": "light-planner",
   "private": true,
   "avplan": {
-    "sourceLanguage": "de"
+    "sourceLanguage": "en"
   },
   "version": "1.0.0",
   "type": "module",
@@ -17,7 +17,7 @@
     "dist:win": "npm run build && electron-builder --win nsis portable --publish never",
     "dist:mac": "npm run build && electron-builder --mac --x64 --arm64 --publish never",
     "lint": "eslint .",
-    "test": "vitest run && npm run avplan:check && npm run venue:check && npm run mvr:check && npm run spec:check && npm run identity:check && npm run i18n:check && npm run docs:check && npm run patch:check && npm run groups:check && npm run identity:mvr && npm run merge:check && npm run preflight:check && npm run universe:check && npm run power:check && npm run reports:check && npm run console:check && npm run shop:check && npm run labels:check && npm run cables:check && npm run equipment:check && npm run autopatch:check && npm run order:check && npm run access:check && npm run brand:check && npm run diff:check && npm run lang:check && npm run notes:check && npm run preview:check && npm run retime:check && npm run stamp:check && npm run storage:check && npm run actuals:check",
+    "test": "vitest run && npm run avplan:check && npm run venue:check && npm run mvr:check && npm run spec:check && npm run identity:check && npm run i18n:check && npm run docs:check && npm run patch:check && npm run groups:check && npm run identity:mvr && npm run merge:check && npm run preflight:check && npm run universe:check && npm run power:check && npm run reports:check && npm run console:check && npm run shop:check && npm run labels:check && npm run cables:check && npm run equipment:check && npm run autopatch:check && npm run order:check && npm run access:check && npm run brand:check && npm run diff:check && npm run lang:check && npm run notes:check && npm run preview:check && npm run retime:check && npm run stamp:check && npm run storage:check && npm run actuals:check && npm run zoom:check && npm run slider:check",
     "test:watch": "vitest",
     "diff:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/version-diff-check.ts",
     "storage:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/inventory-storage-check.ts",
@@ -49,6 +49,8 @@
     "docs:check": "node --experimental-strip-types scripts/docs-reachable-check.ts",
     "actions:check": "node --experimental-strip-types scripts/actions-node-runtime.ts",
     "brand:check": "node --experimental-strip-types scripts/brand-tokens-check.ts",
+    "zoom:check": "node scripts/zoom-grenze-check.mjs",
+    "slider:check": "node scripts/slider-groesse-check.mjs",
     "preview:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/inventory-import-preview-check.ts",
     "retime:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/retime-check.ts",
     "access:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/order-access-check.ts",

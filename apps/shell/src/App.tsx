@@ -9,7 +9,7 @@ import {
   type RailModule,
 } from '@avplan/ui'
 import { useEffect } from 'react'
-import { MODULES, MODULE_BY_ID, BUNDLED_PLANNERS, type ModuleId } from './modules/registry'
+import { MODULES, MODULE_BY_ID, plannerMitgeliefert, type ModuleId } from './modules/registry'
 import { RUNTIMES, type RuntimeId } from './modules/runtimes'
 import { loadAddresses, runtimeUrl, saveAddresses, type RuntimeAddresses } from './shell/runtimeHosts'
 import { useRuntimeHealth } from './shell/runtimeHealth'
@@ -458,10 +458,20 @@ export function App() {
       null,
     ),
   )
-  // In der gepackten Desktop-Suite sind die echten Planer-Renderer mitverpackt
-  // und werden lokal ausgeliefert — dann direkt den echten Planer einblenden
-  // statt der statischen Vorschau. Im Browser/Dev bleibt die Vorschau Standard
-  // (Dev-Server laufen evtl. nicht → kein toter „unerreichbar"-Rahmen).
+  // Wird der Planer MITGELIEFERT, laeuft er auch — dann steht der echte
+  // Planer im Rahmen und nicht die Vorschau der Shell.
+  //
+  // Das war bis 2026-09-09 an `BUNDLED_PLANNERS` gebunden, also allein an der
+  // gepackten Desktop-Suite. Auf der veroeffentlichten Seite stand damit
+  // ueberall die Vorschau, obwohl der Pages-Lauf alle fuenf Planer mitbaut und
+  // daneben legt (`./planners/<modul>/`) — die echten Anwendungen waren da und
+  // wurden nicht gezeigt. `plannerMitgeliefert` fragt nach der ART der
+  // Adresse; die Begruendung steht dort.
+  //
+  // Im Entwicklungsbetrieb bleibt es bei der Vorschau: dort zeigen die
+  // Adressen auf `localhost:418x`, und ein toter Rahmen waere die schlechtere
+  // Antwort als eine Flaeche, die sagt, dass sie eine Vorschau ist.
+  //
   // Geraete-Module sind immer „gemountet": es gibt bei ihnen keine
   // Shell-Vorschau, zwischen der man umschalten koennte -- entweder die
   // Anwendung im Netz antwortet, oder der Rahmen sagt, dass sie es nicht tut.
@@ -469,11 +479,11 @@ export function App() {
     jeModul<boolean>(
       {
         overview: false,
-        signal: BUNDLED_PLANNERS,
-        cameras: BUNDLED_PLANNERS,
-        licht: BUNDLED_PLANNERS,
-        lager: BUNDLED_PLANNERS,
-        gebaeude: BUNDLED_PLANNERS,
+        signal: plannerMitgeliefert('signal'),
+        cameras: plannerMitgeliefert('cameras'),
+        licht: plannerMitgeliefert('licht'),
+        lager: plannerMitgeliefert('lager'),
+        gebaeude: plannerMitgeliefert('gebaeude'),
         board: false,
       },
       true,

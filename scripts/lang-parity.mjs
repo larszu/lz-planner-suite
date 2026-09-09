@@ -31,7 +31,8 @@
 //
 // WAS VERGLICHEN WIRD.
 //   1. Die beiden Wortlisten und die Entscheidungslogik von `klassifiziere`.
-//   2. Den SPRACHMIX-Teil (B-61/B-63): die vier Muster `SICHTBARE_ATTRIBUTE`,
+//   2. Den SPRACHMIX-Teil (B-61/B-63): `fallbackMuster` (der Ausdruck, an dem
+//      die Fallbacks ueberhaupt haengen), die vier Muster `SICHTBARE_ATTRIBUTE`,
 //      `JSX_TEXT`, `NACH_CODE`, `RUFE`, den Rumpf von `sichtbareTexte` und den
 //      Kommentarfilter `ohneKommentare` — dazu die feste Probe (`PROBE` und
 //      die erwartete Ausbeute), an der jede Kopie ihr Muster prueft.
@@ -182,6 +183,22 @@ const gelesen = KOPIEN.map(({ app, datei }) => {
   mix.PROBE = zeilen(quelle, 'PROBE')
   if (!mix.PROBE) fehler.push(`${app}: die Probe PROBE wurde nicht gefunden.`)
 
+  // DAS MUSTER, AN DEM DIE FALLBACKS HAENGEN — und es fehlte hier bis zum
+  // 2026-09-09, obwohl es die Messung traegt, gegen die alles andere
+  // gehalten wird.
+  //
+  // Aufgefallen ist die Luecke von der anderen Seite: `fallbackMuster` kannte
+  // nur `t(` und `translate(`, nicht `tr(` — den Uebersetzer, den Module
+  // ausserhalb von React rufen (`\bt\(` trifft `tr(` nicht, hinter dem `t`
+  // steht ein `r`). Sechs deutsche Import-Fehlermeldungen sind so durch die
+  // Sprachdrehung E-28 gegangen, waehrend der Zaehler auf 0 blieb: was der
+  // Ausdruck nicht sieht, kann er auch nicht falsch nennen.
+  //
+  // Waere das Muster hier schon verglichen worden, haette der Fehler
+  // wenigstens beim Vendorieren als Drift angeschlagen. Jetzt wird er das.
+  mix.fallbackMuster = pfeilRumpf(quelle, 'fallbackMuster')
+  if (!mix.fallbackMuster) fehler.push(`${app}: die Funktion fallbackMuster wurde nicht gefunden.`)
+
   return { app, de, en, logik, mix }
 }).filter(Boolean)
 
@@ -280,5 +297,5 @@ if (fehler.length) {
 console.log(
   `lang:parity ok — ${gelesen.length} Kopien des Quellsprachen-Klassifizierers sind ` +
     `wortgleich (${gelesen[0].de.length} deutsche, ${gelesen[0].en.length} englische Marker), ` +
-    `und der Sprachmix-Teil ebenfalls (4 Muster, 2 Funktionen, ${gelesen[0].mix.PROBE.length} Probe-Zeilen).`,
+    `und der Sprachmix-Teil ebenfalls (4 Muster, 3 Funktionen, ${gelesen[0].mix.PROBE.length} Probe-Zeilen).`,
 )

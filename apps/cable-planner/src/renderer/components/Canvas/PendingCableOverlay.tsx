@@ -108,7 +108,7 @@ export const PendingCableOverlay = () => {
           pointerEvents: 'none',
         }}
       >
-        {t('pendingCable.banner', 'Kabel zeichnen: Klick auf Canvas für Knick, Klick auf Port zum Beenden, Esc zum Abbrechen.')}
+        {t('pendingCable.banner', 'Draw cable: click the canvas for a bend, click a port to finish, Esc to cancel.')}
       </div>
       <PendingCableSuggestions
         sourcePortConnector={port.connectorType}
@@ -249,7 +249,7 @@ const PendingCableSuggestions = ({
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div style={{ marginBottom: 6, fontWeight: 600, color: 'var(--cp-accent)' }}>
-        {format(tr('pendingCable.suggestionsTitle', 'Schnelle Vorschläge ({connector})'), { connector: sourcePortConnector })}
+        {format(tr('pendingCable.suggestionsTitle', 'Quick suggestions ({connector})'), { connector: sourcePortConnector })}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {suggestions.map((t) => (
@@ -266,7 +266,7 @@ const PendingCableSuggestions = ({
               color: 'var(--cp-text)',
               cursor: 'pointer',
             }}
-            title={format(tr('pendingCable.suggestionItemTitle', 'Bei Mausposition platzieren und Verbindung herstellen ({category})'), { category: t.category })}
+            title={format(tr('pendingCable.suggestionItemTitle', 'Place at the pointer and connect ({category})'), { category: t.category })}
           >
             {t.name}
           </button>

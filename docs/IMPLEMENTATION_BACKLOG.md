@@ -3210,6 +3210,70 @@ belegbar, dort sind sie erprobt.
   dann in dieselbe Richtung.
 * **Aufwand:** mittel — erledigt.
 
+### B-64 · Das Kabel-Ziehen greift ins Leere — die Folge von B-48, die B-48 nicht gesehen hat
+
+* **Status:** **erledigt 2026-09-09** — `cable#804`. **Nutzer-Meldung,
+  2026-09-09:** „Das manuelle Kabel verschieben im Cable planner canvas ist
+  schlechter geworden. Repariere so das man es wieder intuitiv bedienen
+  kann."
+* **Die Defektform ist wieder `zwei-rechnungen` — und diesmal hat B-48 sie
+  selbst erzeugt.** `CableWaypoints` legte seine Greif-Zonen auf
+  `[Quelle, ...cable.waypoints, Ziel]`. Bis B-48 war das auch der
+  gezeichnete Weg, die beiden Rechnungen waren dieselbe. Seit B-48 zeichnet
+  `legeAnfahrt` — mit Stummeln an beiden Enden und mit Ecken, die
+  `rechtwinkligMachen` dazwischenschiebt. Ab da waren es zwei verschiedene
+  Streckenzüge, und **angefasst wurde der unsichtbare.** B-48 hat den
+  gezeichneten Weg ersetzt und nicht danach gesehen, wer sonst noch von ihm
+  ausgeht.
+* **Gemessen über dieselbe Matrix wie B-48** (4×4 Anschlussseiten, 49
+  Ziellagen, 784 Fälle):
+
+  | | |
+  |---|---|
+  | gezeichnete Abschnitte gesamt | 3324 |
+  | davon ohne deckungsgleiche Greif-Zone | **3292** (99 %) |
+  | Fälle mit mindestens einer solchen Lücke | **784** (alle) |
+  | Greif-Zonen, unter denen kein Strich liegt | 180 |
+
+  Der Nutzer fasste also fast immer ins Leere, und an 180 Stellen lag ein
+  Griff dort, wo gar nichts zu sehen war. Am Zieh-Code selbst war nichts
+  falsch — das ist der Grund, warum ihn niemand verdächtigt hat.
+* **Was gebaut wurde.** `greifKette` (in `cableApproach.ts`) macht aus dem
+  gezeichneten Weg die Kette, die der Nutzer sieht: kollineare
+  Zwischenpunkte fallen weg, damit **eine gerade Linie ein Griff ist und
+  nicht zwei**, die sich gegeneinander verschieben lassen — das war die
+  zweite Art, das Ziehen unberechenbar zu machen. `schiebeAbschnitt` und
+  `schiebeEcke` rechnen den Zug, rein und ohne Canvas; der Algorithmus ist
+  unverändert der aus `mxEdgeSegmentHandler`, nur die Kette darunter ist
+  jetzt die richtige.
+* **Die Stummel bleiben in der Kette stehen, und das ist der Punkt, an dem
+  sich das Ziehen mit B-48 verträgt.** `legeAnfahrt` setzt den Stummel bei
+  jedem Zeichnen wieder. Wer den ersten Abschnitt quer zöge, bekäme genau
+  die Kehrtwende zurück, die B-48 beseitigt hat. Mit dem Stummel als eigenem
+  Kettenglied ist der erste Abschnitt genau der Stummel (18 px, nicht zu
+  ziehen), der erste ziehbare beginnt dahinter, und die Ecke wandert dorthin,
+  wo sie hingehört.
+* **Der Rundlauf ist die Zusicherung, ohne die alles andere nichts wert
+  wäre.** Zurückgeschrieben wird die Kette ohne ihre Enden; `legeAnfahrt`
+  setzt Quelle, Stummel und Ziel wieder davor und dahinter, `straffe` wirft
+  die Doppel weg — und heraus kommt derselbe Streckenzug, den der Nutzer
+  gerade gezogen hat. Ohne diese Eigenschaft wanderte das Kabel beim
+  Loslassen weg, und genau das wäre die nächste Meldung.
+* **Nachher, dieselbe Matrix:** 0 von 4108 Griff-Punkten neben dem
+  gezeichneten Weg, 0 Rundlauf-Abweichungen, 0 Wege, die nach einem Zug
+  nicht mehr rechtwinklig sind, und in jedem Fall liegt der gezogene
+  Abschnitt dort, wo der Zeiger ihn hingelegt hat.
+* **Zwölf Fälle bleiben ohne ziehbaren Abschnitt**, und sie stehen mit ihrer
+  Zahl im Wächter statt stillschweigend übersprungen zu werden: die beiden
+  Buchsen liegen keine 18 px auseinander, das ganze Kabel ist kürzer als ein
+  Stummel. Dort greift ein Rückfall („alles ziehbar"). Wächst die Zahl, ist
+  der Rückfall keine Ausnahme mehr — und dann muss jemand hinsehen.
+* **Die Lehre, und sie ist nicht neu.** Wer den gezeichneten Weg ersetzt,
+  ersetzt auch die Geometrie, an der der Nutzer anfasst. `tests/kabelGriff.test.ts`
+  fragt deshalb nicht „ist die Kette richtig gebaut", sondern **„liegt jeder
+  Griff auf dem Strich"** — die Frage, die der Nutzer gestellt hat.
+* **Aufwand:** mittel — erledigt.
+
 ### B-49 · Bedarfs-Audit: die siebzehn, die nirgends stehen
 
 * **Status:** Audit **erledigt 2026-09-08**; die daraus folgende Arbeit steht

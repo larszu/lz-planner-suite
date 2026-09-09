@@ -92,15 +92,15 @@ interface Props {
 type Tab = 'list' | 'magic' | 'focus' | 'notes' | 'papers' | 'check' | 'return' | 'photo' | 'load' | 'export';
 type T = (key: string, de: string) => string;
 const buildTabs = (t: T): { id: Tab; label: string; icon: IconName }[] => [
-  { id: 'list', label: t('dlg.sch.tab.list', 'Geräteliste & Patch'), icon: 'schedule' },
-  { id: 'magic', label: t('dlg.sch.tab.magic', 'Magic Sheet'), icon: 'grid' },
-  { id: 'focus', label: t('dlg.sch.tab.focus', 'Fokus'), icon: 'autolight' },
-  { id: 'notes', label: t('dlg.sch.tab.notes', 'Notizen'), icon: 'tag' },
-  { id: 'papers', label: t('dlg.sch.tab.papers', 'Papiere'), icon: 'schedule' },
-  { id: 'check', label: t('dlg.sch.tab.check', 'Prüfung'), icon: 'check' },
-  { id: 'return', label: t('dlg.sch.tab.return', 'Rückweg vom Pult'), icon: 'import' },
-  { id: 'photo', label: t('dlg.sch.tab.photo', 'Photometrie'), icon: 'heatmap' },
-  { id: 'load', label: t('dlg.sch.tab.load', 'Last & Strom'), icon: 'truss' },
+  { id: 'list', label: t('dlg.sch.tab.list', 'Instrument schedule & patch'), icon: 'schedule' },
+  { id: 'magic', label: t('dlg.sch.tab.magic', 'Magic sheet'), icon: 'grid' },
+  { id: 'focus', label: t('dlg.sch.tab.focus', 'Focus'), icon: 'autolight' },
+  { id: 'notes', label: t('dlg.sch.tab.notes', 'Notes'), icon: 'tag' },
+  { id: 'papers', label: t('dlg.sch.tab.papers', 'Paperwork'), icon: 'schedule' },
+  { id: 'check', label: t('dlg.sch.tab.check', 'Check'), icon: 'check' },
+  { id: 'return', label: t('dlg.sch.tab.return', 'Return from console'), icon: 'import' },
+  { id: 'photo', label: t('dlg.sch.tab.photo', 'Photometrics'), icon: 'heatmap' },
+  { id: 'load', label: t('dlg.sch.tab.load', 'Load & power'), icon: 'truss' },
   { id: 'export', label: t('dlg.sch.tab.export', 'Export'), icon: 'export' },
 ];
 const TAB_IDS: Tab[] = ['list', 'magic', 'focus', 'notes', 'check', 'return', 'photo', 'load', 'export'];
@@ -132,22 +132,22 @@ const utilClass = (u: number) => (u >= 1 ? 'util-over' : u >= 0.8 ? 'util-warn' 
 // englische Fassung fehlte, ohne dass es jemand meldet.
 const omissionNoun = (t: (k: string, de: string) => string, kind: OmissionKind): string => {
   switch (kind) {
-    case 'trusses': return t('dlg.sch.exp.omit.trusses', 'Traverse(n)');
-    case 'groups': return t('dlg.sch.exp.omit.groups', 'Gruppe(n)');
-    case 'gels': return t('dlg.sch.exp.omit.gels', 'Lampe(n) mit Folie');
-    case 'purposes': return t('dlg.sch.exp.omit.purposes', 'Lampe(n) mit Zweck');
-    case 'notes': return t('dlg.sch.exp.omit.notes', 'Notiz(en)');
-    case 'circuits': return t('dlg.sch.exp.omit.circuits', 'Kreis(e)');
-    case 'cables': return t('dlg.sch.exp.omit.cables', 'Kabelweg(e)');
+    case 'trusses': return t('dlg.sch.exp.omit.trusses', 'truss(es)');
+    case 'groups': return t('dlg.sch.exp.omit.groups', 'group(s)');
+    case 'gels': return t('dlg.sch.exp.omit.gels', 'fixture(s) with gel');
+    case 'purposes': return t('dlg.sch.exp.omit.purposes', 'fixture(s) with a purpose');
+    case 'notes': return t('dlg.sch.exp.omit.notes', 'note(s)');
+    case 'circuits': return t('dlg.sch.exp.omit.circuits', 'circuit(s)');
+    case 'cables': return t('dlg.sch.exp.omit.cables', 'cable run(s)');
   }
 };
 
 const verdictText = (t: (k: string, de: string) => string, v: PreflightVerdict): string => {
   switch (v) {
-    case 'blocked': return t('dlg.sch.check.blocked', 'So nicht — mindestens ein Fehler');
-    case 'unknown': return t('dlg.sch.check.unknown', 'Nicht beurteilbar — es fehlen Angaben');
-    case 'check': return t('dlg.sch.check.check', 'Durchsehen');
-    case 'ready': return t('dlg.sch.check.ready', 'Bereit');
+    case 'blocked': return t('dlg.sch.check.blocked', 'Not like this \u2014 at least one error');
+    case 'unknown': return t('dlg.sch.check.unknown', 'Cannot be judged \u2014 figures are missing');
+    case 'check': return t('dlg.sch.check.check', 'Look through');
+    case 'ready': return t('dlg.sch.check.ready', 'Ready');
   }
 };
 
@@ -287,28 +287,28 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   ) => downloadCsv(dateiname, tableToCsv(angezeigt, stempel(kanonisch)));
 
   const exportSchedule = () => exportTable('instrument-schedule.csv', {
-    header: ['Unit', t('dlg.sch.csv.channel', 'Kanal'), 'Universe', t('dlg.sch.csv.address', 'Adresse'), t('dlg.sch.csv.type', 'Typ'), t('dlg.sch.csv.manufacturer', 'Hersteller'), 'X (m)', 'Y (m)', t('dlg.sch.csv.height', 'Höhe (m)'), 'Gel', t('dlg.sch.csv.purpose', 'Zweck'), t('dlg.sch.csv.focused', 'Fokussiert'), t('dlg.sch.csv.focusNote', 'Fokus-Notiz'), 'W', 'kg'],
+    header: ['Unit', t('dlg.sch.csv.channel', 'Channel'), 'Universe', t('dlg.sch.csv.address', 'Address'), t('dlg.sch.csv.type', 'Type'), t('dlg.sch.csv.manufacturer', 'Manufacturer'), 'X (m)', 'Y (m)', t('dlg.sch.csv.height', 'Height (m)'), 'Gel', t('dlg.sch.csv.purpose', 'Purpose'), t('dlg.sch.csv.focused', 'Focused'), t('dlg.sch.csv.focusNote', 'Focus note'), 'W', 'kg'],
     rows: ordered.map((f) => [
       f.unitNumber ?? '', f.channel ?? '', f.universe ?? '', f.dmxAddress ?? '',
       f.fixture.name, f.fixture.manufacturer, f.x, f.y, f.mountingHeight,
-      gelCodes(f.gelFilterIds), f.purpose ?? '', f.focused ? t('dlg.sch.csv.yes', 'ja') : '', f.focusNote ?? '', f.fixture.wattage, f.fixture.weight,
+      gelCodes(f.gelFilterIds), f.purpose ?? '', f.focused ? t('dlg.sch.csv.yes', 'yes') : '', f.focusNote ?? '', f.fixture.wattage, f.fixture.weight,
     ]),
   }, scheduleTable);
 
   const exportInventory = () => exportTable('geraeteliste.csv', {
-    header: [t('dlg.sch.csv.count', 'Anzahl'), t('dlg.sch.csv.manufacturer', 'Hersteller'), t('dlg.sch.csv.type', 'Typ'), 'W/Stk', 'kg/Stk', t('dlg.sch.csv.wTotal', 'W gesamt'), t('dlg.sch.csv.kgTotal', 'kg gesamt')],
+    header: [t('dlg.sch.csv.count', 'Count'), t('dlg.sch.csv.manufacturer', 'Manufacturer'), t('dlg.sch.csv.type', 'Type'), 'W/Stk', 'kg/Stk', t('dlg.sch.csv.wTotal', 'W total'), t('dlg.sch.csv.kgTotal', 'kg total')],
     rows: counts.map((c) => [c.count, c.manufacturer, c.name, c.watts, c.weight, c.count * c.watts, (c.count * c.weight).toFixed(1)]),
   }, inventoryTable);
 
   const exportColors = () => exportTable('farbliste.csv', {
-    header: [t('dlg.sch.csv.count', 'Anzahl'), t('dlg.sch.csv.brand', 'Marke'), 'Code', 'Name', t('dlg.sch.csv.type', 'Typ')],
+    header: [t('dlg.sch.csv.count', 'Count'), t('dlg.sch.csv.brand', 'Brand'), 'Code', 'Name', t('dlg.sch.csv.type', 'Type')],
     rows: colors.map((c) => [c.count, c.brand, c.code, c.name, c.type]),
   }, colorTable);
 
   // Bedarf 141 — die Kreis-Liste ist eines der zwoelf Blaetter aus Bedarf 143
   // und das erste, das ohne die Phasen-Zuordnung gar nicht schreibbar war.
   const exportCircuits = () => exportTable('kreisliste.csv', {
-    header: [t('dlg.sch.pwr.hCircuit', 'Kreis'), t('dlg.sch.pwr.hPhase', 'Phase'), t('dlg.sch.fixtures', 'Leuchten'), 'W', 'A', t('dlg.sch.col.utilization', 'Auslastung')],
+    header: [t('dlg.sch.pwr.hCircuit', 'Circuit'), t('dlg.sch.pwr.hPhase', 'Phase'), t('dlg.sch.fixtures', 'fixtures'), 'W', 'A', t('dlg.sch.col.utilization', 'Utilization')],
     rows: verteilung.assignments.map((a) => [
       circuitLabel(a), PHASE_LABEL[a.phase], a.fixtureCount,
       Math.round(a.watts), a.amps.toFixed(1), `${Math.round(a.utilization * 100)} %`,
@@ -323,9 +323,9 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   const kabelLuecken = cableGaps(fixtures, kabelWege);
   const exportCables = () => exportTable('kabelliste.csv', {
     header: [
-      t('dlg.sch.cbl.col.kind', 'Art'), t('dlg.sch.cbl.col.from', 'Von'),
-      t('dlg.sch.cbl.col.to', 'Nach'), t('dlg.sch.col.truss', 'Traverse'),
-      CABLE_HEADERS[4], t('dlg.sch.cbl.col.connector', 'Stecker'),
+      t('dlg.sch.cbl.col.kind', 'Kind'), t('dlg.sch.cbl.col.from', 'From'),
+      t('dlg.sch.cbl.col.to', 'To'), t('dlg.sch.col.truss', 'Truss'),
+      CABLE_HEADERS[4], t('dlg.sch.cbl.col.connector', 'Connector'),
     ],
     rows: cableTable(kabelWege).rows,
   }, (fs: PlacedFixture[]) => cableTable(cableRuns(fs, trusses, phaseTemplate)));
@@ -366,7 +366,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   };
 
   const exportUniverses = () => exportTable('universes.csv', {
-    header: [UNIVERSE_HEADERS[0], UNIVERSE_HEADERS[1], UNIVERSE_HEADERS[2], t('dlg.sch.uni.note', 'Hinweis')],
+    header: [UNIVERSE_HEADERS[0], UNIVERSE_HEADERS[1], UNIVERSE_HEADERS[2], t('dlg.sch.uni.note', 'Note')],
     rows: universeTable(lesarten).rows,
   }, (fs: PlacedFixture[]) => universeTable(universeReadings(fs.map((f) => f.universe), dmxProtocol)));
 
@@ -410,9 +410,9 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   // Translate the well-known group keys for display only; the raw German keys
   // stay as grouping/sort identifiers above.
   const groupLabel = (name: string): string => {
-    if (name === 'Ohne Zweck') return t('dlg.sch.noPurpose', 'Ohne Zweck');
-    if (name === 'Boden / Stative') return t('dlg.sch.floorStands', 'Boden / Stative');
-    if (name === 'Traverse') return t('dlg.sch.truss', 'Traverse');
+    if (name === 'Ohne Zweck') return t('dlg.sch.noPurpose', 'No purpose');
+    if (name === 'Boden / Stative') return t('dlg.sch.floorStands', 'Floor / stands');
+    if (name === 'Traverse') return t('dlg.sch.truss', 'Truss');
     return name;
   };
 
@@ -447,25 +447,25 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   const listPanel = (
     <>
       <div className="schedule-actions">
-        <button className="btn-secondary" onClick={onAutoNumber}>① {t('dlg.sch.autoNumber', 'Auto-Nummerieren')}</button>
-        <button className="btn-secondary" onClick={onAutoPatch}>② {t('dlg.sch.autoPatch', 'Auto-Patch (DMX)')}</button>
+        <button className="btn-secondary" onClick={onAutoNumber}>① {t('dlg.sch.autoNumber', 'Auto-number')}</button>
+        <button className="btn-secondary" onClick={onAutoPatch}>② {t('dlg.sch.autoPatch', 'Auto-patch (DMX)')}</button>
       </div>
       {/* BEDARF 139 — Gruppen bekommen einen Namen und ein Blatt. Bis hierher
           hiessen sie „Gruppe 3" und existierten nur auf der Zeichenflaeche. */}
       {gruppen.length > 0 && (
         <>
           <h4 className="schedule-subhead">
-            {t('dlg.sch.groups', 'Gruppen')} ({gruppen.length})
+            {t('dlg.sch.groups', 'Groups')} ({gruppen.length})
             <button className="btn-secondary" style={{ marginLeft: 8 }} onClick={exportGroups}>
-              ⬇ {t('dlg.sch.groups.csv', 'Gruppen-Blatt (CSV)')}
+              ⬇ {t('dlg.sch.groups.csv', 'Group sheet (CSV)')}
             </button>
           </h4>
           <table className="schedule-table">
             <thead>
               <tr>
                 <th>{t('dlg.sch.groups.name', 'Name')}</th>
-                <th>{t('dlg.sch.groups.members', 'Leuchten')}</th>
-                <th>{t('dlg.sch.groups.channels', 'Kanäle')}</th>
+                <th>{t('dlg.sch.groups.members', 'Fixtures')}</th>
+                <th>{t('dlg.sch.groups.channels', 'Channels')}</th>
                 <th />
               </tr>
             </thead>
@@ -475,7 +475,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
                   <td>
                     <input
                       value={g.label === UNNAMED_GROUP ? '' : g.label}
-                      placeholder={t('dlg.sch.groups.namePh', 'Name der Gruppe (z. B. „Front warm")')}
+                      placeholder={t('dlg.sch.groups.namePh', 'Group name (e.g. \u201cFront warm\u201d)')}
                       onChange={(e) => onRenameGroup(g.id, e.target.value)}
                       style={{ width: '100%' }}
                     />
@@ -485,7 +485,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
                     {/* Ein verschwundenes Mitglied verschwindet nicht still. */}
                     {g.missing.length > 0 && (
                       <span className="rig-pill warn" style={{ marginLeft: 6 }}>
-                        {g.missing.length} {t('dlg.sch.groups.missing', 'gelöscht')}
+                        {g.missing.length} {t('dlg.sch.groups.missing', 'deleted')}
                       </span>
                     )}
                   </td>
@@ -495,7 +495,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
                       className="btn-secondary"
                       onClick={() => onLocate(g.members.map((m) => m.fixtureId))}
                     >
-                      {t('dlg.sch.groups.locate', 'Im Plan zeigen')}
+                      {t('dlg.sch.groups.locate', 'Show in plan')}
                     </button>
                   </td>
                 </tr>
@@ -503,13 +503,13 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
             </tbody>
           </table>
           <div className="prop-derived">
-            {t('dlg.sch.groups.hint', 'Das MVR-Format kennt keine Gruppen — dieses Blatt ist der Weg, sie an Pult, Visualisierer und Medienserver zu übergeben.')}
+            {t('dlg.sch.groups.hint', 'The MVR format has no groups \u2014 this sheet is how they reach the console, the visualiser and the media server.')}
           </div>
         </>
       )}
-      <h4 className="schedule-subhead">{t('dlg.sch.inventory', 'Inventar')} ({fixtures.length} {t('dlg.sch.fixtures', 'Leuchten')}, {counts.length} {t('dlg.sch.types', 'Typen')})</h4>
+      <h4 className="schedule-subhead">{t('dlg.sch.inventory', 'Inventory')} ({fixtures.length} {t('dlg.sch.fixtures', 'fixtures')}, {counts.length} {t('dlg.sch.types', 'types')})</h4>
       <table className="schedule-table">
-        <thead><tr><th>{t('dlg.sch.col.qty', 'Anz.')}</th><th>{t('dlg.sch.col.manufacturer', 'Hersteller')}</th><th>{t('dlg.sch.col.type', 'Typ')}</th><th>W/Stk</th><th>{t('dlg.sch.col.wTotal', 'W ges.')}</th><th>{t('dlg.sch.col.kgTotal', 'kg ges.')}</th></tr></thead>
+        <thead><tr><th>{t('dlg.sch.col.qty', 'Qty')}</th><th>{t('dlg.sch.col.manufacturer', 'Manufacturer')}</th><th>{t('dlg.sch.col.type', 'Type')}</th><th>W/Stk</th><th>{t('dlg.sch.col.wTotal', 'W tot.')}</th><th>{t('dlg.sch.col.kgTotal', 'kg tot.')}</th></tr></thead>
         <tbody>
           {counts.map((c) => (
             <tr key={c.manufacturer + c.name}>
@@ -519,16 +519,16 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           ))}
         </tbody>
       </table>
-      <h4 className="schedule-subhead">{t('dlg.sch.instrumentSchedule', 'Instrument Schedule')}</h4>
+      <h4 className="schedule-subhead">{t('dlg.sch.instrumentSchedule', 'Instrument schedule')}</h4>
       <table className="schedule-table">
         {/* BEDARF 147 — der Kopf nennt das Protokoll. „DMX 2.15" allein ist
             unbestimmt: in sACN ist das Universe 2, in Art-Net die
             Port-Address 0:0:2, und ab 16 laufen die beiden auseinander. */}
-        <thead><tr><th>Unit</th><th>Ch</th><th>DMX ({PROTOCOL_LABEL[dmxProtocol]})</th><th>{t('dlg.sch.col.type', 'Typ')}</th><th>{t('dlg.sch.col.pos', 'Pos (x,y,h)')}</th><th>Gel</th><th>{t('dlg.sch.col.purpose', 'Zweck')}</th></tr></thead>
+        <thead><tr><th>Unit</th><th>Ch</th><th>DMX ({PROTOCOL_LABEL[dmxProtocol]})</th><th>{t('dlg.sch.col.type', 'Type')}</th><th>{t('dlg.sch.col.pos', 'Pos (x,y,h)')}</th><th>Gel</th><th>{t('dlg.sch.col.purpose', 'Purpose')}</th></tr></thead>
         <tbody>
           {ordered.map((f) => (
             <tr key={f.id} className={conflicts.has(f.id) ? 'row-conflict' : ''}
-              onClick={() => onLocate([f.id])} title={t('dlg.sch.showInPlan', 'Im Plan zeigen')}>
+              onClick={() => onLocate([f.id])} title={t('dlg.sch.showInPlan', 'Show in plan')}>
               <td>{f.unitNumber ?? '–'}</td>
               <td>{f.channel ?? '–'}</td>
               {/* Die Zelle zeigt die Zahl SO, wie sie im gewaehlten Protokoll
@@ -556,13 +556,13 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         {t('dlg.sch.uni.head', 'Universes')} ({lesarten.length})
         {lesarten.length > 0 && (
           <button className="btn-secondary" style={{ marginLeft: 8 }} onClick={exportUniverses}>
-            &#8595; {t('dlg.sch.uni.csv', 'Universe-Blatt (CSV)')}
+            &#8595; {t('dlg.sch.uni.csv', 'Universe sheet (CSV)')}
           </button>
         )}
       </h4>
       <div className="schedule-actions">
         <label>
-          {t('dlg.sch.uni.protocol', 'Die Universe-Zahlen dieses Plans sind')}{' '}
+          {t('dlg.sch.uni.protocol', 'The universe numbers in this plan are')}{' '}
           <select
             value={dmxProtocol}
             onChange={(e) => onSetProtocol(e.target.value as DmxProtocol)}
@@ -576,7 +576,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       </div>
       {lesarten.length === 0 ? (
         <div className="prop-derived">
-          {t('dlg.sch.uni.none', 'Noch nichts gepatcht — sobald Universes vergeben sind, stehen hier beide Lesarten nebeneinander.')}
+          {t('dlg.sch.uni.none', 'Nothing patched yet \u2014 once universes are assigned, both readings appear here side by side.')}
         </div>
       ) : (
         <table className="schedule-table">
@@ -585,7 +585,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
               <th>{UNIVERSE_HEADERS[0]}</th>
               <th>{UNIVERSE_HEADERS[1]}</th>
               <th>{UNIVERSE_HEADERS[2]}</th>
-              <th>{t('dlg.sch.uni.note', 'Hinweis')}</th>
+              <th>{t('dlg.sch.uni.note', 'Note')}</th>
             </tr>
           </thead>
           <tbody>
@@ -603,7 +603,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
                 </td>
                 <td>
                   {r.problem ?? (readingsDiverge(r.value)
-                    ? t('dlg.sch.uni.diverge', 'Ab hier lesen Art-Net und sACN verschieden — am Node stimmen Net und Sub-Net nicht mehr mit 0.')
+                    ? t('dlg.sch.uni.diverge', 'From here Art-Net and sACN read differently \u2014 at the node, Net and Sub-Net are no longer 0.')
                     : '\u2014')}
                 </td>
               </tr>
@@ -612,13 +612,13 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         </table>
       )}
       <div className="prop-derived">
-        {t('dlg.sch.uni.hint', 'Die Angabe hängt am Projekt und geht mit in die Datei: die Zahl an der Leuchte war nie falsch, sie war unbestimmt.')}
+        {t('dlg.sch.uni.hint', 'The setting belongs to the project and travels with the file: the number on the fixture was never wrong, it was undetermined.')}
       </div>
       {colors.length > 0 && (
         <>
-          <h4 className="schedule-subhead">{t('dlg.sch.colorsUsage', 'Farben & Verbrauch')} ({colors.reduce((s, c) => s + c.count, 0)} {t('dlg.sch.cuts', 'Schnitte')})</h4>
+          <h4 className="schedule-subhead">{t('dlg.sch.colorsUsage', 'Colours & usage')} ({colors.reduce((s, c) => s + c.count, 0)} {t('dlg.sch.cuts', 'cuts')})</h4>
           <table className="schedule-table">
-            <thead><tr><th>{t('dlg.sch.col.qty', 'Anz.')}</th><th>{t('dlg.sch.col.color', 'Farbe')}</th><th>{t('dlg.sch.col.brandCode', 'Marke / Code')}</th><th>Name</th><th>{t('dlg.sch.col.type', 'Typ')}</th></tr></thead>
+            <thead><tr><th>{t('dlg.sch.col.qty', 'Qty')}</th><th>{t('dlg.sch.col.color', 'Colour')}</th><th>{t('dlg.sch.col.brandCode', 'Brand / code')}</th><th>Name</th><th>{t('dlg.sch.col.type', 'Type')}</th></tr></thead>
             <tbody>
               {colors.map((c) => (
                 <tr key={c.id}>
@@ -642,7 +642,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           <div className="magic-chips">
             {g.fs.map((f) => (
               <button key={f.id} className={`magic-chip ${f.focused ? 'focused' : ''}`} onClick={() => onLocate([f.id])}
-                title={`${f.fixture.name} · ${f.x},${f.y} · ${f.mountingHeight} m${f.focused ? ' · ' + t('dlg.sch.focusedTag', 'fokussiert') : ''}`}>
+                title={`${f.fixture.name} · ${f.x},${f.y} · ${f.mountingHeight} m${f.focused ? ' · ' + t('dlg.sch.focusedTag', 'focused') : ''}`}>
                 <span className="mc-tint" style={{ background: cssRgb(cctToRgb(getFixtureCCT(f))) }} />
                 <span className="mc-ch">{f.channel ?? '–'}</span>
                 <span className="mc-meta">
@@ -655,7 +655,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           </div>
         </div>
       ))}
-      <div className="prop-derived">{t('dlg.sch.magicHint', 'Nach Zweck gruppiert · Tönung = effektive Farbtemperatur · Klick zeigt die Leuchte im Plan.')}</div>
+      <div className="prop-derived">{t('dlg.sch.magicHint', 'Grouped by purpose · tint = effective colour temperature · click shows the fixture in the plan.')}</div>
     </div>
   );
 
@@ -666,8 +666,8 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   // davon, sie haben einen Zeitpunkt, und sie haengen auch an Traversen und am
   // ganzen Plan.
   const noteGroups = groupNotes(workNotes, fixtures, trusses, {
-    plan: t('dlg.sch.notes.plan', 'Ganzer Plan'),
-    truss: t('dlg.sch.notes.truss', 'Traverse'),
+    plan: t('dlg.sch.notes.plan', 'Whole plan'),
+    truss: t('dlg.sch.notes.truss', 'Truss'),
   });
   const verwaist = staleNotes(workNotes, fixtures, trusses);
   const submitNote = () => {
@@ -681,8 +681,8 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     <div className="focus-tool">
       <div className="focus-progress">
         <span className="fp-label">
-          {workNotes.filter((n) => !n.done).length} {t('dlg.sch.ofN', 'von')} {workNotes.length}{' '}
-          {t('dlg.sch.notes.open', 'offen')}
+          {workNotes.filter((n) => !n.done).length} {t('dlg.sch.ofN', 'of')} {workNotes.length}{' '}
+          {t('dlg.sch.notes.open', 'open')}
         </span>
       </div>
 
@@ -690,7 +690,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <div className="focus-row">
           <select
             className="focus-note"
-            aria-label={t('dlg.sch.notes.target', 'Ziel der Notiz')}
+            aria-label={t('dlg.sch.notes.target', 'Note target')}
             value={
               noteTarget.kind === 'plan'
                 ? 'plan'
@@ -709,9 +709,9 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
               );
             }}
           >
-            <option value="plan">{t('dlg.sch.notes.plan', 'Ganzer Plan')}</option>
+            <option value="plan">{t('dlg.sch.notes.plan', 'Whole plan')}</option>
             {trusses.map((tr) => (
-              <option key={tr.id} value={`t:${tr.id}`}>{tr.label || t('dlg.sch.notes.truss', 'Traverse')}</option>
+              <option key={tr.id} value={`t:${tr.id}`}>{tr.label || t('dlg.sch.notes.truss', 'Truss')}</option>
             ))}
             {ordered.map((f) => (
               <option key={f.id} value={`f:${f.id}`}>
@@ -721,12 +721,12 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           </select>
           <input
             className="focus-note"
-            placeholder={t('dlg.sch.notes.ph', 'Notiz – z. B. zu heiß auf der SL-Wand, CTO rein…')}
+            placeholder={t('dlg.sch.notes.ph', 'Note \u2013 e.g. too hot on the SL wall, add CTO\u2026')}
             value={noteDraft}
             onChange={(e) => setNoteDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') submitNote(); }}
           />
-          <button className="focus-locate" title={t('dlg.sch.notes.add', 'Notiz anlegen')} onClick={submitNote}>
+          <button className="focus-locate" title={t('dlg.sch.notes.add', 'Add note')} onClick={submitNote}>
             <Icon name="check" size={15} />
           </button>
         </div>
@@ -738,7 +738,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           <div className="focus-rows">
             {g.notes.map((n) => (
               <div key={n.id} className={`focus-row ${n.done ? 'done' : ''}`}>
-                <button className={`focus-tick ${n.done ? 'on' : ''}`} title={t('dlg.sch.notes.done', 'erledigt')}
+                <button className={`focus-tick ${n.done ? 'on' : ''}`} title={t('dlg.sch.notes.done', 'done')}
                   onClick={() => onToggleNote(n.id)}>
                   {n.done && <Icon name="check" size={14} />}
                 </button>
@@ -747,12 +747,12 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
                   <span>{[n.by, n.at.slice(0, 16).replace('T', ' ')].filter(Boolean).join(' · ')}</span>
                 </span>
                 {g.target.kind === 'fixture' && (
-                  <button className="focus-locate" title={t('dlg.sch.showInPlan', 'Im Plan zeigen')}
+                  <button className="focus-locate" title={t('dlg.sch.showInPlan', 'Show in plan')}
                     onClick={() => onLocate([g.target.kind === 'fixture' ? g.target.fixtureId : ''])}>
                     <Icon name="select" size={15} />
                   </button>
                 )}
-                <button className="focus-locate" title={t('dlg.sch.notes.remove', 'Notiz entfernen')}
+                <button className="focus-locate" title={t('dlg.sch.notes.remove', 'Remove note')}
                   onClick={() => onRemoveNote(n.id)}>
                   <Icon name="trash" size={15} />
                 </button>
@@ -767,12 +767,12 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           verschwinden. */}
       {verwaist.length > 0 && (
         <div className="focus-group">
-          <div className="schedule-subhead">{t('dlg.sch.notes.stale', 'Ziel entfernt')} · {verwaist.length}</div>
+          <div className="schedule-subhead">{t('dlg.sch.notes.stale', 'Target removed')} · {verwaist.length}</div>
           <div className="focus-rows">
             {verwaist.map((n) => (
               <div key={n.id} className="focus-row">
                 <span className="focus-info"><b>{n.text}</b><span>{n.at.slice(0, 16).replace('T', ' ')}</span></span>
-                <button className="focus-locate" title={t('dlg.sch.notes.remove', 'Notiz entfernen')}
+                <button className="focus-locate" title={t('dlg.sch.notes.remove', 'Remove note')}
                   onClick={() => onRemoveNote(n.id)}>
                   <Icon name="trash" size={15} />
                 </button>
@@ -783,7 +783,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       )}
 
       <div className="prop-derived">
-        {t('dlg.sch.notes.hint', 'Die Notizen bleiben in dieser Projektdatei. Sie gehen in keinen Fremdformat-Export (MVR, Venue-Austausch) — sie gehören dir, nicht der Show-Datei eines Pults.')}
+        {t('dlg.sch.notes.hint', 'The notes stay in this project file. They go into no foreign-format export (MVR, venue exchange) \u2014 they belong to you, not to a console\u2019s show file.')}
       </div>
     </div>
   );
@@ -792,7 +792,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     <div className="focus-tool">
       <div className="focus-progress">
         <div className="fp-bar"><i style={{ width: `${fixtures.length ? (focusedCount / fixtures.length) * 100 : 0}%` }} /></div>
-        <span className="fp-label">{focusedCount} {t('dlg.sch.ofN', 'von')} {fixtures.length} {t('dlg.sch.focusedTag', 'fokussiert')}</span>
+        <span className="fp-label">{focusedCount} {t('dlg.sch.ofN', 'of')} {fixtures.length} {t('dlg.sch.focusedTag', 'focused')}</span>
       </div>
       {focusGroups.map((g) => (
         <div key={g.name} className="focus-group">
@@ -800,24 +800,24 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           <div className="focus-rows">
             {g.fs.map((f) => (
               <div key={f.id} className={`focus-row ${f.focused ? 'done' : ''}`}>
-                <button className={`focus-tick ${f.focused ? 'on' : ''}`} title={t('dlg.sch.focusedTag', 'fokussiert')}
+                <button className={`focus-tick ${f.focused ? 'on' : ''}`} title={t('dlg.sch.focusedTag', 'focused')}
                   onClick={() => onUpdateFixture(f.id, { focused: !f.focused })}>
                   {f.focused && <Icon name="check" size={14} />}
                 </button>
                 <span className="focus-ch">{f.channel ?? '–'}</span>
                 <span className="focus-info">
                   <b>{f.fixture.name}</b>
-                  <span>{f.purpose || '—'} · {t('dlg.sch.aim', 'Ziel')} {f.aimX},{f.aimY}</span>
+                  <span>{f.purpose || '—'} · {t('dlg.sch.aim', 'Aim')} {f.aimX},{f.aimY}</span>
                 </span>
-                <input className="focus-note" placeholder={t('dlg.sch.focusNotePlaceholder', 'Fokus-Notiz – z. B. Gesicht Solist, harte Kante…')}
+                <input className="focus-note" placeholder={t('dlg.sch.focusNotePlaceholder', 'Focus note – e.g. soloist face, hard edge…')}
                   value={f.focusNote ?? ''} onChange={(e) => onUpdateFixture(f.id, { focusNote: e.target.value })} />
-                <button className="focus-locate" title={t('dlg.sch.showInPlan', 'Im Plan zeigen')} onClick={() => onLocate([f.id])}><Icon name="select" size={15} /></button>
+                <button className="focus-locate" title={t('dlg.sch.showInPlan', 'Show in plan')} onClick={() => onLocate([f.id])}><Icon name="select" size={15} /></button>
               </div>
             ))}
           </div>
         </div>
       ))}
-      <div className="prop-derived">{t('dlg.sch.focusHint', 'Live beim Einleuchten: abhaken, Fokus-Notiz je Leuchte erfassen, im Plan finden. Wird im Projekt gespeichert und im Schedule-CSV exportiert.')}</div>
+      <div className="prop-derived">{t('dlg.sch.focusHint', 'Live during focusing: tick off, capture a focus note per fixture, find it in the plan. Saved in the project and exported in the schedule CSV.')}</div>
     </div>
   );
 
@@ -835,7 +835,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       <>
         <div className="schedule-actions">
           <button className="btn-secondary" onClick={() => patchFileRef.current?.click()}>
-            {t('dlg.sch.return.load', 'Patch-Export des Pults laden (CSV)')}
+            {t('dlg.sch.return.load', 'Load console patch export (CSV)')}
           </button>
           {rueckweg && (
             <button className="btn-secondary" onClick={() => {
@@ -843,7 +843,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
               downloadCsv('rueckweg-pult.csv', [tb.header, ...tb.rows]
                 .map((r) => r.map((v) => (/[",;\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v))).join(';'))
                 .join('\r\n'));
-            }}>{t('dlg.sch.return.export', 'Liste als CSV')}</button>
+            }}>{t('dlg.sch.return.export', 'List as CSV')}</button>
           )}
         </div>
         <input
@@ -867,43 +867,43 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         {!rueckweg ? (
           <div className="prop-derived">
             {t('dlg.sch.return.hint',
-              'Der Patch-Export des Pults (Kanal, Adresse, Typ, Beschriftung) wird gegen den Plan gehalten. Es wird nichts übernommen — die Liste ist zum Durchgehen.')}
+              'The console\u2019s patch export (channel, address, type, label) is held against the plan. Nothing is taken over \u2014 the list is there to be walked through.')}
           </div>
         ) : (
           <>
             <div className="rig-pills">
-              <span className="rig-pill info">{rueckweg.compared} {t('dlg.sch.return.compared', 'Kanäle verglichen')}</span>
-              <span className={`rig-pill ${rueckweg.counts.changed ? 'warn' : 'off'}`}>{rueckweg.counts.changed} {t('dlg.sch.return.changed', 'geändert')}</span>
-              <span className={`rig-pill ${rueckweg.counts['only-in-console'] ? 'warn' : 'off'}`}>{rueckweg.counts['only-in-console']} {t('dlg.sch.return.onlyConsole', 'nur am Pult')}</span>
-              <span className={`rig-pill ${rueckweg.counts['only-in-plan'] ? 'warn' : 'off'}`}>{rueckweg.counts['only-in-plan']} {t('dlg.sch.return.onlyPlan', 'nur im Plan')}</span>
-              <span className={`rig-pill ${rueckweg.counts['ambiguous-channel'] ? 'warn' : 'off'}`}>{rueckweg.counts['ambiguous-channel']} {t('dlg.sch.return.ambiguous', 'Kanal mehrfach belegt')}</span>
-              <span className={`rig-pill ${rueckweg.counts['no-channel'] ? 'warn' : 'off'}`}>{rueckweg.counts['no-channel']} {t('dlg.sch.return.noChannel', 'ohne Kanalnummer')}</span>
+              <span className="rig-pill info">{rueckweg.compared} {t('dlg.sch.return.compared', 'channels compared')}</span>
+              <span className={`rig-pill ${rueckweg.counts.changed ? 'warn' : 'off'}`}>{rueckweg.counts.changed} {t('dlg.sch.return.changed', 'changed')}</span>
+              <span className={`rig-pill ${rueckweg.counts['only-in-console'] ? 'warn' : 'off'}`}>{rueckweg.counts['only-in-console']} {t('dlg.sch.return.onlyConsole', 'console only')}</span>
+              <span className={`rig-pill ${rueckweg.counts['only-in-plan'] ? 'warn' : 'off'}`}>{rueckweg.counts['only-in-plan']} {t('dlg.sch.return.onlyPlan', 'plan only')}</span>
+              <span className={`rig-pill ${rueckweg.counts['ambiguous-channel'] ? 'warn' : 'off'}`}>{rueckweg.counts['ambiguous-channel']} {t('dlg.sch.return.ambiguous', 'channel used more than once')}</span>
+              <span className={`rig-pill ${rueckweg.counts['no-channel'] ? 'warn' : 'off'}`}>{rueckweg.counts['no-channel']} {t('dlg.sch.return.noChannel', 'no channel number')}</span>
             </div>
             {parseInfo && (
               <div className="prop-derived">
-                {t('dlg.sch.return.columns', 'Gelesene Spalten')}: {parseInfo.mapping.map((m) => `${m.header} → ${m.column}`).join(', ') || t('dlg.sch.return.none', 'keine')}
-                {parseInfo.ignored.length > 0 && ` · ${t('dlg.sch.return.ignored', 'nicht gedeutet')}: ${parseInfo.ignored.join(', ')}`}
+                {t('dlg.sch.return.columns', 'Columns read')}: {parseInfo.mapping.map((m) => `${m.header} → ${m.column}`).join(', ') || t('dlg.sch.return.none', 'none')}
+                {parseInfo.ignored.length > 0 && ` · ${t('dlg.sch.return.ignored', 'not interpreted')}: ${parseInfo.ignored.join(', ')}`}
               </div>
             )}
             {parseInfo && parseInfo.warnings.length > 0 && (
               <ul className="rig-issues">
                 {parseInfo.warnings.map((w, k) => (
-                  <li key={k} className="rig-issue sev-warning"><span className="rig-dot" />{t('dlg.sch.return.line', 'Zeile')} {w.line}: {w.message}</li>
+                  <li key={k} className="rig-issue sev-warning"><span className="rig-dot" />{t('dlg.sch.return.line', 'Line')} {w.line}: {w.message}</li>
                 ))}
               </ul>
             )}
             {eintraege.length === 0 ? (
-              <div className="rig-clean">✓ {t('dlg.sch.return.clean', 'Der Plan deckt sich mit dem Pult.')}</div>
+              <div className="rig-clean">✓ {t('dlg.sch.return.clean', 'The plan matches the console.')}</div>
             ) : (
               <table className="schedule-table">
                 <thead>
                   <tr>
-                    <th>{t('dlg.sch.return.channel', 'Kanal')}</th>
-                    <th>{t('dlg.sch.return.what', 'Was')}</th>
-                    <th>{t('dlg.sch.return.label', 'Bezeichnung')}</th>
-                    <th>{t('dlg.sch.return.field', 'Feld')}</th>
-                    <th>{t('dlg.sch.return.inPlan', 'Im Plan')}</th>
-                    <th>{t('dlg.sch.return.atConsole', 'Am Pult')}</th>
+                    <th>{t('dlg.sch.return.channel', 'Channel')}</th>
+                    <th>{t('dlg.sch.return.what', 'What')}</th>
+                    <th>{t('dlg.sch.return.label', 'Name')}</th>
+                    <th>{t('dlg.sch.return.field', 'Field')}</th>
+                    <th>{t('dlg.sch.return.inPlan', 'In the plan')}</th>
+                    <th>{t('dlg.sch.return.atConsole', 'At the console')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -921,7 +921,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
               </table>
             )}
             <div className="prop-derived">
-              {t('dlg.sch.return.oneWay', 'Einbahnstraße: nichts davon wird in den Plan geschrieben. Der Plan trägt die Absicht, das Pult den Zustand nach dem Aufbau.')}
+              {t('dlg.sch.return.oneWay', 'One-way street: none of this is written into the plan. The plan carries the intent, the console the state after load-in.')}
             </div>
           </>
         )}
@@ -940,7 +940,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     <>
       <div className="schedule-actions">
         <label>
-          {t('dlg.sch.rep.pick', 'Blatt')}{' '}
+          {t('dlg.sch.rep.pick', 'Sheet')}{' '}
           <select value={reportId} onChange={(e) => setReportId(e.target.value)}>
             {REPORTS.map((r) => (
               <option key={r.id} value={r.id}>{r.label}</option>
@@ -948,7 +948,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           </select>
         </label>
         <button className="btn-secondary" onClick={exportReport}>
-          &#8595; {t('dlg.sch.rep.csv', 'Dieses Blatt (CSV)')}
+          &#8595; {t('dlg.sch.rep.csv', 'This sheet (CSV)')}
         </button>
       </div>
       <div className="prop-derived">{bericht143.def.purpose}</div>
@@ -978,7 +978,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           ))}
           {bericht143.rows.length === 0 && (
             <tr><td colSpan={bericht143.header.length} className="row-muted">
-              {t('dlg.sch.rep.empty', 'Keine Zeilen.')}
+              {t('dlg.sch.rep.empty', 'No rows.')}
             </td></tr>
           )}
         </tbody>
@@ -989,14 +989,14 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           niemandem auf. */}
       {luecken.length > 0 && (
         <div className="prop-derived">
-          {t('dlg.sch.rep.gaps', 'Aus diesem Modell nicht schreibbar:')}
+          {t('dlg.sch.rep.gaps', 'Not producible from this model:')}
           <ul>
             {luecken.map((g) => <li key={g.label}>{g.message}</li>)}
           </ul>
         </div>
       )}
       <div className="prop-derived">
-        {t('dlg.sch.rep.hint', 'Alle Blätter lesen dieselben Felder. Wer eine Spalte ändert, ändert sie einmal — nicht zwölfmal.')}
+        {t('dlg.sch.rep.hint', 'Every sheet reads the same fields. Change a column once \u2014 not twelve times.')}
       </div>
 
       {/* ── BEDARF 148 — Etiketten aus denselben Daten ────────────────────
@@ -1004,16 +1004,16 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           channel model" — deshalb steht es HIER, auf demselben Blatt-Tab, und
           liest denselben Feld-Katalog. Am Verteiler klebt dann dieselbe
           Kreisnummer, die auf der Kreisliste steht. */}
-      <h4 className="schedule-subhead">{t('dlg.sch.lbl.head', 'Etiketten')}</h4>
+      <h4 className="schedule-subhead">{t('dlg.sch.lbl.head', 'Labels')}</h4>
       <div className="schedule-actions">
         <label>
-          {t('dlg.sch.lbl.kind', 'Etikett')}{' '}
+          {t('dlg.sch.lbl.kind', 'Label')}{' '}
           <select value={labelDefId} onChange={(e) => setLabelDefId(e.target.value)}>
             {LABEL_DEFS.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>
         </label>
         <label style={{ marginLeft: 12 }}>
-          {t('dlg.sch.lbl.stock', 'Bogen')}{' '}
+          {t('dlg.sch.lbl.stock', 'Sheet')}{' '}
           <select value={stockId} onChange={(e) => setStockId(e.target.value)}>
             {STOCKS.map((st) => <option key={st.id} value={st.id}>{st.label}</option>)}
           </select>
@@ -1021,7 +1021,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         {/* Etikettenbogen werden selten ganz aufgebraucht. Wer beim naechsten
             Satz wieder bei 1 anfaengt, druckt auf abgezogene Stellen. */}
         <label style={{ marginLeft: 12 }}>
-          {t('dlg.sch.lbl.startAt', 'Erstes freies Etikett')}{' '}
+          {t('dlg.sch.lbl.startAt', 'First free label')}{' '}
           <input
             type="number"
             min={1}
@@ -1032,14 +1032,14 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           />
         </label>
         <button className="btn-secondary" style={{ marginLeft: 12 }} onClick={() => window.print()} disabled={etiketten.count === 0}>
-          {t('dlg.sch.lbl.print', 'Drucken')}
+          {t('dlg.sch.lbl.print', 'Print')}
         </button>
       </div>
       <div className="prop-derived">
         {etikettenArt.purpose} · {bogen.note}
       </div>
       <div className="prop-derived">
-        {t('dlg.sch.lbl.counts', '{n} Etikett(en) auf {p} Bogen. Auf dem letzten bleiben {r} frei — beim nächsten Mal hier als „erstes freies Etikett" eintragen.')
+        {t('dlg.sch.lbl.counts', '{n} label(s) on {p} sheet(s). {r} stay free on the last one \u2014 enter that as \u201cfirst free label\u201d next time.')
           .replace('{n}', String(etiketten.count))
           .replace('{p}', String(etiketten.pages.length))
           .replace('{r}', String(etiketten.leftover))}
@@ -1049,7 +1049,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           Etikett am Verteiler ist schlimmer als ein leeres. */}
       {etiketten.overflowing > 0 && (
         <div className="rig-pill warn">
-          {t('dlg.sch.lbl.overflow', '{n} Etikett(en) werden vermutlich zu breit — nichts wird gekürzt. Schmaleres Etikett wählen oder größeren Bogen.')
+          {t('dlg.sch.lbl.overflow', '{n} label(s) will probably be too wide \u2014 nothing is truncated. Pick a narrower label or a bigger sheet.')
             .replace('{n}', String(etiketten.overflowing))}
         </div>
       )}
@@ -1096,9 +1096,9 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
   const checkPanel = (
     <>
       <div className="rig-pills">
-        <span className={`rig-pill ${ic.errors ? 'err' : 'off'}`}>{ic.errors} {t('dlg.sch.errors', 'Fehler')}</span>
-        <span className={`rig-pill ${ic.warnings ? 'warn' : 'off'}`}>{ic.warnings} {t('dlg.sch.warnings', 'Warnungen')}</span>
-        <span className="rig-pill info">{ic.infos} {t('dlg.sch.infos', 'Hinweise')}</span>
+        <span className={`rig-pill ${ic.errors ? 'err' : 'off'}`}>{ic.errors} {t('dlg.sch.errors', 'errors')}</span>
+        <span className={`rig-pill ${ic.warnings ? 'warn' : 'off'}`}>{ic.warnings} {t('dlg.sch.warnings', 'warnings')}</span>
+        <span className="rig-pill info">{ic.infos} {t('dlg.sch.infos', 'notes')}</span>
         {/* BEDARF 142 — das Urteil, und zwar mit „nicht beurteilbar" darin.
             Ein Plan, dessen Last-Zahlen auf fehlenden Angaben beruhen, ist
             nicht bereit: er ist unbeantwortet. */}
@@ -1110,16 +1110,16 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           downloadCsv('vorflug.csv', [tb.header, ...tb.rows]
             .map((r) => r.map((v) => (/[",;\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v))).join(';'))
             .join('\r\n'));
-        }}>⬇ {t('dlg.sch.check.csv', 'Bericht (CSV)')}</button>
+        }}>⬇ {t('dlg.sch.check.csv', 'Report (CSV)')}</button>
       </div>
       {bericht.assumed > 0 && (
         <div className="prop-derived">
-          {t('dlg.sch.check.assumedNote', 'Achtung: {n} Befund(e) beruhen auf angenommenen Werten (fehlendes Gewicht, fehlende Leistung, geschätzte Traglast). Zahlen daraus sind kleiner als die Wirklichkeit — und bei der Traglast ist das die gefährliche Richtung.')
+          {t('dlg.sch.check.assumedNote', 'Careful: {n} finding(s) rest on assumed values (missing weight, missing wattage, estimated truss capacity). Figures derived from them are smaller than reality \u2014 and for a truss load that is the dangerous direction.')
             .replace('{n}', String(bericht.assumed))}
         </div>
       )}
       {issues.length === 0 ? (
-        <div className="rig-clean">✓ {t('dlg.sch.noIssues', 'Keine Probleme gefunden.')}</div>
+        <div className="rig-clean">✓ {t('dlg.sch.noIssues', 'No issues found.')}</div>
       ) : (
         <ul className="rig-issues">
           {issues.map((i, k) => {
@@ -1127,11 +1127,11 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
             return (
               <li key={k} className={`rig-issue sev-${i.severity} ${locatable ? 'locatable' : ''}`}
                 onClick={locatable ? () => onLocate(i.ids!) : undefined}
-                title={locatable ? t('dlg.sch.showAffected', 'Betroffene Leuchten im Plan zeigen') : undefined}>
+                title={locatable ? t('dlg.sch.showAffected', 'Show affected fixtures in the plan') : undefined}>
                 <span className="rig-dot" />{i.message}
                 {i.basis === 'assumed' && (
                   <span className="rig-pill warn" style={{ marginLeft: 6 }}>
-                    {t('dlg.sch.check.assumed', 'angenommen')}
+                    {t('dlg.sch.check.assumed', 'assumed')}
                   </span>
                 )}
                 {locatable && <Icon name="chevronRight" size={14} className="rig-go" />}
@@ -1140,34 +1140,34 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           })}
         </ul>
       )}
-      <div className="prop-derived">{t('dlg.sch.checkHint', 'Geprüft: DMX-Überlappung, doppelte Kanäle, ungepatchte Movers, Traversen-Last, Strom-Headroom.')}</div>
+      <div className="prop-derived">{t('dlg.sch.checkHint', 'Checked: DMX overlap, duplicate channels, unpatched movers, truss load, power headroom.')}</div>
     </>
   );
 
   const photoPanel = photo ? (
     <>
       <div className="schedule-cards">
-        <div className="schedule-card"><span className="sc-val">{lx(photo.avg)} lx</span><span className="sc-label">{t('dlg.sch.avg', 'Mittel (Eavg)')}</span></div>
+        <div className="schedule-card"><span className="sc-val">{lx(photo.avg)} lx</span><span className="sc-label">{t('dlg.sch.avg', 'Average (Eavg)')}</span></div>
         <div className="schedule-card"><span className="sc-val">{lx(photo.min)} lx</span><span className="sc-label">{t('dlg.sch.min', 'Minimum')}</span></div>
         <div className="schedule-card"><span className="sc-val">{lx(photo.max)} lx</span><span className="sc-label">{t('dlg.sch.max', 'Maximum')}</span></div>
         <div className={`schedule-card photo-${photo.u0 >= 0.6 ? 'ok' : photo.u0 >= 0.4 ? 'warn' : 'bad'}`}>
           <span className="sc-val">{photo.u0.toFixed(2)}</span><span className="sc-label">U0 = Emin/Eavg · {photo.rating}</span>
         </div>
         <div className="schedule-card"><span className="sc-val">{photo.u2.toFixed(2)}</span><span className="sc-label">U2 = Emin/Emax</span></div>
-        <div className="schedule-card"><span className="sc-val">{photo.areaM2.toFixed(1)} m²</span><span className="sc-label">{t('dlg.sch.lit', 'ausgeleuchtet')}</span></div>
+        <div className="schedule-card"><span className="sc-val">{photo.areaM2.toFixed(1)} m²</span><span className="sc-label">{t('dlg.sch.lit', 'illuminated')}</span></div>
       </div>
-      <div className="prop-derived">{t('dlg.sch.photoHint', 'Richtwert (DIN EN 12464 / CIBSE): U0 ≥ 0,6 gut · ≥ 0,4 akzeptabel. Werte über die ausgeleuchtete Bühnenfläche (gleiche Engine wie die Heatmap).')}</div>
+      <div className="prop-derived">{t('dlg.sch.photoHint', 'Guideline (DIN EN 12464 / CIBSE): U0 ≥ 0.6 good · ≥ 0.4 acceptable. Values over the illuminated stage area (same engine as the heatmap).')}</div>
     </>
   ) : (
-    <div className="tool-empty">{t('dlg.sch.noPhoto', 'Keine beleuchteten Leuchten – Photometrie nicht verfügbar.')}</div>
+    <div className="tool-empty">{t('dlg.sch.noPhoto', 'No illuminated fixtures – photometrics unavailable.')}</div>
   );
 
   const loadPanel = (
     <>
-      <h4 className="schedule-subhead">{t('dlg.sch.power', 'Leistung')}</h4>
+      <h4 className="schedule-subhead">{t('dlg.sch.power', 'Power')}</h4>
       <div className="schedule-cards">
-        <div className="schedule-card"><span className="sc-val">{(power.totalWatts / 1000).toFixed(2)} kW</span><span className="sc-label">{t('dlg.sch.totalPower', 'Gesamtleistung')}</span></div>
-        <div className="schedule-card"><span className="sc-val">{power.amps1ph.toFixed(1)} A</span><span className="sc-label">{t('dlg.sch.singlePhase', '@ 230 V (1-phasig)')}</span></div>
+        <div className="schedule-card"><span className="sc-val">{(power.totalWatts / 1000).toFixed(2)} kW</span><span className="sc-label">{t('dlg.sch.totalPower', 'Total power')}</span></div>
+        <div className="schedule-card"><span className="sc-val">{power.amps1ph.toFixed(1)} A</span><span className="sc-label">{t('dlg.sch.singlePhase', '@ 230 V (single-phase)')}</span></div>
         {/* BEDARF 141 — hier stand bis 2026-09-07 `power.ampsPerPhase`, also
             `Gesamtlast / 3`: die Last einer AUSGEGLICHENEN Anlage, und damit
             eines Zustands, den niemand hat. Den Automaten wirft die SCHWERSTE
@@ -1175,20 +1175,20 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <div className={`schedule-card ${verteilung.peak && verteilung.peak.amps > 16 ? 'photo-bad' : ''}`}>
           <span className="sc-val">{(verteilung.peak?.amps ?? 0).toFixed(1)} A</span>
           <span className="sc-label">
-            {t('dlg.sch.pwr.peak', 'schwerste Phase')}
+            {t('dlg.sch.pwr.peak', 'heaviest phase')}
             {verteilung.peak ? ` · ${PHASE_LABEL[verteilung.peak.phase]}` : ''}
           </span>
         </div>
         <div className="schedule-card">
           <span className="sc-val">{power.ampsPerPhase.toFixed(1)} A</span>
-          <span className="sc-label">{t('dlg.sch.pwr.assumed', 'ausgeglichen angenommen')}</span>
+          <span className="sc-label">{t('dlg.sch.pwr.assumed', 'assumed balanced')}</span>
         </div>
-        <div className="schedule-card"><span className="sc-val">{circuits.length}×</span><span className="sc-label">{t('dlg.sch.circuits', 'Stromkreise (16 A, 3 kW)')}</span></div>
+        <div className="schedule-card"><span className="sc-val">{circuits.length}×</span><span className="sc-label">{t('dlg.sch.circuits', 'Circuits (16 A, 3 kW)')}</span></div>
       </div>
       {circuits.length > 0 && (
         <div className="circuit-strip">
           {circuits.map((c) => (
-            <div key={c.index} className="circuit-chip" title={`${c.fixtureCount} ${t('dlg.sch.fixtures', 'Leuchten')} · ${c.watts} W`}>
+            <div key={c.index} className="circuit-chip" title={`${c.fixtureCount} ${t('dlg.sch.fixtures', 'fixtures')} · ${c.watts} W`}>
               <span className="cc-name">C{c.index}</span>
               <span className={`cc-bar ${utilClass(c.utilization)}`}><i style={{ width: `${Math.min(100, c.utilization * 100)}%` }} /></span>
               <span className="cc-val">{c.watts} W</span>
@@ -1203,16 +1203,16 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           keine Verzierung: sie ist die einzige Bezeichnung, die jemand am
           Steckfeld wiederfindet. */}
       <h4 className="schedule-subhead">
-        {t('dlg.sch.pwr.phases', 'Phasen & Kreise')}
+        {t('dlg.sch.pwr.phases', 'Phases & circuits')}
         {verteilung.assignments.length > 0 && (
           <button className="btn-secondary" style={{ marginLeft: 8 }} onClick={exportCircuits}>
-            &#8595; {t('dlg.sch.pwr.csv', 'Kreisliste (CSV)')}
+            &#8595; {t('dlg.sch.pwr.csv', 'Circuit list (CSV)')}
           </button>
         )}
       </h4>
       <div className="schedule-actions">
         <label>
-          {t('dlg.sch.pwr.template', 'Der Anschluss führt')}{' '}
+          {t('dlg.sch.pwr.template', 'The service carries')}{' '}
           <select
             value={phaseTemplate}
             onChange={(e) => onSetPhaseTemplate(e.target.value as PhaseTemplate)}
@@ -1231,7 +1231,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <thead>
           <tr>
             <th>{PHASE_HEADERS[0]}</th>
-            <th>{t('dlg.sch.pwr.hCircuits', 'Kreise')}</th>
+            <th>{t('dlg.sch.pwr.hCircuits', 'Circuits')}</th>
             <th>W</th>
             <th>A</th>
           </tr>
@@ -1252,11 +1252,11 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           stimmte. Alles darueber ist der Unterschied zur Wirklichkeit. */}
       <div className="prop-derived">
         {verteilung.understatedAmps >= 1
-          ? t('dlg.sch.pwr.understated', 'Ungleich verteilt: die schwerste Phase trägt {d} A mehr als die ausgeglichene Annahme ({a} A). Unterschied zwischen schwerster und leichtester Phase: {i} A.')
+          ? t('dlg.sch.pwr.understated', 'Unbalanced: the heaviest phase carries {d} A more than the balanced assumption ({a} A). Difference between heaviest and lightest phase: {i} A.')
             .replace('{d}', verteilung.understatedAmps.toFixed(1))
             .replace('{a}', verteilung.assumedAmpsPerPhase.toFixed(1))
             .replace('{i}', verteilung.imbalanceAmps.toFixed(1))
-          : t('dlg.sch.pwr.balanced', 'Gleichmäßig verteilt — die ausgeglichene Annahme trifft hier zu.')}
+          : t('dlg.sch.pwr.balanced', 'Evenly distributed \u2014 the balanced assumption holds here.')}
       </div>
       {verteilung.assignments.length > 0 && (
         <table className="schedule-table">
@@ -1264,10 +1264,10 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
             <tr>
               <th>{CIRCUIT_HEADERS[0]}</th>
               <th>{PHASE_HEADERS[0]}</th>
-              <th>{t('dlg.sch.fixtures', 'Leuchten')}</th>
+              <th>{t('dlg.sch.fixtures', 'fixtures')}</th>
               <th>W</th>
               <th>A</th>
-              <th>{t('dlg.sch.col.utilization', 'Auslastung')}</th>
+              <th>{t('dlg.sch.col.utilization', 'Utilization')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1298,12 +1298,12 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           Kreis, und der Kreis steht eine Tabelle weiter oben. Wer die Wege
           woanders sucht, vergleicht sie nicht mit dem, woraus sie folgen. */}
       <h4 className="schedule-subhead">
-        {t('dlg.sch.cbl.head', 'Kabelwege')}
+        {t('dlg.sch.cbl.head', 'Cable runs')}
         {kabelSummen.map((sum) => (
           <span key={sum.kind}>
             {' · '}{KIND_LABEL[sum.kind]}: {sum.runs} × {sum.metres.toFixed(1)} m
             {sum.unknown > 0
-              ? ` ${t('dlg.sch.cbl.plusUnknown', '(+ {n} ohne Länge)').replace('{n}', String(sum.unknown))}`
+              ? ` ${t('dlg.sch.cbl.plusUnknown', '(+ {n} without length)').replace('{n}', String(sum.unknown))}`
               : ''}
           </span>
         ))}
@@ -1318,12 +1318,12 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <table className="schedule-table">
           <thead>
             <tr>
-              <th>{t('dlg.sch.cbl.col.kind', 'Art')}</th>
-              <th>{t('dlg.sch.cbl.col.from', 'Von')}</th>
-              <th>{t('dlg.sch.cbl.col.to', 'Nach')}</th>
-              <th>{t('dlg.sch.col.truss', 'Traverse')}</th>
+              <th>{t('dlg.sch.cbl.col.kind', 'Kind')}</th>
+              <th>{t('dlg.sch.cbl.col.from', 'From')}</th>
+              <th>{t('dlg.sch.cbl.col.to', 'To')}</th>
+              <th>{t('dlg.sch.col.truss', 'Truss')}</th>
               <th>{CABLE_HEADERS[4]}</th>
-              <th>{t('dlg.sch.cbl.col.connector', 'Stecker')}</th>
+              <th>{t('dlg.sch.cbl.col.connector', 'Connector')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1335,9 +1335,9 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           </tbody>
         </table>
       )}
-      <h4 className="schedule-subhead">{t('dlg.sch.loadPerTruss', 'Last pro Traverse')} · {totalWeight.toFixed(1)} {t('dlg.sch.kgTotalLabel', 'kg gesamt')}</h4>
+      <h4 className="schedule-subhead">{t('dlg.sch.loadPerTruss', 'Load per truss')} · {totalWeight.toFixed(1)} {t('dlg.sch.kgTotalLabel', 'kg total')}</h4>
       <table className="schedule-table">
-        <thead><tr><th>{t('dlg.sch.col.truss', 'Traverse')}</th><th>{t('dlg.sch.fixtures', 'Leuchten')}</th><th>{t('dlg.sch.col.load', 'Last')}</th><th>{t('dlg.sch.col.capacity', 'Traglast')}</th><th>{t('dlg.sch.col.utilization', 'Auslastung')}</th></tr></thead>
+        <thead><tr><th>{t('dlg.sch.col.truss', 'Truss')}</th><th>{t('dlg.sch.fixtures', 'fixtures')}</th><th>{t('dlg.sch.col.load', 'Load')}</th><th>{t('dlg.sch.col.capacity', 'Capacity')}</th><th>{t('dlg.sch.col.utilization', 'Utilization')}</th></tr></thead>
         <tbody>
           {loads.perTruss.map((tr) => (
             <tr key={tr.id} className={tr.overloaded ? 'row-conflict' : ''}>
@@ -1349,10 +1349,10 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
             </tr>
           ))}
           {loads.unassigned.count > 0 && (
-            <tr className="row-muted"><td>{t('dlg.sch.floorFreestanding', 'Boden / freistehend')}</td><td>{loads.unassigned.count}</td><td>{loads.unassigned.weightKg.toFixed(1)} kg</td><td>–</td><td>–</td></tr>
+            <tr className="row-muted"><td>{t('dlg.sch.floorFreestanding', 'Floor / freestanding')}</td><td>{loads.unassigned.count}</td><td>{loads.unassigned.weightKg.toFixed(1)} kg</td><td>–</td><td>–</td></tr>
           )}
           {loads.perTruss.length === 0 && loads.unassigned.count === 0 && (
-            <tr><td colSpan={5} className="row-muted">{t('dlg.sch.noneAssigned', 'Keine Leuchten zugeordnet.')}</td></tr>
+            <tr><td colSpan={5} className="row-muted">{t('dlg.sch.noneAssigned', 'No fixtures assigned.')}</td></tr>
           )}
         </tbody>
       </table>
@@ -1363,29 +1363,29 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
     <div className="export-list">
       <div className="export-row">
         <Icon name="schedule" size={22} className="er-icon" />
-        <div className="er-text"><b>{t('dlg.sch.exp.schedule', 'Instrument Schedule (CSV)')}</b><span>{t('dlg.sch.exp.scheduleDesc', 'Patch, Position, Gel & Zweck je Leuchte – für Tabellenkalkulation.')}</span></div>
+        <div className="er-text"><b>{t('dlg.sch.exp.schedule', 'Instrument schedule (CSV)')}</b><span>{t('dlg.sch.exp.scheduleDesc', 'Patch, position, gel & purpose per fixture – for spreadsheets.')}</span></div>
         <button className="btn-secondary" onClick={exportSchedule}>⬇ CSV</button>
       </div>
       <div className="export-row">
         <Icon name="truss" size={22} className="er-icon" />
-        <div className="er-text"><b>{t('dlg.sch.exp.cables', 'Kabelliste (CSV)')}</b><span>{t('dlg.sch.exp.cablesDesc', 'Strom- und DMX-Wege mit Länge und Stecker – das, was MVR nicht trägt.')}</span></div>
+        <div className="er-text"><b>{t('dlg.sch.exp.cables', 'Cable list (CSV)')}</b><span>{t('dlg.sch.exp.cablesDesc', 'Power and DMX runs with length and connector — what MVR does not carry.')}</span></div>
         <button className="btn-secondary" onClick={exportCables}>⬇ CSV</button>
       </div>
       <div className="export-row">
         <Icon name="library" size={22} className="er-icon" />
-        <div className="er-text"><b>{t('dlg.sch.exp.inventory', 'Geräteliste (CSV)')}</b><span>{t('dlg.sch.exp.inventoryDesc', 'Stückzahlen je Typ mit Leistung & Gewicht – für Bestellung/Disposition.')}</span></div>
+        <div className="er-text"><b>{t('dlg.sch.exp.inventory', 'Fixture list (CSV)')}</b><span>{t('dlg.sch.exp.inventoryDesc', 'Quantities per type with power & weight – for ordering/prep.')}</span></div>
         <button className="btn-secondary" onClick={exportInventory}>⬇ CSV</button>
       </div>
       <div className="export-row">
         <Icon name="heatmap" size={22} className="er-icon" />
-        <div className="er-text"><b>{t('dlg.sch.exp.colors', 'Farbliste (CSV)')}</b><span>{t('dlg.sch.exp.colorsDesc', 'Gel-Schnitte je Code – für Farb-Bestellung & Vorbereitung.')}</span></div>
+        <div className="er-text"><b>{t('dlg.sch.exp.colors', 'Colour list (CSV)')}</b><span>{t('dlg.sch.exp.colorsDesc', 'Gel cuts per code – for colour ordering & prep.')}</span></div>
         <button className="btn-secondary" onClick={exportColors} disabled={colors.length === 0}>⬇ CSV</button>
       </div>
       <div className="export-row">
         <Icon name="tag" size={22} className="er-icon" />
         <div className="er-text">
-          <b>{t('dlg.sch.exp.groups', 'Gruppen-Blatt (CSV)')}</b>
-          <span>{t('dlg.sch.exp.groupsNote', 'Gruppe je Zeile mit Kanal, Unit, Typ und Position – das, was am Pult, im Visualisierer und im Medienserver sonst von Hand nachgebaut wird.')}</span>
+          <b>{t('dlg.sch.exp.groups', 'Group sheet (CSV)')}</b>
+          <span>{t('dlg.sch.exp.groupsNote', 'One row per group member with channel, unit, type and position \u2014 what otherwise gets rebuilt by hand on the console, in the visualiser and in the media server.')}</span>
         </div>
         <button className="btn-secondary" onClick={exportGroups} disabled={gruppen.length === 0}>⬇ CSV</button>
       </div>
@@ -1399,13 +1399,13 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       <div className="export-row">
         <Icon name="library" size={22} className="er-icon" />
         <div className="er-text">
-          <b>{t('dlg.sch.exp.shop', 'Bestellliste (CSV)')}</b>
+          <b>{t('dlg.sch.exp.shop', 'Shop order (CSV)')}</b>
           <span>
-            {t('dlg.sch.exp.shopNote', 'Bedarf aus dem Plan, gedeckt aus dem Lager: eigen, fremd (kommt zurück) und was übrig bleibt.')}
+            {t('dlg.sch.exp.shopNote', 'Demand from the plan, covered from stock: owned, foreign (goes back) and what is left over.')}
           </span>
           {bestellung.unmatched > 0 && (
             <span className="rig-pill warn">
-              {t('dlg.sch.exp.shopUnmatched', '{n} Zeile(n) ohne Lager-Artikel – dort hat niemand gutgesagt.')
+              {t('dlg.sch.exp.shopUnmatched', '{n} line(s) with no stock item \u2014 nobody vouched for those.')
                 .replace('{n}', String(bestellung.unmatched))}
             </span>
           )}
@@ -1414,7 +1414,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
               nichts noetig. */}
           {bestellLuecken.length > 0 && (
             <span className="prop-derived">
-              {t('dlg.sch.exp.shopGaps', 'Nicht aus diesem Plan:')}{' '}
+              {t('dlg.sch.exp.shopGaps', 'Not from this plan:')}{' '}
               {bestellLuecken.map((g) => g.label).join(' · ')}
             </span>
           )}
@@ -1434,7 +1434,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       <div className="export-row">
         <Icon name="export" size={22} className="er-icon" />
         <div className="er-text">
-          <b>{t('dlg.sch.exp.console', 'Patch fürs Pult')}</b>
+          <b>{t('dlg.sch.exp.console', 'Patch for the console')}</b>
           <span>
             <select
               value={consoleTarget}
@@ -1453,7 +1453,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
               ist, und gesucht wird dann beim Geraet. */}
           {pultVorschau.dropped.length > 0 && (
             <span className="rig-pill warn">
-              {t('dlg.sch.exp.consoleDropped', '{n} von {m} Zeilen gehen NICHT mit:')
+              {t('dlg.sch.exp.consoleDropped', '{n} of {m} rows will NOT be included:')
                 .replace('{n}', String(pultVorschau.dropped.length))
                 .replace('{m}', String(fixtures.length))}
               {' '}
@@ -1463,7 +1463,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
           )}
           {pultVorschau.unverifiable > 0 && (
             <span className="prop-derived">
-              {t('dlg.sch.exp.consoleUnverifiable', 'Ob die übrigen {n} Zeilen ankommen, hängt an der Geräte-Bibliothek des Pults. Das kann dieser Rechner nicht wissen — geprüft wird es beim Import.')
+              {t('dlg.sch.exp.consoleUnverifiable', 'Whether the remaining {n} rows arrive depends on the console\u2019s fixture library. This machine cannot know that \u2014 the import decides.')
                 .replace('{n}', String(pultVorschau.unverifiable))}
             </span>
           )}
@@ -1477,7 +1477,7 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
         <div className="er-text">
           <b>MVR (GDTF/MVR)</b>
           <span>
-            {t('dlg.sch.exp.mvrDesc', 'Lampen mit Positionen & Patch – öffnet in Capture, grandMA3, WYSIWYG, Vectorworks, BlenderDMX.')}
+            {t('dlg.sch.exp.mvrDesc', 'Fixtures with positions & patch – opens in Capture, grandMA3, WYSIWYG, Vectorworks, BlenderDMX.')}
           </span>
           {/* ADR-005, Regel 3 UND Bedarf 139. Hier stand die Ehrlichkeit
               frueher fuer genau EINEN Fall — die Traversen —, weil den einmal
@@ -1489,8 +1489,8 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
               {specKollisionen.map((c) => (
                 <li key={c.file} className="rig-issue sev-warning">
                   <span className="rig-dot" />
-                  <b>{t('dlg.sch.exp.specClash', 'Gleicher GDTF-Dateiname')}</b> — {c.types.join(', ')}{' '}
-                  {t('dlg.sch.exp.specClashNote', '– die Namen unterscheiden sich nur in Zeichen, die ein Dateiname nicht führen kann. Sie bekommen eindeutige Bezüge; deine GDTF-Bibliothek kennt aber womöglich nur einen davon.')}
+                  <b>{t('dlg.sch.exp.specClash', 'Same GDTF file name')}</b> — {c.types.join(', ')}{' '}
+                  {t('dlg.sch.exp.specClashNote', '\u2013 the names differ only in characters a file name cannot carry. They get distinct references, but your GDTF library may know only one of them.')}
                 </li>
               ))}
             </ul>
@@ -1518,10 +1518,10 @@ const ScheduleDialog: React.FC<Props> = ({ fixtures, trusses, walls, ceilings, a
       <div className="modal tool-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="tool-head">
           <h3><Icon name={TABS.find((x) => x.id === tab)!.icon} size={18} /> {activeLabel}</h3>
-          <button className="fp-icon-btn fp-close" onClick={onClose} title={t('dlg.sch.close', 'Schließen')}>✕</button>
+          <button className="fp-icon-btn fp-close" onClick={onClose} title={t('dlg.sch.close', 'Close')}>✕</button>
         </div>
         {fixtures.length === 0 ? (
-          <div className="tool-empty-wrap"><p className="dialog-hint">{t('dlg.sch.empty', 'Noch keine Leuchten platziert.')}</p></div>
+          <div className="tool-empty-wrap"><p className="dialog-hint">{t('dlg.sch.empty', 'No fixtures placed yet.')}</p></div>
         ) : (
           <div className="tool-body">
             <nav className="tool-nav">

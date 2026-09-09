@@ -12,21 +12,21 @@ interface Props {
 }
 
 const categoryLabels = (t: (key: string, fallback: string) => string): Record<FixtureCategory, string> => ({
-  profile: t('side.cat.profile', 'Profilscheinwerfer'),
-  fresnel: t('side.cat.fresnel', 'Stufenlinsen'),
-  par: t('side.cat.par', 'PAR-Scheinwerfer'),
+  profile: t('side.cat.profile', 'Profile Spots'),
+  fresnel: t('side.cat.fresnel', 'Fresnels'),
+  par: t('side.cat.par', 'PAR Cans'),
   wash: t('side.cat.wash', 'LED Wash'),
   spot: t('side.cat.spot', 'LED Spot'),
-  beam: t('side.cat.beam', 'Beam-Effekt'),
+  beam: t('side.cat.beam', 'Beam Effect'),
   'moving-wash': t('side.cat.movingWash', 'Moving Head Wash'),
   'moving-spot': t('side.cat.movingSpot', 'Moving Head Spot'),
   'moving-beam': t('side.cat.movingBeam', 'Moving Head Beam'),
   blinder: t('side.cat.blinder', 'Blinder / Strobe'),
-  cyc: t('side.cat.cyc', 'Horizontleuchte'),
-  flood: t('side.cat.flood', 'Fluter'),
-  followspot: t('side.cat.followspot', 'Verfolger'),
-  'led-panel': t('side.cat.ledPanel', 'LED-Flächenleuchten'),
-  custom: t('side.cat.custom', 'Eigene'),
+  cyc: t('side.cat.cyc', 'Cyc Light'),
+  flood: t('side.cat.flood', 'Flood'),
+  followspot: t('side.cat.followspot', 'Followspot'),
+  'led-panel': t('side.cat.ledPanel', 'LED Panels'),
+  custom: t('side.cat.custom', 'Custom'),
 });
 
 const CATEGORIES: FixtureCategory[] = [
@@ -73,14 +73,14 @@ const Sidebar: React.FC<Props> = ({
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2>{t('side.libraryTitle', 'Leuchten-Bibliothek')}</h2>
-        <span className="sidebar-hint">{t('side.dragHint', 'Drag & Drop oder Klick')}</span>
+        <h2>{t('side.libraryTitle', 'Fixture Library')}</h2>
+        <span className="sidebar-hint">{t('side.dragHint', 'Drag & drop or click')}</span>
       </div>
 
       <div className="sidebar-search">
         <input
           type="text"
-          placeholder={t('side.searchPlaceholder', 'Suchen…')}
+          placeholder={t('side.searchPlaceholder', 'Search…')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -128,7 +128,7 @@ const Sidebar: React.FC<Props> = ({
                     </div>
                     {f.compatibleAttachments && f.compatibleAttachments.length > 0 && (
                       <div className="fixture-item-info attachment-hint">
-                        🔧 {f.compatibleAttachments.length} {t('side.attachmentsAvailable', 'Vorsätze verfügbar')}
+                        🔧 {f.compatibleAttachments.length} {t('side.attachmentsAvailable', 'attachments available')}
                       </div>
                     )}
                   </button>
@@ -142,7 +142,7 @@ const Sidebar: React.FC<Props> = ({
 
       <div className="sidebar-footer">
         <button className="add-fixture-btn" onClick={() => setShowEditor(true)}>
-          {t('side.addCustomFixture', '+ Eigene Leuchte anlegen')}
+          {t('side.addCustomFixture', '+ Add custom fixture')}
         </button>
       </div>
 

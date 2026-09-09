@@ -260,7 +260,7 @@ const App: React.FC = () => {
     if (n <= 0) return;
     to.push({ ...stateRef.current });
     for (let i = 0; i < n - 1; i++) to.push(from.pop()!);
-    logPrefixRef.current = dir === 'undo' ? t('app.log.undo', '↶ Rückgängig') : t('app.log.redo', '↷ Wiederholt');
+    logPrefixRef.current = dir === 'undo' ? t('app.log.undo', '↶ Undone') : t('app.log.redo', '↷ Redone');
     restoreSnapshot(from.pop()!);
   }, [restoreSnapshot]);
 
@@ -559,7 +559,7 @@ const App: React.FC = () => {
     pushHistory();
     const ceiling: Ceiling = {
       id: uid('ceil'), points: hull, height: Math.round(h * 10) / 10,
-      reflectance: 0.6, color: '#d8d4c8', label: t('app.label.ceiling', 'Decke'),
+      reflectance: 0.6, color: '#d8d4c8', label: t('app.label.ceiling', 'Ceiling'),
     };
     // Replace any existing auto-ceiling rather than stacking duplicates.
     setCeilings([ceiling]);
@@ -657,7 +657,7 @@ const App: React.FC = () => {
     const selFixtureIds = fixtures.filter((f) => selectedIds.has(f.id)).map((f) => f.id);
     if (selFixtureIds.length < 2) return;
     pushHistory();
-    const group: FixtureGroup = { id: uid('grp'), label: `${t('app.label.group', 'Gruppe')} ${fixtureGroups.length + 1}`, fixtureIds: selFixtureIds };
+    const group: FixtureGroup = { id: uid('grp'), label: `${t('app.label.group', 'Group')} ${fixtureGroups.length + 1}`, fixtureIds: selFixtureIds };
     setFixtureGroups((prev) => [...prev, group]);
   }, [fixtures, selectedIds, fixtureGroups.length]);
 
@@ -845,7 +845,7 @@ const App: React.FC = () => {
       setProjectMeta(meta);
       setProjectDialogMode(null);
     } catch (err) {
-      await alertDialog(t('app.alert.saveFailed', 'Projekt konnte nicht gespeichert werden:'), { body: err instanceof Error ? err.message : String(err) });
+      await alertDialog(t('app.alert.saveFailed', 'Project could not be saved:'), { body: err instanceof Error ? err.message : String(err) });
     }
   }, [fixtures, shapes, persons, stageElements, customFixtures, fixtureGroups, trusses, walls, ceilings, scenes, workNotes, dmxProtocol, phaseTemplate, cameras, layers, floor, sun, floorPlan, projectId]);
 
@@ -853,7 +853,7 @@ const App: React.FC = () => {
     historyRef.current = [];
     futureRef.current = [];
     suppressLogRef.current = true;       // don't log the bulk state swap
-    setActivityLog([{ time: Date.now(), label: `${t('app.log.projectLoaded', 'Projekt geladen:')} ${data.meta?.name ?? ''}`.trim() }]);
+    setActivityLog([{ time: Date.now(), label: `${t('app.log.projectLoaded', 'Project loaded:')} ${data.meta?.name ?? ''}`.trim() }]);
     // ADR-005 — was die Datei an fremden Domaenen mitbringt, kommt zurueck in
     // den Ref, damit der naechste .avplan-Export sie wieder mitgibt. Eine Datei
     // ohne sie setzt zurueck: sonst leckten die Domaenen des zuletzt geoeffneten
@@ -962,7 +962,7 @@ const App: React.FC = () => {
       app: 'light-planner', appVersion: APP_VERSION, exportedAt: now, venue,
       domains: {
         lighting: {
-          meta: projectMeta ?? { name: t('app.defaultProject.name', 'Lichtplan'), author: '', version: '1.0', createdAt: now, updatedAt: now },
+          meta: projectMeta ?? { name: t('app.defaultProject.name', 'Lighting plan'), author: '', version: '1.0', createdAt: now, updatedAt: now },
           // BEDARF 147/141 — auch hier: die .avplan traegt Lesart und
           // Phasen-Vorlage mit, sonst verliert der Weg ueber die Suite genau
           // die Angaben, die den Patch- und den Last-Fehler verhindern.
@@ -993,7 +993,7 @@ const App: React.FC = () => {
     try {
       avplan = parseAvPlan(res.text);
     } catch (e) {
-      await alertDialog(t('app.alert.avplanImportFailed', '.avplan-Import fehlgeschlagen:'), { body: e instanceof Error ? e.message : String(e) });
+      await alertDialog(t('app.alert.avplanImportFailed', '.avplan import failed:'), { body: e instanceof Error ? e.message : String(e) });
       return;
     }
     const r = fromVenueExchange({
@@ -1017,7 +1017,7 @@ const App: React.FC = () => {
     const now = new Date().toISOString();
     const lighting = avplan.domains.lighting as ProjectData | undefined;
     const base: ProjectData = lighting ?? {
-      meta: { name: avplan.venue.name || t('app.defaultProject.generic', 'Projekt'), author: '', version: '1.0', createdAt: now, updatedAt: now },
+      meta: { name: avplan.venue.name || t('app.defaultProject.generic', 'Project'), author: '', version: '1.0', createdAt: now, updatedAt: now },
       fixtures: [], shapes: [], persons: [], stageElements: [], customFixtures,
       fixtureGroups: [], trusses: [], walls: [], ceilings: [], scenes: [],
       cameras: [], layers: DEFAULT_LAYERS, floor: DEFAULT_FLOOR, sun: defaultSunSettings(),
@@ -1053,7 +1053,7 @@ const App: React.FC = () => {
     try {
       ex = parseVenueExchange(res.text);
     } catch (e) {
-      await alertDialog(t('app.alert.venueImportFailed', 'Venue-Import fehlgeschlagen:'), { body: e instanceof Error ? e.message : String(e) });
+      await alertDialog(t('app.alert.venueImportFailed', 'Venue import failed:'), { body: e instanceof Error ? e.message : String(e) });
       return;
     }
     // ADR-005, Regel 2 — auch hier ist die Projektion kanonisch fuer Existenz
@@ -1082,10 +1082,10 @@ const App: React.FC = () => {
   const handleNew = useCallback(async () => {
     const hasContent = fixtures.length || persons.length || stageElements.length
       || trusses.length || walls.length || ceilings.length || shapes.length || !!floorPlan;
-    if (hasContent && !(await confirmDialog(t('app.confirm.new', 'Neues Projekt anlegen? Nicht gespeicherte Änderungen am aktuellen Projekt gehen verloren.')))) return;
+    if (hasContent && !(await confirmDialog(t('app.confirm.new', 'Create a new project? Unsaved changes to the current project will be lost.')))) return;
     const now = new Date().toISOString();
     handleLoadProject({
-      meta: { name: t('app.defaultProject.new', 'Neues Projekt'), author: '', version: '1.0', createdAt: now, updatedAt: now },
+      meta: { name: t('app.defaultProject.new', 'New project'), author: '', version: '1.0', createdAt: now, updatedAt: now },
       fixtures: [], shapes: [], persons: [], stageElements: [],
       customFixtures, fixtureGroups: [], trusses: [], walls: [], ceilings: [],
       scenes: [], cameras: [], layers: DEFAULT_LAYERS, floor: DEFAULT_FLOOR, floorPlan: undefined,
@@ -1133,7 +1133,7 @@ const App: React.FC = () => {
         setPlanMode('none');
       })
       .catch((err) => {
-        void alertDialog(t('app.alert.floorPlanLoadFailed', 'Grundriss konnte nicht geladen werden:'), { body: err?.message ?? String(err) });
+        void alertDialog(t('app.alert.floorPlanLoadFailed', 'Floor plan could not be loaded:'), { body: err?.message ?? String(err) });
       });
   }, []);
 
@@ -1283,7 +1283,7 @@ const App: React.FC = () => {
   }, [handleCopy, handlePaste, handleDuplicate, handleNudge, selectedIds, snapStep, viewMode]);
 
   const handleExport = useCallback(async (format: 'png' | 'jpg' | 'pdf' = 'png') => {
-    const projName = projectMeta?.name || t('app.defaultProject.name', 'Lichtplan');
+    const projName = projectMeta?.name || t('app.defaultProject.name', 'Lighting plan');
     const viewLabel = viewMode === '3d' ? '3D' : '2D';
     const num = exportCounterRef.current++;
     const base = `${projName} ${viewLabel} ${String(num).padStart(3, '0')}`;
@@ -1333,14 +1333,14 @@ const App: React.FC = () => {
   const planPxPerMeterRef = useRef(40);
   const handleExportPlot = useCallback(async () => {
     const srcCanvas = document.querySelector('.plan-canvas') as HTMLCanvasElement | null;
-    if (viewMode !== '2d' || !srcCanvas) { await alertDialog(t('app.alert.plotNeed2d', 'Lichtplan-Druck: bitte in der 2D-Plan-Ansicht ausführen.')); return; }
+    if (viewMode !== '2d' || !srcCanvas) { await alertDialog(t('app.alert.plotNeed2d', 'Lighting plot print: please run this in the 2D plan view.')); return; }
     // Stand-Angabe fuer das Blatt (ADR-004). Fuer den PLAN-Ausdruck zaehlen
     // auch Positionen — sie sind darauf zu sehen; eine verschobene Leuchte
     // macht ein anderes Blatt. Der Vergleichswert kommt aus dem juengsten
     // Versions-Schnappschuss, mit derselben Rechnung ueber dessen Inhalt.
     const stand = versionsFor(projectId)[0];
     const stamp = stampForStand({
-      project: projectMeta?.name || t('app.defaultProject.name', 'Lichtplan'),
+      project: projectMeta?.name || t('app.defaultProject.name', 'Lighting plan'),
       current: planContentFingerprint({ fixtures, trusses, walls, persons, stageElements }),
       committed: stand
         ? {
@@ -1357,9 +1357,9 @@ const App: React.FC = () => {
       now: new Date(),
     });
     const out = composePlot(srcCanvas, planPxPerMeterRef.current, fixtures, {
-      projectName: projectMeta?.name || t('app.defaultProject.name', 'Lichtplan'), author: projectMeta?.author, stamp,
+      projectName: projectMeta?.name || t('app.defaultProject.name', 'Lighting plan'), author: projectMeta?.author, stamp,
     });
-    const base = `${projectMeta?.name || t('app.defaultProject.name', 'Lichtplan')} Plan ${String(exportCounterRef.current++).padStart(3, '0')}`;
+    const base = `${projectMeta?.name || t('app.defaultProject.name', 'Lighting plan')} Plan ${String(exportCounterRef.current++).padStart(3, '0')}`;
     const bytes = dataUrlToBytes(out.toDataURL('image/jpeg', 0.92));
     await host.exportFile(jpegToPdfBlob(bytes, out.width, out.height), `${base}.pdf`, { 'application/pdf': ['.pdf'] });
   }, [viewMode, fixtures, trusses, walls, persons, stageElements, projectId, projectMeta, host, t]);
@@ -1367,7 +1367,7 @@ const App: React.FC = () => {
   // Current project document as a single object (used by version snapshots).
   const buildCurrentDoc = useCallback((): ProjectData => {
     const now = new Date().toISOString();
-    const meta: ProjectMeta = projectMeta ?? { name: t('app.defaultProject.name', 'Lichtplan'), author: '', version: '1.0', createdAt: now, updatedAt: now };
+    const meta: ProjectMeta = projectMeta ?? { name: t('app.defaultProject.name', 'Lighting plan'), author: '', version: '1.0', createdAt: now, updatedAt: now };
     return {
       // BEDARF 147/141 — der Versions-Schnappschuss haelt beide Angaben fest.
       // Ohne sie laese ein zurueckgeholter Stand seine Universes anders und
@@ -1397,7 +1397,7 @@ const App: React.FC = () => {
   // ── Project save/load to a real file (the host decides where) ──
   const handleSaveToFile = useCallback(async () => {
     const now = new Date().toISOString();
-    const meta: ProjectMeta = projectMeta ?? { name: t('app.defaultProject.name', 'Lichtplan'), author: '', version: '1.0', createdAt: now, updatedAt: now };
+    const meta: ProjectMeta = projectMeta ?? { name: t('app.defaultProject.name', 'Lighting plan'), author: '', version: '1.0', createdAt: now, updatedAt: now };
     const data: ProjectData = {
       meta: { ...meta, updatedAt: now },
       // BEDARF 147/141 — dito im Dateipfad.
@@ -1427,14 +1427,14 @@ const App: React.FC = () => {
     if (!res) return;
     try {
       const raw = JSON.parse(res.text);
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error(t('app.error.invalidFile', 'Keine gültige Projektdatei.'));
-      if ('__proto__' in raw || 'constructor' in raw) throw new Error(t('app.error.invalidFileKeys', 'Ungültige Projektdatei (unerlaubte Schlüssel).'));
-      if (!Array.isArray(raw.fixtures)) throw new Error(t('app.error.invalidFileFixtures', 'Keine gültige Projektdatei (fixtures fehlen).'));
-      if (!raw.meta || typeof raw.meta.name !== 'string') throw new Error(t('app.error.invalidFileMeta', 'Keine gültige Projektdatei (meta fehlt).'));
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error(t('app.error.invalidFile', 'Not a valid project file.'));
+      if ('__proto__' in raw || 'constructor' in raw) throw new Error(t('app.error.invalidFileKeys', 'Invalid project file (disallowed keys).'));
+      if (!Array.isArray(raw.fixtures)) throw new Error(t('app.error.invalidFileFixtures', 'Not a valid project file (fixtures missing).'));
+      if (!raw.meta || typeof raw.meta.name !== 'string') throw new Error(t('app.error.invalidFileMeta', 'Not a valid project file (meta missing).'));
       const data = raw as ProjectData;
       handleLoadProject(data);
     } catch (err) {
-      await alertDialog(t('app.alert.projectFileLoadFailed', 'Projektdatei konnte nicht geladen werden:'), { body: err instanceof Error ? err.message : String(err) });
+      await alertDialog(t('app.alert.projectFileLoadFailed', 'Project file could not be loaded:'), { body: err instanceof Error ? err.message : String(err) });
     }
   }, [handleLoadProject, host]);
 
@@ -1456,7 +1456,7 @@ const App: React.FC = () => {
     const states: Record<string, SceneFixtureState> = {};
     for (const f of fixtures) states[f.id] = captureLook(f);
     setScenes((prev) => {
-      const scene: Scene = { id: uid('scene'), name: `${t('app.label.scene', 'Szene')} ${prev.length + 1}`, states };
+      const scene: Scene = { id: uid('scene'), name: `${t('app.label.scene', 'Scene')} ${prev.length + 1}`, states };
       setActiveSceneId(scene.id);
       return [...prev, scene];
     });
@@ -1756,7 +1756,7 @@ const App: React.FC = () => {
               onViewChange={(s) => { planPxPerMeterRef.current = s; }}
             />
           ) : (
-            <Suspense fallback={<div className="loading-3d">{t('app.loading3d', '3D-Ansicht wird geladen…')}</div>}>
+            <Suspense fallback={<div className="loading-3d">{t('app.loading3d', 'Loading 3D view…')}</div>}>
               <Scene3D
                 ref={scene3DRef}
                 fixtures={fixtures}
@@ -1805,32 +1805,32 @@ const App: React.FC = () => {
           />
           {fixtureToPlace && viewMode === '2d' && (
             <div className="placing-hint">
-              {t('app.hint.place.pre', 'Klicke auf den Plan um ')}<strong>{fixtureToPlace.name}</strong>{t('app.hint.place.post', ' zu platzieren · ESC zum Abbrechen')}
+              {t('app.hint.place.pre', 'Click on the plan to place ')}<strong>{fixtureToPlace.name}</strong>{t('app.hint.place.post', ' · press ESC to cancel')}
             </div>
           )}
           {activeTool === 'wall' && viewMode === '2d' && (
             <div className="placing-hint">
-              🧱 <strong>{t('app.hint.wall.title', 'Wand-Pfad')}</strong>{t('app.hint.wall.mid', ': Punkte nacheinander klicken · Startpunkt klicken schließt den Raum · ')}<kbd>Shift</kbd>{t('app.hint.wall.angle', ' = 15°-Winkel · Doppelklick/')}<kbd>ESC</kbd>{t('app.hint.wall.end', ' beendet')}
+              🧱 <strong>{t('app.hint.wall.title', 'Wall path')}</strong>{t('app.hint.wall.mid', ': click points one after another · click the start point to close the room · ')}<kbd>Shift</kbd>{t('app.hint.wall.angle', ' = 15° angle · double-click/')}<kbd>ESC</kbd>{t('app.hint.wall.end', ' to finish')}
             </div>
           )}
           {activeTool === 'stagepoly' && viewMode === '2d' && (
             <div className="placing-hint">
-              ⬠ <strong>{t('app.hint.stagepoly.title', 'Bühne (Polygon)')}</strong>{t('app.hint.stagepoly.mid', ': Eckpunkte klicken · Startpunkt klicken oder Doppelklick/')}<kbd>Enter</kbd>{t('app.hint.stagepoly.close', ' schließt die Fläche · ')}<kbd>ESC</kbd>{t('app.hint.stagepoly.end', ' bricht ab')}
+              ⬠ <strong>{t('app.hint.stagepoly.title', 'Stage (polygon)')}</strong>{t('app.hint.stagepoly.mid', ': click the corner points · click the start point or double-click/')}<kbd>Enter</kbd>{t('app.hint.stagepoly.close', ' closes the area · ')}<kbd>ESC</kbd>{t('app.hint.stagepoly.end', ' to cancel')}
             </div>
           )}
           {activeTool === 'camera' && viewMode === '2d' && (
             <div className="placing-hint">
-              🎥 <strong>{t('app.hint.camera.title', 'Kamera')}</strong>{t('app.hint.camera.body', ': Klicke, um eine Kamera zu setzen · dann Blickziel & Bildwinkel einstellen und „Durch Kamera schauen“')}
+              🎥 <strong>{t('app.hint.camera.title', 'Camera')}</strong>{t('app.hint.camera.body', ': click to place a camera · then set the aim & field of view and “Look through camera”')}
             </div>
           )}
           {planMode === 'calibrate' && viewMode === '2d' && (
             <div className="placing-hint plan-calibrate-hint">
-              📏 {t('app.hint.calibrate.pre', 'Ziehe eine Linie entlang einer ')}<strong>{t('app.hint.calibrate.strong', 'bekannten Strecke')}</strong>{t('app.hint.calibrate.post', ' (z. B. eine Wand) · ESC zum Abbrechen')}
+              📏 {t('app.hint.calibrate.pre', 'Drag a line along a ')}<strong>{t('app.hint.calibrate.strong', 'known distance')}</strong>{t('app.hint.calibrate.post', ' (e.g. a wall) · press ESC to cancel')}
             </div>
           )}
           {planMode === 'move' && viewMode === '2d' && (
             <div className="placing-hint plan-calibrate-hint">
-              ✋ {t('app.hint.move', 'Ziehe den Grundriss, um ihn auszurichten · ESC zum Beenden')}
+              ✋ {t('app.hint.move', 'Drag the floor plan to align it · press ESC to finish')}
             </div>
           )}
           {floorPlan && viewMode === '2d' && (
@@ -1995,10 +1995,10 @@ const App: React.FC = () => {
       <button
         type="button"
         onClick={() => setInventoryOpen(true)}
-        title="Lager / Bestand"
+        title={t('app.inventoryTitle', 'Inventory / stock')}
         style={{ position: 'fixed', bottom: 16, left: 16, zIndex: 150, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 999, cursor: 'pointer' }}
       >
-        <Icon name="library" size={16} /> Lager
+        <Icon name="library" size={16} /> {t('app.inventory', 'Inventory')}
       </button>
       {inventoryOpen && <InventoryDialog onClose={() => setInventoryOpen(false)} />}
       <Onboarding onUploadFloorPlan={handleUploadFloorPlan} />

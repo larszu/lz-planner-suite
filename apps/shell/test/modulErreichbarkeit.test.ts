@@ -74,7 +74,21 @@ describe('Modul-Registry — jede Anwendung ist von der Shell aus erreichbar', (
     // nachgelesen; steht es nicht da (frischer Klon, CI ohne die
     // Nachbar-Repos), wird die Pruefung uebersprungen statt geraten.
     const belege: { id: string; datei: string; muster: RegExp }[] = [
-      { id: 'tally', datei: 'tally-pi/guide_server.py', muster: /^PORT\s*=\s*8080$/m },
+      {
+        id: 'tally',
+        datei: 'tally-pi/guide_server.py',
+        // Seit tally-pi auch ohne Pi startet (Nutzer-Meldung 2026-09-09),
+        // steht der Port als `int(os.environ.get("GUIDE_PORT", "8080"))` da:
+        // `run-local.py --port` muss im SERVER ankommen und nicht nur in der
+        // Ausgabe — ein Schalter, der die Zahl bloss anders druckt, waere
+        // schlimmer als kein Schalter.
+        //
+        // Die VORGABE ist weiterhin 8080, und genau die prueft diese Zeile.
+        // Beide Schreibweisen sind zugelassen; was sie NICHT zulaesst, ist
+        // eine andere Vorgabe — dann zeigte die Shell auf einen Port, den der
+        // Pi nicht bedient.
+        muster: /^PORT\s*=\s*(?:8080\b|int\(os\.environ\.get\("GUIDE_PORT",\s*"8080"\)\))/m,
+      },
       { id: 'kamera', datei: 'sony-camera-bridge/packages/web-rcp/vite.config.ts', muster: /port:\s*3700/ },
       { id: 'intercom', datei: 'Broadcast-intercom/apps/server/src/index.ts', muster: /PORT\s*\|\|\s*4001/ },
       { id: 'medien', datei: 'pi-media-station/main.py', muster: /web_port",\s*5000/ },

@@ -12,32 +12,8 @@ import { NativeSignalRegion, hasNativeCable } from '../embed/NativeSignalRegion'
 import { PlanPreview, PreviewNotice, SignalPreview } from './previews'
 import { OverviewSurface } from './OverviewSurface'
 import { BoardCanvas } from './BoardCanvas'
-import { useT, format, type TFunc } from '../i18n'
-
-type OverlayId = 'fov' | 'heat'
-
-interface ToolbarButton {
-  icon: Parameters<typeof Icon>[0]['name']
-  label: string
-  /** Nur echte Overlay-Toggles (FOV/Heatmap), die die Vorschau wirklich
-   *  umschalten. Frühere „Gerät platzieren / Messen / Auto-Route"-Buttons taten
-   *  alle nur dasselbe (Planer öffnen) und wurden als irreführende Attrappen
-   *  entfernt — „Im Planer öffnen" steht bereits im Tab-Kopf. */
-  kind: 'overlay'
-  overlay: OverlayId
-}
-
-type CanvasModuleId = 'signal' | 'cameras' | 'licht'
-
-const toolbars = (t: TFunc): Record<CanvasModuleId, ToolbarButton[]> => ({
-  signal: [],
-  cameras: [
-    { icon: 'eye', label: t('chrome.tabdeck.tool.showFov', 'FOV anzeigen'), kind: 'overlay', overlay: 'fov' },
-  ],
-  licht: [
-    { icon: 'eye', label: t('chrome.tabdeck.tool.heatmap', 'Heatmap'), kind: 'overlay', overlay: 'heat' },
-  ],
-})
+import { useT, format } from '../i18n'
+import { werkzeugeFuer } from './tabdeckWerkzeuge'
 
 export function TabDeck({
   module,
@@ -94,6 +70,10 @@ export function TabDeck({
   const isOverview = module.id === 'overview'
   const isBoard = module.id === 'board'
   const runtime = module.runtime ? RUNTIME_BY_ID[module.runtime] : undefined
+  // Die Overlay-Schalter DIESES Moduls — leer, wenn es keine hat. Das `?? []`
+  // ist die Stelle, an der der Absturz sass; siehe den Kommentar an
+  // `toolbars`.
+  const werkzeuge = werkzeugeFuer(module.id, t)
   // Fenster des geoeffneten Planers — der Tally-Weg fragt es direkt.
   const [plannerWindow, setPlannerWindow] = useState<Window | null>(null)
 
@@ -172,10 +152,10 @@ export function TabDeck({
                 />
               )}
               {/* schwebende Werkzeugleiste — nur echte Overlay-Toggles (FOV/Heatmap) */}
-              {toolbars(t)[module.id as CanvasModuleId].length > 0 && (
+              {werkzeuge.length > 0 && (
               <div className="pointer-events-auto absolute left-1/2 top-4 z-10 -translate-x-1/2">
                 <div className="av-toolbar">
-                  {toolbars(t)[module.id as CanvasModuleId].map((b) => {
+                  {werkzeuge.map((b) => {
                     const active = b.overlay === 'fov' ? showFov : showHeat
                     const onClick = () => {
                       if (b.overlay === 'fov') setShowFov((v) => !v)

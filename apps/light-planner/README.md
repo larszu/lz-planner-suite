@@ -101,7 +101,7 @@ argument to point a script somewhere else.
 
 Electron · React · TypeScript · Three.js · Vite · electron-builder.
 
-**Source language:** `de`. The German string in `t('key', 'Deutsche Form')` is
+**Source language:** `en`. The German string in `t('key', 'Deutsche Form')` is
 the source text — it is what appears when a key has no translation, so it is
 the text a contributor writes first. English lives in the dictionary under
 `src/i18n/`.

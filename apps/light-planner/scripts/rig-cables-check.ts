@@ -196,7 +196,7 @@ const lampe = (
   assert.equal(zeile[4], NOT_SET, 'die fehlende Laenge wird zur Zahl');
   assert.ok(NOT_SET.length > 0, 'ohne Zeichen ist die Zelle leer und sagt nichts');
   assert.deepEqual(tb.header, [...CABLE_HEADERS]);
-  assert.ok(LENGTH_BASIS_NOTE.length > 80 && /Untergrenze/.test(LENGTH_BASIS_NOTE),
+  assert.ok(LENGTH_BASIS_NOTE.length > 80 && /lower bound/.test(LENGTH_BASIS_NOTE),
     'die Grundlage der Laengen wird nicht genannt');
 }
 

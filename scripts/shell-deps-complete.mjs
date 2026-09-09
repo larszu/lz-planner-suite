@@ -114,6 +114,63 @@ for (const f of funde) {
   maengel.push(`${f.paket} fehlt in apps/shell/package.json > dependencies (verlangt in ${f.datei})${zusatz}`)
 }
 
+// ── Zweite Frage: ist ueberhaupt jeder Name ein Paketname? ────────────────
+//
+// GEMESSEN 2026-09-09, und der Fehler kam aus einem Werkzeug, nicht aus einer
+// Hand: beim Vendorieren sollte `"slider:check"` in den `scripts`-Block von
+// `apps/multicam-planner/package.json`; ein zu lockerer Anker hat ihn in
+// `devDependencies` abgelegt. Die Datei blieb GUELTIGES JSON, jeder lokale
+// Lauf war gruen — und `npm ci` in CI brach ab mit
+// `EINVALIDPACKAGENAME: Invalid package name "slider:check"`.
+//
+// Das ist die teure Sorte: der Defekt sitzt in einer Datei, die niemand liest,
+// er faellt erst im Installations-Schritt, und die Meldung nennt zwar den
+// Namen, aber nicht die Datei. Zwei Zeilen hier fangen ihn im selben Lauf ab,
+// der ohnehin die Abhaengigkeiten liest.
+//
+// Geprueft wird gegen die npm-Regel fuer Paketnamen (klein, URL-tauglich,
+// optionaler @scope) — ein Doppelpunkt faellt damit sofort auf.
+/** Jede `package.json` der Suite — Wurzel, Pakete, vendorte Apps. */
+function paketDateien() {
+  const raus = ['node_modules', 'dist', 'release', '.git', 'planners', 'upstream']
+  const treffer = []
+  const gehe = (verzeichnis, rel) => {
+    for (const eintrag of readdirSync(verzeichnis)) {
+      if (raus.includes(eintrag)) continue
+      const pfad = join(verzeichnis, eintrag)
+      const relPfad = rel ? `${rel}/${eintrag}` : eintrag
+      if (statSync(pfad).isDirectory()) gehe(pfad, relPfad)
+      else if (eintrag === 'package.json') treffer.push(relPfad)
+    }
+  }
+  gehe(ROOT, '')
+  return treffer
+}
+
+const NAME_REGEL = /^(@[a-z0-9._~-]+\/)?[a-z0-9._~-]+$/
+const ABHAENGIGKEITS_FELDER = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']
+
+for (const rel of paketDateien()) {
+  let json
+  try {
+    json = JSON.parse(readFileSync(join(ROOT, rel), 'utf8'))
+  } catch (e) {
+    maengel.push(`${rel} ist kein gueltiges JSON: ${e.message}`)
+    continue
+  }
+  for (const feld of ABHAENGIGKEITS_FELDER) {
+    for (const name of Object.keys(json[feld] ?? {})) {
+      if (NAME_REGEL.test(name)) continue
+      maengel.push(
+        `${rel} > ${feld}: "${name}" ist kein Paketname. ` +
+          (name.includes(':')
+            ? 'Sieht nach einem Skript-Eintrag aus, der im falschen Block gelandet ist — `npm ci` bricht damit ab.'
+            : 'npm laesst nur kleingeschriebene, URL-taugliche Namen zu.'),
+      )
+    }
+  }
+}
+
 if (maengel.length === 0) {
   const anzahl = new Set(funde.map((f) => f.paket)).size
   console.log(`OK: alle ${anzahl} Laufzeit-Pakete des mitverpackten Main-Prozesses stehen in apps/shell/package.json.`)

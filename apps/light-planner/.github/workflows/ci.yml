@@ -299,3 +299,13 @@ jobs:
         run: npm run ci:complete
       - name: Build (inkl. Type-Check)
         run: npm run build
+
+      # Nutzer-Meldung 2026-09-09: die Regler waren nicht zu treffen. WCAG 2.2
+      # SC 2.5.8 (Stufe AA) nennt 24 px als Mindestmass.
+      - name: Schieberegler sind zu treffen (24 px, WCAG 2.5.8)
+        run: npm run slider:check
+
+      # Zoomt der Plan oder die Seite? `preventDefault()` in einem React-
+      # `onWheel` ist wirkungslos, weil React `wheel` passiv anhaengt.
+      - name: Zoom bleibt im Canvas (kein passives preventDefault)
+        run: npm run zoom:check

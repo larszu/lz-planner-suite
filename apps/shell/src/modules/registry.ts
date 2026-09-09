@@ -183,3 +183,37 @@ export const MODULE_BY_ID: Record<ModuleId, ModuleDef> = MODULES.reduce(
   },
   {} as Record<ModuleId, ModuleDef>,
 )
+
+/**
+ * Liegt der Planer dieses Moduls NEBEN der Shell — statt auf einem
+ * Dev-Server, der laufen muss?
+ *
+ * An dieser Frage haengt, ob die Shell den ECHTEN Planer einblendet oder ihre
+ * eigene, absichtlich einfache Vorschau. Bis 2026-09-09 hing sie an
+ * `BUNDLED_PLANNERS`, also allein an der gepackten Desktop-Suite — und damit
+ * zeigte die veroeffentlichte Seite ueberall die Vorschau, obwohl der
+ * Pages-Lauf alle fuenf Planer mitbaut und als `./planners/<modul>/`
+ * danebenlegt. Nutzer-Meldung 2026-09-09: „in ab planner suite sind mockups
+ * zu sehen. Da sollen nur die echten Apps drin laufen."
+ *
+ * Das Merkmal ist die ART DER ADRESSE und nicht der Verpackungsweg, denn
+ * genau darum geht es: eine `http(s)://`-Adresse zeigt auf einen Dienst, der
+ * laufen muss (im Entwicklungsbetrieb `localhost:418x`) — steht er nicht, ist
+ * ein toter Rahmen die schlechtere Antwort als die Vorschau. Alles andere
+ * — der relative Pfad der Seite, das `planner-*://` der Desktop-Suite — wird
+ * MIT der Shell ausgeliefert und ist genau dann da, wenn die Shell da ist.
+ *
+ * Es bleibt eine Voreinstellung, keine Sperre: der Schalter in der Tab-Leiste
+ * schaltet weiterhin in beide Richtungen.
+ */
+export function adresseMitgeliefert(url: string | undefined): boolean {
+  return !!url && !/^https?:\/\//i.test(url)
+}
+
+/** Dasselbe fuer das Modul mit dieser Kennung. */
+export function plannerMitgeliefert(id: ModuleId): boolean {
+  // EINE Rechnung, an einer Stelle. Die Regel hier ein zweites Mal
+  // hinzuschreiben — im Test etwa — waere genau die Doppelung, die
+  // irgendwann zwei verschiedene Antworten gibt.
+  return adresseMitgeliefert(MODULE_BY_ID[id]?.plannerUrl)
+}

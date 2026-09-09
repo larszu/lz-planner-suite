@@ -43,21 +43,21 @@ function useDomTheme(): 'dark' | 'light' {
  */
 const tourSteps = (t: (key: string, de: string) => string): TourStep[] => [
   {
-    title: t('onb.tour1.title', 'Willkommen im Light Planner'),
-    body: t('onb.tour1.body', 'Eine kurze Tour zeigt dir, wo die wichtigsten Funktionen liegen. Grundriss importieren, Maßstab kalibrieren, Leuchten platzieren — in ein paar Minuten steht dein erster Plan.'),
+    title: t('onb.tour1.title', 'Welcome to Light Planner'),
+    body: t('onb.tour1.body', 'A short tour shows you where the main functions are. Import a floor plan, calibrate the scale, place fixtures – your first plan is a few minutes away.'),
   },
   {
-    title: t('onb.tour2.title', 'Bibliothek links'),
-    body: t('onb.tour2.body', 'Die linke Spalte enthält die Leuchten-Bibliothek — von Profilscheinwerfer bis Moving Head, per Drag & Drop oder Klick auf den Plan. Unten kannst du eigene Leuchten anlegen; die Tabs „Ebenen" und „Szenen" organisieren den Plan.'),
+    title: t('onb.tour2.title', 'Library on the left'),
+    body: t('onb.tour2.body', 'The left column holds the fixture library – from profile spots to moving heads, by drag and drop or by clicking onto the plan. Below it you can create your own fixtures; the "Layers" and "Scenes" tabs organise the plan.'),
   },
   {
-    title: t('onb.tour3.title', '2D-Plan, 3D und Render oben'),
-    body: t('onb.tour3.body', 'Oben wechselst du zwischen 2D-Plan, 3D-Vorschau und Render-Modus. Daneben liegen Geräteliste, Export und Speichern.'),
-    hint: t('onb.tour3.hint', 'Leertaste verschiebt die Ansicht, das Mausrad zoomt.'),
+    title: t('onb.tour3.title', '2D plan, 3D and render at the top'),
+    body: t('onb.tour3.body', 'At the top you switch between the 2D plan, the 3D preview and render mode. Next to them sit the instrument schedule, export and save.'),
+    hint: t('onb.tour3.hint', 'Space pans the view, the mouse wheel zooms.'),
   },
   {
-    title: t('onb.tour4.title', 'Lager unten links'),
-    body: t('onb.tour4.body', 'Der Lager-Button öffnet den projektübergreifenden Bestand (Artikel, Lagerorte, Sets, Einzelgeräte). Über Export/Import teilt er sich das Format mit Cable Planner und MultiCam Planner — ein Lager für die ganze Suite.'),
+    title: t('onb.tour4.title', 'Inventory, bottom left'),
+    body: t('onb.tour4.body', 'The inventory button opens the cross-project stock (items, locations, sets, individual units). Through export/import it shares its format with Cable Planner and MultiCam Planner – one inventory for the whole suite.'),
   },
 ];
 interface OnboardingProps {
@@ -107,21 +107,21 @@ export default function Onboarding({ onUploadFloorPlan }: OnboardingProps) {
         lang={lang}
         theme={theme}
         accent={ACCENT}
-        title={t('onb.welcome.title', 'Willkommen im Light Planner')}
-        intro={t('onb.welcome.intro', 'Starte mit deinem Grundriss oder leg direkt mit einem leeren Plan los.')}
+        title={t('onb.welcome.title', 'Welcome to Light Planner')}
+        intro={t('onb.welcome.intro', 'Start from your floor plan, or go straight to an empty plan.')}
         onDismiss={closeWelcome}
         actions={[
           {
             id: 'floorplan',
-            title: t('onb.action.floorplan', 'Grundriss importieren'),
-            description: t('onb.action.floorplanDesc', 'JPG, PNG oder PDF laden, Maßstab kalibrieren, dann Leuchten platzieren.'),
+            title: t('onb.action.floorplan', 'Import floor plan'),
+            description: t('onb.action.floorplanDesc', 'Load a JPG, PNG or PDF, calibrate the scale, then place fixtures.'),
             icon: <Icon name="import" size={20} />,
             onSelect: () => fileInputRef.current?.click(),
           },
           {
             id: 'empty',
-            title: t('onb.action.empty', 'Leer starten'),
-            description: t('onb.action.emptyDesc', 'Direkt auf dem Raster planen — ein Grundriss lässt sich später jederzeit hinterlegen.'),
+            title: t('onb.action.empty', 'Start empty'),
+            description: t('onb.action.emptyDesc', 'Plan straight on the grid – a floor plan can be added at any time later.'),
             icon: <Icon name="lamp" size={20} />,
             accent: '#ff7a45',
             onSelect: closeWelcome,

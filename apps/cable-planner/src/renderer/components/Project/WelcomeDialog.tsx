@@ -50,21 +50,21 @@ export const WelcomeDialog = ({ open, onNew, onOpen, onClose }: WelcomeDialogPro
       onDismiss={onClose}
       theme={theme}
       accent="#ea580c"
-      title={t('project.welcome.title', 'Willkommen beim Cable Planner')}
+      title={t('project.welcome.title', 'Welcome to Cable Planner')}
       intro={t(
         'project.welcome.intro',
-        'Lege ein neues Projekt an oder öffne ein bestehendes, damit deine Arbeit zuverlässig gespeichert wird.',
+        'Create a new project or open an existing one so your work is saved reliably.',
       )}
-      strings={{ later: t('project.welcome.later', 'Später entscheiden') }}
+      strings={{ later: t('project.welcome.later', 'Decide later') }}
       dismissTitle={t(
         'project.welcome.laterTitle',
-        'Ohne Auswahl fortfahren — bitte denke daran, manuell zu speichern.',
+        'Continue without choosing — remember to save manually.',
       )}
       actions={[
         {
           id: 'new',
-          title: t('project.welcome.newTitle', 'Neues Projekt'),
-          description: t('project.welcome.newSubtitle', 'Mit Projektname, Auftraggeber und Planer starten.'),
+          title: t('project.welcome.newTitle', 'New project'),
+          description: t('project.welcome.newSubtitle', 'Start with project name, client and planner.'),
           icon: <Icon icon={FileText} size="lg" />,
           accent: '#34d399',
           onSelect: () => {
@@ -74,8 +74,8 @@ export const WelcomeDialog = ({ open, onNew, onOpen, onClose }: WelcomeDialogPro
         },
         {
           id: 'open',
-          title: t('project.welcome.openTitle', 'Projekt öffnen…'),
-          description: `${t('project.welcome.openSubtitle1', 'Eine vorhandene')} .cableplan${t('project.welcome.openSubtitle2', '-Datei laden.')}`,
+          title: t('project.welcome.openTitle', 'Open project…'),
+          description: `${t('project.welcome.openSubtitle1', 'Load an existing')} .cableplan${t('project.welcome.openSubtitle2', ' file.')}`,
           icon: <Icon icon={FolderOpen} size="lg" />,
           accent: '#38bdf8',
           onSelect: () => {
@@ -88,7 +88,7 @@ export const WelcomeDialog = ({ open, onNew, onOpen, onClose }: WelcomeDialogPro
       {recents.length > 0 && (
         <div className="pt-3">
           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-cp-text-muted">
-            {t('project.welcome.recents', 'Zuletzt verwendet')}
+            {t('project.welcome.recents', 'Recently used')}
           </div>
           <div className="max-h-32 space-y-1 overflow-auto">
             {recents.slice(0, 6).map((path) => (
@@ -105,7 +105,7 @@ export const WelcomeDialog = ({ open, onNew, onOpen, onClose }: WelcomeDialogPro
           <p className="mt-1 text-[10px] text-cp-text-muted">
             {t(
               'project.welcome.recentsHint',
-              'Klick „Projekt öffnen…“ und wähle eine der Dateien im Datei-Dialog.',
+              'Click "Open project…" and choose one of the files in the file picker.',
             )}
           </p>
         </div>

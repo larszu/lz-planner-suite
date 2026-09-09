@@ -13,6 +13,7 @@ import { FiChevronLeft, FiChevronRight, FiUnlock, FiLock, FiPlus, FiX, FiCamera 
 import { loadJSON, saveJSON } from '../../utils/storage';
 import { useTranslation, format } from '../../i18n';
 import { promptDialog } from '@avplan/ui';
+import RigControlPanel from '../RigControl/RigControlPanel';
 import {
   TRANSITION_CYCLE,
   TRANSITION_LABEL,
@@ -1356,6 +1357,20 @@ export default function CameraPreview({ undocked, onUndock }: PreviewProps) {
           <button onClick={selectNextCamera} className="p-1 rounded hover:bg-bc-border text-gray-400 hover:text-white" title={t('preview.nextCamera', 'Next camera')}><FiChevronRight size={16} /></button>
           <span className="text-gray-500 text-[10px]">{camIdx + 1}/{cameras.length}</span>
         </div>
+        {/* ── Rig-Steuerung ──
+            Nutzer-Meldung 2026-09-09: „Die ‚Rig' Einstellungen im Multicam
+            planner muessen unter das Preview. Nicht in extra Tab."
+
+            Sie stand als eigener Reiter neben dem Preview — und damit war
+            beides nie gleichzeitig zu sehen. Genau das braucht man aber: das
+            Pult faehrt die Kamera, das Preview zeigt, was dabei herauskommt.
+            Wer den Reiter wechselt, um zu fahren, sieht das Ergebnis erst,
+            wenn er zurueckwechselt.
+
+            Sie liegt UNTER dem Bild und im selben Scrollbereich: fuer den
+            Blick auf beides zaehlt die Naehe, und der Platz reicht auch auf
+            einem schmalen Fenster, weil der Bereich ohnehin scrollt. */}
+        <RigControlPanel />
 
         {/* Canvas container */}
         <div ref={wrapRef} className="relative w-full">
