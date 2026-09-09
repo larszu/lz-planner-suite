@@ -2744,6 +2744,93 @@ belegbar, dort sind sie erprobt.
   und nicht geraten.
 
 
+### B-55 · Bedarfs-Audit P4-Block 121–150
+
+* **Status:** Audit **abgeschlossen 2026-09-09.** Anlass: von den dreissig
+  Zeilen stand genau eine (126) überhaupt im Backlog — „vermutlich gedeckt"
+  ist kein Audit.
+* **Vorgehen:** je Zeile im Quelltext nach dem Beleg gesucht, nicht nach dem
+  Gefühl. Die Prüfer im `light-planner` nennen die Bedarfsnummer in ihrer
+  Kopfzeile, im `cable-planner` tun es die Module — daraus lässt sich die
+  Deckung ablesen statt sie zu behaupten.
+
+**Gedeckt, mit Fundstelle (24):**
+
+| Bedarf | Wo |
+| --- | --- |
+| 121 Routing-Zustände als Planungsobjekt | `cable-planner/lib/salvoSheet.ts` |
+| 125 Multiviewer-Layout als Planungsobjekt | `cable-planner/lib/mvSheet.ts` |
+| 126 Soll gegen Ist, Rückmessung | `cable-planner/lib/asBuilt.ts` |
+| 127 Mehrbenutzer / mehrere Shows | `projectStore`, `mobileShareServer`, `shareShow` |
+| 128 Einfarbig lesbarer Druck | `CanvasArea`, `ExportDialog` |
+| 129 Schrittweise Paint-Befehle | `sony-camera-bridge/protocol/paintNudge.ts` |
+| 130 Verlässliche Quell-Identität | `multicam-planner/utils/sourceIdentity.ts` |
+| 131 Datenblatt statt Gefährdungsbeurteilung | `lager/lib/insuranceSchedule.ts` (Teil) |
+| 132 Ablauf als Baum | `light-planner/scripts/running-order-check.ts` |
+| 133 Offline + LAN + Anmeldung | `cable-planner/main/util/lanReach.ts` |
+| 136 Ein Schein, eine Unterschrift, symmetrisch zurück | `lager/lib/handoverSignature.ts` |
+| 137 Rückweg vom Pult | `light-planner/core/consolePatch.ts` |
+| 138 Zwei Kopien zusammenführen | `light-planner/core/rigMerge.ts` |
+| 139 Gruppen überleben die Übergabe | `light-planner/scripts/fixture-groups-check.ts` |
+| 140 Kabel und Stecker als eigene Daten | `light-planner/core/rigCables.ts` |
+| 141 Kreise, Phasen, Last | `light-planner/core/powerDistribution.ts` |
+| 142 Vorflug-Prüfung | `light-planner/scripts/preflight-check.ts` |
+| 143 Ein Modell, zwölf Blätter | `light-planner/scripts/report-engine-check.ts` |
+| 144 Austauschdateien brechen nicht am Namen | `light-planner/core/mvrIdentity.ts` |
+| 145 Bestellung aus dem Plan | `light-planner/core/shopOrder.ts` |
+| 146 Patch ins Pult schieben | `light-planner/core/consoleExport.ts` |
+| 147 Universum = Protokoll + Port-Adresse | `light-planner/scripts/universe-identity-check.ts` |
+| 148 Etiketten aus denselben Daten | `light-planner/core/labelSheet.ts` |
+| 150 Scannen nie der einzige Weg | `cable#793` |
+
+**Gedeckt, aber ohne Bedarfsnummer im Quelltext (4):**
+
+* **122** Tally-/UMD-Zuordnung aus denselben Datensätzen — `lib/tallyMap.ts`
+  (Initiative 2). Es hält auch die zweite Hälfte des Bedarfs ein: „Do not
+  build a tally engine" — das Modul liefert die KARTE an `tally-pi` und
+  entscheidet nichts.
+* **123** Eine Show-Datei über mehrere Rechner — CRDT-Sync (`sync:*`,
+  `scripts/crdt-convergence-check.mjs`) plus `healProjectPositions` als das
+  vom Bedarf verlangte „verify-on-load".
+* **124** Feldweiser, ergänzender Abgleich mit sichtbarem Konflikt —
+  `networkReconcile.ts` + `ReconcileDialog`.
+* **135** Offline im Lager — offline-first durch die Architektur; das Lager
+  läuft im Renderer gegen lokalen Speicher, ohne Server im Rücken.
+
+**Zwei Zeilen sind keine Funktionen, sondern Aussagen — und beide brauchten
+eine Antwort:**
+
+* **134 „Do NOT build supplier coordination, crew scheduling or invoicing".**
+  Die Suite tut zwei davon: Belege über Lexware (`BillingModal`,
+  `@avplan/lexware-core`) und Crew-Planung (`crewCalendar.ts`,
+  `crewBilling.ts`). **Das ist kein Versehen und auch kein Widerspruch — es
+  ist eine Gegenentscheidung, und sie gehört benannt.** Der Bedarf begründet
+  sein „nicht bauen" damit, dass diese Grenzen auf Telefonaten und E-Mail
+  laufen und „a worse version of CrewBrain" einen neuen Medienbruch schüfe.
+  Was hier gebaut ist, ist bewusst die andere Sorte: **kein
+  Koordinations-Werkzeug, sondern eine Ausgabe.** Der Beleg wird an das
+  Buchhaltungssystem des Nutzers übergeben (Bedarf 99 sagt es wörtlich:
+  „Dunning is the accounting tool's job — do not rebuild it"), und der
+  Crew-Teil rechnet Schichten ab und druckt Merkblätter, statt Verfügbarkeiten
+  zu verhandeln. Wer künftig anfängt, Zusagen, Absagen oder Nachverhandlungen
+  zu modellieren, überschreitet die Linie, die dieser Bedarf zieht.
+* **149 „Own the file, offline, without a subscription or a dongle".** Der
+  Bedarf ist erfüllt — und **seine eigene Antwortspalte enthielt eine
+  überholte Tatsache**: „light-planner is already offline-first, single-file,
+  **MIT**". Alle vier Repos tragen seit der Lizenz-Korrektur eine
+  PROPRIETARY SOFTWARE LICENCE. Offline-first und Einzeldatei stimmen weiter;
+  MIT nicht. Die Zeile in `USER-NEED-DATABASE.md` ist deshalb mit einer
+  datierten Korrektur versehen statt umgeschrieben — der ursprüngliche Satz
+  bleibt lesbar, weil er erklärt, warum das Positionierungs-Argument gebaut
+  wurde. **Der Grund für die Korrektur ist nicht Ordnungsliebe:** wer den
+  Satz übernimmt, ohne die Zeile darunter zu lesen, sagt etwas Unwahres über
+  die eigene Lizenz — nach aussen.
+
+* **Weiter blockiert, unverändert:** 131 in seiner grösseren Hälfte (die
+  deutschen Rechtsquellen sind nicht erreichbar, und das Dossier verbietet
+  ausdrücklich, ohne sie zu bauen).
+
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden
