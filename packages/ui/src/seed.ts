@@ -60,6 +60,19 @@ export interface SeedCamera {
 export interface SeedFixture {
   id: string
   name: string
+  /**
+   * Haenge-Hoehe ueber dem Boden in Metern, WENN sie jemand gesetzt hat.
+   *
+   * Optional und nie erfunden: eine fehlende Hoehe heisst „nicht angegeben"
+   * und nicht „haengt am Boden". Wer hier eine Vorgabe eintraegt, macht aus
+   * einer UI-Voreinstellung des Planers eine Aussage ueber diese Show — und
+   * die naechste App liest sie als gesetzt.
+   *
+   * Sie gehoert in den Seed und nicht nur in den Licht-Planer: sie entscheidet
+   * ueber die Kabellaenge zum Scheinwerfer, und die Stueckliste zieht sie aus
+   * demselben Projekt.
+   */
+  rigHeightM?: number
   model?: string
   /** Freitext-Zweck („Key Host", „Fill", „Backlight"). */
   purpose?: string

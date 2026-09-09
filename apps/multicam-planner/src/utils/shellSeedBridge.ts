@@ -18,10 +18,19 @@ export function initShellSeed(): () => void {
       if (seed.cameras.length === 0 && s.cameras.length > 0) return false;
 
       const venue = seedToVenue(seed, s.venue);
-      const { cameras, ausgelassen } = seedToCameras(seed, venue, (cam) => {
-        const pick = pickInitialMountAndLens(cam.mount, cam.adaptedMounts, s.customLenses);
-        return { mount: pick.mount, lens: pick.lens ?? LENSES[0] ?? null };
-      });
+      const { cameras, ausgelassen } = seedToCameras(
+        seed,
+        venue,
+        (cam) => {
+          const pick = pickInitialMountAndLens(cam.mount, cam.adaptedMounts, s.customLenses);
+          return { mount: pick.mount, lens: pick.lens ?? LENSES[0] ?? null };
+        },
+        undefined,
+        // Was der Seed nicht sagt, behaelt die schon platzierte Kamera:
+        // Schwenk, Neigung, Hoehe, Blende, Fokus. Ohne diese Liste ist jeder
+        // erneute Seed ein Zuruecksetzen.
+        s.cameras,
+      );
       for (const a of ausgelassen) {
         console.warn(`[shellSeed] Kamera „${a.name}" nicht platziert — ${a.grund}`);
       }

@@ -172,7 +172,9 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-6 · Plan → Tally-Pi: der Transport ist ein Medienbruch
 
-* **Status:** offen — **die Entscheidung ist gefallen (E-7, 2026-09-08): beides, Datei bleibt Vorgabeweg, Direktweg als einzuschaltendes Ziel.** Was bleibt, ist Bauarbeit
+* **Status:** **GEBAUT 2026-09-09** — `cable#797`. Entschieden (E-7,
+  2026-09-08): beides, Datei bleibt Vorgabeweg, Direktweg als einzuschaltendes
+  Ziel.
 * **Befund:** `toTallyPiDevices` liefert `{id, name, input}`,
   `gpio_watcher.py:79` setzt `me` selbst auf 1, `guide_server.py:251` fängt
   `out_gpio`/`gpio` ab. Aber:
@@ -197,7 +199,72 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 * **DoD (falls Direktweg gewünscht):** Endpunkt in `guide_server.py`,
   Token-geschützt wie der Mobile-Share; Planer-seitig ein Ziel in den
   Einstellungen; Fehlerfall sichtbar; End-to-End-Prüfung.
-* **Aufwand:** mittel
+* **Gebaut (`cable#797`):** `tally:*` als eigene IPC-Domäne
+  (`main/services/tallyPushService.ts` + `main/ipc/tallyIpc.ts`), Ziel und
+  Schalter in den Einstellungen (Integrationen → „Tally-Pi (Direktweg)"), zwei
+  Knöpfe im Export-Dialog neben der Datei — die bleibt.
+  * **Im Main-Prozess, nicht im Renderer.** `guide_server.py` schickt keine
+    CORS-Kopfzeilen; ein `fetch` von drüben scheiterte am Preflight oder wäre
+    — mit `no-cors` — abgeschickt, aber unlesbar. Ein Schreibvorgang, dessen
+    Ergebnis man nicht erfährt, ist **schlimmer als keiner**: der Nutzer
+    glaubt, die Karte sei auf dem Pi. Im Browser wird deshalb gar nicht erst
+    gesendet, sondern geantwortet.
+  * **Erst lesen, dann senden — erzwungen.** `merge_tally_config` behält jedes
+    FELD, das der Post nicht nennt, aber jedes GERÄT, das er nicht nennt,
+    verschwindet — samt GPIO-Zuordnung. `vergleicheMitPi` zeigt vorher, wer
+    verschwindet, und unterscheidet dabei die Rolle mit Pin (rot, das ist
+    Verkabelung am Gehäuse) von der ohne (gelb). Der Sendeknopf bleibt zu, bis
+    für **diese** Adresse gelesen wurde.
+  * **Aus, bis jemand ihn einschaltet** — auch für bestehende Installationen
+    mit hinterlegter Adresse. Ein Feld, das nach dem Update auf AN steht, wäre
+    eine Entscheidung, die niemand getroffen hat, mit Wirkung auf ein Gerät im
+    Netz.
+* **DAS DoD IST IN EINEM PUNKT NICHT ERFÜLLT, UND ZWAR ABSICHTLICH: es gibt
+  keinen Token.** Nachgesehen (2026-09-09): `guide_server.py` prüft an seinen
+  Schreib-Endpunkten **nichts** — kein `Authorization`, kein eigener Kopf, an
+  keinem. Und seine eigene Bedienseite (`setup-guide.html`, vom selben Server
+  ausgeliefert, statisch) schreibt über dieselben offenen Endpunkte.
+  Einen Kopf mitzuschicken, den niemand prüft, wäre die schlechteste der
+  möglichen Antworten: das Feld im Dialog behauptete einen Schutz, den es
+  nicht gibt, und wer es ausfüllt, hielte den Weg für gesichert. Ein Wächter
+  hält fest, dass der Dienst keinen schickt (`tests/tallyDirektweg.test.ts`),
+  und die Einstellungs-Karte **sagt dem Nutzer**, dass der Pi keinen Nachweis
+  verlangt. Der Schutz des Pi ist damit ein eigener Punkt → **B-58**.
+* **Gegengeprobt (7):** `https://` durchgelassen, `out_gpio: null` als
+  Verdrahtung gezählt, `Array.isArray` entfernt (nur `{ devices: 7 }` bringt
+  das zum Werfen — die erste Fassung der Regel blieb grün und war unverdient),
+  Direktweg als Vorgabe AN, Senden ohne Lesen frei, der Post trägt ein zweites
+  Feld, ein Nachweis-Kopf wird mitgeschickt.
+* **Aufwand:** mittel — erledigt.
+
+### B-58 · Der Tally-Pi prüft an seinen Schreib-Wegen nichts
+
+* **Status:** offen — **Befund erhoben 2026-09-09** beim Bau von B-6.
+* **Befund (gemessen, `tally-pi/guide_server.py`):** `do_POST` behandelt
+  `/bindings`, `/tally-config`, `/tally-out/…`, `/cue`, `/cue/clear` und
+  weitere — und **kein** Zweig prüft irgendeine Berechtigung. `grep` über die
+  ganze Datei findet weder `Authorization` noch einen eigenen Kopf. Wer den Pi
+  im Netz erreicht, kann seine Tally-Konfiguration, seine GPIO-Bindungen und
+  die Bühnen-Ansage überschreiben.
+* **Warum das nicht nebenbei in `cable#797` behoben wurde — und das ist der
+  eigentliche Inhalt dieses Eintrags:** Der Pi liefert seine **eigene**
+  Bedienseite aus (`setup-guide.html`, statisch), und die schreibt über
+  dieselben Endpunkte mit relativen `fetch`-Aufrufen ohne Kopf. Einen Token zu
+  verlangen hiesse also entweder, die eigene Seite auszusperren, oder ihr den
+  Token mitzugeben — und dann hat ihn jeder, der die Seite laden kann, also
+  jeder im selben Netz. **Ein Schutz, der genau das nicht verhindert, wogegen
+  er antritt, ist keiner; er ist eine Beschriftung.**
+  Die Entscheidung gehört deshalb über die **ganze HTTP-Fläche** des Pi und
+  nicht über einen Aufruf: Was ist read-only (die Tally-Seiten, die die Crew
+  ansieht), was ist ein Schreibweg, und woher bekommt die eigene Seite ihren
+  Nachweis, ohne ihn im Klartext auszuliefern.
+* **Bis dahin gilt: es wird GESAGT.** Die Einstellungs-Karte im Cable-Planner
+  schreibt beim Eintragen der Adresse hin, dass der Pi keinen Nachweis
+  verlangt und der Direktweg nur in ein Netz gehört, dem man das zutraut. Das
+  ist kein Ersatz für den Schutz, aber es ist der Unterschied zwischen einer
+  bekannten und einer unbekannten Lage.
+* **Aufwand:** mittel (Entscheidung nötig: was gilt als Schreibweg, wie kommt
+  die eigene Seite an ihren Nachweis)
 
 ### B-7 · Intercom-Vokabular existiert zweimal
 
@@ -714,7 +781,13 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-20 · Die Shell-Vorschau zeigt echte Daten — aus dem falschen Modell
 
-* **Status:** offen — **entschieden (E-13, 2026-09-08): bleibt eigenständig, wird aber als Vorschau kenntlich**
+* **Status:** **das Entschiedene ist gebaut** (E-13, 2026-09-08: bleibt
+  eigenständig, wird aber als Vorschau kenntlich). Der Eintrag stand danach
+  weiter auf „offen" und war darin missverständlich — nachgemessen 2026-09-09:
+  `apps/shell/src/shell/previews.tsx:42` setzt das Abzeichen „Vorschau", und
+  zwar mit **Stand**; ohne den wäre „Vorschau" ein Etikett ohne Datum. Offen
+  bleibt nur, was der Eintrag unten selbst als groß ausweist: das gemeinsame
+  Datenmodell (→ B-39).
 * **Befund (nachgeprüft 2026-09-04):** Die SVG-Vorschau
   (`apps/shell/src/shell/previews.tsx`) ist **kein** Platzhalter: jede Form
   wird aus dem übergebenen `SuiteProject` gerechnet — Knotenkarten aus
@@ -736,8 +809,38 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   (`KL Panel XL`, `PAR 64 CP62` fehlen der Bibliothek) — und die Shell zeigt
   danach **3 Kameras** und **4 Fixtures** statt weiter 4 und 6.
 * **Was offen bleibt:** die Shell führt weiter ein eigenes, einfacheres Modell.
-  Der Seed trägt nur, wofür sie eine Quelle hat; Ports, Datenblatt,
-  DMX-Universum, Rigging-Höhe bleiben beim Planer. Ein gemeinsames
+  Der Seed trägt nur, wofür sie eine Quelle hat; Ports und Datenblatt bleiben
+  beim Planer. ~~DMX-Universum~~ (trägt der Seed als `SeedFixture.universe`),
+  ~~Rigging-Höhe~~ **seit 2026-09-09 ebenfalls** (`suite#201`) — und dabei kam
+  ein Defekt heraus, der schwerer wog als das fehlende Feld:
+
+  **Ein erneuter Seed setzte im Licht-Planer Hänge-Höhe und Ausrichtung
+  zurück.** `connectShellSeed` wendet jede höhere Revision an, und die Shell
+  zählt sie bei Projektwechsel, Undo/Redo und Kopf-Änderung hoch;
+  `seedToFixtures` baute daraufhin jeden Scheinwerfer NEU — Höhe aus der
+  UI-Voreinstellung, Ziel auf der eigenen Stelle. Wer zwanzig Lampen auf die
+  Bühne gerichtet und auf 8 m gehängt hatte, verlor beides, sobald jemand in
+  der Shell den Projektnamen änderte. Still, ohne Meldung, ohne Undo in dieser
+  App.
+
+  Die Regel lautet jetzt: **der Seed setzt, was er nennt; was er nicht nennt,
+  behält ein bereits platzierter Scheinwerfer.** Nur ein wirklich neuer bekommt
+  die Voreinstellung — dort ist sie der Anfangswert einer Platzierung und keine
+  Aussage über diese Show. Ein Ziel, das auf der Lampe selbst lag (also nie
+  ausgerichtet wurde), wandert mit, wenn der Seed sie verschiebt; ein echt
+  gesetztes bleibt liegen.
+
+  `SeedFixture.rigHeightM` und `Fixture.rigHeightM` sind beide **optional**:
+  eine fehlende Höhe heißt „nicht angegeben" und nicht „hängt am Boden" — eine
+  0 dort ließe die Stückliste die Kabel zum Scheinwerfer zu kurz rechnen. Die
+  Shell zeigt sie im Eigenschaften-Panel nur, wenn sie gemeldet wurde.
+
+  **Gegengeprobt (10):** Höhe wieder aus der Vorgabe (der alte Defekt) ·
+  Seed-Höhe ignoriert · Ausrichtung zurückgesetzt · Ziel bleibt liegen, auch
+  wenn es nie gesetzt war · Körperdrehung zurückgesetzt · Höhe fährt nicht
+  zurück · Seed-Position ignoriert · und drei auf der Shell-Seite (erfindet
+  eine Höhe, verliert sie im Round-Trip, verliert sie durch einen Patch, der
+  sie nicht nennt). Ein gemeinsames
   Datenmodell ist das **nicht** — siehe B-39 für die Liste dessen, was der
   Fluss noch nicht abdeckt.
 * **Aufwand:** ~~klein (kennzeichnen)~~ verbunden; groß (zusammenführen) bleibt
@@ -962,7 +1065,8 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-26 · `sony-camera-bridge`: eine Oberfläche, zwei Sprachen
 
-* **Status:** offen — **entschieden (E-17, 2026-09-08): Englisch ist die Quellsprache.**
+* **Status:** **ERLEDIGT 2026-09-09** — `sony#22`. Entschieden (E-17,
+  2026-09-08): Englisch ist die Quellsprache.
   **Deklariert und GEDECKELT am 2026-09-08 (`sony#21`):** `package.json` und die
   README nennen `en`, `npm run lang:check` prüft die Übereinstimmung — und misst
   zusätzlich den Sprachmix: **19 mehrwortige deutsche Literale** in
@@ -971,9 +1075,33 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   während dieses offenen Punktes nicht WÄCHST. Sie ist in beide Richtungen
   scharf: wer übersetzt und die Grenze nicht heruntersetzt, fällt ebenfalls
   durch — sonst deckte sie ab morgen wieder Zuwachs.
-* **Offen bleibt die Übersetzung selbst.** Die 19 Stellen zu drehen ändert
-  sichtbaren Produkttext an fünfzehn Stellen und gehört in eine eigene Änderung
-  mit eigenem Blick darauf, nicht in den Anhang eines Wächters.
+* ~~**Offen bleibt die Übersetzung selbst.**~~ **ERLEDIGT 2026-09-09** —
+  `sony#22`. `packages/web-rcp/src` ist einsprachig englisch: Einrichtungs-
+  Assistent, Verbindungs-Panel, WIZnet-Assistent und -Liste, Kamera-Plan,
+  MultiCam- und PTZ-Panel und die Herkunfts-Sätze in `origin.ts`. Kommentare
+  bleiben deutsch — die Konvention dieses Repos, und keine Inkonsistenz: sie
+  stehen im Quelltext und nicht auf dem Schirm.
+* **Der Wächter hat dabei zweimal danebengemessen, und das ist der wertvollere
+  Teil dieser Änderung:**
+  1. **Er sah Kommentare für Literale.** Der Lauf schlug auf einem deutschen
+     Kommentar an, der ein englisches Wort in Anführungszeichen zitierte. Die
+     Kommentare sind deutsch, die Oberfläche englisch — ein Lauf, der beides in
+     einen Topf wirft, meldet bei jedem gut kommentierten Commit einen Verstoß,
+     den es nicht gibt, und wird nach dem dritten Mal weggedrückt. Kommentare
+     werden jetzt vor dem Messen entfernt.
+  2. **Er sah die Oberfläche gar nicht, sondern nur ihre Attribute.**
+     Gegenprobe nach dem Übersetzen: eine deutsche Beschriftung wieder
+     eingebaut — **der Lauf blieb grün.** Er las nur Zeichenketten in
+     Anführungszeichen; der größte Teil der sichtbaren Texte steht aber als
+     JSX-Text zwischen den Tags. Die „19" waren der Ausschnitt, den er sehen
+     konnte. Er misst jetzt beides und fand damit sofort **zwölf weitere**
+     deutsche Stellen, die vorher niemand gezählt hatte (`Kamera IP
+     (WiFi/LAN)`, `Ohne Beleg`, `+ Kamera` …).
+  Die Grenze steht damit auf **0** und bleibt in beide Richtungen scharf.
+* **Gegengeprobt (5):** deutsche Beschriftung als JSX-Text, deutsche
+  Beschriftung als Attribut, Grenze wieder auf 19, Kommentar-Filter entfernt,
+  und **kombiniert** JSX-Messung entfernt + Verstoß eingebaut (bleibt grün —
+  genau das belegt, dass die JSX-Messung der Teil ist, der ihn fängt).
 * **Befund (gemessen 2026-09-04):** Die Web-RCP (`packages/web-rcp/src`) hat
   **172** sichtbare Textstellen und **keine i18n** — kein `useTranslation`,
   kein Wörterbuch. Davon sind **32 deutsch**, der Rest englisch, in denselben
@@ -989,7 +1117,7 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   deutsch-quellig, `multicam-planner` in der Suite englisch-quellig, die
   Intercom-Web-App zweisprachig per Typ. Erst die Antwort entscheidet, ob
   32 Stellen übersetzt oder 140 umgeschrieben werden.
-* **Aufwand:** klein (vereinheitlichen) / mittel (i18n einziehen)
+* **Aufwand:** klein (vereinheitlichen) — erledigt / mittel (i18n einziehen, weiter offen)
 
 ### B-27 · Die Ableitung liest den Router-Zustand nicht
 
@@ -1667,7 +1795,8 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-39 · Was der Projekt-Fluss noch nicht trägt
 
-* **Status:** offen (nur noch Punkt 5; 1, 2, 3 und 4 erledigt) — **Punkt 1 ist
+* **Status:** offen (nur noch Punkt 5; 1, 2, 3 und 4 erledigt — Punkt 1 seit
+  2026-09-09 samt der Licht-Seite, dem letzten benannten Rest) — **Punkt 1 ist
   am 2026-09-08 gebaut** (`suite#169`): der Raum geht zurück, und zwar durch
   die Konfliktregel aus E-21 (Eigentum je Feld; geteilte Felder melden den
   Widerspruch als Befund, statt still zu überschreiben)
@@ -1719,15 +1848,47 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
      hält fest, dass Hin- und Rückweg einander umkehren; ohne das meldete jeder
      übernommene Seed sofort einen Widerspruch gegen sich selbst.
 
-     **Was ausdrücklich NOCH NICHT gebaut ist: die Licht-Seite.** Der
-     Licht-Planer liest den Raum aus dem Seed heute gar nicht — sein
-     `shellSeed.ts` kennt nur Scheinwerfer, und sein eigenes Raum-Modell
-     (Boden, Wände, Fenster, Podeste) bildet `venue.widthM/heightM/stage` nicht
-     eins zu eins ab. Die Regel trägt ihn bereits (er ist als Schreiber
-     `fixtures` vorgesehen, und die Tests decken ihn ab); was fehlt, ist die
-     Abbildung in dieser App. Das steht hier als benannter Rest und nicht als
-     stille Lücke — sonst liest der nächste Durchgang „Punkt 1 erledigt" und
-     wundert sich, warum das Licht den Raum nicht meldet.
+     ~~**Was ausdrücklich NOCH NICHT gebaut ist: die Licht-Seite.**~~
+     **Erledigt 2026-09-09 (`suite#201`).** Der Licht-Planer las den Raum aus
+     dem Seed gar nicht: wer in der Suite auf „Licht" wechselte, sah seine
+     Scheinwerfer an den richtigen Koordinaten in einer **leeren Fläche** —
+     ohne Bühne, ohne Raumgrenze, ohne Anhaltspunkt, wo das alles steht.
+
+     **Die Frage war nicht, OB, sondern WORAUS.** `widthM × heightM` sind ein
+     Rechteck, vier Wände sind vier Linien — und genau das wäre falsch
+     gewesen: Lights `Wall` trägt `height`, `reflectance` und `material`, und
+     die drei gehen **in die Lichtrechnung** ein. Vier erfundene Wände
+     änderten jede Beleuchtungsstärke im Plan, und zwar nach oben. Eine
+     Vermutung, die als Messung gelesen wird — diesmal mit einer Zahl am Ende,
+     die aussieht wie ein Ergebnis.
+
+     Gebaut ist deshalb:
+     * `widthM`/`heightM`/`name` → **`venueForeign`**, das ADR-005-Feld, das es
+       schon gab. Light modelliert keine Raumgröße, führt sie aber unverändert
+       mit — derselbe Speicher, den auch der Datei-Import füllt; ein zweiter
+       wären beim Speichern zwei Kandidaten für dasselbe Feld.
+     * `venue.stage` → eine **Zeichnung** (`Shape`, `rect`) und kein
+       `StageElement`. Ein Podest hat eine Höhe; der Seed nennt keine.
+       `height: 0` wäre die Behauptung „nicht erhöht". Eine Zeichnung zeigt,
+       **wo** die Bühne liegt, ohne zu behaupten, **wie** sie gebaut ist — und
+       geht in keine Rechnung ein.
+     * Feste Id (`seed-venue-stage`): der Seed kommt bei jeder Änderung erneut,
+       eine neue Id je Mal legte bei der dritten Änderung drei Rechtecke
+       übereinander. Ersetzt wird nur diese eine — Maßketten und Markierungen
+       des Nutzers bleiben stehen.
+     * Der Raum wird **vor** der Leer-Sperre übernommen. Die Sperre lehnt einen
+       Seed ohne Scheinwerfer ab, damit er keinen gefüllten Plan leert; das ist
+       eine Aussage über Scheinwerfer, und den Raum mit ihr wegzuwerfen hieße,
+       ihn aus einem Grund zu verlieren, der nichts mit ihm zu tun hat.
+     * **Kein Rückweg für den Raum.** Light ist als Schreiber `fixtures`
+       vorgesehen (E-21) und modelliert keine Raumgröße — ein Rückweg schriebe
+       der Shell ihren eigenen Wert zurück und erzeugte bei jedem Durchlauf
+       einen Widerspruch gegen sich selbst. Ein Test hält das fest.
+
+     **Gegengeprobt (8), und eine Regel war zuerst unverdient:** „lässt weg,
+     was der Seed nicht nennt" blieb grün, als die Breite fest auf 0 gesetzt
+     wurde — der gemessene Fall nannte sie ja. Jetzt steht jedes Maß einmal als
+     fehlend im Test, und beide Zweige fallen einzeln.
 
      Gegengeprobt (alle acht rot, zurückgebaut grün) — Regel und Shell:
      geteiltes Feld wird still überschrieben · `gleich()` über
@@ -1792,6 +1953,61 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 * **Aufwand:** 1 mittel (Entscheidung nötig), 5 klein
 
 ---
+
+### B-59 · Der Seed setzte zurück, was er nicht sagte — in allen drei Planern
+
+* **Status:** **GEBAUT 2026-09-09** — `suite#201`. Befund beim Bau von
+  B-39 Punkt 1 erhoben und daraufhin als Sweep durch alle drei Brücken
+  gezogen.
+* **Befund (gemessen am gebauten Stand):** `connectShellSeed` wendet **jede**
+  höhere Revision an (`seed.revision <= appliedRevision` ist die einzige
+  Sperre), und die Shell zählt sie bei **Projektwechsel, Undo/Redo und
+  Kopf-Änderung** hoch. Alle drei `seedTo*`-Funktionen bauten daraufhin ihre
+  Objekte **neu** — aus Vorgaben und Katalog-Templates. Der Seed nennt aber nur
+  einen kleinen Teil dessen, was diese Planer führen.
+
+  | Planer | was ein Projektwechsel in der Shell wegwarf |
+  | --- | --- |
+  | **Licht** | Hänge-Höhe (zurück auf die UI-Vorgabe), Ausrichtung (Ziel zurück auf die Lampe selbst), Körperdrehung |
+  | **MultiCam** | Schwenk, Neigung, Höhe, Blende, Fokusdistanz, Stativart, Extender, Speedbooster, Sensor-Modus, Bajonett, Farbe |
+  | **Cable** | jede Angabe am Gerät (Leistung, Notizen, Rack-Platz), **die Ports samt Beschriftung** — sie wurden aus dem Template neu geklont |
+
+* **Warum das schwer wiegt und nicht auffiel:** der Schaden entsteht durch eine
+  Handlung, die mit dem Planer nichts zu tun hat („ich benenne das Projekt
+  um"), er trifft die Arbeit von Stunden (zwanzig ausgerichtete Lampen), er ist
+  **still**, und er ist in der betroffenen App **nicht rückgängig zu machen** —
+  das Undo der Shell kennt den Planer-Zustand nicht.
+* **Die Regel, jetzt in allen drei Brücken gleich:** *der Seed setzt, was er
+  **nennt**; was er nicht nennt, behält ein bereits vorhandenes Objekt. Nur ein
+  wirklich neues bekommt die Vorgabe* — dort ist sie der Anfangswert einer
+  Platzierung und keine Aussage über diese Show.
+  * **Licht:** dazu trägt der Seed die Hänge-Höhe jetzt überhaupt
+    (`SeedFixture.rigHeightM`, optional) — sie entscheidet über die Kabellänge
+    zum Scheinwerfer. Ein Ziel, das auf der Lampe selbst lag (also nie
+    ausgerichtet wurde), wandert mit, wenn der Seed sie verschiebt; ein echt
+    gesetztes bleibt liegen.
+  * **Cable:** ein bekanntes Gerät wird **nicht neu aufgelöst**.
+    `katalogTemplate` geht über den Namen — ein in der Shell umbenanntes Gerät
+    träfe sonst vielleicht ein anderes Template, und ein eingerichtetes Gerät
+    würde durch einen Katalog-Standardstand ersetzt, samt anderer Ports.
+    `offen` hängt jetzt an `portsUnknown` und nicht am Katalog-Treffer, damit
+    Regel 2 (Port aus einer Kabel-Aussage) und Regel 3 (auf aufgelösten
+    Geräten keine erfundenen Ports) beide weiter gelten.
+* **Nachtrag am selben Tag: derselbe Fehler auch beim RAUM.** `seedToVenue`
+  im MultiCam-Planer ersetzte die ganze `stages`-Liste durch die **eine**
+  Bühne, die der Seed nennt. Der Planer kennt aber eine Liste (`addStage`), und
+  der Rückweg meldet ausdrücklich nur `stages[0]`. Wer eine Seitenbühne oder
+  einen Steg angelegt hatte, verlor sie beim nächsten Seed — ausgelöst von
+  einem Projektwechsel in der Shell, die von diesen Bühnen **nie erfahren
+  hat**. Etwas nicht zu *kennen* ist kein Grund, es zu löschen. Der Seed setzt
+  jetzt die erste Bühne (Lage und Größe; Beschriftung und Kennung bleiben) und
+  lässt die übrigen stehen.
+* **Gegengeprobt (19), und zwei Regeln waren zuerst unverdient:** „lässt weg,
+  was der Seed nicht nennt" blieb grün, als die Breite fest auf 0 gesetzt wurde
+  (der gemessene Fall nannte sie ja) — und die `offen`-Regel im Cable-Planer
+  fiel weder bei `false` noch bei `true`, weil kein Test ein Kabel an ein
+  übernommenes Gerät hängte. Beide Lücken sind mit je einem Fall geschlossen,
+  und beide Richtungen fallen jetzt einzeln.
 
 ### B-41 · Der Weg vom Plan auf die Geräte — was er trägt und was nicht
 
@@ -2480,7 +2696,23 @@ belegbar, dort sind sie erprobt.
     auf die Kategorie stand kurz drin und ist wieder heraus (ADR-002).
 * **Was offen bleibt:** der Import einer echten EDID-Datei — sinnvoll, sobald
   die Feldbedeutungen aus der Spezifikation belegt sind.
-* **Aufwand:** gross — der Kern erledigt.
+* **In DIESER Umgebung nicht machbar, und zwar belegt (gemessen 2026-09-09).**
+  Die Bedingung oben ist keine Floskel: Invariante 18 verlangt die Feldbedeutungen
+  **aus der Spezifikation**, und die ist von hier aus nicht zu öffnen. Der
+  Agent-Proxy beantwortet `CONNECT` für `vesa.org:443` mit **403**
+  (`connect_rejected`, „policy denial"); dieselbe Antwort für die frei
+  gespiegelte E-EDID-A2 und für die Enzyklopädie-Seite. Damit gibt es keine
+  Quelle, gegen die sich ein Byte-Offset prüfen liesse.
+* **Deshalb bleibt es liegen, statt aus dem Gedächtnis geschrieben zu werden** —
+  und das ist hier schärfer als bei B-11. Eine falsch eingetragene
+  `manufacturerUrl` zeigt ins Leere und fällt auf. **Ein falsch gelesenes
+  EDID-Byte ergibt keine Fehlermeldung, sondern eine plausible Zahl**: 8 statt
+  10 Bit Farbtiefe, ein Farbraum zu viel, eine Frequenz, die es nicht gibt.
+  Der Plan sagt danach „passt", und niemand sieht, woher das kommt. Genau
+  davor steht Invariante 23 (`tests/edid.test.ts`: hier wird nichts
+  entziffert), und sie bleibt bis auf Weiteres die richtige Antwort.
+* **Aufwand:** gross — der Kern erledigt; der Import braucht eine Umgebung mit
+  Zugang zur Spezifikation.
 
 ### B-48 · Kabel, die hin und zurück laufen; Pfeile, die schräg ins Gerät stechen
 

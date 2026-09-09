@@ -269,6 +269,14 @@ export function PropertiesPanel({
       <div className="av-scroll flex-1 overflow-auto">
         <Group title={t('panels.group.positionAim', 'Position & Aim')}>
           <Field label={t('panels.field.xy', 'X / Y')}>{fx.x.toFixed(1)} / {fx.y.toFixed(1)} m</Field>
+          {/* Die Haenge-Hoehe kommt aus dem Licht-Planer und steht nur da,
+              wenn sie jemand gesetzt hat. „—" waere hier falsch: es sieht aus
+              wie eine Angabe, und die Shell plant keine Rigging-Hoehen. */}
+          {fx.rigHeightM !== undefined && (
+            <Field label={t('panels.field.rigHeight', 'Hänge-Höhe')}>
+              {fx.rigHeightM.toFixed(1)} m
+            </Field>
+          )}
         </Group>
         <Group title={t('panels.group.dimmerBeam', 'Dimmer & Beam')} accent={accent}>
           <Field label="Dimmer">{fx.dimmerPct} %</Field>

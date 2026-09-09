@@ -188,9 +188,31 @@ const App: React.FC = () => {
   const exportCounterRef = useRef(1);
   const defaultMountingHeight = 6;
 
+  // ADR-005 — Raum-Masse, die light nicht modelliert. Light hat Waende, Podeste
+  // und einen kalibrierten Gebaeudeplan, aber kein widthM/heightM. Der Export
+  // liess die beiden Felder weg, MultiCams Import setzt fuer ein fehlendes Mass
+  // seinen Standard (20 x 12 m) ein — ein 30 x 18 m grosser Raum schrumpfte also
+  // bei jedem Round-Trip durch light. Aufheben und unveraendert zurueckgeben.
+  //
+  // Steht HIER und nicht weiter unten beim Venue-Austausch, weil `useShellSeed`
+  // ihn seit B-39 Punkt 1 ebenfalls fuellt: der Raum kommt in der Suite ueber
+  // den Seed herein, ausserhalb ueber die .venue.json. EIN Speicher fuer beide
+  // Wege — zwei waeren beim Speichern zwei Kandidaten fuer dasselbe Feld.
+  const preservedVenueRef = useRef<{ widthM?: number; heightM?: number; name?: string }>({});
+
   // SUITE-OVERLAY: Projekt-Fluss Shell -> Light-Planer und zurueck. No-op im
   // Standalone-Betrieb (dort ist `window.parent === window`).
-  useShellSeed({ fixtures, setFixtures, haengehoehe: defaultMountingHeight, eigene: customFixtures });
+  useShellSeed({
+    fixtures,
+    setFixtures,
+    haengehoehe: defaultMountingHeight,
+    eigene: customFixtures,
+    shapes,
+    setShapes,
+    setVenueForeign: (v) => {
+      preservedVenueRef.current = v;
+    },
+  });
   // E-11 — der Cross-Link reicht bis hier herein: die Shell zeigt auf eine
   // Seed-Id, dieser Planer waehlt den Scheinwerfer aus. Kennt er die Id nicht,
   // sagt er es — die Shell zeigt es dem Nutzer.
@@ -895,12 +917,8 @@ const App: React.FC = () => {
 
   // ── Venue-Austausch: exportiert den geteilten Raum (Wände, Bühne, Personen,
   // Floor-Plan) als neutrale .venue.json, die auch der MultiCam-Planner liest.
-  // ADR-005 — Raum-Masse, die light nicht modelliert. Light hat Waende, Podeste
-  // und einen kalibrierten Gebaeudeplan, aber kein widthM/heightM. Der Export
-  // liess die beiden Felder weg, MultiCams Import setzt fuer ein fehlendes Mass
-  // seinen Standard (20 x 12 m) ein — ein 30 x 18 m grosser Raum schrumpfte also
-  // bei jedem Round-Trip durch light. Aufheben und unveraendert zurueckgeben.
-  const preservedVenueRef = useRef<{ widthM?: number; heightM?: number; name?: string }>({});
+  // (Der Speicher fuer die fremden Raum-Masse steht weiter oben — `useShellSeed`
+  // fuellt ihn ebenfalls und wird vor dieser Stelle aufgerufen.)
   // ADR-005 — dito je Person: MultiCam kennt an dieser Stelle allgemeine
   // Buehnen-Objekte (Schlagzeug, Rednerpult, Stuhl) mit Breite, Art und Farbe.
   // Light kennt nur Figuren; ohne Aufheben wurde aus dem Schlagzeug eine

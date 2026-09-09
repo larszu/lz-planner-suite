@@ -195,3 +195,132 @@ describe('shellSeed — Rueckweg', () => {
     expect(zurueck.cables[0].type).toBe('SDI-12G')
   })
 })
+
+// ───────────────────────────────────────────────────────────────────────────
+// DER SEED SETZT NICHT ZURUECK, WAS ER NICHT SAGT.
+//
+// Gemessen 2026-09-09 am gebauten Stand: `connectShellSeed` wendet jede
+// hoehere Revision an, und die Shell zaehlt sie bei Projektwechsel, Undo/Redo
+// und Kopf-Aenderung hoch. `seedToCable` baute jedes Geraet daraufhin NEU AUS
+// DEM TEMPLATE — frisch geklonte Ports, Katalog-Masse, und ohne jede Angabe,
+// die jemand am Geraet gemacht hat.
+//
+// Der Seed nennt Id, Name, Untertitel und Lage. Alles andere gehoert diesem
+// Planer, und ein Projektwechsel in der Shell warf es weg.
+// ───────────────────────────────────────────────────────────────────────────
+
+describe('shellSeed — ein erneuter Seed nimmt nichts weg', () => {
+  const geraet = seed({ devices: [{ id: 'n_atem', name: 'ATEM Constellation 8K', nx: 0.5, ny: 0.5 }] })
+
+  it('behaelt die Angaben am Geraet, die der Seed nicht kennt', () => {
+    const erst = seedToCable(geraet).equipment[0]
+    const gepflegt = {
+      ...erst,
+      powerConsumptionWatts: 180,
+      notes: 'Rack 2, HE 12',
+      rackId: 'rack-2',
+    }
+    const { equipment } = seedToCable(geraet, [gepflegt])
+    expect(equipment[0].powerConsumptionWatts).toBe(180)
+    expect(equipment[0].notes).toBe('Rack 2, HE 12')
+    expect(equipment[0].rackId).toBe('rack-2')
+  })
+
+  it('behaelt die Ports samt ihrer Beschriftung', () => {
+    // Die Ports sind der Kern dieses Planers: an ihnen haengen Kabel,
+    // Patchliste und Adressplan. Sie aus dem Template neu zu klonen loescht
+    // jede Beschriftung, die jemand vergeben hat (B-33).
+    const erst = seedToCable(geraet).equipment[0]
+    const gepflegt = {
+      ...erst,
+      inputs: erst.inputs.map((p, i) => (i === 0 ? { ...p, label: 'CAM 1 PGM' } : p)),
+    }
+    const { equipment } = seedToCable(geraet, [gepflegt])
+    expect(equipment[0].inputs[0].label).toBe('CAM 1 PGM')
+  })
+
+  it('loest ein bekanntes Geraet NICHT neu auf, wenn die Shell es umbenennt', () => {
+    // `katalogTemplate` loest ueber den Namen auf. Ein umbenanntes Geraet
+    // traefe vielleicht ein anderes Template — und ein eingerichtetes Geraet
+    // wuerde durch einen Katalog-Standardstand ersetzt, samt anderer Ports.
+    const erst = seedToCable(geraet).equipment[0]
+    const umbenannt = seed({ devices: [{ id: 'n_atem', name: 'Videohub 40x40', nx: 0.5, ny: 0.5 }] })
+    const { equipment } = seedToCable(umbenannt, [erst])
+    expect(equipment[0].name).toBe('Videohub 40x40')
+    // Aber die Ports sind die des eingerichteten Geraets geblieben.
+    expect(equipment[0].inputs).toEqual(erst.inputs)
+    expect(equipment[0].outputs).toEqual(erst.outputs)
+  })
+
+  it('was der Seed SAGT, gilt trotzdem — Name, Untertitel und Lage', () => {
+    const erst = seedToCable(geraet).equipment[0]
+    const verschoben = seed({
+      devices: [{ id: 'n_atem', name: 'Neuer Name', subtitle: '40x 12G-SDI', nx: 0.1, ny: 0.2 }],
+    })
+    const { equipment } = seedToCable(verschoben, [{ ...erst, x: 9999, y: 9999 }])
+    expect(equipment[0].name).toBe('Neuer Name')
+    expect(equipment[0].subtitle).toBe('40x 12G-SDI')
+    expect(equipment[0].x).not.toBe(9999)
+    expect(equipment[0].y).not.toBe(9999)
+  })
+
+  it('ein wirklich neues Geraet kommt weiter aus dem Katalog', () => {
+    const erst = seedToCable(geraet).equipment[0]
+    const zwei = seed({
+      devices: [
+        { id: 'n_atem', name: 'ATEM Constellation 8K', nx: 0.5, ny: 0.5 },
+        { id: 'n_neu', name: 'ATEM Constellation 8K', nx: 0.2, ny: 0.2 },
+      ],
+    })
+    const { equipment } = seedToCable(zwei, [erst])
+    const neu = equipment.find((e) => e.id === 'n_neu')
+    expect(neu?.inputs.length).toBeGreaterThan(0)
+  })
+
+  it('ein uebernommenes Geraet OHNE aufgeloeste Ports bleibt offen', () => {
+    // `offen` haengt an den Ports und nicht am Katalog: ein Geraet, dessen
+    // Ports niemand kennt, darf weiter welche aus einer Kabel-Aussage
+    // bekommen (Regel 2). Wer hier pauschal `false` setzt, laesst jedes Kabel
+    // an so einem Geraet ins Leere laufen — und der Plan verliert genau die
+    // Verbindungen, um die es in diesem Programm geht.
+    const unbekannt = seed({ devices: [{ id: 'x1', name: 'Irgendein Kistchen', nx: 0.3, ny: 0.3 }] })
+    const erst = seedToCable(unbekannt).equipment[0]
+    expect(erst.portsUnknown).toBe(true)
+
+    const mitKabel = seed({
+      devices: [
+        { id: 'x1', name: 'Irgendein Kistchen', nx: 0.3, ny: 0.3 },
+        { id: 'x2', name: 'Noch ein Kistchen', nx: 0.6, ny: 0.3 },
+      ],
+      cables: [{ id: 'k1', label: 'K-001', type: '12G-SDI', from: 'x1', to: 'x2', lengthM: 5 }],
+    })
+    const { cables, ausgelassen } = seedToCable(mitKabel, [erst])
+    expect(ausgelassen).toEqual([])
+    expect(cables).toHaveLength(1)
+  })
+
+  it('ein uebernommenes Geraet MIT Ports bekommt keine erfundenen dazu', () => {
+    // Die andere Richtung derselben Regel, und die gefaehrlichere: auf einem
+    // aufgeloesten Geraet darf ein Kabel keinen Port ANLEGEN (Regel 3). Wer
+    // `offen` pauschal auf true setzt, erfindet an einem ATEM einen
+    // Glasfaser-Anschluss, weil ein Kabel danach fragt — und der Plan
+    // behauptet danach eine Buchse, die es an dem Blech nicht gibt.
+    const atem = seed({ devices: [{ id: 'n_atem', name: 'ATEM Constellation 8K', nx: 0.5, ny: 0.5 }] })
+    const erst = seedToCable(atem).equipment[0]
+    expect(erst.portsUnknown).not.toBe(true)
+    // Der ATEM hat BNC, RJ45 und XLR — aber keinen optischen Anschluss.
+    expect(erst.inputs.some((p) => p.type === 'LC-Duplex')).toBe(false)
+
+    const mitXlr = seed({
+      devices: [
+        { id: 'n_atem', name: 'ATEM Constellation 8K', nx: 0.5, ny: 0.5 },
+        { id: 'x2', name: 'Irgendein Kistchen', nx: 0.6, ny: 0.3 },
+      ],
+      cables: [{ id: 'k9', label: 'K-009', type: 'Fiber', from: 'x2', to: 'n_atem', lengthM: 5 }],
+    })
+    const { equipment, ausgelassen } = seedToCable(mitXlr, [erst])
+    const danach = equipment.find((e) => e.id === 'n_atem')
+    expect(danach?.inputs.some((p) => p.type === 'LC-Duplex')).toBe(false)
+    expect(ausgelassen.map((a) => a.id)).toContain('k9')
+  })
+})

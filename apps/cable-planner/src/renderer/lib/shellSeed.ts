@@ -141,13 +141,34 @@ export interface SeedUebernahme {
 /**
  * Seed -> Equipment + Kabel. Reine Funktion ohne Store-Zugriff, damit sie
  * headless getestet werden kann.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * `vorhandene` IST KEIN ZUSATZ, SONDERN DIE HALBE FUNKTION
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Gemessen 2026-09-09 am gebauten Stand: `connectShellSeed` wendet JEDE
+ * hoehere Revision an, und die Shell zaehlt sie bei Projektwechsel, Undo/Redo
+ * und Kopf-Aenderung hoch. Diese Funktion baute jedes Geraet daraufhin NEU AUS
+ * DEM KATALOG-TEMPLATE — mit frisch geklonten Ports, Katalog-Massen und ohne
+ * jede Angabe, die jemand am Geraet gemacht hat: Leistungsaufnahme,
+ * Rack-Platz, Notizen, Port-Beschriftungen, Steckertypen.
+ *
+ * Der Seed sagt von alldem nichts. Er nennt Id, Name, Untertitel und Lage.
+ * Ein Projektwechsel in der Shell warf also die halbe Geraete-Pflege weg, und
+ * zwar still.
+ *
+ * ZWEITER GRUND, UND ER WIEGT SCHWERER: `katalogTemplate` loest ueber den
+ * NAMEN auf. Wer ein Geraet in der Shell umbenennt, trifft danach vielleicht
+ * ein anderes Template — und ein bereits eingerichtetes Geraet wuerde durch
+ * einen Katalog-Standardstand ERSETZT, samt anderer Ports. Ein bekanntes
+ * Geraet wird deshalb nicht neu aufgeloest: es ist, was es ist.
  */
-export function seedToCable(seed: SuiteSeed): SeedUebernahme {
+export function seedToCable(seed: SuiteSeed, vorhandene: EquipmentItem[] = []): SeedUebernahme {
   const ausgelassen: SeedUebernahme['ausgelassen'] = []
   const geraete = new Map<string, SeedGeraet>()
+  const schonDa = new Map(vorhandene.map((e) => [e.id, e]))
 
   seed.devices.forEach((d, i) => {
-    const tmpl = katalogTemplate(d)
     const basis = {
       id: d.id,
       name: d.name,
@@ -155,6 +176,21 @@ export function seedToCable(seed: SuiteSeed): SeedUebernahme {
       x: Math.round((d.nx ?? (i % 4) * 0.25) * CANVAS_W),
       y: Math.round((d.ny ?? Math.floor(i / 4) * 0.25) * CANVAS_H),
     }
+
+    // Bekanntes Geraet: der Seed setzt, was er NENNT — Name, Untertitel, Lage.
+    // Alles andere bleibt, wie der Nutzer es eingerichtet hat. `offen` haengt
+    // an den Ports und nicht am Katalog: ein Geraet ohne aufgeloeste Ports
+    // darf weiter welche aus einer Kabel-Aussage bekommen (Regel 2).
+    const alt = schonDa.get(d.id)
+    if (alt) {
+      geraete.set(d.id, {
+        offen: alt.portsUnknown === true,
+        item: { ...alt, ...basis },
+      })
+      return
+    }
+
+    const tmpl = katalogTemplate(d)
     if (tmpl) {
       geraete.set(d.id, {
         offen: false,

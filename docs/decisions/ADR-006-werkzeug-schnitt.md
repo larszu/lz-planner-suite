@@ -60,9 +60,31 @@ nur einen Kabelbaum zwischen zwei Repos legen.
 | Gerätekataloge | **bleibt Kern**, langfristig Paket | Reine Daten; ein eigenes Repo lohnt erst, wenn ein zweiter Planer sie schreibt statt nur liest. |
 | **Lager & Logistik** | **eigenes Werkzeug** | Alle vier Bedingungen erfüllt. Eigene Stammdaten, eigener Bediener, kein Kabelgraph nötig; die Fragen an den Plan sind gezählt: *Deckt der Bestand den Bedarf? Was steht auf dem Ausgabeschein? Ist das Stück fremdes Material?* `@avplan/inventory-core` gibt es als Paket bereits. |
 | **Crew & Geld** | **eigenes Werkzeug** | Sätze, Stunden, Auslagen und Belege gehören der Firma, nicht dem Plan. Der Plan liefert nur den Job-Bezug. |
-| **Festinstallation & Elektro** (Issues #665, #666, #667) | **eigenes Werkzeug, noch nicht gebaut** | Schaltschränke, UP-/AP-Dosen, Wechselschaltungen mit Logikprüfung, KNX/DALI/Crestron. Andere Norm, andere Rolle, anderer Lebenszyklus (Jahre statt Tage). Diese drei Issues **nicht** in den Cable-Planner bauen — sie wären genau der Zuwachs, der die Basisfunktionen verdeckt. |
+| **Gebäude-Elektro & Festinstallation** (Issues #665, #666, #667) | **eigenes Werkzeug, noch nicht gebaut** | Schaltschränke, UP-/AP-Dosen, KNX/DALI/Crestron, Prüfprotokolle. Andere Norm, andere Rolle, anderer Lebenszyklus (Jahre statt Tage). **Nicht** in den Cable-Planner bauen — das wäre genau der Zuwachs, der die Basisfunktionen verdeckt. **Die Grenze verläuft aber nicht am Wort „Strom": siehe die Zeile darunter.** |
+| **Stromplanung der Show** (B-45, B-52) | **bleibt Kern — nachgetragen 2026-09-09** | **Diese Zeile korrigiert die darüber.** Am 2026-09-07 stand hier „Wechselschaltungen mit Logikprüfung" als Beispiel für das ausgelagerte Werkzeug. Einen Tag später hat der Eigentümer ausdrücklich das Gegenteil verlangt („Zudem fehlen noch die Möglichkeiten für ordentliche Stromplanung … Und auch Lichtschalter und so müssen integrierbar sein"), und `cable#771/#782/#788` haben es gebaut: `types/circuit.ts` und `lib/circuitSolver.ts` mit Einspeisung, Aus-/Wechsel-/Kreuzschalter, Dimmer, Leuchte, Klemmstelle, Verteiler und den sechs Kontakten — samt der Leuchte, die auf dem Plan nur bei richtiger Verkabelung angeht. **Der Code ist richtig, die alte Zeile war es nicht mehr.** Der Grund ist derselbe wie bei „Netz & Adressen": es hängt am Kabelgraph. Ein Powerlock-Satz, eine Einzelader mit Farbe, ein Verteiler mit abgesicherten Abgängen sind Ports an Geräten in **diesem** Plan, für **diese** Show. |
 | Funk & Audio | **bleibt vorerst Kern** | Der Spektrum-Plan liest die Sender aus dem Kabelgraph (Bedarf 95). Eine Trennung bräuchte zuerst eine Sender-Schnittstelle; danach ist es ein Kandidat. |
 | Rentman/NetBox/Lexware | **bleibt Kern** | Dünne Adapter, keine eigene Domäne. |
+
+### Wo die Grenze zwischen den beiden Strom-Zeilen liegt
+
+Die beiden Zeilen oben sehen aus wie ein Widerspruch, und ohne diesen Absatz
+wäre einer daraus geworden — der nächste Leser hätte entweder den
+Schaltungs-Rechner unter Berufung auf das ADR wieder ausgebaut oder
+Schaltschränke unter Berufung auf B-45 hineingebaut.
+
+Die Grenze ist **nicht** das Wort „Strom", sondern der **Lebenszyklus** und die
+**Zugehörigkeit** — dieselben zwei Bedingungen wie überall in dieser Tabelle:
+
+* **Kern:** was für **diese Show** geplant, aufgebaut und wieder abgebaut wird,
+  und was an Ports von Geräten **dieses Plans** hängt. Verteiler,
+  Steckdosenleiste, Powerlock-Sätze, Einzeladern mit Farbe, die Schaltung
+  zwischen Schalter und Leuchte im Aufbau.
+* **Eigenes Werkzeug:** was dem **Gebäude** gehört und Jahre bleibt.
+  Schaltschrank, fest verlegte Leitung, UP-Dose, Bus-Systeme, Prüfprotokoll
+  nach Norm.
+
+Ein Prüfstein, der beide Fälle trennt: *Wird das am Abbautag wieder
+eingepackt?* Ja → Kern. Nein → eigenes Werkzeug.
 
 ## Wie ausgelagert wird — und was dabei nicht passieren darf
 

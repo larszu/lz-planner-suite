@@ -104,6 +104,10 @@ export function suiteToSeed(project: SuiteProject | null, revision: number): Sui
       dmxChannel: f.dmxChannel,
       x: f.x,
       y: f.y,
+      // Nur mitschicken, wenn sie jemand gesetzt hat: ein `rigHeightM: 0` im
+      // Seed hiesse „haengt am Boden" und ueberschriebe drueben die Hoehe,
+      // die der Planer selbst fuehrt.
+      ...(f.rigHeightM !== undefined ? { rigHeightM: f.rigHeightM } : {}),
     })),
     devices: project.nodes.map((n) => ({
       id: n.id,
@@ -215,6 +219,14 @@ export function applyPatchToSuite(
       dmxChannel: f.dmxChannel ?? alt?.dmxChannel ?? 0,
       x: f.x ?? alt?.x ?? 0,
       y: f.y ?? alt?.y ?? 0,
+      // Die Haenge-Hoehe bleibt WEG, wenn niemand sie kennt — und wird nicht
+      // auf 0 gesetzt wie die Felder darueber. Bei den anderen ist die 0 ein
+      // brauchbarer Anfangswert (kein Dimmer, kein Kanal); bei einer Hoehe
+      // waere sie die Behauptung „haengt am Boden", und die Stueckliste
+      // rechnete daraufhin die Kabel zu kurz.
+      ...(f.rigHeightM ?? alt?.rigHeightM) !== undefined
+        ? { rigHeightM: f.rigHeightM ?? alt?.rigHeightM }
+        : {},
     }
   })
 

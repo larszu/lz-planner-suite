@@ -139,3 +139,145 @@ describe('Der Raum geht auch zurueck (E-21, B-39.1)', () => {
     expect(venueToSeedPatch(nachher).venue).toEqual(s.venue);
   });
 });
+
+// ───────────────────────────────────────────────────────────────────────────
+// DER SEED SETZT NICHT ZURUECK, WAS ER NICHT SAGT.
+//
+// Gemessen 2026-09-09 am gebauten Stand: `connectShellSeed` wendet jede
+// hoehere Revision an, und die Shell zaehlt sie bei Projektwechsel, Undo/Redo
+// und Kopf-Aenderung hoch. `seedToCameras` baute daraufhin jede Kamera NEU —
+// `pan: -90`, `tilt: 0`, `z: 1.5`, Blende, Fokusdistanz, Stativ, Extender,
+// Sensor-Modus und Farbe aus der Vorgabe.
+//
+// Der Seed sagt von alldem nichts. Wer seine Kameras ausgerichtet, auf ein
+// Podest gestellt und scharfgestellt hatte, verlor das, sobald jemand in der
+// Shell den Projektnamen aenderte — in einem Planer, dessen ganzer Zweck die
+// Bildwirkung genau dieser Einstellungen ist.
+// ───────────────────────────────────────────────────────────────────────────
+
+describe('shellSeed — ein erneuter Seed nimmt nichts weg', () => {
+  const eine = (over: Partial<Parameters<typeof seedToCameras>[0]['cameras'][number]> = {}) =>
+    seed({ cameras: [{ id: 'k1', name: 'CAM 1', model: 'Sony FX9', ...over }] });
+
+  const platziert = () =>
+    seedToCameras(eine({ x: 4, y: 10, focalMm: 50 }), venue, vorauswahl).cameras[0];
+
+  it('behaelt Schwenk, Neigung und Hoehe', () => {
+    const vorher = [{ ...platziert(), pan: 15, tilt: -8, z: 2.4 }];
+    const { cameras } = seedToCameras(eine({ x: 4, y: 10 }), venue, vorauswahl, undefined, vorher);
+    expect(cameras[0].pan).toBe(15);
+    expect(cameras[0].tilt).toBe(-8);
+    expect(cameras[0].z).toBe(2.4);
+  });
+
+  it('behaelt Blende, Fokus und Stativart', () => {
+    const vorher = [{ ...platziert(), aperture: 5.6, focusDistance: 12, mountType: 'dolly' as const }];
+    const { cameras } = seedToCameras(eine({ x: 4, y: 10 }), venue, vorauswahl, undefined, vorher);
+    expect(cameras[0].aperture).toBe(5.6);
+    expect(cameras[0].focusDistance).toBe(12);
+    expect(cameras[0].mountType).toBe('dolly');
+  });
+
+  it('behaelt die Farbe — sie ist die Zuordnung auf dem Plan', () => {
+    const vorher = [{ ...platziert(), color: '#ff00ff' }];
+    const { cameras } = seedToCameras(eine({ x: 4, y: 10 }), venue, vorauswahl, undefined, vorher);
+    expect(cameras[0].color).toBe('#ff00ff');
+  });
+
+  it('behaelt die Brennweite, wenn der Seed keine nennt', () => {
+    const vorher = [{ ...platziert(), focalLength: 85 }];
+    const { cameras } = seedToCameras(eine({ x: 4, y: 10 }), venue, vorauswahl, undefined, vorher);
+    expect(cameras[0].focalLength).toBe(85);
+  });
+});
+
+describe('shellSeed — was der Seed SAGT, gilt trotzdem', () => {
+  const platziert = () =>
+    seedToCameras(
+      seed({ cameras: [{ id: 'k1', name: 'CAM 1', model: 'Sony FX9', x: 4, y: 10, focalMm: 50 }] }),
+      venue,
+      vorauswahl,
+    ).cameras[0];
+
+  it('eine genannte Position schlaegt die vorhandene', () => {
+    const vorher = [{ ...platziert(), x: 1, y: 1 }];
+    const { cameras } = seedToCameras(
+      seed({ cameras: [{ id: 'k1', name: 'CAM 1', model: 'Sony FX9', x: 9, y: 4 }] }),
+      venue,
+      vorauswahl,
+      undefined,
+      vorher,
+    );
+    expect(cameras[0].x).toBe(9);
+    expect(cameras[0].y).toBe(4);
+  });
+
+  it('eine genannte Brennweite schlaegt die vorhandene', () => {
+    const vorher = [{ ...platziert(), focalLength: 85 }];
+    const { cameras } = seedToCameras(
+      seed({ cameras: [{ id: 'k1', name: 'CAM 1', model: 'Sony FX9', focalMm: 35 }] }),
+      venue,
+      vorauswahl,
+      undefined,
+      vorher,
+    );
+    expect(cameras[0].focalLength).toBe(35);
+  });
+
+  it('eine wirklich neue Kamera bekommt die Vorgaben', () => {
+    const { cameras } = seedToCameras(
+      seed({ cameras: [{ id: 'neu', name: 'CAM 9', model: 'Sony FX9', x: 2, y: 2 }] }),
+      venue,
+      vorauswahl,
+      undefined,
+      [{ ...platziert(), id: 'andere' }],
+    );
+    expect(cameras[0].pan).toBe(-90);
+    expect(cameras[0].tilt).toBe(0);
+    expect(cameras[0].z).toBe(1.5);
+  });
+});
+
+describe('shellSeed — der Raum: eine Buehne im Seed, eine Liste im Planer', () => {
+  const mehrere: Venue = {
+    ...venue,
+    stages: [
+      { id: 's0', x: 8, y: 3, width: 6, height: 3, label: 'Hauptbühne' },
+      { id: 's1', x: 1, y: 10, width: 3, height: 2, label: 'Seitenbühne' },
+      { id: 's2', x: 12, y: 10, width: 8, height: 1, label: 'Steg' },
+    ],
+  }
+
+  it('setzt die ERSTE Buehne und laesst die uebrigen stehen', () => {
+    // Der Seed nennt genau eine Buehne, dieser Planer kennt eine Liste, und
+    // der Rueckweg meldet nur `stages[0]`. Die ganze Liste zu ersetzen loescht
+    // Buehnen, von denen die Shell nie erfahren hat — etwas nicht zu KENNEN
+    // ist kein Grund, es zu loeschen.
+    const s = seed({ venue: { name: 'Halle A', stage: { x: 2, y: 2, w: 10, h: 5 } } })
+    const nachher = seedToVenue(s, mehrere)
+    expect(nachher.stages).toHaveLength(3)
+    expect(nachher.stages[0]).toMatchObject({ x: 2, y: 2, width: 10, height: 5 })
+    expect(nachher.stages[1].label).toBe('Seitenbühne')
+    expect(nachher.stages[2].label).toBe('Steg')
+  })
+
+  it('behaelt Beschriftung und Kennung der ersten Buehne', () => {
+    // Der Seed sagt, WO sie liegt und WIE GROSS sie ist — nicht, wie sie
+    // heisst. Eine neue Id braeche ausserdem jede Referenz auf sie.
+    const s = seed({ venue: { name: 'Halle A', stage: { x: 2, y: 2, w: 10, h: 5 } } })
+    const nachher = seedToVenue(s, mehrere)
+    expect(nachher.stages[0].id).toBe('s0')
+    expect(nachher.stages[0].label).toBe('Hauptbühne')
+  })
+
+  it('nennt der Seed keine Buehne, bleibt die Liste unangetastet', () => {
+    const nachher = seedToVenue(seed({ venue: { name: 'Halle A' } }), mehrere)
+    expect(nachher.stages).toEqual(mehrere.stages)
+  })
+
+  it('behaelt Masse, die der Seed nicht nennt', () => {
+    const nachher = seedToVenue(seed({ venue: { name: 'Halle A' } }), mehrere)
+    expect(nachher.widthM).toBe(mehrere.widthM)
+    expect(nachher.heightM).toBe(mehrere.heightM)
+  })
+})

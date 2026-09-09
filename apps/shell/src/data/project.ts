@@ -203,6 +203,15 @@ export interface Fixture {
   dmxChannel: number
   x: number
   y: number
+  /**
+   * Haenge-Hoehe ueber dem Boden in Metern — vom Licht-Planer gemeldet.
+   *
+   * OPTIONAL, und das ist die ganze Aussage: die Shell plant keine Rigging-
+   * Hoehen, sie fuehrt die gemeldete mit. Fehlt sie, hat sie niemand gesetzt.
+   * Eine Vorgabe hier waere eine Hoehe, die niemand geplant hat, und sie
+   * liefe ueber den Seed zurueck in den Planer.
+   */
+  rigHeightM?: number
 }
 
 export type CableLayer = 'video' | 'dmx' | 'net'

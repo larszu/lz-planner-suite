@@ -38,7 +38,10 @@ export function initShellSeed(): () => void {
       // Canvas ohne Erklaerung.
       if (seed.devices.length === 0 && seed.cables.length === 0 && hatInhalt) return false
 
-      const { equipment, cables, ausgelassen } = seedToCable(seed)
+      // Die schon eingerichteten Geraete gehen mit hinein: der Seed setzt, was
+      // er nennt, und alles andere bleibt stehen. Ohne diese Liste ist jeder
+      // erneute Seed ein Zuruecksetzen auf den Katalog-Standardstand.
+      const { equipment, cables, ausgelassen } = seedToCable(seed, aktuell.equipment ?? [])
       melde(seed, ausgelassen)
       store.loadProject({
         ...aktuell,

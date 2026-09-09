@@ -87,14 +87,38 @@ export interface KameraUebernahme {
  * Seed -> platzierte Kameras. `vorauswahl` kapselt die Mount-/Objektiv-
  * Vorauswahl des Stores, damit diese Funktion rein und headless testbar bleibt.
  */
+/**
+ * ───────────────────────────────────────────────────────────────────────────
+ * DER SEED SETZT NICHT ZURUECK, WAS ER NICHT SAGT.
+ *
+ * Gemessen 2026-09-09 am gebauten Stand: `connectShellSeed` wendet JEDE
+ * hoehere Revision an, und die Shell zaehlt sie bei Projektwechsel, Undo/Redo
+ * und Kopf-Aenderung hoch. Diese Funktion baute daraufhin jede Kamera NEU —
+ * mit `pan: -90`, `tilt: 0`, `z: 1.5`, Blende, Fokusdistanz, Stativ,
+ * Extender, Sensor-Modus und Farbe aus der Vorgabe.
+ *
+ * Der Seed sagt von alldem NICHTS. Er nennt Id, Name, Modell, Objektiv,
+ * Brennweite und Position. Wer seine Kameras ausgerichtet, auf ein Podest
+ * gestellt und scharfgestellt hatte, verlor das, sobald jemand in der Shell
+ * den Projektnamen aenderte — still, und in einem Planer, dessen ganzer Zweck
+ * die Bildwirkung dieser Einstellungen ist.
+ *
+ * Die Regel lautet deshalb: der Seed setzt, was er NENNT; alles Uebrige
+ * behaelt eine bereits platzierte Kamera (`vorhandene`). Nur eine wirklich
+ * neue bekommt die Vorgaben — dort sind sie der Anfangswert einer
+ * Platzierung und keine Aussage ueber diese Show.
+ * ───────────────────────────────────────────────────────────────────────────
+ */
 export function seedToCameras(
   seed: SuiteSeed,
   venue: Venue,
   vorauswahl: (cam: Camera) => { mount: string; lens: Lens | null },
   lenses: Lens[] = LENSES,
+  vorhandene: VenueCamera[] = [],
 ): KameraUebernahme {
   const cameras: VenueCamera[] = [];
   const ausgelassen: KameraUebernahme['ausgelassen'] = [];
+  const schonDa = new Map(vorhandene.map((v) => [v.id, v]));
 
   seed.cameras.forEach((c, i) => {
     const camDef = katalogKamera(c);
@@ -108,47 +132,80 @@ export function seedToCameras(
       ausgelassen.push({ id: c.id, name: c.name, grund: 'kein passendes Objektiv im Katalog' });
       return;
     }
+    const alt = schonDa.get(c.id);
+    // Die Brennweite aus dem Seed gilt — aber nur, soweit das Objektiv sie
+    // hergibt. Eine Zahl ausserhalb des Zoombereichs waere eine Einstellung,
+    // die es an diesem Glas nicht gibt. Nennt der Seed keine, behaelt eine
+    // bekannte Kamera ihre eigene.
+    const brennweite = Math.min(
+      Math.max(c.focalMm ?? alt?.focalLength ?? lensDef.focalLengthMin, lensDef.focalLengthMin),
+      lensDef.focalLengthMax,
+    );
     cameras.push({
       id: c.id,
       label: c.name,
       cameraId: camDef.id,
       lensId: lensDef.id,
-      x: c.x ?? venue.widthM / 2,
-      y: c.y ?? venue.heightM * 0.75,
-      z: 1.5,
-      pan: -90,
-      tilt: 0,
-      // Die Brennweite aus dem Seed gilt — aber nur, soweit das Objektiv sie
-      // hergibt. Eine Zahl ausserhalb des Zoombereichs waere eine Einstellung,
-      // die es an diesem Glas nicht gibt.
-      focalLength: Math.min(
-        Math.max(c.focalMm ?? lensDef.focalLengthMin, lensDef.focalLengthMin),
-        lensDef.focalLengthMax,
-      ),
-      aperture: lensDef.maxApertureWide,
-      focusDistance: venue.heightM * 0.5,
-      color: CAMERA_COLORS[i % CAMERA_COLORS.length],
-      extenderActive: 1,
-      useSpeedbooster: false,
-      sensorModeIndex: camDef.sensorModes && camDef.sensorModes.length > 0 ? 0 : undefined,
-      activeMount: wahl.mount,
-      mountType: 'tripod',
+      x: c.x ?? alt?.x ?? venue.widthM / 2,
+      y: c.y ?? alt?.y ?? venue.heightM * 0.75,
+      // Ab hier: alles, wovon der Seed NICHTS sagt. Eine bekannte Kamera
+      // behaelt es; nur eine neue bekommt die Vorgabe.
+      z: alt?.z ?? 1.5,
+      pan: alt?.pan ?? -90,
+      tilt: alt?.tilt ?? 0,
+      focalLength: brennweite,
+      aperture: alt?.aperture ?? lensDef.maxApertureWide,
+      focusDistance: alt?.focusDistance ?? venue.heightM * 0.5,
+      color: alt?.color ?? CAMERA_COLORS[i % CAMERA_COLORS.length],
+      extenderActive: alt?.extenderActive ?? 1,
+      useSpeedbooster: alt?.useSpeedbooster ?? false,
+      sensorModeIndex:
+        alt?.sensorModeIndex ??
+        (camDef.sensorModes && camDef.sensorModes.length > 0 ? 0 : undefined),
+      activeMount: alt?.activeMount ?? wahl.mount,
+      mountType: alt?.mountType ?? 'tripod',
     });
   });
 
   return { cameras, ausgelassen };
 }
 
-/** Der Raum aus dem Seed — Masse und Buehne sind Aussagen der Shell. */
+/**
+ * Der Raum aus dem Seed — Masse und Buehne sind Aussagen der Shell.
+ *
+ * DER SEED NENNT GENAU EINE BUEHNE (`SeedVenue.stage`), dieser Planer kennt
+ * eine LISTE. Der Rueckweg meldet deshalb `stages[0]` und sonst nichts
+ * (`venueToSeedPatch`) — und der Hinweg darf entsprechend nur die erste
+ * setzen.
+ *
+ * Vorher ersetzte er die ganze Liste durch die eine aus dem Seed. Wer in
+ * diesem Planer eine zweite Buehne, einen Steg oder eine Seitenbuehne angelegt
+ * hatte (`addStage` gibt es), verlor sie beim naechsten Seed — ausgeloest von
+ * einem Projektwechsel in der Shell, die von diesen Buehnen nie erfahren hat.
+ * Etwas nicht zu KENNEN ist kein Grund, es zu loeschen.
+ *
+ * Die uebrigen Felder der ersten Buehne (Beschriftung, Sperre) bleiben
+ * ebenfalls stehen: der Seed sagt nur, WO sie liegt und WIE GROSS sie ist.
+ */
 export function seedToVenue(seed: SuiteSeed, vorher: Venue): Venue {
   const stage = seed.venue.stage;
+  const erste = vorher.stages[0];
   return {
     ...vorher,
     name: seed.venue.name || vorher.name,
     widthM: seed.venue.widthM ?? vorher.widthM,
     heightM: seed.venue.heightM ?? vorher.heightM,
     stages: stage
-      ? [{ id: vorher.stages[0]?.id ?? 'stage-0', x: stage.x, y: stage.y, width: stage.w, height: stage.h, label: vorher.stages[0]?.label ?? 'Stage' }]
+      ? [
+          {
+            ...(erste ?? { id: 'stage-0', label: 'Stage' }),
+            x: stage.x,
+            y: stage.y,
+            width: stage.w,
+            height: stage.h,
+          },
+          ...vorher.stages.slice(1),
+        ]
       : vorher.stages,
   };
 }
