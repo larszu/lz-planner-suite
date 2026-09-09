@@ -118,6 +118,13 @@ jobs:
       # durchblaettert, ist praktisch nicht vorhanden.
       - name: Dokumentation ist auffindbar
         run: npm run docs:reachable
+      # Die Kopfzeile eines Backlog-Eintrags sagt dasselbe wie sein Rumpf.
+      # Dreimal von Hand gefunden (B-4, B-15, B-52): "Status: offen", waehrend
+      # der Bau laengst auf main lag. Ein Eintrag ist eine Behauptung ueber
+      # den Code und altert genauso -- nur liest ihn niemand nach, weil oben
+      # schon steht, was Sache sei.
+      - name: Backlog-Kopfzeilen widersprechen ihrem Rumpf nicht
+        run: npm run backlog:check
       # B-17: Die Shell zeigt im Dev-Betrieb auf Ports, auf denen wirklich
       # jemand hoert. Gemessen wird nicht gegen die README (die kann veralten,
       # ohne dass es auffaellt), sondern Shell-Fallback gegen vite.config.

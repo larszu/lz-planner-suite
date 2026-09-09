@@ -1094,14 +1094,94 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-25 · `multicam-planner` upstream hat gar keine i18n
 
-* **Status:** offen — **entschieden (E-20, 2026-09-08): Englisch bleibt Quellsprache.**
-  **Deklariert am 2026-09-08 (`multicam#113`):** `package.json` trägt
-  `avplan.sourceLanguage: "en"`, die README sagt dasselbe, `npm run lang:check`
-  prüft die Übereinstimmung und steht in `ci.yml`. **Offen bleibt der Rückweg
-  selbst** — upstream gibt es weiterhin keine i18n. Der Lauf sagt das ausdrücklich
-  („Gemessen wurde NICHTS") statt „bestanden" zu melden, und er schaltet sich
-  selbst scharf: sobald der erste `t('key', 'Fallback')` in `src/` steht, misst er
-  und fällt bei jeder deutschen Zeile.
+* **Status:** **ERLEDIGT 2026-09-09** — `multicam#116`. Entschieden (E-20,
+  2026-09-08): Englisch bleibt Quellsprache. Deklariert am 2026-09-08
+  (`multicam#113`): `package.json` trägt `avplan.sourceLanguage: "en"`, die
+  README sagt dasselbe, `npm run lang:check` prüft die Übereinstimmung und
+  steht in `ci.yml`.
+* **Der Rückweg ist gegangen: 14 von 14 gewickelten Dateien sind upstream
+  angekommen.** Der Lauf, der vorher „Gemessen wurde NICHTS" meldete, meldet
+  jetzt „0 deutsch, 120 englisch". Gebaut wurden dafür: `src/i18n/` (Modul +
+  deutsches Teil-Wörterbuch, ohne Abhängigkeit zur Suite), die Sprachwahl im
+  Zustand-Store (`multicam-lang`, von der Shell über die Settings-Brücke
+  gesetzt) und `npm run i18n:check` als Zähler des Rückwegs, in `ci.yml`.
+
+* **WARUM DAS KEIN KOPIEREN WAR, und das ist der Ertrag dieses Punktes.** Von
+  den 14 Dateien liessen sich **drei** kopieren. Die übrigen elf hingen an
+  einem von zwei Dingen, und beide waren beim Hinsehen kleiner oder grösser
+  als der Zähler behauptet hatte:
+  * **Sechs** zogen `@avplan/ui` herein — für insgesamt **sieben Zeilen**:
+    `alertDialog`, `confirmDialog`, `promptDialog`. Die Suite braucht sie,
+    weil `window.confirm` in einem eingebetteten Planer die ganze Shell
+    blockiert; upstream läuft eigenständig, dort sind die eingebauten Dialoge
+    richtig. „Lässt sich nicht kopieren" hiess also nie „geht nicht", sondern
+    „geht nicht mit `cp`".
+  * **Fünf** waren echte inhaltliche Fälle: `Venue2D`/`Venue3D` (Theme-Hook,
+    nicht übernommen), `App.tsx` (eigene `ErrorBoundary`, bleibt),
+    `InventoryDialog` (zwei Import-Zeilen), `StartupAssistant` (der
+    Willkommens-Dialog ist drüben durch `@avplan/onboarding-core` ERSETZT —
+    dort wurde nur die Wicklung übertragen, nicht der gemeinsame Dialog).
+
+* **DER FUND, DER DEN GANZEN AUFWAND RECHTFERTIGT: die Suite-Kopie hätte
+  Text zerstört.** Zurückgewickelt (jedes `t('k','En')` durch seinen
+  deutschen Dict-Eintrag ersetzt) zeigt sie an vielen Stellen ein ANDERES —
+  älteres — Deutsch als upstream:
+
+  | upstream | Suite-Kopie |
+  |---|---|
+  | Kamera duplizieren | Duplizieren |
+  | Anschluss | Mount |
+  | (Wechselplatte / Adapter) | (Mount-Platte / Adapter) |
+  | Objektiv-Anschluss X passt nicht zum aktiven Anschluss Y | Objektiv-Mount X ≠ aktiver Mount Y — inkompatibel |
+  | Rechenweg ausblenden | Ausblenden Berechnungsdetails |
+  | XY Standort · Pan/Tilt Schwenk und Neigung | XY Boden bewegen · Pan/Tilt Achsen drehen |
+
+  Upstream hat die Begrifflichkeit einmal durchgezogen, die Suite nicht. Die
+  letzte Zeile des 3D-Overlays ist der klarste Fall: die Suite hat den
+  deutschen Text nicht übernommen, sondern aus ihrem eigenen englischen
+  Fallback ZURÜCKÜBERSETZT. Ein `cp` hätte die Wicklung gebracht **und** die
+  Terminologie zurückgedreht — mit grüner Prüfung, weil Schlüssel und Anzahl
+  stimmen. Die Regel lautet deshalb: **der Wörterbuch-Eintrag ist der Text,
+  der vor dem Wickeln upstream stand** — es sei denn, das war Englisch; dann
+  ist die Suite-Übersetzung ein Zugewinn und bleibt.
+
+* **Bewiesen, nicht behauptet.** Jede gewickelte Datei wurde maschinell
+  zurückgewickelt, normalisiert und wortweise gegen die Fassung von vorher
+  gestellt. Ergebnis für `Sidebar.tsx` (die grösste, 190 Schlüssel): **keine
+  einzige deutsche Zeichenkette hat sich geändert**; alle 61 verbleibenden
+  Unterschiede sind Stellen, an denen vorher Englisch stand.
+
+* **Zwei Verluste der Suite-Kopie sind dabei aufgefallen und upstream
+  repariert:**
+  1. **Neun Schlüssel haben drüben gar keinen deutschen Eintrag**
+     (`sightlineBlocked`, `presets`, `presetName`, `focalEff` …) — gewickelt,
+     nie übersetzt. Upstream haben sie jetzt eine deutsche Form.
+  2. **Die Speicher-voll-Meldung des Lagers hat einen Satz verloren:** aus
+     „… der lokale Speicher ist voll. **Der Bestand ist beim nächsten Start
+     wieder weg** — erst Platz schaffen, dann erneut importieren" wurde
+     „… local storage is full. Free some space, then import again." Weg ist
+     genau der Teil, der die Meldung lesenswert macht. Steht wieder da,
+     deutsch wie englisch.
+
+* **Der Zähler musste mit, und der erste Versuch war falsch.** `i18n:check`
+  zählte „sichtbare Zeichenketten ohne Entsprechung in der Suite-Kopie" und
+  nannte das „die Arbeit, die der Rückweg neu übersetzen muss". Nach dem
+  Wickeln der Sidebar wäre die Zahl von 49 auf 117 **gestiegen** — weil 106
+  neu gewickelte Sätze der Suite unbekannt sind. Erledigte Arbeit hätte wie
+  neue ausgesehen. Er trennt jetzt: **ohne deutsche Form** (weder drüben noch
+  hier) ist Arbeit, **hier schon übersetzt, drüben unbekannt** ist Vorsprung.
+  Der erste Versuch dieser Trennung fragte das deutsche Wörterbuch nach dem
+  Text ab und bekam „vier" heraus — nach dem Wickeln steht im Quelltext der
+  ENGLISCHE Fallback, der naturgemäss nicht im deutschen Dict steht. Gemessen
+  wird jetzt über die **Schlüssel**. Stand: **8 offen, 113 Vorsprung.**
+
+* **NICHT erledigt, eigener Punkt:** es gibt upstream weiterhin deutsche
+  Zeichenketten in Dateien, die die Suite-Kopie **gar nicht gewickelt hat** —
+  `RigControlPanel`, `ShotlistPanel`, `LensSlider`, `CommandPalette`, Teile
+  von `Venue3D`, die Formel-Tafel. Das ist kein Rückweg (drüben steht dort
+  derselbe ungewickelte Text), sondern die Sprachmisch-Frage aus E-17, und
+  `lang:check` fängt sie heute nicht: die betroffenen Dateien landen in der
+  Spalte „ohne Merkmal". Siehe **B-61**.
 * **Befund (gemessen 2026-09-04):** Upstream ist die Oberfläche fest deutsch —
   `grep` findet in `src/` **keinen einzigen** `useTranslation`-Aufruf und kein
   `i18n`-Verzeichnis. Die **Suite-Kopie** dagegen ist zweisprachig aufgebaut
@@ -1127,6 +1207,100 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 * **Deshalb nicht geraten:** siehe E-20. Ohne diese Entscheidung wäre jede
   Richtung eine halbe Tageslast, die man im Zweifel wegwirft.
 * **Aufwand:** groß
+
+### B-61 · `multicam-planner`: deutsche Texte in einer englisch-quelligen Oberfläche — und der Wächter sieht sie nicht
+
+* **Status:** offen. Aufgefallen beim Abschluss von B-25 (`multicam#116`).
+* **Befund (gemessen 2026-09-09, nach dem Rückweg):** Die 14 Dateien, die die
+  Suite-Kopie gewickelt hat, sind durch. Was bleibt, sind Dateien, die es
+  **drüben genauso ungewickelt gibt** — der Rückweg hilft dort also nicht,
+  weil es nichts zurückzuholen gibt. Sie tragen deutsche Beschriftungen in
+  einer Anwendung, deren Quellsprache `en` ist (E-20):
+  * `components/RigControl/RigControlPanel.tsx` — ~27 Stellen („Tasten
+    aktiv", „Fahrweg (J / L)", „Ziehen fährt den Wagen; loslassen stoppt.")
+  * `components/Shotlist/ShotlistPanel.tsx` — ~22 Stellen („Neue Shotlist",
+    „Vorheriger Shot (Q)", „— keine Shotlist —")
+  * `components/Venue3D/Venue3D.tsx` — die Rest-Beschriftungen der
+    Kamera-Karte im 3D-Raum („Standort auf dem Boden", „Höhe", „Schwenk")
+  * `components/Preview/LensSlider.tsx` — „Eine Stufe zurück/weiter"
+  * `components/Sidebar/CalculationBreakdown.tsx` — die Zeilenköpfe der
+    Formel-Tafel (teils Formelzeichen, teils Text)
+  * `components/Layout/CommandPalette.tsx` — hier umgekehrt: englisch
+    („Type a command…", „No matching command.") in einem Fenster, dessen
+    Nachbarn deutsch sind
+* **Warum das mehr ist als Kosmetik:** wer in der Suite oder upstream
+  Englisch wählt, bekommt eine Oberfläche, in der die Kamera-Karte englisch
+  und die Rig-Steuerung deutsch ist. Das ist genau der Zustand, den E-17 für
+  `sony-camera-bridge` als Fehler benannt und B-26 dort beseitigt hat.
+* **UND DER WÄCHTER FÄNGT ES NICHT.** `npm run lang:check` meldet
+  „0 deutsch, 120 englisch, 535 ohne Merkmal" — die betroffenen Dateien
+  landen in der dritten Spalte. Er urteilt je Datei über ein Merkmal statt
+  über die einzelnen Zeichenketten; eine Datei mit deutschen UND englischen
+  Texten fällt damit durchs Raster. Der Weg dafür ist derselbe, den
+  `sony#22` schon gegangen ist: **die Zeichenketten zählen, nicht die
+  Dateien**, mit einer Obergrenze, die sinken darf und nicht steigen. Der
+  dortige Lauf hat dabei zweimal danebengemessen (Kommentare für Literale
+  gehalten; nur Attribute gelesen, nicht den JSX-Text) — beide Fehler sind
+  dort schon gelöst und lassen sich übernehmen statt neu zu machen.
+* **Reihenfolge, die sich in B-26 bewährt hat:** erst den Zähler scharf
+  machen und die heutige Zahl als GRENZE festhalten, dann übersetzen und die
+  Grenze mitsenken. Andersherum übersetzt man einmal und lässt die Lücke ab
+  morgen wieder wachsen.
+* **Aufwand:** mittel — die Zeichenketten sind gezählt und liegen beieinander;
+  die Wicklung ist mechanisch, das Wörterbuch ist schon da.
+
+### B-62 · Die Kopfzeile eines Backlog-Eintrags altert schneller als sein Rumpf — jetzt mit Wächter
+
+* **Status:** **GEBAUT 2026-09-09** — `scripts/backlog-status-frisch.mjs`,
+  `npm run backlog:check`, im CI.
+* **Anlass:** dieselbe Form ist in dieser Datei **dreimal** von Hand gefunden
+  und jedes Mal nachträglich korrigiert worden — B-4, B-15 und B-52 standen
+  auf „Status: offen", während der Bau längst auf `main` lag. B-4 hält die
+  Lehre sogar ausgeschrieben fest:
+
+  > Ein Backlog-Eintrag ist eine Behauptung über den Code und altert genauso
+  > wie eine. Vor dem Abhaken jeden Punkt neu am Code prüfen, nicht am
+  > eigenen Text.
+
+  Und B-10: *„Ein ‚was offen bleibt', das nach dem Bau der Sache nicht
+  angefasst wird, ist schlimmer als kein Eintrag — er schickt jemanden los,
+  etwas zu bauen, das schon steht."*
+
+  Dreimal derselbe Fehler, dreimal von Hand gefunden. Genau dafür schreibt
+  dieses Repo sonst einen Wächter — und dass es hier keinen gab, ist umso
+  auffälliger, als die Lehre daneben stand.
+* **B-52 war der dritte Fall und wurde beim Bau gefunden:** Kopfzeile „Befund
+  erhoben und beantwortet 2026-09-08, **Bau offen**", während im selben
+  Eintrag „TEIL 1 ERLEDIGT" und „TEIL 2 ERLEDIGT" stehen. Korrigiert.
+* **Was der Lauf prüft, und was ausdrücklich nicht:** NICHT, ob ein Eintrag
+  stimmt — das kann kein Skript. Nur, ob er sich **selbst widerspricht**: eine
+  Kopfzeile, die „offen" sagt, während im Rumpf ein „ERLEDIGT" oder „GEBAUT"
+  steht. Das ist ein rein textlicher Widerspruch und immer ein Fehler —
+  entweder ist der Bau erledigt und die Kopfzeile veraltet, oder der Rumpf
+  behauptet einen Bau, den es nicht gibt.
+* **Zwei Formen zählen bewusst nicht als Verstoss:**
+  * `Status: Kern GEBAUT — der Datei-Import offen` (B-47). Beides steht in der
+    **Kopfzeile**, die Aussage ist also vollständig.
+  * `~~offen~~ **erledigt**` — die übliche Schreibweise dieser Datei für „war
+    offen, ist es nicht mehr". Durchgestrichenes wird vor dem Messen entfernt.
+* **Die Fertig-Marke wird GROSSGESCHRIEBEN geprüft, und das ist gemessen:**
+  eine Fassung ohne Gross-/Kleinschreibung schlug auf B-11 an — wegen des
+  Satzes „gegen die die Belegkette dieses Repos gebaut ist". Ein Wächter, der
+  Prosa für eine Marke hält, ist genau der, den man nach dem dritten
+  Fehlalarm abschaltet.
+* **Ehrlich zum eigenen Filter:** der Durchgestrichen-Filter trägt **heute
+  nichts** — entfernt man ihn, bleibt der Lauf grün, weil kein
+  durchgestrichener Eintrag im Rumpf eine grossgeschriebene Fertig-Marke
+  führt. Er steht trotzdem da: die Form gibt es in der Datei (B-1, B-2,
+  B-3 …) und kann jederzeit auf einen Rumpf mit „ERLEDIGT" treffen; dann wäre
+  jeder korrekt abgehakte Eintrag ein Fehlalarm. Das steht so im Kopf des
+  Skripts, damit niemand die Zeile für einen Messwert hält.
+* **Gegengeprobt (3):** B-52-Kopfzeile zurück auf „Bau offen" → rot mit
+  Fundstelle; Grossschreibung aufgehoben → Fehlalarm auf B-11; CI-Schritt
+  entfernt → `ci:complete` meldet „backlog:check in package.json, nicht im
+  Workflow". Alle drei zurückgebaut → grün.
+* **Stand:** 58 Einträge mit Status-Zeile geprüft, kein Widerspruch.
+* **Aufwand:** klein — erledigt.
 
 ### B-26 · `sony-camera-bridge`: eine Oberfläche, zwei Sprachen
 
@@ -2468,13 +2642,65 @@ belegbar, dort sind sie erprobt.
     benannte Ausnahme, samt einer Zusicherung, die verlangt, dass die Ausnahme
     gestrichen wird, sobald sie gelöst ist — sonst hält der Nächste eine
     erledigte Sache für offen. Der Weg dorthin ist ein sichtbarer kleiner
-    Löschgriff auf grobem Zeiger, und der ist **offen**.
-  * **Was die 44-px-Marke angeht:** sie ist NICHT gemessen worden. Eine
-    Trefferfläche misst man am gerenderten Element, nicht an Klassennamen —
-    `px-1 py-0.5` sagt nichts über die Fläche, solange Zeilenhöhe, Icon-Grösse
-    und `gap` mitreden. Hier eine Zahl aus dem Quelltext zu erfinden wäre
-    schlimmer als keine: sie sähe aus wie eine Messung. Der Weg dafür ist der
-    laufende Renderer (`ui:smoke` treibt ihn ohnehin), und er ist offen.
+    Löschgriff auf grobem Zeiger — **gebaut** (`.cp-coarse-only`), und die
+    Ausnahmenliste in `tests/touchErreichbar.test.ts` ist damit leer. Der
+    Satz „und der ist offen" stand hier, nachdem er es nicht mehr war.
+  * **Was die 44-px-Marke angeht: JETZT GEMESSEN** (`cable#800`,
+    `scripts/ui-targets.mjs`, neuer CI-Schritt im `ui-smoke`-Job). Hier stand
+    „sie ist NICHT gemessen worden … der Weg dafür ist der laufende Renderer,
+    und er ist offen". Der Weg ist gegangen.
+
+    **Das Ergebnis, Beispielprojekt, Fenster 1500 × 950:** 93 Trefferflächen,
+    davon **54 unter 24 px** und **89 unter 44 px**. Die kleinste ist
+    **12 × 20 px** („Move category" in der Bibliothek). Nach Ort: Seitenleiste
+    45, Werkzeugleiste 16, Kopfleiste 10, auf dem Knoten 10,
+    ReactFlow-Zoom 4, Statusleiste 2, sonstwo 2.
+
+    **Zwei Marken, und sie sind nicht dasselbe** — das stand vorher nirgends
+    und ist der Grund, warum beide gezählt werden: **24 px ist die NORM**
+    (WCAG 2.2, Erfolgskriterium 2.5.8 „Target Size (Minimum)", Stufe AA),
+    **44 px ist eine Hersteller-Empfehlung** (Apple HIG). Die im Backlog
+    genannte Marke war die zweite. 54 Flächen unterschreiten die erste.
+
+    **Gemessen wird die kleinere Seite**, nicht die Fläche: ein Knopf von
+    200 × 12 px ist mit dem Finger nicht zu treffen, obwohl seine Fläche gross
+    ist. Gezählt werden nur **Blatt**-Elemente (ein `<button>`, der einen
+    anderen enthält, ist ein Behälter und kein Ziel — sonst wäre eine
+    Werkzeugleiste ein grosser bequemer Knopf), und ein Ankreuzfeld zählt
+    **mitsamt seiner Beschriftung**: wer auf das Wort tippt, trifft das Feld.
+
+    **Der Lauf misst ZWEIMAL — mit Maus und mit nachgebildetem Finger.** Das
+    ist kein Zierrat: unter der Maus sind die `.cp-coarse-only`-Griffe
+    `display: none`, also ausgerechnet die, die es nur für den Finger gibt.
+    Der Finger wird über CDP eingeschaltet
+    (`Emulation.setTouchEmulationEnabled` + `setDeviceMetricsOverride{mobile:
+    true}`); `Emulation.setEmulatedMedia` mit `features:[{name:'pointer'}]`
+    tut es **nicht** — das war der erste Versuch und blieb wirkungslos,
+    nachgemessen.
+
+    **Ein echter Fehler fiel dabei heraus, und er sass im Messwerkzeug
+    selbst.** Die Sichtbarkeits-Prüfung fragte nur das Element nach `opacity`
+    — nicht seine Vorfahren. Eine Bedienreihe mit `.cp-hover-actions` steht
+    aber auf `opacity: 0` am **Behälter**, ihre Knöpfe auf `opacity: 1`; sie
+    galten damit als sichtbar, obwohl unter der Maus niemand sie sieht.
+    Beide Durchgänge kamen dadurch auf dieselbe Zahl, was wie ein Beweis
+    aussah, dass die Finger-Nachbildung nichts ändert. `checkVisibility`
+    liest die Kette mit. **Derselbe Fehler stand in `ui-labels.mjs`** und ist
+    dort mitkorrigiert (Ergebnis unverändert: 0 namenlose, 6 symbolgleiche).
+    * Damit die zweite Zahl nicht wieder eine Behauptung wird, zählt der Lauf
+      ausdrücklich, **wie viele Elemente nur der grobe Zeiger sieht** (0 → 1),
+      und bricht ab, wenn der Finger-Durchgang nichts aufdeckt. Zwei gleiche
+      Zahlen sind hier kein Ergebnis.
+  * **Die Zahlen sind Obergrenzen, keine Zielmarken** — dieselbe Form wie das
+    Symbol-Budget in `ui-labels.mjs`. Sie dürfen sinken, nicht steigen; wer
+    eine neue kleine Fläche anlegt, trägt sie ein und begründet sie.
+    Gegengeprobt: Deckel um 1 gesenkt → rot, zurückgebaut → grün.
+  * **Was ausdrücklich NICHT in dieser Runde steckt:** die 89 Flächen
+    tatsächlich zu vergrössern. Eine Anwendung, die auf 1500 px Breite
+    Signalfluss, Bibliothek und Eigenschaftsleiste nebeneinander zeigt, kann
+    nicht jede Zeile 44 px hoch machen — dann passt die Liste nicht mehr aufs
+    Blatt. **Welche** dieser Flächen wachsen sollen, ist eine
+    Gestaltungsfrage; sie steht jetzt mit Zahlen da statt mit einer Vermutung.
 * **Befund 3 — Umbruch (GEMESSEN 2026-09-08, cable-planner/src/renderer).**
   Der Verdacht stimmt, und in einem Punkt ist es schärfer als vermutet:
   * **63 feste `max-w-*`-Breiten — und KEINE EINZIGE Breakpoint-Fassung
@@ -2946,7 +3172,12 @@ belegbar, dort sind sie erprobt.
 
 ### B-52 · Passive Port-Träger: Verteiler, Steckdosenleiste, Durchgangsbuchse — und wo die Patchblende steckt
 
-* **Status:** Befund erhoben und beantwortet 2026-09-08, **Bau offen**.
+* **Status:** **BEIDE TEILE GEBAUT** — Teil 1 `cable#787`, Teil 2 `cable#788`
+  (Belege stehen unten im Eintrag). Hier stand bis zum 2026-09-09 „Bau offen",
+  während beide Teile bereits auf `main` lagen — derselbe Fehler wie bei B-4
+  und B-15: die Kopfzeile wurde beim Abhaken nicht mitgelesen. Wer eine
+  Hälfte erledigt, fasst die Kopfzeile mit an; sonst schickt der Eintrag
+  jemanden los, etwas zu bauen, das schon steht.
   **Nutzer-Frage, 2026-09-08:** „es gibt noch keinen guten weg um
   stromverteiler in den plan einzuzeichnen und auch noch keine patchblenden
   und durchgangsbuchsen und keine mehrfachsteckdosen. sollten das geräte

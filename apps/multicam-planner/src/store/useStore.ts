@@ -1061,6 +1061,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   applyProjectFile: (project: ProjectFile) => {
     if (project.formatVersion !== 1) {
+      // KEIN Hook: der Store ist keine Komponente. Die Sprache steht in ihm
+      // selbst, also wird sie hier gelesen — `translate` ist genau dafuer die
+      // Lookup-Funktion ohne React.
       void alertDialog(translate(get().language, 'store.unsupportedFormat', 'Unsupported project file format.'), {
         okLabel: translate(get().language, 'common.ok', 'OK'),
       });

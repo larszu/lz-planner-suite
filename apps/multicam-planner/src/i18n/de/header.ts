@@ -79,8 +79,8 @@ export const header: Record<string, string> = {
   'header.panel.close': 'Aktuelles Panel schließen',
   'header.sidebar.settings': 'Einstellungen',
   'header.sidebar.templates': 'Vorlagen',
-  'header.sidebar.open': 'Seitenleiste öffnen',
-  'header.sidebar.collapse': 'Seitenleiste einklappen',
+  'header.sidebar.open': 'Spalte einblenden',
+  'header.sidebar.collapse': 'Spalte ausblenden',
   'header.inventory': 'Lager',
   'header.inventory.title': 'Lager / Bestand',
 
@@ -140,4 +140,7 @@ export const header: Record<string, string> = {
   'header.exchange.cableSection': 'Kabel-Planner',
   'header.foreignLamps.hide': 'Fremd-Lampen ausblenden',
   'header.foreignLamps.show': 'Fremd-Lampen einblenden',
+  'header.sidebar.open.aria': 'Seitenspalte einblenden',
+  'header.sidebar.collapse.aria': 'Seitenspalte ausblenden',
+  'header.welcome.close': 'Schließen',
 };

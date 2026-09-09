@@ -14,7 +14,7 @@ import { alertDialog } from '@avplan/ui';
 import ZoomControl from './ZoomControl';
 import { TABS, type TabDef } from './tabs';
 
-// OVERLAY (Suite): die Uebersetzungsfunktion, wie sie `useTranslation` liefert.
+// Die Uebersetzungsfunktion, wie sie `useTranslation` liefert.
 type TFn = (key: string, en: string) => string;
 import { buildShiftReport, printShiftReport } from '../../utils/shiftReport';
 import { shiftReportFingerprint } from '../../utils/documentContent';
@@ -56,8 +56,8 @@ export default function Header({
   onOpenInventory,
 }: HeaderProps) {
   const { t } = useTranslation();
-  // OVERLAY (Suite): die Reiter tragen ihren i18n-Schluessel in `tabs.ts`;
-  // hier wird er eingeloest. Upstream ist die App einsprachig.
+  // Die Reiter tragen ihren i18n-Schluessel in `tabs.ts`; hier wird er
+  // eingeloest. Wer keinen hat, steht mit seinem Label fuer sich.
   const beschriftung = (tab: TabDef) => (tab.key ? t(tab.key, tab.label) : tab.label);
   const editModes = useMemo(() => getEditModes(t), [t]);
   const { venue, projectVersion, lastSavedVersion, saveProject, loadProject, editMode, setEditMode, avForeign, showForeign, toggleShowForeign } = useStore();

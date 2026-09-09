@@ -133,7 +133,13 @@ export function InventoryDialog({ open, onClose }: Props) {
         ? format(
             t(
               'inventory.import.full',
-              '{count} objects read but NOT saved: local storage is full. Free some space, then import again.',
+              // Der zweite Satz ist der Grund, warum diese Meldung ueberhaupt
+              // gelesen werden muss: der Bestand ist beim naechsten Start
+              // WIEDER WEG. Die Suite-Kopie hatte ihn beim Uebersetzen
+              // verloren — englisch wie deutsch stand dort nur noch „erst
+              // Platz schaffen, dann erneut importieren", also eine
+              // Handlungsanweisung ohne die Folge, die sie noetig macht.
+              '{count} objects read but NOT saved: local storage is full. The stock will be gone at the next start — free some space, then import again.',
             ),
             { count: n },
           )

@@ -23,11 +23,10 @@ export interface TabDef {
   Icon: IconType;
 }
 
-// OVERLAY (Suite): die Reiter tragen hier zusaetzlich ihren i18n-Schluessel.
-// Upstream ist die App einsprachig; in der Suite laeuft sie neben zwei
-// uebersetzten Planern, und ein englischer Reiter neben deutschen Panels ist
-// genau die Uneinheitlichkeit, gegen die ADR-007 geschrieben ist. Shotlist
-// und Rig bleiben ohne Schluessel — sie heissen in beiden Sprachen so.
+// Die Reiter tragen ihren i18n-Schluessel gleich mit. Shotlist und Rig bleiben
+// ohne — sie heissen in beiden Sprachen so, und ein Schluessel, dessen
+// Uebersetzung dem Quell-String gleicht, ist nur eine Stelle mehr, an der
+// jemand spaeter etwas anderes eintragen kann.
 export const TABS: TabDef[] = [
   { id: 'tab-2d', key: 'header.tab.2dPlan', label: '2D Plan', Icon: FiLayout },
   { id: 'tab-3d', key: 'header.tab.3dView', label: '3D View', Icon: FiBox },

@@ -7,12 +7,12 @@ export const venue: Record<string, string> = {
   'venue.delete': '{kind} löschen',
   // Venue3D-Overlay + Reset
   'venue.selectCamera': 'Kamera wählen',
-  'venue.unlockToEdit': '→ zum Bearbeiten entsperren',
-  'venue.floorMove': 'Boden bewegen',
+  'venue.unlockToEdit': '→ Schloss öffnen zum Bearbeiten',
+  'venue.floorMove': 'Standort',
   'venue.height': 'Höhe',
-  'venue.rotateAxes': 'Achsen drehen',
+  'venue.rotateAxes': 'Schwenk und Neigung',
   'venue.move': 'Bewegen',
-  'venue.vertical': 'vertikal',
-  'venue.dolly': 'Dolly',
+  'venue.vertical': 'hoch und runter',
+  'venue.dolly': 'vor und zurück',
   'venue.resetView': 'Ansicht zurücksetzen',
 };

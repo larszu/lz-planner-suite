@@ -17,4 +17,7 @@ export const common: Record<string, string> = {
   'common.restore': 'Wiederherstellen',
   'common.clearAll': 'Alles löschen',
   'store.unsupportedFormat': 'Nicht unterstütztes Projektdateiformat.',
+  'error.title': 'Etwas ist schiefgelaufen',
+  'error.hint': 'Die Anwendung ist auf einen unerwarteten Fehler gelaufen. Die Seite neu laden hilft meistens.',
+  'error.reload': 'Neu laden',
 };

@@ -3,7 +3,6 @@ import Header from './components/Layout/Header';
 import { TABS } from './components/Layout/tabs';
 import StartupAssistant from './components/Layout/StartupAssistant';
 import CommandPalette, { type Command } from './components/Layout/CommandPalette';
-import { isEmbedded } from './hooks/useIsEmbedded';
 import Sidebar from './components/Sidebar/Sidebar';
 import Venue2D from './components/Venue2D/Venue2D';
 import Venue3D from './components/Venue3D/Venue3D';
@@ -22,6 +21,7 @@ import { InventoryDialog } from './inventory/InventoryDialog';
 import { Layout, Model, TabNode, Actions } from 'flexlayout-react';
 import type { IJsonModel, ITabSetRenderValues, TabSetNode, BorderNode, ILayoutApi } from 'flexlayout-react';
 import 'flexlayout-react/style/dark.css';
+import { isEmbedded } from './hooks/useIsEmbedded';
 import { useTranslation, format } from './i18n';
 
 type TFn = (key: string, en: string) => string;
@@ -373,7 +373,7 @@ export default function App() {
         </button>,
       );
     }
-  }, [handleMinimizeToFocus, layoutMode, model]);
+  }, [handleMinimizeToFocus, layoutMode, model, t]);
 
   const layoutPresetOptions: LayoutPresetOption[] = Object.keys(userLayoutPresets)
     .sort((left, right) => left.localeCompare(right))
@@ -407,7 +407,7 @@ export default function App() {
       default:
         return <div className="p-4 text-gray-500">{format(t('header.panel.unknown', 'Unknown panel: {component}'), { component: component ?? '' })}</div>;
     }
-  }, []);
+  }, [t]);
 
   // ── Responsive: auto-collapse sidebar on small screens ──
   useEffect(() => {
@@ -534,8 +534,10 @@ export default function App() {
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="shrink-0 w-5 flex items-center justify-center bg-bc-panel border-r border-bc-border hover:bg-bc-border text-gray-500 hover:text-white transition-colors"
-          title={sidebarCollapsed ? t('header.sidebar.open', 'Open sidebar') : t('header.sidebar.collapse', 'Collapse sidebar')}
-          aria-label={sidebarCollapsed ? t('header.sidebar.open', 'Open sidebar') : t('header.sidebar.collapse', 'Collapse sidebar')}
+          title={sidebarCollapsed ? t('header.sidebar.open', 'Open column') : t('header.sidebar.collapse', 'Collapse column')}
+          aria-label={sidebarCollapsed
+            ? t('header.sidebar.open.aria', 'Open the side column')
+            : t('header.sidebar.collapse.aria', 'Collapse the side column')}
         >
           {sidebarCollapsed ? <FiChevronRight size={14} /> : <FiChevronLeft size={14} />}
         </button>

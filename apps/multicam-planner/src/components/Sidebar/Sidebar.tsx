@@ -166,8 +166,9 @@ function sortFavoritesFirst<T extends { id: string; manufacturer?: string; model
 
 /**
  * Bedarf 14 — Befundtext. Ausgeschriebener `switch` und keine Schluessel-
- * Zusammensetzung: eine aus dem `kind` gebaute Zeichenkette waere beim
- * Suchen unauffindbar.
+ * Zusammensetzung: dieser Planer hat kein i18n-Dict, aber die Regel „ein
+ * Text je Fall, im Quelltext lesbar" gilt hier genauso — eine aus dem
+ * `kind` gebaute Zeichenkette waere beim Suchen unauffindbar.
  */
 const presetFindingText = (f: PresetFinding): string => {
   switch (f.kind) {
@@ -226,15 +227,14 @@ function CameraCard({
   const [editingCustomCam, setEditingCustomCam] = useState<string | null>(null);
   const [showCalc, setShowCalc] = useState(false);
 
-  // Bedarf 14 — Presets.
+  // Bedarf 14 — Presets. `istPtz` kommt aus dem Katalog-Datensatz und nicht
+  // aus dem Modellnamen: „PTZ" im Namen ist keine Eigenschaft des Geraets.
   const [presetName, setPresetName] = useState('');
   const [presetSegment, setPresetSegment] = useState('');
 
   const { customCameras, addCustomCamera, libraryStorageFull } = useStore();
   const camDef = getCameraById(cam.cameraId, customCameras);
   const lensDef = getLensById(cam.lensId) ?? customLenses.find((l) => l.id === cam.lensId);
-  // Die PTZ-Eigenschaft kommt aus dem Katalog-Datensatz und nicht aus dem
-  // Modellnamen: „PTZ" im Namen ist keine Eigenschaft des Geraets.
   const istPtz = camDef?.type === 'ptz';
   // Ohne `useMemo`: die Pruefung ist eine Schleife ueber eine Handvoll
   // Presets, und der React-Compiler weist ein Memo auf `cam` zurueck
@@ -275,7 +275,6 @@ function CameraCard({
     ...schattierBefunde.map((f) => ({ label: SHADING_FINDING_LABEL[f.kind], text: f.text })),
     ...registerBefunde.map((f) => ({ label: REGISTRY_FINDING_LABEL[f.kind], text: f.text })),
   ];
-
 
   // BEDARF 130 — der Abgleich Plan gegen das, was im Netz wirklich da ist.
   //
@@ -395,7 +394,7 @@ function CameraCard({
             aria-expanded={expanded}
             style={{ padding: '4px', minWidth: '28px', minHeight: '28px' }}
             className="flex min-w-0 flex-1 items-center gap-2 rounded text-left hover:bg-white/[0.05]"
-            title={expanded ? 'Details zuklappen' : 'Details aufklappen'}
+            title={expanded ? t('sidebar.cam.collapse', 'Collapse details') : t('sidebar.cam.expand', 'Expand details')}
           >
             <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: cam.color }} />
             <span className="truncate text-sm font-bold text-white">{cam.label}</span>
@@ -406,8 +405,8 @@ function CameraCard({
               onClick={() => duplicateCamera(cam.id)}
               style={{ padding: '6px' }}
               className="rounded text-gray-400 hover:bg-white/[0.06] hover:text-bc-accent"
-              title={t('sidebar.cam.duplicate', 'Duplicate')}
-              aria-label={`${cam.label} duplizieren`}
+              title={t('sidebar.cam.duplicate', 'Duplicate camera')}
+              aria-label={format(t('sidebar.cam.duplicate.aria', 'Duplicate {name}'), { name: cam.label })}
             >
               <FiCopy size={14} />
             </button>
@@ -418,10 +417,12 @@ function CameraCard({
               onBlur={() => setConfirmDelete(false)}
               style={{ padding: '6px' }}
               className={`rounded hover:bg-white/[0.06] ${confirmDelete ? 'text-bc-red' : 'text-gray-400 hover:text-bc-red'}`}
-              title={confirmDelete ? 'Wirklich löschen? Nochmal klicken.' : t('sidebar.cam.remove', 'Remove')}
-              aria-label={confirmDelete ? `${cam.label} wirklich löschen` : `${cam.label} löschen`}
+              title={confirmDelete ? t('sidebar.cam.removeAgain', 'Really delete? Click again.') : t('sidebar.cam.remove', 'Delete camera')}
+              aria-label={confirmDelete
+                ? format(t('sidebar.cam.removeAgain.aria', 'Really delete {name}'), { name: cam.label })
+                : format(t('sidebar.cam.remove.aria', 'Delete {name}'), { name: cam.label })}
             >
-              {confirmDelete ? <span className="text-[10px] font-semibold">Löschen?</span> : <FiTrash2 size={14} />}
+              {confirmDelete ? <span className="text-[10px] font-semibold">{t('sidebar.cam.removeQ', 'Delete?')}</span> : <FiTrash2 size={14} />}
             </button>
           </div>
         </div>
@@ -442,7 +443,7 @@ function CameraCard({
       {/* Ausgeklappte Eigenschaften */}
       {expanded && (
         <div className="mt-2 space-y-2 text-xs">
-          <FieldRow label="Name" htmlFor={`name-${cam.id}`}>
+          <FieldRow label={t('sidebar.cam.nameLabel', 'Name')} htmlFor={`name-${cam.id}`}>
             <input
               id={`name-${cam.id}`}
               className="w-full rounded border border-bc-border bg-bc-dark text-white"
@@ -457,22 +458,15 @@ function CameraCard({
               Dringlichkeit statt zweimal Gelb. */}
           {lensMismatch && lensDef && (
             <Note tone="warn">
-              <span
-                title={format(t('sidebar.cam.mismatchTitle', 'Switch the Mount selector below to "{lens}" (if available) to fit the matching adapter / plate, or pick a lens that matches the current "{active}" mount.'), { lens: lensDef.mount, active: String(activeMount) })}
-              >
-                {format(t('sidebar.cam.mismatch', 'Lens mount {lens} ≠ active mount {active} — incompatible'), { lens: lensDef.mount, active: String(activeMount) })}
-                {' '}Bis das stimmt, rechnet die App mit dem nackten Sensor — Werte weichen von der Realität ab.
-              </span>
+              {format(t('sidebar.cam.mismatch', 'Lens mount {lens} does not fit the active mount {active}. Until that is right, the app computes with the bare sensor — values differ from reality.'), { lens: lensDef.mount, active: String(activeMount) })}
             </Note>
           )}
           {adapterInfo && (
             <Note tone="info">
-              <span title={adapterInfo.notes ?? t('sidebar.cam.adapterAuto', 'Adapter automatically applied — see Mount section below for details.')}>
-                Adapter: {adapterInfo.name}
-                {adapterInfo.lightLossStops > 0 ? ` (−${adapterInfo.lightLossStops} T)` : ''}
-                {adapterInfo.lightLossStops < 0 ? format(t('sidebar.cam.adapterGain', ' (+{x}T gain)'), { x: Math.abs(adapterInfo.lightLossStops) }) : ''}
-                {adapterInfo.cropSensor ? ` → ${adapterInfo.cropSensor.name}` : ''}
-              </span>
+              {format(t('sidebar.cam.adapter', 'Adapter: {name}'), { name: adapterInfo.name })}
+              {adapterInfo.lightLossStops > 0 ? format(t('sidebar.cam.adapterLoss', ' (−{x} T)'), { x: adapterInfo.lightLossStops }) : ''}
+              {adapterInfo.lightLossStops < 0 ? format(t('sidebar.cam.adapterGain', ' (+{x} T gain)'), { x: Math.abs(adapterInfo.lightLossStops) }) : ''}
+              {adapterInfo.cropSensor ? ` → ${adapterInfo.cropSensor.name}` : ''}
             </Note>
           )}
           {speedBooster && (
@@ -483,15 +477,15 @@ function CameraCard({
                 onChange={(e) => updateCamera(cam.id, { useSpeedbooster: e.target.checked })}
                 className="accent-bc-accent"
               />
-              {speedBooster.name} {t('sidebar.cam.focalReducer', '(focal reducer)')}
+              {speedBooster.name} {t('sidebar.cam.focalReducer', '(Speed Booster)')}
             </label>
           )}
 
-          <Group id="optics" title="Kamera & Objektiv" summary={`${camDef?.model ?? ''} · ${cam.focalLength.toFixed(0)} mm`}>
+          <Group id="optics" title={t('sidebar.cam.optics', 'Camera & Lens')} summary={`${camDef?.model ?? ''} · ${cam.focalLength.toFixed(0)} mm`}>
           {/* Camera selector grouped by type */}
           <label className="block">
             <span className="flex items-center justify-between gap-2 text-gray-400">
-              <span>{format(t('sidebar.cam.cameraLabel', 'Camera ({mount} mount, {sensor})'), { mount: String(camDef?.mount), sensor: String(camDef?.sensor.name) })}</span>
+              <span>{format(t('sidebar.cam.cameraLabel', 'Camera · {mount} mount · {sensor}'), { mount: String(camDef?.mount), sensor: String(camDef?.sensor.name) })}</span>
               {camDef && (
                 <span className="flex items-center gap-0.5">
                   {/* Edit applies to every camera. For built-ins it creates a
@@ -502,7 +496,7 @@ function CameraCard({
                     onClick={() => setEditingCustomCam(camDef.id)}
                     style={{ padding: '5px' }}
                     className="rounded text-gray-500 hover:text-bc-accent"
-                    aria-label="Kameradaten bearbeiten"
+                    aria-label={t('sidebar.cam.editAria', 'Edit camera data')}
                     title={isPureCustom(camDef.id)
                       ? t('sidebar.cam.editCustom', 'Edit this custom camera')
                       : isBuiltInShadow(camDef.id)
@@ -515,7 +509,7 @@ function CameraCard({
                     <button
                       type="button"
                       onClick={async () => {
-                        if (!(await confirmDialog(format(t('sidebar.cam.resetConfirm', 'Reset "{name}" to its built-in defaults? Your changes will be lost.'), { name: `${camDef.manufacturer} ${camDef.model}` }), {
+                        if (!(await confirmDialog(format(t('sidebar.cam.resetConfirm', 'Reset "{name}" to its built-in data? Your changes will be lost.'), { name: `${camDef.manufacturer} ${camDef.model}` }), {
                           okLabel: t('common.reset', 'Reset'),
                           cancelLabel: t('common.cancel', 'Cancel'),
                           destructive: true,
@@ -524,7 +518,7 @@ function CameraCard({
                       }}
                       style={{ padding: '5px' }}
                       className="rounded text-gray-500 hover:text-bc-yellow"
-                      aria-label="Auf mitgelieferte Daten zurücksetzen"
+                      aria-label={t('sidebar.cam.resetAria', 'Reset to built-in data')}
                       title={t('sidebar.cam.resetTitle', 'Reset to the original built-in spec (discards your edits)')}
                     >
                       <FiRotateCcw size={12} />
@@ -536,7 +530,7 @@ function CameraCard({
                       onClick={async () => {
                         const used = useStore.getState().cameras.filter((c) => c.cameraId === camDef.id).length;
                         if (used > 1) {
-                          await alertDialog(format(t('sidebar.cam.deleteInUse', 'Cannot delete "{name}" — it is still used by {count} placed camera(s).'), { name: `${camDef.manufacturer} ${camDef.model}`, count: used }), {
+                          await alertDialog(format(t('sidebar.cam.deleteInUse', 'Cannot delete "{name}" — {count} placed cameras still use it.'), { name: `${camDef.manufacturer} ${camDef.model}`, count: used }), {
                             okLabel: t('common.ok', 'OK'),
                           });
                           return;
@@ -557,7 +551,7 @@ function CameraCard({
                       }}
                       style={{ padding: '5px' }}
                       className="rounded text-gray-500 hover:text-bc-red"
-                      aria-label="Eigene Kamera löschen"
+                      aria-label={t('sidebar.cam.deleteAria', 'Delete custom camera')}
                       title={t('sidebar.cam.deleteTitle', 'Delete this custom camera')}
                     >
                       <FiTrash2 size={12} />
@@ -609,7 +603,7 @@ function CameraCard({
                   <option key={c.id} value={c.id}>{favoriteCameraIds.includes(c.id) ? '* ' : ''}{c.manufacturer} {c.model} [{c.mount}]{tag}</option>
                 );
               })}
-              <option value="__new_custom__">{t('sidebar.cam.addCustomCamera', '＋ Custom+ Add custom camera…')}</option>
+              <option value="__new_custom__">{t('sidebar.cam.addCustomCamera', '＋ Add custom camera…')}</option>
             </select>
           </label>
 
@@ -730,10 +724,10 @@ function CameraCard({
                       ⚡ {ma.name}
                     </div>
                     <div className="text-gray-400 mt-0.5">
-                      {ma.lightLossStops > 0 && <span>{format(t('sidebar.cam.lightLoss', 'Light loss: −{x}T · '), { x: ma.lightLossStops })}</span>}
-                      {ma.lightLossStops < 0 && <span>{format(t('sidebar.cam.lightGain', 'Light gain: +{x}T · '), { x: Math.abs(ma.lightLossStops) })}</span>}
+                      {ma.lightLossStops > 0 && <span>{format(t('sidebar.cam.lightLoss', 'Light loss: −{x} T · '), { x: ma.lightLossStops })}</span>}
+                      {ma.lightLossStops < 0 && <span>{format(t('sidebar.cam.lightGain', 'Light gain: +{x} T · '), { x: Math.abs(ma.lightLossStops) })}</span>}
                       {ma.lightLossStops === 0 && <span>{t('sidebar.cam.noLightLoss', 'No light loss · ')}</span>}
-                      {ma.cropSensor ? <span>{format(t('sidebar.cam.forces', 'Forces {name}'), { name: ma.cropSensor.name })}</span> : <span>{t('sidebar.cam.noSensorCrop', 'No sensor crop')}</span>}
+                      {ma.cropSensor ? <span>{format(t('sidebar.cam.forces', 'forces {name}'), { name: ma.cropSensor.name })}</span> : <span>{t('sidebar.cam.noSensorCrop', 'No sensor crop')}</span>}
                     </div>
                     {ma.notes && (
                       <div className="text-gray-500 mt-1 italic">{ma.notes}</div>
@@ -749,9 +743,7 @@ function CameraCard({
               Warnung. Vorher hatte beides dieselbe Alarmfarbe. */}
           {coverage && coverage.status !== 'ok' && (
             <Note tone={coverage.status === 'vignette' ? 'warn' : 'info'}>
-              <span title={format(t('sidebar.cam.coverageTitle', 'Lens image circle vs sensor diagonal: {pct} %'), { pct: (coverage.ratio * 100).toFixed(0) })}>
-                {coverage.message}
-              </span>
+              {coverage.message}
             </Note>
           )}
 
@@ -843,7 +835,7 @@ function CameraCard({
                 }
               }}
               className="text-[10px] text-bc-red hover:text-red-400 mt-0.5"
-            >{format(t('sidebar.cam.removeCustomLens', 'Remove custom lens "{name}"'), { name: `${lensDef.manufacturer} ${lensDef.model}` })}</button>
+            >{format(t('sidebar.cam.removeCustomLens', 'Delete custom lens "{name}"'), { name: `${lensDef.manufacturer} ${lensDef.model}` })}</button>
           )}
           {/* Inline custom lens creation form */}
           {showNewLens && (
@@ -920,10 +912,10 @@ function CameraCard({
             ticks={focalTicks}
             format={formatFocal}
             unit="mm"
-            note={cam.extenderActive > 1 ? format(t('sidebar.cam.focalEff', ' (eff. {e}mm)'), { e: (cam.focalLength * cam.extenderActive).toFixed(0) }) : undefined}
+            note={cam.extenderActive > 1 ? format(t('sidebar.cam.focalEff', 'eff. {e} mm'), { e: (cam.focalLength * cam.extenderActive).toFixed(0) }) : undefined}
             onChange={(v) => updateCamera(cam.id, { focalLength: v })}
             onStep={(dir) => updateCamera(cam.id, { focalLength: stepAlong(cam.focalLength, dir, focalMin, focalMax, focalStepTicks) })}
-            title="Brennweite — logarithmisch, rastet auf die Marken. Shift = frei."
+            title={t('sidebar.cam.focalLength.title', 'Focal length — logarithmic, snaps to the marks. Shift = free.')}
           />
 
           <LensSlider
@@ -936,11 +928,11 @@ function CameraCard({
             prefix="f/"
             formatTick={(v) => (v < 10 ? v.toFixed(1) : v.toFixed(0))}
             note={adapterInfo && adapterInfo.lightLossStops !== 0
-              ? format(t('sidebar.cam.apertureEff', ' (eff. T{e})'), { e: (cam.aperture * Math.pow(2, adapterInfo.lightLossStops / 2)).toFixed(1) })
+              ? format(t('sidebar.cam.apertureEff', 'eff. T{e}'), { e: (cam.aperture * Math.pow(2, adapterInfo.lightLossStops / 2)).toFixed(1) })
               : undefined}
             onChange={(v) => updateCamera(cam.id, { aperture: v })}
             onStep={(dir) => updateCamera(cam.id, { aperture: stepStop(cam.aperture, dir, apertureMin, apertureMax) })}
-            title="Blende — Normreihe in vollen Stufen. Shift = stufenlos."
+            title={t('sidebar.cam.aperture.title', 'Aperture — standard series in full stops. Shift = stepless.')}
           />
 
           <LensSlider
@@ -953,7 +945,7 @@ function CameraCard({
             unit="m"
             onChange={(v) => updateCamera(cam.id, { focusDistance: v })}
             onStep={(dir) => updateCamera(cam.id, { focusDistance: stepAlong(cam.focusDistance, dir, FOCUS_MIN_M, FOCUS_MAX_M, focusStepTicks) })}
-            title="Entfernung, auf die scharfgestellt ist — nicht der Abstand zur Bühne."
+            title={t('sidebar.cam.distance.title', 'The distance focus is set to — not the distance to the stage.')}
           />
 
           {lensDef?.extenderFactors && lensDef.extenderFactors.length > 0 && (
@@ -974,7 +966,7 @@ function CameraCard({
           )}
           </Group>
 
-          <Group id="aim" title="Blickrichtung" summary={`${cam.pan.toFixed(0)}° / ${cam.tilt.toFixed(0)}°`}>
+          <Group id="aim" title={t('sidebar.cam.aim', 'Aim')} summary={`${cam.pan.toFixed(0)}° / ${cam.tilt.toFixed(0)}°`}>
             <ValueSlider
               label={t('sidebar.cam.pan.label', 'Pan')}
               value={cam.pan}
@@ -984,7 +976,7 @@ function CameraCard({
               decimals={0}
               unit="°"
               onChange={(v) => updateCamera(cam.id, { pan: v })}
-              title="0° zeigt nach rechts, positive Werte drehen im Uhrzeigersinn."
+              title={t('sidebar.cam.pan.title', '0° points right, positive values turn clockwise.')}
             />
             <ValueSlider
               label={t('sidebar.cam.tilt.label', 'Tilt')}
@@ -995,11 +987,11 @@ function CameraCard({
               decimals={0}
               unit="°"
               onChange={(v) => updateCamera(cam.id, { tilt: v })}
-              title="Negative Werte neigen nach unten."
+              title={t('sidebar.cam.tilt.title', 'Negative values tilt downwards.')}
             />
           </Group>
 
-          <Group id="place" title="Standort & Rig" summary={`${MOUNT_TYPE_LABELS[cam.mountType ?? 'tripod']} · ${cam.z.toFixed(2)} m`}>
+          <Group id="place" title={t('sidebar.cam.placement', 'Position & Rig')} summary={`${MOUNT_TYPE_LABELS[cam.mountType ?? 'tripod']} · ${cam.z.toFixed(2)} m`}>
           <FieldRow label={t('sidebar.cam.position', 'Position (m)')}>
             <div className="grid grid-cols-2 gap-2">
               <input
@@ -1008,8 +1000,8 @@ function CameraCard({
                 style={{ padding: '3px 6px' }}
                 value={cam.x}
                 step={0.5}
-                aria-label="Position X in Metern"
-                title="Abstand vom linken Rand (m)"
+                aria-label={t('sidebar.cam.posX.aria', 'Position X in metres')}
+                title={t('sidebar.cam.posX.title', 'Distance from the left edge (m)')}
                 onChange={(e) => updateCamera(cam.id, { x: parseFloat(e.target.value) || 0 })}
               />
               <input
@@ -1018,8 +1010,8 @@ function CameraCard({
                 style={{ padding: '3px 6px' }}
                 value={cam.y}
                 step={0.5}
-                aria-label="Position Y in Metern"
-                title="Abstand vom oberen Rand (m)"
+                aria-label={t('sidebar.cam.posY.aria', 'Position Y in metres')}
+                title={t('sidebar.cam.posY.title', 'Distance from the top edge (m)')}
                 onChange={(e) => updateCamera(cam.id, { y: parseFloat(e.target.value) || 0 })}
               />
             </div>
@@ -1032,7 +1024,7 @@ function CameraCard({
             const catRigs = rigsForType(limits.type);
             return (
               <>
-                <FieldRow label={t('sidebar.cam.mount.label', 'Mount')} htmlFor={`mount-${cam.id}`}>
+                <FieldRow label={t('sidebar.cam.mount.label', 'Mounting')} htmlFor={`mount-${cam.id}`}>
                   <select
                     id={`mount-${cam.id}`}
                     className="block w-full bg-bc-dark border border-bc-border rounded text-white"
@@ -1059,7 +1051,7 @@ function CameraCard({
                 </FieldRow>
 
                 {catRigs.length > 0 && (
-                  <FieldRow label="Rig-Modell" htmlFor={`rig-${cam.id}`}>
+                  <FieldRow label={t('sidebar.cam.rigModel', 'Rig model')} htmlFor={`rig-${cam.id}`}>
                     <select
                       id={`rig-${cam.id}`}
                       className="block w-full bg-bc-dark border border-bc-border rounded text-white"
@@ -1099,15 +1091,15 @@ function CameraCard({
                     schwenkt — darum ein eigener Winkel neben `pan`. Ohne
                     eigenen Wert folgt das Rig der Kamera. */}
                 <ValueSlider
-                  label="Ausrichtung"
+                  label={t('sidebar.cam.orientation', 'Orientation')}
                   value={rigYaw(cam)}
                   min={-180}
                   max={180}
                   step={1}
                   decimals={0}
                   unit="°"
-                  hint={cam.rigRotation === undefined ? 'folgt der Kamera' : 'fest ausgerichtet'}
-                  title="Richtung von Schiene, Chassis oder Beinstellung — unabhängig vom Schwenk."
+                  hint={cam.rigRotation === undefined ? t('sidebar.cam.followsCamera', 'follows the camera') : t('sidebar.cam.fixedAim', 'fixed heading')}
+                  title={t('sidebar.cam.orientation.title', 'Direction of rail, chassis or leg stance — independent of pan.')}
                   onChange={(v) => updateCamera(cam.id, { rigRotation: v })}
                   right={
                     cam.rigRotation !== undefined ? (
@@ -1115,8 +1107,8 @@ function CameraCard({
                         onClick={() => updateCamera(cam.id, { rigRotation: undefined })}
                         style={{ padding: '2px 5px' }}
                         className="shrink-0 rounded border border-bc-border text-[10px] text-gray-500 hover:text-white"
-                        title="Rig wieder an die Blickrichtung koppeln"
-                      >koppeln</button>
+                        title={t('sidebar.cam.recouple.title', 'Re-couple the rig to the aim')}
+                      >{t('sidebar.cam.recouple', 'couple')}</button>
                     ) : undefined
                   }
                 />
@@ -1129,7 +1121,7 @@ function CameraCard({
                   max={limits.maxHeightM}
                   step={limits.pumpM}
                   unit="m"
-                  title="Höhe der Linse über dem Boden — begrenzt durch das gewählte Rig."
+                  title={t('sidebar.cam.height.title', 'Height of the lens above the floor — bounded by the chosen rig.')}
                   onChange={(v) => updateCamera(cam.id, { z: clampHeight(limits, v) })}
                 />
 
@@ -1145,9 +1137,9 @@ function CameraCard({
                     hint={(() => {
                       const plan = trackSectionPlan(limits.trackM);
                       const parts = plan.sections.map((sec) => `${sec.count}x${(sec.lengthM / 0.3048).toFixed(0)}'`).join(' + ');
-                      return `${limits.trackIsCustom ? 'eigene Länge' : 'Vorschlag'} · aus ${parts} = ${plan.total.toFixed(2)} m`;
+                      return `${limits.trackIsCustom ? t('sidebar.cam.ownLength', 'custom length') : t('sidebar.cam.suggestion', 'default')} · aus ${parts} = ${plan.total.toFixed(2)} m`;
                     })()}
-                    title="Tatsächlich gelegte Schiene. Der Wagen fährt von der Mitte aus je die Hälfte."
+                    title={t('sidebar.cam.railLength.title', 'Rail actually laid. The dolly runs half of it either way from the centre.')}
                     onChange={(v) => {
                       const len = Math.max(0.5, Math.min(60, v));
                       const half = len / 2;
@@ -1162,8 +1154,8 @@ function CameraCard({
                           onClick={() => updateCamera(cam.id, { trackLengthM: undefined })}
                           style={{ padding: '2px 5px' }}
                           className="shrink-0 rounded border border-bc-border text-[10px] text-gray-500 hover:text-white"
-                          title="Zurück auf den Vorschlag des Rigs"
-                        >reset</button>
+                          title={t('sidebar.cam.railReset.title', 'Back to the rig default')}
+                        >{t('sidebar.cam.railReset', 'reset')}</button>
                       ) : undefined
                     }
                   />
@@ -1178,7 +1170,7 @@ function CameraCard({
                     max={limits.travelM}
                     step={0.05}
                     unit="m"
-                    title="Aktuelle Position auf Schiene bzw. Ausleger. Live fahren geht im Rig-Tab."
+                    title={t('sidebar.cam.track.title', 'Current position on rail or jib. Live moves happen in the Rig tab.')}
                     onChange={(v) => updateCamera(cam.id, { trackOffset: v })}
                     right={
                       <button
@@ -1201,13 +1193,13 @@ function CameraCard({
               weil es beim Einrichten selten gebraucht wird. */}
           <Group
             id="result"
-            title="Ergebnis"
+            title={t('sidebar.cam.result', 'Result')}
             defaultOpen={false}
             summary={fov ? `${fov.horizontalDeg.toFixed(0)}° · ${fov.imageWidthAtDistance.toFixed(1)} m breit` : undefined}
           >
             {fov && (
               <>
-                <Readout label="Bildwinkel horizontal" value={`${fov.horizontalDeg.toFixed(1)}°`} />
+                <Readout label={t('sidebar.cam.fovH', 'FOV horizontal')} value={`${fov.horizontalDeg.toFixed(1)}°`} />
                 <Readout label={`Bildbreite bei ${cam.focusDistance.toFixed(1)} m`} value={`${fov.imageWidthAtDistance.toFixed(2)} m`} />
               </>
             )}
@@ -1220,7 +1212,7 @@ function CameraCard({
             )}
             {effectiveSensor && effectiveSensor !== camDef?.sensor && (
               <Note tone="info">
-                {format(t('sidebar.cam.effSensor', 'Eff. Sensor: {name} (crop ×{crop})'), { name: effectiveSensor.name, crop: effectiveSensor.cropFactor.toFixed(1) })}
+                Wirksamer Sensor: {effectiveSensor.name} (Crop ×{effectiveSensor.cropFactor.toFixed(1)})
               </Note>
             )}
             {camDef && lensDef && effectiveSensor && fov && dof && (
@@ -1232,7 +1224,7 @@ function CameraCard({
                   aria-expanded={showCalc}
                 >
                   {showCalc ? <FiChevronUp size={11} /> : <FiChevronDown size={11} />}
-                  {showCalc ? t('sidebar.cam.hide', 'Hide') : t('sidebar.cam.show', 'Show')} {t('sidebar.cam.calcBreakdown', 'calculation breakdown')}
+                  Rechenweg {showCalc ? t('sidebar.cam.calcHide', 'Hide calculation breakdown') : t('sidebar.cam.calcShow', 'Show calculation breakdown')}
                 </button>
                 {showCalc && (
                   <div className="mt-1">
@@ -1282,26 +1274,24 @@ function CameraCard({
               Feld dafuer waere eine Frage, die niemand gestellt hat. */}
           <Group
             id="coverage"
-            title="Deckungsauftrag"
+            title={t('sidebar.coverage.title', 'Coverage brief')}
             defaultOpen={false}
             summary={
               deckungsZeile
                 ? deckungsZeile.verdict.kind === 'reachable'
                   ? FRAMING_LABEL[deckungsZeile.framing]
-                  : 'reicht nicht'
+                  : t('sidebar.coverage.short', 'not enough')
                 : undefined
             }
           >
             <div className="flex flex-col gap-1.5 text-xs">
               <p className="text-gray-400">
-                Was diese Position liefern muss. Aus Standort, Motiv, Sensor und
-                Objektivbereich wird die nötige Brennweite gerechnet — und gesagt, wenn die
-                eingesetzte Optik sie nicht hergibt.
+                {t('sidebar.coverage.intro', 'What this position has to deliver. The focal length needed is computed from position, subject, sensor and lens range — and it says so when the lens in use cannot reach it.')}
               </p>
 
               <select
                 className={feldCls}
-                aria-label="Motiv des Deckungsauftrags"
+                aria-label={t('sidebar.coverage.subject.aria', 'Subject of the coverage brief')}
                 value={cam.coverage?.subjectId ?? ''}
                 onChange={(e) =>
                   updateCamera(cam.id, {
@@ -1311,7 +1301,7 @@ function CameraCard({
                   })
                 }
               >
-                <option value="">Kein Auftrag</option>
+                <option value="">{t('sidebar.coverage.none', 'No brief')}</option>
                 {persons.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.label}
@@ -1323,7 +1313,7 @@ function CameraCard({
                 <>
                   <select
                     className={feldCls}
-                    aria-label="Einstellungsgröße"
+                    aria-label={t('sidebar.coverage.framing.aria', 'Shot size')}
                     value={cam.coverage.framing}
                     onChange={(e) =>
                       updateCamera(cam.id, {
@@ -1337,7 +1327,7 @@ function CameraCard({
                     {(Object.keys(FRAMING_LABEL) as (keyof typeof FRAMING_LABEL)[]).map((k) => (
                       <option key={k} value={k}>
                         {FRAMING_LABEL[k]}
-                        {k !== 'custom' ? ` (${FRAMINGS[k].axis === 'width' ? 'Breite' : 'Höhe'})` : ''}
+                        {k !== 'custom' ? ` (${FRAMINGS[k].axis === 'width' ? t('sidebar.coverage.width', 'width') : t('sidebar.coverage.height', 'height')})` : ''}
                       </option>
                     ))}
                   </select>
@@ -1351,8 +1341,8 @@ function CameraCard({
                         type="number"
                         min={0}
                         step={0.05}
-                        placeholder="Maß (m)"
-                        aria-label="Gefordertes Maß in Metern"
+                        placeholder={t('sidebar.coverage.extentPh', 'Extent (m)')}
+                        aria-label={t('sidebar.coverage.extent.aria', 'Required extent in metres')}
                         value={cam.coverage.extentM ?? ''}
                         onChange={(e) =>
                           updateCamera(cam.id, {
@@ -1362,7 +1352,7 @@ function CameraCard({
                       />
                       <select
                         className={feldCls}
-                        aria-label="Achse des geforderten Maßes"
+                        aria-label={t('sidebar.coverage.axis.aria', 'Axis of the required extent')}
                         value={cam.coverage.axis ?? 'height'}
                         onChange={(e) =>
                           updateCamera(cam.id, {
@@ -1373,8 +1363,8 @@ function CameraCard({
                           })
                         }
                       >
-                        <option value="height">Höhe</option>
-                        <option value="width">Breite</option>
+                        <option value="height">{t('sidebar.coverage.axisHeight', 'Height')}</option>
+                        <option value="width">{t('sidebar.coverage.axisWidth', 'Width')}</option>
                       </select>
                     </div>
                   )}
@@ -1389,7 +1379,7 @@ function CameraCard({
                   {deckungsZeile.verdict.kind !== 'not-computable' && (
                     <div className="mt-0.5 text-gray-400">
                       {deckungsZeile.extentM.toFixed(2).replace('.', ',')} m{' '}
-                      {deckungsZeile.axis === 'width' ? 'Breite' : 'Höhe'} aus{' '}
+                      {deckungsZeile.axis === 'width' ? t('sidebar.coverage.width', 'width') : t('sidebar.coverage.height', 'height')} {t('sidebar.coverage.from', 'from')}{' '}
                       {deckungsZeile.distanceM.toFixed(2).replace('.', ',')} m
                     </div>
                   )}
@@ -1405,7 +1395,7 @@ function CameraCard({
               aufklappen muss, um zu sehen, dass etwas fehlt. */}
           <Group
             id="paint"
-            title="Bildzustand"
+            title={t('sidebar.paint.title', 'Picture state')}
             defaultOpen={false}
             summary={
               bildUndSchattierung.length > 0
@@ -1418,13 +1408,11 @@ function CameraCard({
                   wovon abhängt, ob diese Position überhaupt vom Pult aus zu
                   schattieren ist, ist die erste Frage, nicht die letzte. */}
               <p className="text-gray-400">
-                Wie wird diese Position ferngesteuert? Der Befehlsvorrat unterscheidet sich je
-                Weg — eine Panasonic-PTZ kann Blende und Farbbalken, eine Blackmagic den ganzen
-                Farbsatz.
+                {t('sidebar.paint.controlPathIntro', 'How is this position controlled remotely? The command set differs per path — a Panasonic PTZ can do iris and colour bars, a Blackmagic the whole colour set.')}
               </p>
               <select
                 className={feldCls}
-                aria-label="Fernsteuerweg dieser Position"
+                aria-label={t('sidebar.paint.controlPath.aria', 'Remote-control path of this position')}
                 value={cam.controlPath ?? ''}
                 onChange={(e) =>
                   updateCamera(cam.id, {
@@ -1432,7 +1420,7 @@ function CameraCard({
                   })
                 }
               >
-                <option value="">nicht angegeben</option>
+                <option value="">{t('sidebar.paint.unstated', 'not stated')}</option>
                 {(Object.keys(CONTROL_PATH_LABEL) as ControlPath[]).map((p) => (
                   <option key={p} value={p}>
                     {CONTROL_PATH_LABEL[p]}
@@ -1447,14 +1435,13 @@ function CameraCard({
               )}
 
               <p className="text-gray-400">
-                Die Szenendatei gehört zur Position und zur Show, nicht auf eine Karte im
-                Kameraschacht. Der zweite Showtag fängt sonst bei der Erinnerung an.
+                {t('sidebar.paint.sceneFileIntro', 'The scene file belongs to the position and to the show, not on a card in the camera slot. Otherwise the second show day starts from memory.')}
               </p>
 
               <input
                 className={feldCls}
-                placeholder="Szenendatei (Dateiname auf Karte/Pult)"
-                aria-label="Szenendatei"
+                placeholder={t('sidebar.paint.sceneFilePh', 'Scene file (file name on card / panel)')}
+                aria-label={t('sidebar.paint.sceneFile.aria', 'Scene file')}
                 value={cam.paint?.sceneFile ?? ''}
                 onChange={(e) =>
                   updateCamera(cam.id, {
@@ -1465,8 +1452,8 @@ function CameraCard({
               <div className="flex gap-1.5">
                 <input
                   className={feldCls}
-                  placeholder="Gesetzt am"
-                  aria-label="Datum, an dem der Bildzustand gesetzt wurde"
+                  placeholder={t('sidebar.paint.setOnPh', 'Set on')}
+                  aria-label={t('sidebar.paint.setOn.aria', 'Date the picture state was set')}
                   value={cam.paint?.setAt ?? ''}
                   onChange={(e) =>
                     updateCamera(cam.id, {
@@ -1476,8 +1463,8 @@ function CameraCard({
                 />
                 <input
                   className={feldCls}
-                  placeholder="Gesetzt von"
-                  aria-label="Wer den Bildzustand gesetzt hat"
+                  placeholder={t('sidebar.paint.setByPh', 'Set by')}
+                  aria-label={t('sidebar.paint.setBy.aria', 'Who set the picture state')}
                   value={cam.paint?.setBy ?? ''}
                   onChange={(e) =>
                     updateCamera(cam.id, {
@@ -1491,8 +1478,8 @@ function CameraCard({
                   einer Notiz. */}
               <input
                 className={feldCls}
-                placeholder="Referenz (Graukarte, Farbtemperatur, Licht)"
-                aria-label="Referenzbedingungen"
+                placeholder={t('sidebar.paint.referencePh', 'Reference (grey card, colour temperature, light)')}
+                aria-label={t('sidebar.paint.reference.aria', 'Reference conditions')}
                 value={cam.paint?.reference ?? ''}
                 onChange={(e) =>
                   updateCamera(cam.id, {
@@ -1506,8 +1493,8 @@ function CameraCard({
                   zweite Wahrheit neben der auf dem Pult. */}
               <input
                 className={feldCls}
-                placeholder="Bedienfeld (RCP 3, Seite 2)"
-                aria-label="Bedienfeld, das diese Position schattiert"
+                placeholder={t('sidebar.paint.panelPh', 'Control panel (RCP 3, page 2)')}
+                aria-label={t('sidebar.paint.panel.aria', 'Control panel shading this position')}
                 value={cam.paint?.panel ?? ''}
                 onChange={(e) =>
                   updateCamera(cam.id, {
@@ -1523,8 +1510,8 @@ function CameraCard({
               <div className="flex gap-1.5">
                 <input
                   className={feldCls}
-                  placeholder="Platz am Gerät (SD 3, Scene File 05)"
-                  aria-label="Platz, an dem der Bildzustand am Gerät liegt"
+                  placeholder={t('sidebar.paint.slotPh', 'Slot on the device (SD 3, Scene File 05)')}
+                  aria-label={t('sidebar.paint.slot.aria', 'Slot where the picture state lives on the device')}
                   value={cam.paint?.slot ?? ''}
                   onChange={(e) =>
                     updateCamera(cam.id, {
@@ -1534,8 +1521,8 @@ function CameraCard({
                 />
                 <input
                   className={feldCls}
-                  placeholder="Body-Nr."
-                  aria-label="Nummer des Bodys, auf dem der Bildzustand gesetzt wurde"
+                  placeholder={t('sidebar.paint.bodyPh', 'Body no.')}
+                  aria-label={t('sidebar.paint.body.aria', 'Number of the body the picture state was set on')}
                   value={cam.paint?.bodySerial ?? ''}
                   onChange={(e) =>
                     updateCamera(cam.id, {
@@ -1550,8 +1537,8 @@ function CameraCard({
                   keine Eigenschaft der Anlage. */}
               <input
                 className={feldCls}
-                placeholder="Abgleich-Gruppe (Bühne, Publikum)"
-                aria-label="Abgleich-Gruppe dieser Position"
+                placeholder={t('sidebar.paint.groupPh', 'Match group (stage, audience)')}
+                aria-label={t('sidebar.paint.group.aria', 'Match group of this position')}
                 value={cam.matchGroup ?? ''}
                 onChange={(e) =>
                   updateCamera(cam.id, { matchGroup: e.target.value || undefined })
@@ -1580,7 +1567,7 @@ function CameraCard({
                 }
                 disabled={!cam.paint?.sceneFile}
               >
-                Abgleich auf jetzigen Body/Optik festhalten
+                {t('sidebar.paint.pinMatch', 'Pin the match to the current body / lens')}
               </button>
 
               {/* Bedarf 50 — was waehrend der Show kaputtgegangen ist. Eigene
@@ -1589,8 +1576,8 @@ function CameraCard({
               <textarea
                 className={feldCls}
                 rows={2}
-                placeholder="Fehler dieser Schicht (eine Zeile je Fehler)"
-                aria-label="Fehler an dieser Position"
+                placeholder={t('sidebar.paint.faultsPh', 'Faults of this shift (one line per fault)')}
+                aria-label={t('sidebar.paint.faults.aria', 'Faults at this position')}
                 value={(cam.faults ?? []).join('\n')}
                 onChange={(e) =>
                   updateCamera(cam.id, {
@@ -1630,10 +1617,7 @@ function CameraCard({
             >
               <div className="space-y-1.5 text-xs">
                 <p className="text-gray-400">
-                  {t(
-                    'sidebar.cam.presetsIntro',
-                    'A number becomes an answer. What is stored is the position as of NOW — if the camera is moved later, the list says so.',
-                  )}
+                  {t('sidebar.cam.presetsIntro', 'A number becomes an answer. What is stored is the attitude of NOW — if the camera is moved later, the list says so.')}
                 </p>
 
                 <div className="flex gap-1">
@@ -1647,7 +1631,7 @@ function CameraCard({
                   <input
                     className="w-24 rounded border border-bc-border bg-bc-dark px-1.5 py-1 text-white"
                     placeholder={t('sidebar.cam.presetSegment', 'Segment')}
-                    aria-label={t('sidebar.cam.presetSegment', 'Segment')}
+                    aria-label={t('sidebar.cam.presetSegment.aria', 'Segment of the preset')}
                     value={presetSegment}
                     onChange={(e) => setPresetSegment(e.target.value)}
                   />
@@ -1721,7 +1705,7 @@ function CameraCard({
             title={t('sidebar.rigging.title', 'Rigging & comms')}
             defaultOpen={false}
             summary={
-              kartenBefunde.length > 0 ? format(t('sidebar.rigging.openCount', '{n} open'), { n: kartenBefunde.length }) : cam.comms?.channel
+              kartenBefunde.length > 0 ? `${kartenBefunde.length} offen` : cam.comms?.channel
             }
           >
             <div className="flex flex-col gap-1.5 text-xs">
@@ -1887,13 +1871,7 @@ function CameraCard({
 
               Der PLAN ist die Autoritaet: hier steht, wie die Quelle heisst.
               Danebengelegt wird die Liste, wie sie JETZT im Empfaenger steht —
-              und ein Treffer auf der blossen Position macht nichts gruen.
-
-              Hand-portiert: die Texte laufen hier durch `t()`, weil diese
-              Fassung der Seitenleiste uebersetzt wird. Die Beschriftungen der
-              Merkmale und Urteile kommen unveraendert aus dem Kern-Modul —
-              ein zweiter Satz Woerter dafuer waere ein zweiter Ort, an dem
-              „Position“ und „bestaetigt“ auseinanderlaufen koennen. */}
+              und ein Treffer auf der blossen Position macht nichts gruen. */}
           <Group
             id="source"
             title={t('sidebar.cam.source', 'Network source')}
@@ -1952,29 +1930,22 @@ function CameraCard({
                   HEREINGEHOLT und nicht gesucht: dieser Planer laeuft auf dem
                   Rechner des Planers und nicht auf dem der Regie. */}
               <label className="mt-1 text-[10px] uppercase tracking-wider text-gray-500">
-                {t('sidebar.cam.source.list', 'Source list from the receiver (one per line)')}
+                Quellenliste aus dem Empfänger (eine je Zeile)
               </label>
               <textarea
                 className="block min-h-[3.5rem] w-full resize-y rounded border border-bc-border bg-bc-dark text-xs text-white"
                 style={{ padding: '4px 6px' }}
                 rows={3}
-                placeholder={'REGIE-PC (CAM 1)\nREGIE-PC (CAM 2)  10.0.0.42'}
+                placeholder={t('sidebar.cam.source.listPh', 'REGIE-PC (CAM 1)\nREGIE-PC (CAM 2)  10.0.0.42')}
                 aria-label={t('sidebar.cam.source.list.aria', 'Source list from the receiver')}
                 value={sourceListText}
                 onChange={(e) => setSourceListText(e.target.value)}
               />
               {quellenListe.warnings.length > 0 && (
                 <div className="text-[11px] text-amber-400">
-                  {format(
-                    t(
-                      'sidebar.cam.source.unreadable',
-                      '{n} line(s) could not be read — line {lines}. None of it was discarded silently.',
-                    ),
-                    {
-                      n: quellenListe.warnings.length,
-                      lines: quellenListe.warnings.map((w) => w.line).join(', '),
-                    },
-                  )}
+                  {quellenListe.warnings.length} Zeile(n) nicht lesbar — Zeile{' '}
+                  {quellenListe.warnings.map((w) => w.line).join(', ')}. Nichts davon
+                  wurde stillschweigend verworfen.
                 </div>
               )}
 
@@ -2000,19 +1971,14 @@ function CameraCard({
                   zusammen sind sie meist genau die Vertauschung. */}
               {quellenAbgleich.unexpected.length > 0 && (
                 <div className="text-[11px] text-gray-400">
-                  {t('sidebar.cam.source.unexpected', 'Unassigned on the network:')}{' '}
+                  Nicht zugeordnet im Netz:{' '}
                   {quellenAbgleich.unexpected.map(sourceLabel).join(' · ')}
                 </div>
               )}
               {quellenAbgleich.needsLook > 0 && quellenListe.sources.length > 0 && (
                 <div className="text-[11px] text-amber-400">
-                  {format(
-                    t(
-                      'sidebar.cam.source.needsLook',
-                      '{n} of {total} cameras are not recognised beyond doubt — check before air.',
-                    ),
-                    { n: quellenAbgleich.needsLook, total: quellenAbgleich.rows.length },
-                  )}
+                  {quellenAbgleich.needsLook} von {quellenAbgleich.rows.length} Kameras
+                  sind nicht zweifelsfrei wiedererkannt — vor der Sendung nachsehen.
                 </div>
               )}
             </div>
@@ -2024,7 +1990,7 @@ function CameraCard({
               style={{ padding: '4px 6px' }}
               rows={2}
               placeholder={t('sidebar.cam.notesPlaceholder', 'Mount, operator, shot notes…')}
-              aria-label="Notiz zur Kamera"
+              aria-label={t('sidebar.cam.notes.aria', 'Camera note')}
               value={cam.notes ?? ''}
               onChange={(e) => updateCamera(cam.id, { notes: e.target.value })}
             />
@@ -2097,7 +2063,10 @@ export default function Sidebar() {
     canvas.height = viewport.height;
     await page.render({ canvas, viewport }).promise;
     return { dataUrl: canvas.toDataURL('image/png'), width: viewport.width, height: viewport.height };
-  }, [t]);
+    // `t` gehoert in die Liste: die beiden Fehlermeldungen darin sind jetzt
+    // uebersetzt, und ein Callback, der die alte Sprache festhaelt, meldet den
+    // Fehler nach einem Sprachwechsel in der vorigen.
+  }, [t, MAX_PDF_SIZE_BYTES]);
 
   const handleBgUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2151,7 +2120,7 @@ export default function Sidebar() {
     }
     // Reset input so same file can be re-uploaded
     e.target.value = '';
-  }, [venue.widthM, setBackgroundPlan, pdfToDataUrl, t]);
+  }, [venue.widthM, setBackgroundPlan, pdfToDataUrl]);
 
   /** Start/stop calibration mode — dispatches custom event to Venue2D */
   const startCalibration = useCallback((axis: 'x' | 'y') => {
@@ -2326,7 +2295,7 @@ export default function Sidebar() {
                       onClick={() => startCalibration('x')}
                       className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${calibAxis === 'x' ? 'bg-bc-red text-white' : 'bg-bc-green/20 text-bc-green hover:bg-bc-green/30'}`}
                     >
-                      {calibAxis === 'x' ? t('sidebar.cancel', 'Cancel') : (scaleLocked ? t('sidebar.calibrate', 'Calibrate') : t('sidebar.calX', 'Cal X'))}
+                      {calibAxis === 'x' ? 'Cancel' : (scaleLocked ? t('sidebar.calibrate', 'Calibrate') : t('sidebar.calX', 'Cal X'))}
                     </button>
                   </div>
                   {!scaleLocked && (
@@ -2342,7 +2311,7 @@ export default function Sidebar() {
                         onClick={() => startCalibration('y')}
                         className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${calibAxis === 'y' ? 'bg-bc-red text-white' : 'bg-bc-green/20 text-bc-green hover:bg-bc-green/30'}`}
                       >
-                        {calibAxis === 'y' ? t('sidebar.cancel', 'Cancel') : t('sidebar.calY', 'Cal Y')}
+                        {calibAxis === 'y' ? 'Cancel' : t('sidebar.calY', 'Cal Y')}
                       </button>
                     </div>
                   )}
@@ -2398,7 +2367,7 @@ export default function Sidebar() {
                     value={s.label}
                     onChange={(e) => updateStage(s.id, { label: e.target.value })}
                   />
-                  <button onClick={() => removeStage(s.id)} style={{ padding: '4px' }} className="rounded hover:text-bc-red" title={t('sidebar.removeStage', 'Remove stage')} aria-label={t('sidebar.removeStage', 'Remove stage')}>
+                  <button onClick={() => removeStage(s.id)} style={{ padding: '4px' }} className="rounded hover:text-bc-red" title={t('sidebar.removeStage', 'Remove stage')} aria-label={t('sidebar.removeStage.aria', 'Remove stage')}>
                     <FiTrash2 size={12} />
                   </button>
                 </div>
@@ -2421,7 +2390,7 @@ export default function Sidebar() {
                   <label>
                     <span className="text-gray-500">T</span>
                     <input type="number" className="w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs" value={s.height} step={0.5}
-                      title="Tiefe der Grundfläche in Metern"
+                      title={t('sidebar.stage.depth.title', 'Depth of the footprint in metres')}
                       onChange={(e) => updateStage(s.id, { height: parseFloat(e.target.value) || 1 })} />
                   </label>
                 </div>
@@ -2438,7 +2407,7 @@ export default function Sidebar() {
                       step={0.1}
                       min={0}
                       max={10}
-                      title="Podesthöhe über dem Boden in Metern — 0 bleibt flach"
+                      title={t('sidebar.stage.height.title', 'Riser height above the floor in metres — 0 stays flat')}
                       onChange={(e) => {
                         const v = parseFloat(e.target.value);
                         updateStage(s.id, { elevationM: Number.isFinite(v) ? Math.max(0, Math.min(10, v)) : 0 });
@@ -2451,10 +2420,10 @@ export default function Sidebar() {
                     className="w-5 h-5 rounded border border-bc-border cursor-pointer bg-transparent shrink-0"
                     value={s.color ?? '#3b82f6'}
                     onChange={(e) => updateStage(s.id, { color: e.target.value })}
-                    title="Farbe des Podests"
-                    aria-label="Farbe des Podests"
+                    title={t('sidebar.stage.colour.title', 'Colour of the riser')}
+                    aria-label={t('sidebar.stage.colour.aria', 'Colour of the riser')}
                   />
-                  <label className="flex flex-1 items-center gap-1 text-gray-500" title="Deckkraft in Prozent">
+                  <label className="flex flex-1 items-center gap-1 text-gray-500" title={t('sidebar.stage.opacity.title', 'Opacity in per cent')}>
                     <input
                       type="range"
                       className="flex-1 accent-bc-accent"
@@ -2462,7 +2431,7 @@ export default function Sidebar() {
                       max={100}
                       step={5}
                       value={Math.round((s.opacity ?? 0.4) * 100)}
-                      aria-label="Deckkraft des Podests in Prozent"
+                      aria-label={t('sidebar.stage.opacity.aria', 'Opacity of the riser in per cent')}
                       onChange={(e) => updateStage(s.id, { opacity: parseInt(e.target.value, 10) / 100 })}
                     />
                     <span className="w-8 text-right text-[10px] tabular-nums text-gray-400">
@@ -2502,7 +2471,7 @@ export default function Sidebar() {
             </button>
             {wallDrawMode && (
               <div className="rounded border border-bc-border bg-bc-dark px-2 py-1.5 text-[10px] text-gray-400 leading-relaxed">
-                {t('sidebar.wallDrawHelp', 'Click once to place the start point, click again to finish. Hold Shift to snap the angle. Right-click a wall to delete it.')}
+                {t('sidebar.wallDrawHelp', 'Click once to place the start point, click again to finish the wall. Hold Shift to snap the angle. Right-click a wall to delete it.')}
               </div>
             )}
             {/* Endpoint snapping toggle (issue #40) */}
@@ -2569,7 +2538,7 @@ export default function Sidebar() {
                       patternFit: w.patternFit, patternRows: w.patternRows,
                     }))}
                     className="px-1.5 py-0.5 rounded border border-bc-border text-gray-400 hover:text-bc-accent hover:border-bc-accent text-[10px] shrink-0"
-                    title={t('sidebar.applyToAllWalls', "Apply this wall's colour & pattern to all walls")}
+                    title={t('sidebar.applyToAllWalls', 'Apply this wall\'s colour & pattern to all walls')}
                   >
                     {t('sidebar.all', 'All')}
                   </button>
@@ -2583,12 +2552,12 @@ export default function Sidebar() {
                       className="flex-1 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-[10px]"
                       value={w.patternFit ?? 'tile'}
                       onChange={(e) => updateWall(w.id, { patternFit: e.target.value as WallFit })}
-                      title="Wie das Muster auf die Wandfläche gelegt wird"
+                      title={t('sidebar.patternFit.title', 'How the pattern is laid onto the wall surface')}
                     >
-                      <option value="tile">Kacheln</option>
-                      <option value="scale-v">Skaliert (Höhe)</option>
-                      <option value="scale-h">Skaliert (Breite)</option>
-                      <option value="stretch">Gedehnt</option>
+                      <option value="tile">{t('sidebar.patternFitTile', 'Tile')}</option>
+                      <option value="scale-v">{t('sidebar.patternFitHeight', 'Scaled (height)')}</option>
+                      <option value="scale-h">{t('sidebar.patternFitWidth', 'Scaled (width)')}</option>
+                      <option value="stretch">{t('sidebar.patternFitStretch', 'Stretched')}</option>
                     </select>
                     {(w.patternFit ?? 'tile') === 'tile' && (
                       <label className="flex items-center gap-1 text-[10px] text-gray-400">
@@ -2600,7 +2569,7 @@ export default function Sidebar() {
                           max={PATTERN_ROWS_MAX}
                           step={1}
                           value={w.patternRows ?? DEFAULT_PATTERN_ROWS}
-                          title="Wiederholungen über die Wandhöhe — die Breite folgt daraus, damit Kacheln nicht verzerren"
+                          title={t('sidebar.patternRows.title', 'Repeats across the wall height — the width follows from it so tiles do not distort')}
                           onChange={(e) => {
                             const v = parseInt(e.target.value, 10);
                             if (!Number.isFinite(v)) return;
@@ -2744,7 +2713,7 @@ export default function Sidebar() {
           ))}
 
           {cameras.length === 0 && (
-            <p className="text-gray-500 text-xs text-center mt-8">{t('sidebar.noCameras', 'No cameras. Click "Add" or load a template.')}</p>
+            <p className="text-gray-500 text-xs text-center mt-8">{t('sidebar.noCameras', 'No cameras yet. Add one with "Add" or load a template.')}</p>
           )}
         </div>
       </div>
