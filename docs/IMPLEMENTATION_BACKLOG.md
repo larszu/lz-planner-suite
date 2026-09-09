@@ -553,9 +553,11 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-65 · Das Lagermodul hat zehn gebaute Rechenwerke ohne eine einzige Bedienung
 
-* **Status:** **zwei Zeilen GEBAUT** (`inventory#2` Inventur, `inventory#3`
-  Bericht — 10 → 7 → **3** Module ohne Weg), der Rest **offen** — Befund
-  gemessen 2026-09-09.
+* **Status:** **der Hauptbefund ist ERLEDIGT** — `inventory#2` (Inventur),
+  `#3` (Bericht), `#4` (Werte & Schäden): 10 → 7 → 3 → **0** Module ohne
+  Weg. Was aus den Bildschirmfotos an NEUEN Funktionen kommt (Mindestmenge,
+  Fristen-Ampel, Kassenbon-Import, Einkaufsliste, Kamera-Scan), bleibt
+  **offen**.
 * **Auslöser:** Der Eigentümer schickte fünf Bildschirmfotos einer fremden
   Bestands-App („Vorratix", Haushalts-Vorrat) mit dem Satz: „Analysiere diese
   paar Fotos für das Lagermodul. Es fehlen noch einige Funktionen."
@@ -626,16 +628,33 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   (Vorgabe `merge`); und der Import-Bericht wird gezeigt, nicht nur seine
   Zahl — einen Ablehnungs*grund* gibt `ImportRejection` nicht mit, und
   einen zu erfinden wäre schlimmer als keiner.
-* **Was noch keinen Weg hat — drei:** `damageRegister`,
-  `insuranceSchedule`, `inventoryCommitment`. Sie gehören inhaltlich
-  zusammen (Schäden, Fristen, Zusagen) und sind damit vermutlich **eine**
-  weitere Ansicht, nicht drei.
-* **Die Reihenfolge, und sie ergibt sich aus dem Hauptbefund:** zuerst die
-  zehn unerreichbaren Module an eine Oberfläche hängen, dann das Neue bauen.
-  Eine elfte Rechnung ohne Knopf wäre der teuerste Weg, das Problem zu
-  vergrößern. Konkret zuerst: **Scan-Oberfläche** (`inventoryScan` +
-  `inventoryAudit` sind beide daran) — sie ist der Zugang, an dem in der
-  Vorlage alles hängt, und ohne sie bleibt jede weitere Funktion Tipparbeit.
+* **GEBAUT, dritte Zeile — `inventory#4` (2026-09-09):** Die Ansicht
+  **Werte & Schäden** hängt die letzten drei an — `insuranceSchedule`,
+  `damageRegister`, `inventoryCommitment`. Sie wurden zu **einer** Ansicht,
+  weil sie dieselbe Sorte Frage beantworten: nicht „wo liegt es", sondern
+  „womit muss ich rechnen". **3 → 0.**
+* **Und ein echter Defekt, den erst diese Ansicht sichtbar gemacht hat:**
+  `healRecord` im `checkoutStore` baute `r.in` beim Laden neu auf und trug
+  `missing`, `extra` und `note` mit — **`damaged` nicht.** Geschrieben
+  wurde der Schaden korrekt, gelesen nie wieder; er überlebte genau bis
+  zum nächsten Laden der Seite. Das Schadensregister war deshalb leer,
+  egal wie gut es rechnet. Der Test dazu geht den ganzen Weg (schreiben →
+  serialisieren → laden): eine Prüfung der Prüf-Funktion allein wäre grün
+  geblieben, während die Heilung sie nicht aufruft.
+  **Das ist der eigentliche Ertrag dieses Eintrags** — nicht die drei
+  Ansichten, sondern der Beweis, dass Code ohne Bedienung auch seine
+  Fehler versteckt.
+* **Die Reihenfolge ist abgearbeitet:** erst die zehn unerreichbaren Module
+  an eine Oberfläche hängen, dann das Neue bauen. Das Erste ist fertig; die
+  Ratsche in `oberflaecheErreichbar.node.test.ts` steht auf **0** und ist
+  damit keine Ratsche mehr, sondern die Aussage „jedes Rechenwerk dieses
+  Lagers ist bedienbar". Wer ein neues `domain/lib/`-Modul anlegt und keine
+  Ansicht daran hängt, sieht es sofort — genau der Moment, in dem dieser
+  Eintrag sonst wieder von vorn anfinge.
+* **Was jetzt drankommt, ist das Neue aus der Tabelle oben:** Mindest-/
+  Soll-Menge („Unter Ziel"), die Fristen-Ampel (DGUV V3, Kalibrierung,
+  Akku-Alter — die Vorlage nennt es MHD), der Kassenbon-Import, die
+  Einkaufs-/Nachbestellliste und der Kamera-Scan.
 * **Nicht entschieden, gehört dem Eigentümer:** ob das Lagermodul
   Verbrauchsmaterial mit Haltbarkeit führen soll (Batterien, Gaffa, Filter)
   oder nur Rental-Material mit Prüfterminen. Die Vorlage zeigt Ersteres, das

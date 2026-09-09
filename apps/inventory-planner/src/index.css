@@ -392,3 +392,116 @@ th {
   color: var(--leise);
   font-style: normal;
 }
+
+/* ── Werte & Schäden (B-65, dritte Zeile) ──────────────────────────────────
+   Erbt die Blöcke der Bericht-Ansicht; eigene Regeln braucht nur, was es
+   dort nicht gibt: die Summen-Reihe (eine Kachel je Währung — zwei
+   nebeneinander sind kein Fehler, sondern die einzige ehrliche Antwort ohne
+   hinterlegten Kurs) und die Zeile einer Einheit ohne Wert. */
+.werte .block {
+  border: 1px solid var(--rand);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.werte .block h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.6rem;
+}
+
+.werte .summen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.werte .kachel {
+  border: 1px solid var(--rand);
+  padding: 0.6rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.werte .kachel strong {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.werte .kachel span {
+  color: var(--leise);
+  font-size: 0.85rem;
+}
+
+.werte .zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: 0.6rem 0;
+}
+
+.werte label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--leise);
+  font-size: 0.85rem;
+}
+
+.werte select {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  min-height: 24px;
+  font: inherit;
+}
+
+.werte button {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.4rem 0.9rem;
+  min-height: 24px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.werte .spalten {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .werte .spalten {
+    grid-template-columns: 1fr;
+  }
+}
+
+.werte p.warnung {
+  color: var(--warn);
+  max-width: 52rem;
+  line-height: 1.5;
+}
+
+.werte .hinweis {
+  color: var(--leise);
+  max-width: 52rem;
+  line-height: 1.5;
+}
+
+.werte em {
+  color: var(--leise);
+  font-style: normal;
+}
+
+/* Eine Einheit ohne hinterlegten Wert geht in keine Summe ein. Sie steht
+   deshalb sichtbar anders da — nicht ausgegraut (sie ist nicht weniger
+   vorhanden), sondern in der Warnfarbe der fehlenden Angabe. */
+.werte tr.ohne-wert td {
+  color: var(--warn);
+}

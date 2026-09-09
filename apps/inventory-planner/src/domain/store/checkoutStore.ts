@@ -36,6 +36,30 @@ import {
 
 const KEY = STORAGE_KEYS.checkouts
 
+/**
+ * Ein Schadensvermerk, der die Heilung uebersteht.
+ *
+ * GEFUNDEN 2026-09-09 beim Bau der Ansicht „Werte & Schaeden" (B-65): die
+ * Heilung baute `r.in` neu auf und trug `missing`, `extra` und `note`
+ * mit — `damaged` NICHT. Ein aufgenommener Schaden ueberlebte damit genau
+ * bis zum naechsten Laden der Seite. Geschrieben wurde er (`checkIn` nimmt
+ * ihn, `closeCheckout` setzt ihn, `persist` serialisiert ihn); gelesen
+ * wurde er nie wieder.
+ *
+ * Das ist dieselbe Defektform wie ein Feld, das nur beschrieben wird —
+ * nur schlimmer, weil hier jemand bei der Rueckgabe etwas AUFGESCHRIEBEN
+ * hat und darauf vertraut, dass es steht. Ohne diese Zeile war das
+ * Schadensregister leer, egal wie gut es rechnet.
+ *
+ * `note` muss Text tragen: der Typ sagt „Ohne Text kein Eintrag —
+ * ‚beschaedigt' ohne Angabe hilft weder der Werkstatt noch der Rechnung".
+ */
+const istSchaden = (v: unknown): v is CheckoutDamage => {
+  if (!v || typeof v !== 'object') return false
+  const d = v as Partial<CheckoutDamage>
+  return istZeile(d.line) && typeof d.note === 'string' && d.note.trim().length > 0
+}
+
 const istZeile = (v: unknown): v is CheckoutLine => {
   if (!v || typeof v !== 'object') return false
   const l = v as Partial<CheckoutLine>
@@ -78,6 +102,12 @@ const healRecord = (raw: unknown): CheckoutRecord | null => {
       at: r.in.at,
       missing: Array.isArray(r.in.missing) ? r.in.missing.filter(istZeile) : [],
       extra: Array.isArray(r.in.extra) ? r.in.extra.filter(istZeile) : [],
+      // Siehe `istSchaden`: ohne diese Zeile ueberlebte ein Schaden das
+      // Neuladen nicht. Weggelassen statt leer, damit ein Vorgang ohne
+      // Schaeden zeichengleich bleibt wie vorher.
+      ...(Array.isArray(r.in.damaged) && r.in.damaged.some(istSchaden)
+        ? { damaged: r.in.damaged.filter(istSchaden) }
+        : {}),
       ...(typeof r.in.note === 'string' ? { note: r.in.note } : {}),
     }
   }

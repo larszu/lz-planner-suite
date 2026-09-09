@@ -76,24 +76,28 @@ const erreichbar = (): Set<string> => {
 /**
  * Wie viele Module noch keinen Weg haben.
  *
- * 2026-09-09, in zwei Schritten von 10 auf 3:
+ * 2026-09-09, in drei Schritten von 10 auf NULL:
  *
  *   10 → 7  Ansicht `Inventur` — `inventoryScan`, `inventoryAudit`, und
  *           `unitIdentity` kam MIT, weil `auditScan` seinen `unitLabel`
  *           braucht.
  *    7 → 3  Ansicht `Bericht` — `inventoryReport`, `inventoryPortable`,
  *           `packList`, `inventoryPrint`.
+ *    3 → 0  Ansicht `Werte & Schäden` — `insuranceSchedule`,
+ *           `damageRegister`, `inventoryCommitment`.
  *
- * Beide Male hätte eine gepflegte Liste die falsche Zahl gemeldet: beim
- * ersten Mal zwei statt drei. Das ist der Grund, warum hier gerechnet und
- * nicht aufgezählt wird.
+ * Beim ersten Schritt hätte eine gepflegte Liste die falsche Zahl gemeldet
+ * (zwei statt drei). Das ist der Grund, warum hier gerechnet und nicht
+ * aufgezählt wird.
  *
- * Übrig sind `damageRegister`, `insuranceSchedule` und
- * `inventoryCommitment` — die drei, die von Schäden, Fristen und Zusagen
- * handeln. Wer die nächste Ansicht baut, setzt diese Zahl herunter; nicht
- * der Test soll nachgeben, sondern der Zustand.
+ * AB HIER IST DIE SCHRANKE EINE ANDERE SORTE ZUSICHERUNG. Sie war eine
+ * Ratsche nach unten, solange es etwas herunterzusetzen gab; auf null ist
+ * sie die Aussage „jedes Rechenwerk dieses Lagers ist bedienbar". Wer ein
+ * neues `domain/lib/`-Modul anlegt und keine Ansicht daran hängt, sieht es
+ * hier sofort — und das ist genau der Moment, in dem B-65 sonst wieder von
+ * vorn anfinge.
  */
-const SCHRANKE = 3
+const SCHRANKE = 0
 
 describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
   const gesehen = erreichbar()
@@ -121,6 +125,10 @@ describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
       'inventoryPortable.ts',
       'packList.ts',
       'inventoryPrint.ts',
+      // Ansicht `Werte & Schäden`
+      'insuranceSchedule.ts',
+      'damageRegister.ts',
+      'inventoryCommitment.ts',
     ]) {
       expect(
         gesehen.has(join(LIB, m)),
@@ -130,11 +138,12 @@ describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
     }
   })
 
-  it('3. die Zahl der Module ohne Weg sinkt und steigt nie', () => {
+  it('3. kein Modul ist ohne Weg zur Oberfläche', () => {
     expect(
       ohneWeg.length,
-      `Module ohne Weg: ${ohneWeg.join(', ')}. Sind es weniger geworden, ` +
-        'gehört SCHRANKE heruntergesetzt — genau dort merkt jemand den Fortschritt.',
+      `Module ohne Weg: ${ohneWeg.join(', ')}. Ein Rechenwerk, das kein Knopf ` +
+        'erreicht, ist für den Lageristen kein Rechenwerk — entweder bekommt es ' +
+        'eine Ansicht, oder es gehört weg.',
     ).toBeLessThanOrEqual(SCHRANKE)
   })
 
@@ -150,7 +159,7 @@ describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
   it('5. die Ansichten liegen im Verzeichnis der Oberfläche', () => {
     // Klein, aber es hält die Grenze aus ADR-006: Rechnen unter `domain/`,
     // Bedienen unter `ui/`.
-    for (const datei of ['Inventur.tsx', 'Bericht.tsx']) {
+    for (const datei of ['Inventur.tsx', 'Bericht.tsx', 'WerteUndSchaeden.tsx']) {
       const p = join(SRC, 'ui', datei)
       expect(existsSync(p), `src/ui/${datei} fehlt`).toBe(true)
       expect(relative(SRC, p).startsWith('ui')).toBe(true)
