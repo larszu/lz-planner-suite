@@ -569,6 +569,12 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   hier bereits im Code stehen. Weder eine neue noch eine vorhandene Adresse
   lässt sich von hier aus öffnen; die Websuche liefert Händlerseiten (B&H,
   Markertek, Full Compass), keine Hersteller-Produktseiten.
+* **Nachgemessen 2026-09-09**, weil ein Egress-Filter sich ändern kann und
+  eine fünf Tage alte Messung als Begründung fürs Liegenlassen zu wenig ist:
+  `blackmagicdesign.com`, `ui.com`, `lynx-technik.com`, `greengo.eu` und
+  `sony.com` liefern weiterhin alle **kein HTTP-Ergebnis** (curl-Code `000`,
+  Verbindung kommt nicht zustande). Der Eintrag bleibt damit aus demselben
+  Grund liegen wie vorher — nicht aus Gewohnheit, sondern gemessen.
 * **Deshalb bleibt es liegen, statt geraten zu werden:** 159 URLs
   einzutragen, die niemand geöffnet hat, wäre genau der Fehler, gegen den die
   Belegkette dieses Repos gebaut ist — ein `manufacturerUrl`, der ins Leere
@@ -1228,8 +1234,11 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   sind), der leere Zustand der Shotlist (das abschliessende „klicken"
   entfällt — im Deutschen steht das Verb am Ende, im Englischen vor dem
   Knopfnamen) und der UI-Zoom („Strg" im Deutschen, „Ctrl" im Englischen).
-* **Was dabei herausfiel und einen eigenen Punkt bekam:** der Lauf lässt sich
-  NICHT in die deutsch-quelligen Repos kopieren. Siehe **B-63**.
+* **Was dabei herausfiel und einen eigenen Punkt bekam:** der Lauf ließ sich
+  NICHT unverändert in die deutsch-quelligen Repos kopieren — das JSX-Muster
+  hätte dort Quelltext für Beschriftung gehalten. Gelöst in **B-63**
+  (GEBAUT 2026-09-09): das Muster unterscheidet jetzt Tag von
+  Vergleichsoperator, und der Zähler steht in allen drei Repos.
 * **Befund (gemessen 2026-09-09, nach dem Rückweg):** Die 14 Dateien, die die
   Suite-Kopie gewickelt hat, sind durch. Was bleibt, sind Dateien, die es
   **drüben genauso ungewickelt gibt** — der Rückweg hilft dort also nicht,
@@ -1268,9 +1277,11 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 * **Aufwand:** mittel — die Zeichenketten sind gezählt und liegen beieinander;
   die Wicklung ist mechanisch, das Wörterbuch ist schon da.
 
-### B-63 · Der Sprachmix-Zähler lässt sich nicht in die deutsch-quelligen Repos kopieren — gemessen
+### B-63 · Der Sprachmix-Zähler zählt jetzt in allen drei Repos — die offene Frage ist beantwortet, mit null
 
-* **Status:** offen. Befund erhoben 2026-09-09 beim Bau von B-61.
+* **Status:** **GEBAUT 2026-09-09** — `multicam#120`/`#121`, `cable#801`,
+  `light#105`/`#106`, `suite`-Parity erweitert. Befund erhoben 2026-09-09 beim
+  Bau von B-61.
 * **Was B-61 gebaut hat:** `multicam-planner` zählt seit `multicam#118`
   nicht mehr nur die `t()`-Fallbacks, sondern auch den **ungewickelten**
   sichtbaren Text — und deckelt ihn. Grenze steht auf 0.
@@ -1299,27 +1310,79 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Ende des Wächters:** 47 gemeldete Code-Zeilen als angeblicher
   Sprachmisch-Verstoss — nach dem dritten Mal schaltet ihn jemand ab. Genau
   das Ende, das `sony#22` für seinen Vorgänger beschreibt.
-* **Die eigentliche Frage bleibt offen und ist berechtigt:** haben
-  `cable-planner` und `light-planner` denselben blinden Fleck? Ihr
-  `lang:check` misst wie der frühere MultiCam-Lauf **nur** die
-  `t()`-Fallbacks (2324 bzw. 333 deutsche, 0 englische). Ob dort englische
-  Beschriftungen ungewickelt herumstehen, ist damit **nicht gemessen** — und
-  es als „vermutlich nicht" abzutun wäre dieselbe Behauptung ohne Messung,
-  gegen die dieses Backlog sonst schreibt.
-* **Was es dafür braucht:** ein JSX-Muster, das Code von Text unterscheidet.
-  Der billige Weg ist eine Zusatzbedingung am Treffer (keine Klammern, kein
-  `=>`, kein `===`, kein Semikolon, keine Zuweisung); der saubere ist, den
-  JSX-Text über den Parser zu holen statt über einen regulären Ausdruck.
-  Welcher reicht, entscheidet sich an der Messung — der billige Weg ist
-  zuerst zu probieren, weil er die Zahl sofort liefert und man an der Liste
-  sieht, ob noch Code darin steht.
-* **Beim Bauen zu beachten:** `npm run lang:parity` in der Suite hält die
-  Wortlisten der beiden Kopien zusammen. Wer in einem Repo die Listen
-  anfasst, fasst sie drüben mit an — die Erweiterung selbst betrifft die
-  Listen nicht, aber wer dabei ein Stoppwort ergänzt, merkt es sonst erst in
-  der Suite-CI.
-* **Aufwand:** klein bis mittel — die Messung steht, der Rest ist ein
-  besseres Muster und zwei Deckel.
+* **Die eigentliche Frage war offen und berechtigt:** haben `cable-planner`
+  und `light-planner` denselben blinden Fleck? Ihr `lang:check` maß wie der
+  frühere MultiCam-Lauf **nur** die `t()`-Fallbacks (2324 bzw. 333 deutsche,
+  0 englische). Ob dort englische Beschriftungen ungewickelt herumstanden,
+  war **nicht gemessen** — und es als „vermutlich nicht" abzutun wäre
+  dieselbe Behauptung ohne Messung gewesen, gegen die dieses Backlog sonst
+  schreibt.
+
+  **Jetzt ist sie gemessen: null in beiden.** Das ist ein Ergebnis, keine
+  Selbstverständlichkeit — und ab jetzt hält es ein Wächter fest, in beide
+  Richtungen (siehe unten).
+
+#### Was gebaut wurde
+
+* **Das JSX-Muster ist ein Tag-Muster geworden**, der billige Weg hat
+  gereicht (`multicam#120`): vor dem `>` muss ein Bezeichner, ein
+  Anführungszeichen, `}` oder `/` stehen — nie Leerzeichen, `=`, `<`, `!`
+  (damit fallen `a > b`, `=>`, `<=` heraus) — und das schließende `<` muss
+  ein Tag beginnen (`</` oder `<Buchstabe`). Generics fängt `NACH_CODE`, das
+  **nur** auf JSX-Text greift und nie auf Attribute: dort steht ein `=`
+  durchaus als Oberfläche („Shift = frei, Mausrad = Stufe"). Ergebnis: alle
+  47 Code-Fehltreffer weg, kein einziger echter Fund verloren.
+* **Der Zähler steht in allen drei Repos** (`cable#801`, `light#105`), mit
+  `MIX_GRENZE = 0`, scharf in **beide** Richtungen. Eine Grenze über dem Ist
+  wäre ein Deckel: wer übersetzt und die Zahl stehen lässt, gibt den Platz
+  frei, den der nächste Zuwachs unbemerkt füllt — bei grünem Check.
+* **Jede Kopie probt ihr Muster an einer festen Probe** (`multicam#121`,
+  `cable#801`, `light#106`): acht Zeilen, drei echte Beschriftungen
+  (Attribut, JSX-Textknoten, Rückfrage im Backtick) und fünf, die *nicht*
+  gefunden werden dürfen — zwei Kommentare, zwei Code-Zeilen, ein gewickelter
+  Fallback. Ohne sie wäre ein kaputtes Muster die gefährlichste Art grün: es
+  findet nichts, und Nichts sieht hier aus wie ein Ergebnis.
+
+  Der naheliegende Weg — eine **Untergrenze auf der Fundzahl** — ist geprüft
+  und **verworfen**: sie fällt genau dann, wenn die Arbeit gelingt. Je mehr
+  gewickelt ist, desto weniger ungewickelter Text bleibt übrig (multicam nach
+  seinem i18n-Durchgang: 65; cable: 292; light: 152). Eine solche Schwelle
+  müsste bei jedem Fortschritt nachgezogen werden und wäre nach dem zweiten
+  Nachziehen nur noch Zierrat. Die Zahl steht weiter in der Ausgabe — als
+  Angabe, nicht als Schwelle.
+* **Die Kommentar-Zeilen der Probe tragen mit Absicht Muster, die *ohne* den
+  Kommentarfilter treffen würden.** Die erste Fassung hatte dort eine
+  harmlose Kommentarzeile stehen und belegte damit nichts: was kein `>` und
+  kein `title=` enthält, findet der Zähler ohnehin nicht. Aufgefallen ist das
+  erst in der Gegenprobe — ein Beleg für den Satz aus B-36, dass eine Probe
+  ohne Gegenprobe nur eine weitere Behauptung ist.
+
+#### Was `lang:parity` jetzt zusätzlich vergleicht
+
+Der Guard verglich bisher **nur** die beiden Wortlisten und `klassifiziere`.
+Das war eine echte Lücke, keine theoretische: als der Sprachmix-Zähler in alle
+drei Repos wanderte, lief er in einem davon mit einem anderen Rumpf und in
+einem anderen mit dem **lockeren** JSX-Muster — und der Guard sah nichts
+davon. Genau die Bauform von Drift, gegen die er gebaut ist, lief unter ihm
+hindurch.
+
+Verglichen werden jetzt zusätzlich: `SICHTBARE_ATTRIBUTE`, `JSX_TEXT`,
+`NACH_CODE`, `RUFE`, die Rümpfe von `ohneKommentare` und `sichtbareTexte`
+sowie die Probe selbst. **Nicht** verglichen wird `MIX_GRENZE` — sie ist eine
+Messung des jeweiligen Repos und darf sich unterscheiden; dass sie heute
+überall auf 0 steht, ist ein Ergebnis und keine Zusicherung.
+
+Gegengeprobt, alle drei rot: gelockertes JSX-Muster in einer Kopie, eine
+entfernte Probe-Zeile, ein zusätzlicher Eintrag in der Attributliste.
+
+#### Was offen bleibt
+
+* Der **saubere** Weg — den JSX-Text über einen Parser statt über einen
+  regulären Ausdruck holen — ist nicht gebaut worden und war nicht nötig: der
+  billige Weg liefert in allen drei Repos null Fehltreffer. Er bleibt die
+  Antwort, falls das Muster doch einmal an einer Datei scheitert; die Probe
+  ist dann die Prüfliste, gegen die ein Parser-Weg antreten muss.
+* Aufwand für das Gebaute: klein, wie geschätzt.
 
 ### B-62 · Die Kopfzeile eines Backlog-Eintrags altert schneller als sein Rumpf — jetzt mit Wächter
 
@@ -3672,7 +3735,7 @@ Anzeige-Regel — sie steht in E-23 und ist dort schärfer formuliert als vorher
 | ~~E-18~~ | ~~Besetzt die Suite die **Zeitachse** — Ablauf/Rundown als Datenobjekt?~~ | **entschieden 2026-09-07: NUR LESEN.** Der Ablauf wird eingelesen und mit dem technischen Plan verknüpft, aber nicht hier geführt. Die Autorenschaft bleibt in der Tabelle, in der der Ablauf ohnehin lebt. Das teilt die elf anhängenden Bedarfe sauber: **erreichbar** sind 4 (Interoperabilität mit eben dieser Tabelle), 6 (die unordentliche Kundentabelle einlesen), 7 (aus einer Quelle in jedes Format rendern) und 8 (die Verknüpfung Ablauf ↔ technischer Plan — der Kern der Entscheidung). **WON'T, weil sie Autorenschaft brauchen:** 11 (Versionsstand und Änderungsprotokoll über Gewerke), 53 (den Rest automatisch nachziehen), 54 (geteilter Ablauf mit Spaltenrechten je Rolle), 56 (Ist-Zeiten mit einem Tipp erfassen). **Bleibt an anderer Frage hängen:** 45 (Weg vom Ablauf-INHALT zur Bedienoberfläche → E-23) und 10 (der Ablauf live an der Kamera — Verteilung zur Laufzeit, nicht Lesen). **Eigenständig:** 55 (Mehrtägigkeit und Parallelbühnen sind eine Frage des Projektmodells, nicht des Ablaufs). Diese Aufteilung gehört so in die Feature-Matrix — ein WON'T, das nur fehlt, wird beim nächsten Durchgang zum Kandidaten. **GEBAUT 2026-09-07 in `suite#142`**: Bedarf 8 und 6 ganz (`packages/ui/src/rundown.ts` — toleranter Tabellen-Leser, Spalten-Zuordnung, Vorschau mit benannten Übersprüngen, Verknüpfung über Objekt-IDs, `ref-missing` als Antwort auf „was entwertet diese Änderung"), Bedarf 7 ganz (`packages/ui/src/rundownViews.ts` — fünf Empfänger-Sichten als SPALTEN-AUSWAHLEN aus einer Quelle, Feld-Legende und Stand-Zeile im Blatt), Bedarf 4 **halb** (CSV/TSV steht, XLSX offen). Die Entscheidung „nur lesen" ist im Code durch Tests gesichert: es gibt keine Funktion, die einen Ablauf-Punkt anlegt, umsortiert oder seine Zeit setzt, und genau EINEN Weg, an einen Ablauf zu kommen — aus einer bestätigten Vorschau |
 | ~~E-20~~ | ~~Welche Sprache ist die **Quellsprache** von `multicam-planner`?~~ | **entschieden 2026-09-08: ENGLISCH**, weil es das faktisch schon ist (482 Schlüssel in 14 Dateien mit deutschem Override) und eine Umkehr ~500 Zeichenketten anfasst, ohne dass ein Nutzer einen Unterschied sähe. **Und daraus die Konvention, die diese Zeile und E-17 gemeinsam beantwortet: die Quellsprache ist eine Eigenschaft des REPOS, nicht der Suite.** cable-planner und light-planner sind deutschsprachige Planungswerkzeuge und bleiben deutsch-quellig; multicam-planner und sony-camera-bridge sind englisch-quellig. Was NICHT bleibt, ist das Stillschweigen darüber: jedes Repo deklariert seine Quellsprache an einer Stelle, und ein Wächter hält sie fest — sonst „berichtigt" der nächste Durchgang die Abweichung und fasst 500 Zeichenketten an, weil `CLAUDE.md` an einer anderen Stelle etwas anderes nahelegt. **GEBAUT 2026-09-08** in `cable#778`, `light#99`, `multicam#113`, `sony#21` und `suite#177`: jedes Repo trägt `avplan.sourceLanguage` in `package.json` UND denselben Wert in Prosa (CLAUDE.md bzw. README), und ein Lauf je Repo (`npm run lang:check`) prüft die Übereinstimmung. Wo es Fallback-Texte gibt, MISST er zusätzlich: cable-planner 2202 deutsch / 0 englisch (fünf englische Fallbacks fielen dabei auf und wurden übersetzt), light-planner 329 / 0. Wo es keine gibt, sagt er das statt „bestanden" zu melden, und schaltet sich beim ersten Fallback selbst scharf (multicam). Im sony-camera-bridge misst er stattdessen den Sprachmix aus B-26 und deckelt ihn bei 19 — in beide Richtungen scharf. Die drei Planer führen denselben Klassifizierer in eigenen Kopien; `suite#177` hält sie mit `npm run lang:parity` zusammen, weil ein nachgetragenes mehrdeutiges Wort in EINER Kopie dort Fehlalarme macht und den Wächter kostet |
 | ~~E-22~~ | ~~Wo wohnt die Zuordnung **Kamera → Bedienfeld → Multiviewer → Tally**?~~ | **entschieden 2026-09-07: ein geteiltes Objekt, alle lesen UND schreiben es, `@avplan` reicht es von einem zum anderen.** Damit trägt keiner der beiden Planer die Zuordnung allein, und keiner liest sie nur. Das Vehikel gibt es schon: das Seed-Protokoll (`packages/ui/src/seed.ts`, `suite-seed` v1) fährt über den postMessage-Bus zwischen Shell und eingebettetem Planer und trägt „nur Felder, für die die Shell eine Quelle hat"; die Abbildung auf das native Modell macht jede App selbst, „dort, wo ihr Modell und ihr Geräte-Katalog liegen". Die Zuordnung ist genau so ein Feld. **Was diese Antwort AUFWIRFT, und zwar sofort: E-21.** Solange nur einer schrieb, war „wer gewinnt" eine Randfrage; bei „alle schreiben" ist sie die erste. Ohne Regel überschreibt der zuletzt zurückmeldende Planer die Zuordnung des anderen — und zwar still, weil beide Seiten für sich vollständig aussehen. **E-21 ist damit nicht mehr offen, sondern blockierend:** die Implementierung von Bedarf 49 kann nicht beginnen, bevor die Konfliktregel steht |
-| ~~E-23~~ | ~~Spricht die Suite eine **Show-Control-Sprache**?~~ | **entschieden 2026-09-08 vom Eigentümer: AUSGEHEND UND EINGEHEND; die Vokabel bleibt OSC.** Der ausgehende Teil ist unverändert der der Vorentscheidung: der Plan BENENNT je Ausspielziel eine OSC-Adresse bzw. Companion-Position und druckt sie, als Konfiguration. **Neu ist der eingehende Teil, und mit ihm die einzige Bedingung, die diese Entscheidung noch trägt** — sie hat sich vom Umfang auf die ANZEIGE verschoben und ist dort schärfer als vorher: was aus einer eingehenden Nachricht auf den Schirm kommt, ist eine EMPFANGSMELDUNG und nie ein Anlagenzustand. Also: „Cue 12 um 14:22:07 empfangen", mit Alter und Absender — nicht „Kamera 3 bereit", nicht grün/rot über der Anlage. Das ist dieselbe Regel, die ADR-003 für unbestätigten Zustand aufstellt, und sie ist hier der ganze Unterschied zwischen einer brauchbaren Mitschrift und der Entwarnung, für die dieses Repo keinen Beleg hat. **Dazu vier Auflagen für den Port:** er ist aus als Vorgabe, wird je Projekt eingeschaltet, lauscht auf einer Adresse, die der Nutzer nennt (nicht `0.0.0.0` als Vorgabe), und meldet sichtbar, wenn er nicht binden konnte — ein stiller Nicht-Empfang sieht aus wie „keine Cues", und das ist die Entwarnung durch die Hintertür. **Gegenrede (die frühere Fassung, gegen die entschieden wurde):** NUR AUSGEHEND. Die Bedarfs-Datenbank stellt die Massnahme unter eine Bedingung, die sich nicht wegrecherchieren lässt: *„do NOT build a live monitoring dashboard, which would make the suite responsible for a false all-clear"*. Wer Zustand anzeigt, haftet für die Entwarnung — und dieses Repo hat keinen Weg, eine Entwarnung zu verifizieren. **Warum die Umkehr damit vereinbar ist:** die Quelle verbietet ein *monitoring dashboard*, nicht das Zuhören. Empfangen und Anzeigen sind zwei Schritte; der Satz trifft den zweiten. Die Auflage oben verbietet genau den, den er verbietet. Dass Companion sich inzwischen auch AUSLESEN lässt (`CUSTOM-VARIABLE … GET-VALUE`, gemergt 2026-03-04), war schon in der Vorentscheidung vermerkt und ist jetzt der Weg, auf dem der eingehende Teil überhaupt etwas zu lesen bekommt. OSC, weil es die breiteste Anschlussfähigkeit hat. **GEBAUT 2026-09-08 in `cable#785`:** `renderer/types/showControl.ts` (Empfangsmeldung, Alter, Schema-Heilung), `main/services/oscListener.ts` (Socket; gelesen wird NUR die Adresse, die Argumente nur als Länge — eine falsch gelesene Zahl sähe aus wie eine Messung, dieselbe Überlegung wie bei Invariante 23), IPC-Bereich `showControl:*`, und das Empfangs-Panel ohne jede Ampelfarbe. Die vier Auflagen stehen im Code und nicht in der Prosa: `OSC_LAUSCHER_AUS` ist `{ aktiv: false, adresse: '' }`, der Lauscher hängt am Projekt statt an der App, `startOscListener` weist eine leere Adresse zurück, und er liefert IMMER einen Zustand — `nicht-gebunden` mit Grund eingeschlossen. `normalisiereOscLauscher` schaltet auch eine fremde `.avplan` ohne Adresse ab, statt deren Angabe zu glauben. `tests/oscEmpfang.test.ts` löst ausserdem zwei Sätze ein, die anderswo als Zusicherung standen (wer ein Feld `zustand` ergänzt, hat die Entscheidung umgedreht; die Mitschrift erreicht den Projekt-Speicher nicht). Acht Gegenproben, alle rot. **Offen bleibt** der Import eines Companion-Variablenstands als zweite Quelle. **Mit der Auflage aus der Recherche:** wo eine Companion-Adresse steht, schreibt das Blatt dazu, dass deren Schnittstelle opt-in ist — sonst zeigt der Plan einen Weg, den es beim Kunden nicht gibt |
+| ~~E-23~~ | ~~Spricht die Suite eine **Show-Control-Sprache**?~~ | **entschieden 2026-09-08 vom Eigentümer: AUSGEHEND UND EINGEHEND; die Vokabel bleibt OSC.** Der ausgehende Teil ist unverändert der der Vorentscheidung: der Plan BENENNT je Ausspielziel eine OSC-Adresse bzw. Companion-Position und druckt sie, als Konfiguration. **Neu ist der eingehende Teil, und mit ihm die einzige Bedingung, die diese Entscheidung noch trägt** — sie hat sich vom Umfang auf die ANZEIGE verschoben und ist dort schärfer als vorher: was aus einer eingehenden Nachricht auf den Schirm kommt, ist eine EMPFANGSMELDUNG und nie ein Anlagenzustand. Also: „Cue 12 um 14:22:07 empfangen", mit Alter und Absender — nicht „Kamera 3 bereit", nicht grün/rot über der Anlage. Das ist dieselbe Regel, die ADR-003 für unbestätigten Zustand aufstellt, und sie ist hier der ganze Unterschied zwischen einer brauchbaren Mitschrift und der Entwarnung, für die dieses Repo keinen Beleg hat. **Dazu vier Auflagen für den Port:** er ist aus als Vorgabe, wird je Projekt eingeschaltet, lauscht auf einer Adresse, die der Nutzer nennt (nicht `0.0.0.0` als Vorgabe), und meldet sichtbar, wenn er nicht binden konnte — ein stiller Nicht-Empfang sieht aus wie „keine Cues", und das ist die Entwarnung durch die Hintertür. **Gegenrede (die frühere Fassung, gegen die entschieden wurde):** NUR AUSGEHEND. Die Bedarfs-Datenbank stellt die Massnahme unter eine Bedingung, die sich nicht wegrecherchieren lässt: *„do NOT build a live monitoring dashboard, which would make the suite responsible for a false all-clear"*. Wer Zustand anzeigt, haftet für die Entwarnung — und dieses Repo hat keinen Weg, eine Entwarnung zu verifizieren. **Warum die Umkehr damit vereinbar ist:** die Quelle verbietet ein *monitoring dashboard*, nicht das Zuhören. Empfangen und Anzeigen sind zwei Schritte; der Satz trifft den zweiten. Die Auflage oben verbietet genau den, den er verbietet. Dass Companion sich inzwischen auch AUSLESEN lässt (`CUSTOM-VARIABLE … GET-VALUE`, gemergt 2026-03-04), war schon in der Vorentscheidung vermerkt und ist jetzt der Weg, auf dem der eingehende Teil überhaupt etwas zu lesen bekommt. OSC, weil es die breiteste Anschlussfähigkeit hat. **GEBAUT 2026-09-08 in `cable#785`:** `renderer/types/showControl.ts` (Empfangsmeldung, Alter, Schema-Heilung), `main/services/oscListener.ts` (Socket; gelesen wird NUR die Adresse, die Argumente nur als Länge — eine falsch gelesene Zahl sähe aus wie eine Messung, dieselbe Überlegung wie bei Invariante 23), IPC-Bereich `showControl:*`, und das Empfangs-Panel ohne jede Ampelfarbe. Die vier Auflagen stehen im Code und nicht in der Prosa: `OSC_LAUSCHER_AUS` ist `{ aktiv: false, adresse: '' }`, der Lauscher hängt am Projekt statt an der App, `startOscListener` weist eine leere Adresse zurück, und er liefert IMMER einen Zustand — `nicht-gebunden` mit Grund eingeschlossen. `normalisiereOscLauscher` schaltet auch eine fremde `.avplan` ohne Adresse ab, statt deren Angabe zu glauben. `tests/oscEmpfang.test.ts` löst ausserdem zwei Sätze ein, die anderswo als Zusicherung standen (wer ein Feld `zustand` ergänzt, hat die Entscheidung umgedreht; die Mitschrift erreicht den Projekt-Speicher nicht). Acht Gegenproben, alle rot. **GEBAUT 2026-09-09 in `cable#802`** — der Import eines Companion-Variablenstands als zweite Quelle, und damit ist E-23 ganz durch. `lib/companionVariablen.ts` (rein) schreibt die Befehlszeilen auf, die jemand in die Companion-TCP-Steuerung tippt (`custom-variable <name> get-value`, klein — die Route deklariert sie so), und liest den zurückgebrachten Antwortblock. **Ein Import und ausdrücklich kein Poller:** ein Knopf, der Companion befragt und anzeigt, wäre der erste Schritt zu dem Monitor, den die Bedarfs-Datenbank verbietet; der zweite wäre ein Intervall, der dritte eine Farbe. Der Plan benennt den Weg, er geht ihn nicht — dieselbe Bauform wie beim ausgehenden Teil. Was herauskommt, ist eine **Ablesung** mit dem Zeitpunkt des Ablesens und geht in die vorhandene As-built-Spur (`ReadingSource` bekommt `'companion'` als sechsten Wert), die ausdrücklich nichts in den Plan zurückschreibt — eine sechste Quelle für ein vorhandenes Blatt statt eines sechsten Blatts. **Die Engstelle, und sie liefert lieber nichts:** die Antwort trägt den Variablennamen NICHT (`+OK "12"` sagt nicht, wozu die 12 gehört), zugeordnet wird also über die Reihenfolge. Fehlt eine Zeile, verschiebt sich alles danach um eins — das Ergebnis sähe vollständig aus, wäre plausibel und wäre falsch, und es ginge als Ablesung in ein Blatt, aus dem später jemand einen Kreuzpunkt liest. `leseCompanionStand` ordnet deshalb nur bei exakt gleicher Anzahl zu und nennt sonst den Grund. Ebenso: `-ERR Variable not found` liefert KEINE Ablesung (Urteil `missing`, nicht `differs`), und ein nacktes `+OK` ist kein leerer Wert, sondern gar keiner — es kommt von den Befehlen ohne Rückgabe (`press`, `style`), und wer es als leeren Variablenwert läse, machte aus einem Tastendruck eine Ablesung. **Die Auflage aus der Recherche war gebaut, aber zu grob — jetzt ist sie gemessen:** das Blatt schrieb pauschal, die Schnittstelle sei ab Werk aus. Nachgesehen in `companion/lib/Data/UserConfig.ts` (2026-09-09) stimmt das nur zur Hälfte — `http_api_enabled: true` (der SCHALT-Weg aus S-4 ist ab Werk AN), `tcp_enabled: false` (der LESE-Weg ist aus), und eine hochgezogene Installation bekommt TCP EINGESCHALTET, nur auf dem alten Port 51234 statt 16759. Wer den Satz auf „ist aus" zurückkürzt, schickt jemanden an den falschen Schalter; wer „ist an" daraus macht, an gar keinen. Der Text steht jetzt an EINER Stelle, und `tests/companionVariablen.test.ts` hält fest, dass beide Ports und beide Wege darin vorkommen. **Was ausdrücklich fehlt und im Panel dasteht:** die PLAN-SEITE. `controlCompanion` trägt die Variablen-NAMEN, nicht ihre Werte — der Plan hält nirgends fest, welchen Kreuzpunkt er zuletzt über welche Variable gefahren hat. Diesen Wert zu raten hiesse, eine Abweichung zu behaupten, die niemand gemessen hat; die Ablesung steht deshalb als `unexpected` da („vorgefunden, nicht im Plan"), und die Zeile sagt warum. Alle Protokoll-Angaben sind in `bitfocus/companion@main` nachgesehen und mit Datei und Zeile im Kopf notiert; **eine ist ausdrücklich NICHT nachgesehen** — ob `pathToRegexp` hier Gross- und Kleinschreibung unterscheidet — und steht als Nicht-Wissen dort. Genau deshalb werden die Befehlszeilen klein geschrieben: klein passt unter beiden Auslegungen, gross nur unter einer |
 | ~~E-24~~ | ~~Bindet die Suite **CuePilot** und **LiveEdit** an — und wenn ja, in welcher Richtung?~~ | **entschieden 2026-09-08: NUR LESEN (Variante a). (b) und (c) sind damit WON'T** — (c) fällt unter dieselbe Bedingung wie E-23, und (b) setzt ein dokumentiertes Format voraus, das dieses Repo nicht belegen kann. Die Richtung ist damit dieselbe wie bei E-18, und aus demselben Grund: die Autorenschaft bleibt beim Werkzeug, in dem der Cue-Track ohnehin entsteht. **Die Entscheidung ist gefallen, der Bau wartet auf eine Tatsache**, und das ist kein Aufschub, sondern die Bedingung: ohne eine echte Beispieldatei oder eine Formatdoku wäre der Leser geraten. `cuepilot.com`, `liveedit.app` und `cuepilot.zendesk.com` liegen hinter dem Egress-Filter (zuletzt geprüft 2026-09-08). Was der Leser tun soll, steht dagegen fest: einen Cue-Track einlesen und gegen den technischen Plan halten — welche Kamera, welches Kabel, welche Funkstrecke hängt an diesem Cue. Sobald eine Beispieldatei vorliegt, ist das dieselbe Bauform wie der Ablauf-Leser |
 | ~~E-19~~ | ~~Sind die vier Runtime-Repos Teil der **Suite** oder bewusst eigenständig?~~ | **entschieden 2026-09-05** (`suite#99`): Teil der Suite, aber als Geräte über eine Adresse statt als mitgelieferte Ansicht. Beides zugleich — laufende Anwendung und Attrappe im Fenster — war die Variante, die es nicht gibt |
 | ~~E-25~~ | ~~Bekommt der **Tally-Pi** einen Schreibschutz an seinen HTTP-Wegen?~~ | **entschieden 2026-09-09 vom Eigentümer: NEIN — der Status quo bleibt, aber er wird GESAGT.** Siehe B-58 für den vollständigen Befund. Die Kurzfassung des Grundes: der Pi liefert seine eigene Bedienseite aus und schreibt darüber ohne Kopf, also sperrt ein Token entweder die eigene Seite aus oder liegt für jeden im Netz bereit. Ein Schutz, der genau das nicht verhindert, wogegen er antritt, ist eine Beschriftung. Der Eigentümer hat deshalb **nicht die Sicherheit gesenkt, sondern die Lage benannt**: die Einstellungs-Karte im Cable-Planner schreibt beim Eintragen der Adresse hin, dass der Pi keinen Nachweis verlangt (`settings.integrations.tallyPi.noToken`), und `tests/tallyDirektweg.test.ts` hält fest, dass der Dienst auch keinen mitschickt. **Die Entscheidung trägt ihre eigene Verfallsbedingung:** sobald der Pi in einem Netz steht, das nicht dem Betreiber gehört (Haus-WLAN, geteilte Produktionsleitung, Gast-Netz), gilt sie nicht mehr |

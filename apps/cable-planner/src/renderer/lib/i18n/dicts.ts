@@ -279,6 +279,7 @@ export const en: Dict = {
   'settings.project.libImport.okTitle': 'Library imported',
   'settings.project.libImport.okBody':
     'Only new entries were added — existing templates remain unchanged.',
+  // Bedarf 65 — was NICHT angelegt wurde, mit Namen.
   'settings.project.libImport.skipped':
     'Not created: {n} name(s) that already existed{namen}{ohneName}',
   'settings.project.libImport.unnamed': ' · {n} without a name',
@@ -3608,7 +3609,25 @@ export const en: Dict = {
   'delivery.osc.page': 'Companion page',
   'delivery.osc.bank': 'Companion bank',
   'delivery.osc.companionOptIn':
-    "Companion's interface is off by default — it has to be switched on there. Without this note the sheet shows a path that does not exist at the customer.",
+    'Companion: switching goes through the HTTP API (on by default); reading values back goes through the TCP control API (off by default on a fresh install, port 16759; an upgraded install has it on, port 51234). Check on site, do not assume.',
+  // E-23, zweite Quelle: der zurueckgelesene Companion-Variablenstand. Die
+  // Woerter halten dieselbe Grenze wie die OSC-Mitschrift — „read back",
+  // „reading", „at 14:22:07", nirgends „status" oder „current".
+  'companion.title': 'Read back Companion variable values',
+  'companion.optIn':
+    'Companion: switching goes through the HTTP API (on by default); reading values back goes through the TCP control API (off by default on a fresh install, port 16759; an upgraded install has it on, port 51234). Check on site, do not assume.',
+  'companion.noVars':
+    'No device in the plan is switched through Companion — there is no variable to read back.',
+  'companion.commandsHint':
+    'Type these lines into the Companion control API (TCP, one line per command) and bring the answers back:',
+  'companion.paste': 'Paste the answers here',
+  'companion.read': 'Take as a reading',
+  'companion.notRead': 'not read',
+  'companion.noValue': 'no value',
+  'companion.readAt': 'read at',
+  'companion.noPlanSide':
+    'This is a reading from a moment ago, not a state right now — and it stands without a plan side: the plan does not record which value it last wrote into this variable.',
+  'companion.source': 'Protocol details looked up in',
   'app.menu.tools.osc': 'Received show-control messages…',
   'app.menu.tools.osc.note': 'What came in — a transcript, not a system state',
   'osc.title': 'Received show-control messages',
@@ -3988,7 +4007,7 @@ export const en: Dict = {
   'handover.state.in-only': 'only return signed',
   'handover.state.none': 'not signed',
   'inventory.checkout.signState': 'Signature block to print (both legs)',
-  // Bedarf 126 — „wie geplant“ gegen „wie gebaut“.
+  // Bedarf 126 — „wie geplant" gegen „wie gebaut".
   'asBuilt.title': 'As-built sheet (as planned / as built)',
   'asBuilt.count': '{verified} of {total} entries verified',
   'asBuilt.export': 'As-built',
@@ -4826,138 +4845,6 @@ export const en: Dict = {
   'delivery.chain.feedAmbiguous': 'Several cabled programme inputs: {ports}',
   'delivery.chain.backupSharesEncoder':
     'Backup runs through the same device as the primary path ({device})',
-
-  /* Bedarf 24 — die Switch-Port-Karte. Keys: analysis.switchPorts.* */
-  'analysis.switchPorts.title': 'Switch port map',
-  // {n} wird vom Aufrufer ersetzt.
-  'analysis.switchPorts.count': '{n} switches',
-  // {u} und {n} werden vom Aufrufer ersetzt.
-  'analysis.switchPorts.used': '{u} of {n} occupied',
-  'analysis.switchPorts.free': 'free',
-  'analysis.switchPorts.fromNic': 'interface',
-  'analysis.switchPorts.fromCable': 'cable',
-  // {name} wird vom Aufrufer ersetzt.
-  'analysis.switchPorts.conflict': 'cable says: {name}',
-  'analysis.switchPorts.descriptions': 'Descriptions',
-  'analysis.switchPorts.descHint':
-    'Vendor-neutral text to paste. The plan sends nothing to the switch \u2014 read what you paste.',
-
-  /* Bedarf 19 — weitere Netzwerk-Schnittstellen. Keys: nic.* */
-  'nic.title': 'Additional network interfaces',
-  'nic.add': 'Add',
-  'nic.none': 'No additional interfaces.',
-  'nic.hint':
-    'The fields above are the first interface. These are the further ones \u2014 Dante secondary, ST 2110 blue, separate control.',
-  'nic.primaryRole': 'Role of the first interface',
-  'nic.label': 'Label, e.g. \u201eDante Sec\u201c',
-  'nic.role': 'Role',
-  'nic.remove': 'Remove interface',
-  'nic.gateway': 'Gateway',
-  'nic.mac': 'MAC address',
-  'nic.vlan': 'VLAN',
-  'nic.switch': 'Switch',
-  'nic.switchPort': 'Port',
-  'nic.noSwitch': '\u2014 no switch \u2014',
-  // Bedarf 73 — die Zeit im Netz-Modell.
-  'nic.ptpDomain': 'PTP domain',
-  'nic.ptpProfile': 'PTP profile',
-  'nic.ptpProfile.unspecified': '\u2014 PTP profile \u2014',
-  'nic.ptpProfile.st2059': 'ST 2059-2 (default 127)',
-  'nic.ptpProfile.aes67': 'AES67 (commonly 0)',
-  'nic.ptpProfile.default': 'IEEE 1588 default',
-  'nic.ptpRole': 'PTP role',
-  'nic.ptpRole.unspecified': '\u2014 role \u2014',
-  'nic.ptpRole.grandmaster': 'Grandmaster',
-  'nic.ptpRole.boundary': 'Boundary clock',
-  'nic.ptpRole.slave': 'Slave',
-  'analysis.ptp.title': 'Timing (PTP)',
-  'analysis.ptp.intro':
-    'ST 2059-2 defaults to domain 127, AES67 in practice to 0. A mixed rig on one shared domain leaves one of the two families on the wrong media clock \u2014 and reports no error while doing it.',
-  'analysis.ptp.none':
-    'The plan carries PTP-dependent essence, but not one interface names a domain. The fields sit on the interface in the device panel.',
-  'analysis.ptp.domain': 'Domain {n}',
-  'analysis.ptp.noGm': 'no clock named',
-  'analysis.ptp.withoutDomain': '{n} devices carry PTP-dependent essence and name no domain: {liste}',
-  'analysis.ptp.export': 'Timing plan (PTP)',
-  // Bedarf 77 — das Netz-Merkblatt fuer die Crew.
-  'analysis.crew.title': 'Network briefing sheet for the crew',
-  'analysis.crew.ask': '{n} points to settle on site',
-  'analysis.crew.export': 'Crew network sheet',
-  // Bedarf 75 — den As-Built zur Vorlage der naechsten Show machen.
-  'templates.promote': 'As-built as template',
-  'templates.promoteHint': 'Takes the committed as-built state, not the current plan',
-  'templates.promoteNamePrompt': 'Template name (from the as-built)',
-  'templates.promoteNoneTitle': 'No as-built committed',
-  'templates.promoteNoneBody':
-    'Nothing is committed as \u201cas built\u201d. Commit an as-built revision first \u2014 otherwise the template would be the plan from before load-in, only under another name.',
-  'templates.promotedBody': 'Template \u201c{name}\u201d created from the as-built \u201c{from}\u201d.',
-  // Bedarf 84 — woraus naechstes Jahr geplant wuerde.
-  'docs.job.title': 'Basis of this handover',
-  'docs.job.intro':
-    'Next year the same event will be planned from this file. If it carries the plan from before load-in, every on-site change gets rediscovered.',
-  'templates.basis': 'Basis: {basis}',
-  // Bedarf 78 — welche Kiste welchen Platz fuellt.
-  'analysis.asset.title': 'Which box fills which slot',
-  'analysis.asset.intro':
-    'Two identical stageboxes are one box on the plan, two units in the warehouse and two different devices on the network \u2014 each with its own burned-in name and its own MAC. A swap on load-in day only surfaces during rehearsal. Only records are compared here; what is actually in the rack, the plan does not know.',
-  'analysis.asset.export': 'Sheet',
-  'analysis.asset.none': 'not stated',
-  'eq.field.unit': 'Unit from stock',
-  'eq.field.unitNone': '\u2014 not stated \u2014',
-  'eq.field.unitHint':
-    'This slot carries a network identity. Without a named unit a swap for an identical box is invisible \u2014 the burned-in device name travels with it.',
-  // Bedarf 91 — Vorlagen, die wissen, aus welchem Haus sie kommen.
-  'tplScope.title': 'Bind this template to the venue?',
-  'tplScope.body':
-    '{n} venue-bound entries hang on this project \u2014 the venue IT answers and the address{venue}. A neutral template leaves them out; a venue template takes them along and remembers which venue they apply to.',
-  'tplScope.venue': 'For this venue',
-  'tplScope.neutral': 'Neutral (shape only)',
-  'templates.venue': 'Venue template: {venue} \u00b7 {n} answers',
-  'templates.carryTitle': 'Answers from a different venue',
-  'templates.carryOk': 'Load anyway',
-  // Bedarf 89 — das Sicherheitsnetz.
-  'delivery.fb.title': 'Fallback behaviour (safety net)',
-  'delivery.fb.intro':
-    'The expensive failure is not the net that never fires \u2014 it is the net that fires for no reason and parks the show on a slate while the stream is fine. Scene names live in the encoder, in the watchdog and in the operator\u2019s head; here they live once, and comparing them costs nothing.',
-  'delivery.fb.export': 'Sheet',
-  'delivery.fb.skeleton': 'Skeleton',
-  'delivery.fb.skeletonHint':
-    'A skeleton to copy by hand, not a config to load \u2014 the NOALBS schema depends on the version you run',
-  'delivery.fb.watcher': 'Watchdog runs on',
-  'delivery.fb.watcherNone': '\u2014 not stated \u2014',
-  'delivery.fb.stats': 'Stats source, as the watchdog sees it',
-  'delivery.fb.scenes': 'Scenes in the encoder ({n} on file)',
-  'delivery.fb.scenesPh': 'Paste names, separated by comma or newline',
-  'delivery.fb.scenesApply': 'Apply',
-  'delivery.fb.protect': 'Protect',
-  'delivery.fb.remove': 'Remove rule',
-  'delivery.fb.sceneNormal': 'Normal',
-  'delivery.fb.sceneLow': 'Low bitrate',
-  'delivery.fb.sceneOffline': 'Offline',
-  'delivery.fb.low': 'Low threshold',
-  'delivery.fb.offline': 'Offline threshold',
-  // Bedarf 72 — der Multicast-Adressplan.
-  'analysis.mc.title': 'Multicast address plan',
-  'analysis.mc.intro':
-    'Every essence is its own group, and the group belongs to the sender \u2014 five receivers on one camera subscribe to one, not five. Two rules a table never shows: address and port must be unique together, and 32 groups collapse onto the same L2 address. That is why the MAC is on the sheet.',
-  'analysis.mc.pool': 'Pool (CIDR)',
-  'analysis.mc.port': 'UDP port',
-  'analysis.mc.allocate': 'Allocate {n} open legs',
-  'analysis.mc.noPool':
-    'No pool declared \u2014 nothing is allocated. A pool of /9 or narrower cannot collide with itself; only a wider one frees the bit that drops 32 groups onto one MAC.',
-  'analysis.mc.open': 'open',
-  'analysis.mc.stale': '{n} assignment(s) belong to flows that no longer exist: {liste}',
-  'analysis.mc.dropStale': 'Remove orphaned',
-  'analysis.mc.export': 'Multicast address plan',
-  // Bedarf 95 — ein Spektrum-Plan.
-  'analysis.rf.scope': '{n} transmitters in the plan: {rig} from the wireless mic rig, {link} as radio links.',
-  'analysis.rf.noFreq': '{n} without a frequency \u2014 they are in NO calculation: {liste}',
-  'analysis.rf.spectrumExport': 'Spectrum plan (everything that transmits)',
-  'nic.role.mediaPrimary': 'Media primary',
-  'nic.role.mediaSecondary': 'Media secondary',
-  'nic.role.control': 'Control',
-  'nic.role.management': 'Management',
-  'nic.role.unspecified': 'not stated',
   'wireless.title': 'Wireless / vocals',
   'wireless.channel': 'Channel',
   'wireless.addChannel': 'Channel',
@@ -5160,6 +5047,138 @@ export const en: Dict = {
   'analysis.venue.item.dhcp': 'DHCP',
   'analysis.venue.item.qos': 'QoS / DSCP',
   'analysis.venue.item.jointTest': 'Joint test session',
+
+  /* Bedarf 24 — die Switch-Port-Karte. Keys: analysis.switchPorts.* */
+  'analysis.switchPorts.title': 'Switch port map',
+  // {n} wird vom Aufrufer ersetzt.
+  'analysis.switchPorts.count': '{n} switches',
+  // {u} und {n} werden vom Aufrufer ersetzt.
+  'analysis.switchPorts.used': '{u} of {n} occupied',
+  'analysis.switchPorts.free': 'free',
+  'analysis.switchPorts.fromNic': 'interface',
+  'analysis.switchPorts.fromCable': 'cable',
+  // {name} wird vom Aufrufer ersetzt.
+  'analysis.switchPorts.conflict': 'cable says: {name}',
+  'analysis.switchPorts.descriptions': 'Descriptions',
+  'analysis.switchPorts.descHint':
+    'Vendor-neutral text to paste. The plan sends nothing to the switch \u2014 read what you paste.',
+
+  /* Bedarf 19 — weitere Netzwerk-Schnittstellen. Keys: nic.* */
+  'nic.title': 'Additional network interfaces',
+  'nic.add': 'Add',
+  'nic.none': 'No additional interfaces.',
+  'nic.hint':
+    'The fields above are the first interface. These are the further ones \u2014 Dante secondary, ST 2110 blue, separate control.',
+  'nic.primaryRole': 'Role of the first interface',
+  'nic.label': 'Label, e.g. \u201eDante Sec\u201c',
+  'nic.role': 'Role',
+  'nic.remove': 'Remove interface',
+  'nic.gateway': 'Gateway',
+  'nic.mac': 'MAC address',
+  'nic.vlan': 'VLAN',
+  'nic.switch': 'Switch',
+  'nic.switchPort': 'Port',
+  'nic.noSwitch': '\u2014 no switch \u2014',
+  // Bedarf 73 — die Zeit im Netz-Modell.
+  'nic.ptpDomain': 'PTP domain',
+  'nic.ptpProfile': 'PTP profile',
+  'nic.ptpProfile.unspecified': '\u2014 PTP profile \u2014',
+  'nic.ptpProfile.st2059': 'ST 2059-2 (default 127)',
+  'nic.ptpProfile.aes67': 'AES67 (commonly 0)',
+  'nic.ptpProfile.default': 'IEEE 1588 default',
+  'nic.ptpRole': 'PTP role',
+  'nic.ptpRole.unspecified': '\u2014 role \u2014',
+  'nic.ptpRole.grandmaster': 'Grandmaster',
+  'nic.ptpRole.boundary': 'Boundary clock',
+  'nic.ptpRole.slave': 'Slave',
+  'analysis.ptp.title': 'Timing (PTP)',
+  'analysis.ptp.intro':
+    'ST 2059-2 defaults to domain 127, AES67 in practice to 0. A mixed rig on one shared domain leaves one of the two families on the wrong media clock \u2014 and reports no error while doing it.',
+  'analysis.ptp.none':
+    'The plan carries PTP-dependent essence, but not one interface names a domain. The fields sit on the interface in the device panel.',
+  'analysis.ptp.domain': 'Domain {n}',
+  'analysis.ptp.noGm': 'no clock named',
+  'analysis.ptp.withoutDomain': '{n} devices carry PTP-dependent essence and name no domain: {liste}',
+  'analysis.ptp.export': 'Timing plan (PTP)',
+  // Bedarf 77 — das Netz-Merkblatt fuer die Crew.
+  'analysis.crew.title': 'Network briefing sheet for the crew',
+  'analysis.crew.ask': '{n} points to settle on site',
+  'analysis.crew.export': 'Crew network sheet',
+  // Bedarf 75 — den As-Built zur Vorlage der naechsten Show machen.
+  'templates.promote': 'As-built as template',
+  'templates.promoteHint': 'Takes the committed as-built state, not the current plan',
+  'templates.promoteNamePrompt': 'Template name (from the as-built)',
+  'templates.promoteNoneTitle': 'No as-built committed',
+  'templates.promoteNoneBody':
+    'Nothing is committed as \u201cas built\u201d. Commit an as-built revision first \u2014 otherwise the template would be the plan from before load-in, only under another name.',
+  'templates.promotedBody': 'Template \u201c{name}\u201d created from the as-built \u201c{from}\u201d.',
+  // Bedarf 84 — woraus naechstes Jahr geplant wuerde.
+  'docs.job.title': 'Basis of this handover',
+  'docs.job.intro':
+    'Next year the same event will be planned from this file. If it carries the plan from before load-in, every on-site change gets rediscovered.',
+  'templates.basis': 'Basis: {basis}',
+  // Bedarf 78 — welche Kiste welchen Platz fuellt.
+  'analysis.asset.title': 'Which box fills which slot',
+  'analysis.asset.intro':
+    'Two identical stageboxes are one box on the plan, two units in the warehouse and two different devices on the network \u2014 each with its own burned-in name and its own MAC. A swap on load-in day only surfaces during rehearsal. Only records are compared here; what is actually in the rack, the plan does not know.',
+  'analysis.asset.export': 'Sheet',
+  'analysis.asset.none': 'not stated',
+  'eq.field.unit': 'Unit from stock',
+  'eq.field.unitNone': '\u2014 not stated \u2014',
+  'eq.field.unitHint':
+    'This slot carries a network identity. Without a named unit a swap for an identical box is invisible \u2014 the burned-in device name travels with it.',
+  // Bedarf 91 — Vorlagen, die wissen, aus welchem Haus sie kommen.
+  'tplScope.title': 'Bind this template to the venue?',
+  'tplScope.body':
+    '{n} venue-bound entries hang on this project \u2014 the venue IT answers and the address{venue}. A neutral template leaves them out; a venue template takes them along and remembers which venue they apply to.',
+  'tplScope.venue': 'For this venue',
+  'tplScope.neutral': 'Neutral (shape only)',
+  'templates.venue': 'Venue template: {venue} \u00b7 {n} answers',
+  'templates.carryTitle': 'Answers from a different venue',
+  'templates.carryOk': 'Load anyway',
+  // Bedarf 89 — das Sicherheitsnetz.
+  'delivery.fb.title': 'Fallback behaviour (safety net)',
+  'delivery.fb.intro':
+    'The expensive failure is not the net that never fires \u2014 it is the net that fires for no reason and parks the show on a slate while the stream is fine. Scene names live in the encoder, in the watchdog and in the operator\u2019s head; here they live once, and comparing them costs nothing.',
+  'delivery.fb.export': 'Sheet',
+  'delivery.fb.skeleton': 'Skeleton',
+  'delivery.fb.skeletonHint':
+    'A skeleton to copy by hand, not a config to load \u2014 the NOALBS schema depends on the version you run',
+  'delivery.fb.watcher': 'Watchdog runs on',
+  'delivery.fb.watcherNone': '\u2014 not stated \u2014',
+  'delivery.fb.stats': 'Stats source, as the watchdog sees it',
+  'delivery.fb.scenes': 'Scenes in the encoder ({n} on file)',
+  'delivery.fb.scenesPh': 'Paste names, separated by comma or newline',
+  'delivery.fb.scenesApply': 'Apply',
+  'delivery.fb.protect': 'Protect',
+  'delivery.fb.remove': 'Remove rule',
+  'delivery.fb.sceneNormal': 'Normal',
+  'delivery.fb.sceneLow': 'Low bitrate',
+  'delivery.fb.sceneOffline': 'Offline',
+  'delivery.fb.low': 'Low threshold',
+  'delivery.fb.offline': 'Offline threshold',
+  // Bedarf 72 — der Multicast-Adressplan.
+  'analysis.mc.title': 'Multicast address plan',
+  'analysis.mc.intro':
+    'Every essence is its own group, and the group belongs to the sender \u2014 five receivers on one camera subscribe to one, not five. Two rules a table never shows: address and port must be unique together, and 32 groups collapse onto the same L2 address. That is why the MAC is on the sheet.',
+  'analysis.mc.pool': 'Pool (CIDR)',
+  'analysis.mc.port': 'UDP port',
+  'analysis.mc.allocate': 'Allocate {n} open legs',
+  'analysis.mc.noPool':
+    'No pool declared \u2014 nothing is allocated. A pool of /9 or narrower cannot collide with itself; only a wider one frees the bit that drops 32 groups onto one MAC.',
+  'analysis.mc.open': 'open',
+  'analysis.mc.stale': '{n} assignment(s) belong to flows that no longer exist: {liste}',
+  'analysis.mc.dropStale': 'Remove orphaned',
+  'analysis.mc.export': 'Multicast address plan',
+  // Bedarf 95 — ein Spektrum-Plan.
+  'analysis.rf.scope': '{n} transmitters in the plan: {rig} from the wireless mic rig, {link} as radio links.',
+  'analysis.rf.noFreq': '{n} without a frequency \u2014 they are in NO calculation: {liste}',
+  'analysis.rf.spectrumExport': 'Spectrum plan (everything that transmits)',
+  'nic.role.mediaPrimary': 'Media primary',
+  'nic.role.mediaSecondary': 'Media secondary',
+  'nic.role.control': 'Control',
+  'nic.role.management': 'Management',
+  'nic.role.unspecified': 'not stated',
   'analysis.address.mask': 'Mask',
   'analysis.address.evidence': 'Evidence',
   'analysis.address.finding': 'Finding',
@@ -5453,6 +5472,7 @@ export const en: Dict = {
   'settings.integrations.lexware.testFailed': 'Connection failed',
   'settings.integrations.lexware.help':
     'The API key is created in Lexware Office under "Settings → Public interface" and stored in the operating system keychain (keytar) — never in the project file.',
+
 
   // ── Neuer als der auto-merge-Block: 58 Schluessel ohne englische Fassung ──
   //

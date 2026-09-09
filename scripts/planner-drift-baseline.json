@@ -2,15 +2,15 @@
   "cable-planner": {
     "only-upstream": 0,
     "only-suite": 5,
-    "two-way": 16,
+    "two-way": 15,
     "upstream-ahead": 0,
-    "suite-ahead": 8,
+    "suite-ahead": 9,
     "expected-overlay": 38,
     "dead-upstream": 0,
     "drift": 29,
     "total": 67,
     "missingUpstream": false,
-    "upstreamSha": "2dea5cd4a8dd",
+    "upstreamSha": "dcc26bda8979",
     "version": "9.0.1",
     "upstreamVersion": "9.0.1"
   },
@@ -25,7 +25,7 @@
     "drift": 22,
     "total": 31,
     "missingUpstream": false,
-    "upstreamSha": "7857f949b8aa",
+    "upstreamSha": "e40f82aa428b",
     "version": "4.3.3",
     "upstreamVersion": "4.3.3"
   },
@@ -40,7 +40,7 @@
     "drift": 23,
     "total": 42,
     "missingUpstream": false,
-    "upstreamSha": "a6ea319b86e5",
+    "upstreamSha": "db993d63bf4d",
     "version": "1.0.0",
     "upstreamVersion": "1.0.0"
   },

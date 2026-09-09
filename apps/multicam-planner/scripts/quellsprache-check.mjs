@@ -258,7 +258,44 @@ const ohneKommentare = (text) =>
  * Shotlist" steht zwischen den Tags, nicht in Anfuehrungszeichen.
  */
 const SICHTBARE_ATTRIBUTE = /\b(?:title|aria-label|placeholder|label|alt|summary|submitLabel|hint)=(?:"([^"]{4,})"|\{\s*'((?:[^'\\]|\\.){4,}?)'\s*\})/g
-const JSX_TEXT = />([^<>{}]{4,})</g
+/**
+ * JSX-Textknoten — und zwar NUR die.
+ *
+ * Die erste Fassung war `/>([^<>{}]{4,})</g`. Sie trifft in einer .tsx-Datei
+ * auch CODE: `>` und `<` sind Vergleichsoperatoren, und dazwischen steht dann
+ * ein Stueck Quelltext (`if (clipped.length > 2)`, `arr.filter(n => n.id)`).
+ *
+ * HIER FIEL DAS NICHT AUF, weil nur gezaehlt wird, was als DEUTSCH durchgeht:
+ * ein Code-Schnipsel traegt `if`, `for`, `const`, `return` — englische
+ * Stoppwoerter, also englisch klassifiziert und aus der Zaehlung heraus. In
+ * einem deutsch-quelligen Repo waere die Zielsprache englisch, und derselbe
+ * Lauf haette dort 35 (cable) bzw. 12 (light) Code-Zeilen als Sprachmisch-
+ * Verstoss gemeldet. Gemessen, nicht vermutet.
+ *
+ * ZWEI BEDINGUNGEN MACHEN AUS DEM MUSTER EIN TAG-MUSTER:
+ *   • Das `>` muss ein Tag-Ende sein: davor steht ein Bezeichner, ein
+ *     Anfuehrungszeichen, eine geschweifte Klammer oder ein Schraegstrich —
+ *     nie ein Leerzeichen, `=`, `<` oder `!`. Damit fallen `a > b`, `=>` und
+ *     `<=` heraus.
+ *   • Das schliessende `<` muss ein Tag beginnen: `</` oder `<Buchstabe`.
+ * Was danach noch durchkommt, sind Generics (`useState<Foo>(null)`); die faengt
+ * `NACH_CODE` unten.
+ *
+ * GEGENGEPROBT gegen den Stand VOR dem Wickeln (multicam @ 49e8ced): das
+ * strenge Muster findet dort 38 Zeichenketten. Das lockere fand 37 — die
+ * Differenz ist NICHT das Muster, sondern der Backtick-Fix aus `#119`: die
+ * Rueckfrage `confirm(\`Shotlist "…" mit N Shots loeschen?\`)` kam mit ihm
+ * dazu. Textknoten verliert das strenge Muster also keinen einzigen, und
+ * ueber cable/light faellt es von 47 Fehltreffern auf null.
+ */
+const JSX_TEXT = /[^\s=<!>]>([^<>{}]{4,})<[/A-Za-z]/g
+
+/**
+ * Was ein JSX-Textknoten NIE enthaelt, ein Code-Schnipsel dagegen fast immer.
+ * Greift ausschliesslich auf JSX-Text, nicht auf Attribute: dort steht
+ * durchaus ein `=` in der Oberflaeche ("Shift = frei, Mausrad = Stufe").
+ */
+const NACH_CODE = /[;=]|\b(?:const|let|var|function|await|async)\b/
 // Auch das Template-Literal, nicht nur die Anfuehrungszeichen. GEFUNDEN, weil
 // der `dialogs:native`-Waechter der Suite eine Stelle meldete, die dieser
 // Lauf hier gruen durchgelassen hatte: `window.confirm(\`Shotlist "…" mit N
@@ -267,24 +304,89 @@ const JSX_TEXT = />([^<>{}]{4,})</g
 // kannte.
 const RUFE = /\b(?:alert|confirm|prompt)\(\s*(?:(['"])((?:[^\\]|\\.){4,}?)\1|`((?:[^`\\]|\\.){4,}?)`)/g
 
+/**
+ * Sichtbarer Text einer Datei, der NICHT in einem `t()`-Fallback steht.
+ *
+ * Was in einem Fallback steht, ist gewickelt — das misst die erste Haelfte
+ * dieses Laufs; hier bleibt uebrig, was niemand angefasst hat.
+ *
+ * Der Rumpf ist mit den Kopien im `cable-planner` und `light-planner`
+ * zeichengleich, damit `lang:parity` in der Suite ihn vergleichen kann. Wer
+ * hier umformuliert, formuliert dort mit um — sonst schlaegt der Waechter an,
+ * und das soll er: bei EINER geteilten Zusicherung darf es nicht drei
+ * Auslegungen geben.
+ */
 const sichtbareTexte = (quelle, jsx) => {
-  const text = ohneKommentare(quelle)
-  // Was in einem Fallback steht, ist gewickelt — das misst die erste Haelfte.
-  const ohneFallbacks = text.replace(fallbackMuster(), ' ')
+  const text = ohneKommentare(quelle).replace(fallbackMuster(), ' ')
   const raus = []
-  for (const m of ohneFallbacks.matchAll(SICHTBARE_ATTRIBUTE)) raus.push(m[1] ?? m[2])
-  for (const m of ohneFallbacks.matchAll(RUFE)) raus.push(m[2] ?? m[3])
+  for (const m of text.matchAll(SICHTBARE_ATTRIBUTE)) raus.push(m[1] ?? m[2])
+  for (const m of text.matchAll(RUFE)) raus.push(m[2] ?? m[3])
   if (jsx) {
-    for (const m of ohneFallbacks.matchAll(JSX_TEXT)) {
+    for (const m of text.matchAll(JSX_TEXT)) {
       const t = m[1].trim()
-      if (t && !t.startsWith('{')) raus.push(t)
+      if (t && !t.startsWith('{') && !NACH_CODE.test(t)) raus.push(t)
     }
   }
   return raus
 }
 
+
+/**
+ * Die Gegenprobe zum Messwerkzeug selbst — an einer festen Probe, nicht am
+ * Repo.
+ *
+ * WARUM NICHT AM REPO. Der naheliegende Weg waere eine Untergrenze auf der
+ * Zahl der gefundenen Texte („mindestens 100"). Der Wert davon faellt aber
+ * genau dann, wenn die Arbeit gelingt: je mehr gewickelt ist, desto weniger
+ * ungewickelter Text bleibt uebrig. Hier sind es nach `#116`-`#119` noch 65 —
+ * eine Schwelle darunter muesste bei jedem Fortschritt nachgezogen werden und
+ * waere nach dem zweiten Nachziehen nur noch Zierrat.
+ *
+ * Die Probe dagegen ist unabhaengig von der Repo-Groesse und haelt genau die
+ * drei Fehlformen fest, die diesen Zaehler Zeit gekostet haben: der Kommentar
+ * als Literal, das Vergleichs-`>` als Tag-Ende, die Rueckfrage im Backtick.
+ * Ohne sie waere ein kaputtes Muster die gefaehrlichste Art gruen: es findet
+ * nichts, und Nichts sieht hier aus wie ein Ergebnis.
+ */
+const PROBE = [
+  '<button title="Delete this cable">',
+  '<span>Not connected yet</span>',
+  'window.confirm(`Delete "${name}" and its ${n} shots?`)',
+  // Die beiden Kommentar-Zeilen tragen mit Absicht Muster, die OHNE den
+  // Kommentarfilter treffen wuerden — eine ohne waere wirkungslos: was kein
+  // `>` und kein `title=` enthaelt, findet der Zaehler ohnehin nicht, und die
+  // Probe belegte dann nichts.
+  '// title="Legacy tooltip, no longer shown"',
+  '/* <b>Old markup left in a comment</b> */',
+  'if (a.length > 2) return b < c',
+  'const n = a>b ? 1 : 2; const m = c<d',
+  "t('cable.remove', 'Delete this cable')",
+].join('\n')
+
+// Sortiert verglichen: in welcher Reihenfolge Attribute, Rueckfragen und
+// Textknoten herausfallen, ist eine Eigenschaft der Schleifen und keine
+// Zusicherung — ein Waechter, der bei einer umgestellten Schleife anschlaegt,
+// meldet Fehlalarme.
+const gefunden = sichtbareTexte(PROBE, true).slice().sort()
+const erwartet = [
+  'Delete "${name}" and its ${n} shots?',
+  'Delete this cable',
+  'Not connected yet',
+].sort()
+if (gefunden.length !== erwartet.length || erwartet.some((e, i) => gefunden[i] !== e)) {
+  console.error(
+    '\nDie Probe des Sprachmix-Musters schlaegt fehl.\n' +
+      `  erwartet: ${JSON.stringify(erwartet)}\n` +
+      `  gefunden: ${JSON.stringify(gefunden)}\n` +
+      'Das Muster findet entweder echte Beschriftungen nicht mehr oder wieder ' +
+      'Kommentare und Quelltext. Beides macht die Zahl unten wertlos.',
+  )
+  process.exit(1)
+}
+
 const andereSprache = erklaert === 'de' ? 'en' : 'de'
 const mix = []
+let gesehen = 0
 for (const datei of dateien(SRC)) {
   const rel = relative(SRC, datei)
   // Das Woerterbuch ist per Definition in der anderen Sprache, und Tests sind
@@ -292,14 +394,16 @@ for (const datei of dateien(SRC)) {
   // niemand auf null bringen kann — und eine solche Zahl liest niemand.
   if (rel.startsWith('i18n/') || rel.includes('__tests__')) continue
   for (const roh of sichtbareTexte(readFileSync(datei, 'utf8'), datei.endsWith('.tsx'))) {
+    gesehen += 1
     if (klassifiziere(roh) === andereSprache) mix.push(`${rel}: ${roh.slice(0, 90)}`)
   }
 }
 
 console.log(
   `\nSprachmix: ${mix.length} ungewickelte Zeichenkette(n) in "${andereSprache}" ` +
-    `(Grenze ${MIX_GRENZE}).`,
+    `(Grenze ${MIX_GRENZE}, ${gesehen} sichtbare Texte geprueft).`,
 )
+
 if (mix.length > MIX_GRENZE) {
   console.error(`\n${mix.length - MIX_GRENZE} mehr als erlaubt:`)
   for (const z of mix.slice(0, 40)) console.error(`  ${z}`)
