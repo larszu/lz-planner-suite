@@ -5635,6 +5635,7 @@ export const en: Dict = {
   'csvImport.placeholder': 'Name;Category;Power;Weight;Serial number\nATEM Mini;Mixer;30;1.1;SN123',
   'eq.field.ipAddress': 'IP Address',
   'eqNode.greengoGroups': 'Groups',
+  'eqNode.intercomStation': 'Intercom station',
   'eqNode.internalPrefix': 'Internal',
   'eqNode.portPluggedOnSite': '{port} · {type} — plugged on site',
   'eqNode.portRackInternal': '{port} · {type} — wired internally in rack',

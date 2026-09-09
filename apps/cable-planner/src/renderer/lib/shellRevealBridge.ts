@@ -45,7 +45,7 @@ export function initShellReveal(): () => void {
 
     if (kind !== 'cable' && geraet) {
       store.setSelection(geraet.id, undefined, undefined)
-      const { width, height } = computeEquipmentLayout(geraet, projekt.greengoConfig)
+      const { width, height } = computeEquipmentLayout(geraet, projekt.intercom)
       const p = mitte(geraet, width, height)
       triggerCanvasCenterOn(p.x, p.y)
       return { found: true }
@@ -58,7 +58,7 @@ export function initShellReveal(): () => void {
       // auseinanderliegenden Geraeten zeigt oft auf leere Flaeche.
       const quelle = projekt.equipment?.find((e) => e.id === kabel.fromEquipmentId)
       if (quelle) {
-        const { width, height } = computeEquipmentLayout(quelle, projekt.greengoConfig)
+        const { width, height } = computeEquipmentLayout(quelle, projekt.intercom)
         const p = mitte(quelle, width, height)
         triggerCanvasCenterOn(p.x, p.y)
       }
@@ -69,7 +69,7 @@ export function initShellReveal(): () => void {
       // `kind` sagte 'cable', gefunden wurde ein Geraet. Der Planer
       // widerspricht — und zeigt trotzdem, was unter der Id steht.
       store.setSelection(geraet.id, undefined, undefined)
-      const { width, height } = computeEquipmentLayout(geraet, projekt.greengoConfig)
+      const { width, height } = computeEquipmentLayout(geraet, projekt.intercom)
       const p = mitte(geraet, width, height)
       triggerCanvasCenterOn(p.x, p.y)
       return { found: true }

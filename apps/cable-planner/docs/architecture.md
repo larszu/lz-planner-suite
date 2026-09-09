@@ -5,7 +5,7 @@ Invarianten der App. Sie ist die Pflicht-Lektüre, bevor strukturelle Änderunge
 gemacht werden. Für die interaktive Modul-Übersicht siehe [`app-structure.html`](./app-structure.html),
 für einen Wettbewerber-Vergleich [`comparison.html`](./comparison.html).
 
-Stand: v8.3.1 · ~628 TS/TSX-Module · ~181.5k LOC
+Stand: v8.3.1 · ~630 TS/TSX-Module · ~182.1k LOC
 
 ---
 
@@ -367,7 +367,7 @@ CablePlannerProject
 ├── locations: LocationFrame[]          # Räume / Bereiche (Rahmen mit Inhalt)
 ├── canvasState: { viewport, ... }      # Pan/Zoom
 ├── annotations: ProjectAnnotation[]    # Notizen / Markups
-├── greengoConfig?: GreenGoConfig       # Intercom-Setup
+├── intercom?: IntercomPlan             # Intercom-Slot (E-2); GreenGoConfig ist seine Projektion
 ├── checkState?                         # Mobile-View-Häkchen
 ├── mode: 'editing' | 'finalized' | 'viewer'
 ├── sourceIdentities?: SourceIdentity[] # ADR-001 — Rollen („Kamera 1")
@@ -935,7 +935,7 @@ optionales Cloud-Backend (`y-websocket`, Auth/Permissions) bleiben offen.
 `vitest` ist eingerichtet (`npm test` / `npm run test:watch`); dazu kommen
 gezielte Node-Checks (`npm run test:crdt`, `npm run test:signaling`), ein
 UI-Smoke-Skript (`npm run ui:smoke`) und ein headless Drag-/Interaktions-Test
-(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~181.5k LOC
+(`npm run test:drag`, treibt den Renderer via Playwright). Bei ~182.1k LOC
 bleibt der Ausbau der Abdeckung wichtig — empfohlene Schwerpunkte:
 - Snapshot-Tests auf `healProjectPositions` mit echten
   Beispiel-Projekt-JSONs.

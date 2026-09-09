@@ -201,7 +201,7 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-7 · Intercom-Vokabular existiert zweimal
 
-* **Status:** offen, aber nur noch Schritt 1 von dreien — **entschieden (E-2, 2026-09-08, vom Eigentümer): eigener `.avplan`-Slot für Intercom; Vokabel bleibt das neutrale Format aus B-8, in einem gemeinsamen Paket.** Der Slot trägt nur, was der Plan nicht hergibt (Kanäle, Key-Gruppen, Beschriftung, Talk/Listen-Matrix); alles Übrige steht darin als Verweis über die Objekt-Id. **Schritt 2 und 3 des Zuschnitts unten sind mit `cable#791` erledigt** — die Tastenbelegung steht im Modell und der Export darf sie schreiben; offen ist der Slot selbst
+* **Status:** ~~offen~~ **erledigt 2026-09-09** — alle drei Schritte liegen vor: `cable#791` (Schritt 2 und 3: Tastenbelegung im Modell, Export darf sie schreiben) und `cable#792` (Schritt 1: der Slot). **Entschieden war (E-2, 2026-09-08, vom Eigentümer): eigener `.avplan`-Slot für Intercom; Vokabel bleibt das neutrale Format aus B-8.** Der Slot trägt nur, was der Plan nicht hergibt (Kanäle, Key-Gruppen, Beschriftung, Talk/Listen-Matrix); alles Übrige steht darin als Verweis über die Objekt-Id
 * **Befund:** `GreenGoConfig` lebt in `cable-planner`,
   `Broadcast-intercom/packages/shared/src/index.ts` (437 Zeilen, 33 Exporte)
   führt dasselbe Feld unabhängig. Kein gemeinsames Paket, kein Intercom-Slot in
@@ -240,11 +240,19 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Datenverlust im Editor-Weg, und er „fällt nicht am Bildschirm auf, sondern
   in der Probe". Wer den Slot einführt, ohne diese Merge-Regel mitzudrehen,
   baut den Verlust wieder ein.
-* **Zuschnitt, der daraus folgt** (drei Schritte — Schritt 2 und 3 sind
-  erledigt, 1 steht noch aus):
-  1. **Offen.** Den Slot mit dem anlegen, was schon modelliert ist — Kanäle,
-     Stationen, Talk/Listen, Beschriftung —, als Projekt-Slot statt
-     Austauschdatei.
+* **Zuschnitt, der daraus folgt** (drei Schritte — alle drei erledigt):
+  1. ~~Den Slot anlegen~~ **erledigt 2026-09-09 (`cable#792`).**
+     `types/intercomPlan.ts` als Projekt-Slot: Kanäle, Sprechstellen,
+     Talk/Listen getrennt, Tastenbelegung neutral als
+     `IntercomKey {page, button, channelId}`. Kein `format`, kein `version`,
+     kein `exportedAt` — ein Projekt trägt keinen Format-Marker über einen
+     seiner Slots. Die Anlagen-Nummern liegen **deklariert** im
+     `vendor`-Block (ADR-002), damit dieselbe Anlage nach dem Öffnen nicht
+     andere Nummern trägt als vorher; die Austauschdatei vergibt sie
+     erklärtermassen neu, und genau deshalb gibt es zwei Übersetzungspaare
+     und nicht eines. `healProjectPositions` stellt alte Projekte beim
+     **Laden** um und entfernt `greengoConfig`, statt es danebenstehen zu
+     lassen.
   2. ~~Die Tastenbelegung ins Modell heben~~ **erledigt 2026-09-09
      (`cable#791`).** `GreenGoKey {page, button, groupId}` und
      `GreenGoUser.keys`; der Import liest `ButtonFunctions` jetzt IMMER statt
@@ -261,17 +269,28 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
      Gruppe lesen konnte (`'--'`, Objekte, eine Sonderfunktion späterer
      Firmware), bleibt Wert für Wert stehen — der Teil von ADR-005 Regel 2,
      der weiter gilt.
-* **Die Warnung von 2026-09-08 ist damit nicht hinfällig, sondern erfüllt.**
-  Sie lautete: Schritt 1 ohne 2 und 3 auszuliefern. Dann stünde die
-  Zugehörigkeit an zwei Orten — im Slot und in `greengoConfig` — und die
-  Tastenbelegung an einem dritten (dem Roh-Preset). **Der dritte Ort ist weg:**
-  die Tastenbelegung steht im Modell. Wer Schritt 1 jetzt baut, hat sie
-  bereits, und der Slot muss sie als DIESELBE eine Angabe führen — nicht als
-  zweite Kopie neben `GreenGoUser.keys`, sonst entsteht der Verlust an anderer
-  Stelle neu.
-* **Was für Schritt 1 die eigentliche Grösse bleibt:** `greengoConfig` hängt
-  an zehn Stellen im Renderer (Knoten-Layout, Beschriftung, Canvas,
-  Mobile-Share); sie zur Projektion zu machen ist der Aufwand dieses Punktes.
+* **Die Warnung von 2026-09-08 wurde eingehalten — sie bleibt hier stehen,
+  weil sie erklärt, warum die Reihenfolge so war.** Sie lautete: Schritt 1
+  ohne 2 und 3 auszuliefern. Dann stünde die Zugehörigkeit an zwei Orten — im
+  Slot und in `greengoConfig` — und die Tastenbelegung an einem dritten (dem
+  Roh-Preset). Gebaut wurde deshalb 2 und 3 zuerst (`cable#791`), und
+  Schritt 1 hat danach beides vorgefunden: die Tastenbelegung als eine
+  Angabe, und `greengoConfig` wird beim Laden entfernt statt danebengelegt.
+* **Die eigentliche Grösse war, wie angekündigt, die Projektion:**
+  `greengoConfig` hing an zehn Stellen im Renderer. Die Nachschlage auf dem
+  Canvas liest jetzt den Slot **direkt** statt über die Projektion — sie
+  läuft je Gerät und Render, und ein Selektor mit neuer Identität je Aufruf
+  ist die Defektform, die `MobileShareDialog` und `EquipmentNode` in ihren
+  eigenen Kommentaren beschreiben. Dialog, Preset-Bibliothek und
+  Beltpack-Leiste projizieren einmal je Slot-Änderung.
+* **Was dabei offen geblieben ist** (eigener Punkt, zwei Repos): die
+  Austauschdatei `avplan-intercom` trägt in Format-Version 1 **keine**
+  Tastenbelegung. Sie zu ergänzen heisst `INTERCOM_FORMAT_VERSION` auf 2 zu
+  heben UND `INTERCOM_PLAN_VERSION` in `Broadcast-intercom/packages/shared`
+  mit — dessen Leser lehnt eine zu neue Datei ab, statt sie halb zu lesen
+  (und das ist dort richtig). Bis dahin sagt der Kopf von
+  `lib/intercomPlan.ts`, dass die Datei diesen Teil nicht trägt, statt es zu
+  verschweigen (ADR-005).
 
 ---
 
