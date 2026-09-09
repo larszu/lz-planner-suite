@@ -25,6 +25,7 @@ import { AtemMvConfigDialog } from './components/Atem/AtemMvConfigDialog'
 import { AtemAudioRouterDialog } from './components/Atem/AtemAudioRouterDialog'
 import { DrumMicingDialog } from './components/DrumMicing/DrumMicingDialog'
 import { WirelessRigDialog } from './components/Wireless/WirelessRigDialog'
+import { RundownDialog } from './components/Rundown/RundownDialog'
 import { LocationBomDialog } from './components/Project/LocationBomDialog'
 
 import { CableContextMenu } from './components/Canvas/CableContextMenu'
@@ -1420,6 +1421,7 @@ export default function App() {
       <AtemAudioRouterDialog />
       <DrumMicingDialog />
       <WirelessRigDialog />
+      <RundownDialog />
       <DeliveryDialog />
       <AdernDialog />
       <OscEmpfangPanel />
