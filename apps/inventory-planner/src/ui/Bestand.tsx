@@ -16,6 +16,20 @@
 //   Sie ERFINDET KEINE MENGE. Ein Artikel ohne Angabe hat keine Menge, und die
 //   Tabelle schreibt dann nichts statt einer Null. Eine Null ist die Aussage
 //   „nichts da"; das ist etwas anderes als „nicht gezählt".
+//
+// DIE SPALTE „ZIEL" IST KEIN RÜCKFALL IN DIE ERSTE DIESER ZWEI REGELN (B-65).
+//
+// Sie sieht aus wie Bedarf und ist keiner. Der Bedarf eines PLANS ist eine
+// Frage des Plans — was diese Show braucht, weiss nur sie, und deshalb reicht
+// der Planer `BedarfsZeile[]` herüber, statt dass das Lager rechnet (ADR-006).
+// Die Mindestmenge ist die andere Sorte Zahl: eine Entscheidung des HAUSES
+// über sein eigenes Regal, unabhängig von jeder Show. „Von den kurzen XLR
+// wollen wir immer zwanzig dahaben" ist kein Plan, sondern eine Hauspolitik.
+//
+// Sie steht deshalb HIER — dort, wo geschrieben wird und wo ohnehin schon die
+// Menge daneben liegt — und wird ANDERSWO gelesen: die Deckung rechnet
+// `domain/lib/mindestmenge.ts`, gezeigt wird sie im Bericht. Diese Ansicht
+// vergleicht nichts; sie nimmt die Zahl entgegen.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react'
 import { useInventoryStore } from '../domain/store/inventoryStore'
@@ -102,6 +116,13 @@ export function Bestand() {
                 <th>Modell</th>
                 <th>Kategorie</th>
                 <th className="rechts">Menge</th>
+                {/*
+                  „Ziel" und nicht „Mindestmenge": die Spalte ist schmal, und
+                  der Kopf muss neben der Zahl lesbar bleiben. Was gemeint
+                  ist, sagt das `title` der Zelle und der Satz unter der
+                  Tabelle — eine abgeschnittene Ueberschrift sagt gar nichts.
+                */}
+                <th className="rechts">Ziel</th>
                 <th>Eigentum</th>
                 <th>Lagerort</th>
                 <th>Lieferant</th>
@@ -126,6 +147,41 @@ export function Bestand() {
                         if (Number.isFinite(n) && n >= 0) updateItem(i.id, { quantity: n })
                       }}
                       aria-label={`Menge von ${i.model}`}
+                      className="schmal"
+                    />
+                  </td>
+                  <td className="rechts">
+                    {/*
+                      LEER IST EIN WERT, und zwar ein anderer als 0. Leer
+                      heisst „niemand hat fuer diesen Artikel entschieden,
+                      wieviel dasein muss" — er zaehlt dann in keine der drei
+                      Lagen des Berichts, sondern unter „unbewertet". Eine 0
+                      waere die Aussage „darf leer sein", und die trifft
+                      jemand ausdruecklich.
+
+                      Deshalb schreibt das Feld bei leerer Eingabe
+                      `undefined` zurueck und nicht 0. `updateItem` setzt
+                      seinen Patch per Spread — `undefined` loescht dort
+                      wirklich, anders als bei `mergeDefined`.
+                    */}
+                    <input
+                      type="number"
+                      min="0"
+                      value={i.mindestmenge ?? ''}
+                      placeholder="—"
+                      onChange={(e) => {
+                        const roh = e.target.value.trim()
+                        if (roh === '') {
+                          updateItem(i.id, { mindestmenge: undefined })
+                          return
+                        }
+                        const n = Number(roh)
+                        if (Number.isFinite(n) && n >= 0) {
+                          updateItem(i.id, { mindestmenge: Math.round(n) })
+                        }
+                      }}
+                      aria-label={`Mindestmenge von ${i.model}`}
+                      title="Ab wann nachbestellt oder sub-hired wird. Leer heisst: nicht festgelegt."
                       className="schmal"
                     />
                   </td>
@@ -162,6 +218,16 @@ export function Bestand() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {items.length > 0 && (
+        <p className="leer">
+          <strong>Ziel</strong> ist die Mindestmenge, ab der nachbestellt oder
+          sub-hired wird — eine Entscheidung des Hauses, keine Vorgabe aus einer
+          Show. Leer heisst nicht null, sondern nicht festgelegt; solche Artikel
+          führt der Bericht unter „unbewertet" statt unter „reicht". Wie es
+          aktuell steht, sagt dort der Block „Unter Ziel".
+        </p>
       )}
     </section>
   )

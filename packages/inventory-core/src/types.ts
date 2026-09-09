@@ -96,6 +96,19 @@ export interface InventoryItem {
   deviceTypeId?: string
   /** Gesamtmenge im Bestand. */
   quantity: number
+  /**
+   * Mindestmenge -- ab wann das Haus nachbestellt oder sub-hired (B-65).
+   *
+   * Gepflegt und ausgewertet wird sie im Lager-Werkzeug
+   * (`inventory-planner`, Block „Unter Ziel"); dieses Paket FUEHRT sie, weil
+   * sie ueber `avplan-inventory` reist. Der cable-planner baut beim Laden
+   * jeden Artikel Feld fuer Feld neu auf -- ein Feld, das der Typ nicht
+   * kennt, haette er eingelesen und beim Export still weggeschrieben.
+   *
+   * Optional heisst UNBEWERTET und nicht 0: eine 0 waere die Aussage „darf
+   * leer sein", und die trifft jemand ausdruecklich.
+   */
+  mindestmenge?: number
   /** Mietpreis pro Tag (Kalkulation, Phase 5). */
   rentPricePerDay?: number
   /** Lagerort (z. B. "Regal A3"). */

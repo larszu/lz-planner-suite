@@ -44,7 +44,26 @@ export const INVENTORY_FORMAT = 'avplan-inventory'
 // Version weigert sich ein aelterer Stand stattdessen zu lesen. Aeltere
 // Dateien (v1-v3) lesen wir unveraendert weiter; ihre Einheiten haben schlicht
 // keine Werte.
-export const INVENTORY_FORMAT_VERSION = 4
+// Version 5 (B-65): `InventoryItem.mindestmenge` — ab wann das Haus
+// nachbestellt oder sub-hired. Dieselbe Begruendung wie bei 2, 3 und 4, und
+// sie ist hier keine Formalie: `inventoryStore.healItem` baut JEDEN Artikel
+// Feld fuer Feld neu auf. Ein Stand, der das Feld nicht kennt, laese eine
+// Datei mit gepflegten Mindestmengen ein und schriebe sie still ohne sie
+// zurueck — und die Kachel „Unter Ziel" meldete danach Entwarnung fuer ein
+// Lager, in dem niemand mehr eine Mindestmenge hinterlegt hat. Das ist die
+// teuerste Form des Verlusts: keine Fehlermeldung, sondern eine gruene Zahl.
+//
+// Mit der erhoehten Version weigert sich ein aelterer Stand stattdessen zu
+// lesen (siehe `f.version > INVENTORY_FORMAT_VERSION` unten). Aeltere
+// Dateien (v1-v4) lesen wir unveraendert weiter; ihre Artikel haben schlicht
+// keine Mindestmenge, und das ist nicht 0, sondern UNBEWERTET.
+//
+// DIE ZWEITE STELLE, an der dieselbe Zahl steht, ist
+// `cable-planner/src/renderer/lager/lib/inventoryPortable.ts` — dort liegt
+// dasselbe Format byte-gleich, und dort haelt `tests/inventoryContract.test.ts`
+// die Feldliste fest. Beide zusammen oder keines: eine Datei aus dem Lager,
+// die der Planer nicht mehr liest, ist schlimmer als ein fehlendes Feld.
+export const INVENTORY_FORMAT_VERSION = 5
 
 export interface InventorySnapshot {
   items: InventoryItem[]

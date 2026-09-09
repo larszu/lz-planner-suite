@@ -120,6 +120,14 @@ const healItem = (raw: unknown): InventoryItem | null => {
     deviceTypeId:
       typeof r.deviceTypeId === 'string' && r.deviceTypeId.trim() ? r.deviceTypeId : undefined,
     quantity: typeof r.quantity === 'number' && r.quantity >= 0 ? Math.round(r.quantity) : 0,
+    // B-65 — die Mindestmenge muss die Heilung ueberleben; genau hier ginge
+    // sie sonst still verloren (dieselbe Falle wie `deviceTypeId` darueber
+    // und wie `damaged` im `checkoutStore`). `undefined` heisst UNBEWERTET
+    // und ist etwas anderes als 0: eine 0 waere die Aussage "darf leer sein".
+    mindestmenge:
+      typeof r.mindestmenge === 'number' && r.mindestmenge >= 0
+        ? Math.round(r.mindestmenge)
+        : undefined,
     rentPricePerDay:
       typeof r.rentPricePerDay === 'number' && r.rentPricePerDay >= 0 ? r.rentPricePerDay : undefined,
     stockLocation: typeof r.stockLocation === 'string' ? r.stockLocation : undefined,

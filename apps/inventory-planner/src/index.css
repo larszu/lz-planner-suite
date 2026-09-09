@@ -393,6 +393,31 @@ th {
   font-style: normal;
 }
 
+/* ── „Unter Ziel" (B-65, vierte Zeile) ─────────────────────────────────────
+   Nur zwei Farbregeln, und beide nur, wenn wirklich etwas zu tun ist. Eine
+   Kachel, die immer rot ist, liest nach einer Woche niemand mehr — dann
+   faellt der Tag nicht mehr auf, an dem sie es zu Recht ist. */
+.bericht .kachel.achtung {
+  border-color: var(--warn);
+}
+
+.bericht .kachel.achtung strong {
+  color: var(--warn);
+}
+
+/* Drei Stufen und nur ZWEI Regeln: `unter` traegt die Warnfarbe, `ok` ist
+   gedaempft, `knapp` bleibt in der normalen Schrift genau dazwischen stehen.
+   „Steht genau auf dem Ziel" ist kein Fehler, sondern eine Vorwarnung — sie
+   ebenfalls einzufaerben hiesse, nichts hervorzuheben. Dieselbe Regel wie
+   bei den Inventur-Ergebnissen weiter oben. */
+.bericht tr.lage-unter td {
+  color: var(--warn);
+}
+
+.bericht tr.lage-ok td {
+  color: var(--leise);
+}
+
 /* ── Werte & Schäden (B-65, dritte Zeile) ──────────────────────────────────
    Erbt die Blöcke der Bericht-Ansicht; eigene Regeln braucht nur, was es
    dort nicht gibt: die Summen-Reihe (eine Kachel je Währung — zwei

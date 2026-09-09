@@ -44,9 +44,32 @@
 //   Browser. Ein eigener Druckpfad wäre ein zweiter Ort für dieselbe
 //   Ausgabe.
 //
-//   Sie RECHNET KEINE DECKUNG und keine Fristen. Beides ist eine andere
-//   Frage mit einer anderen Quelle; `insuranceSchedule` und
-//   `damageRegister` haben ihren eigenen Weg noch vor sich (B-65).
+//   Sie RECHNET KEINE FRISTEN. DGUV-V3-Prüfung, Kalibrierung und Akku-Alter
+//   sind eine andere Frage mit einer anderen Quelle — sie haben ihren eigenen
+//   Weg noch vor sich (B-65).
+//
+// ─── NACHTRAG: DIE DECKUNG IST HIERHER GEKOMMEN (B-65, vierte Zeile) ───────
+//
+// Hier stand „Sie rechnet keine Deckung". Der Satz war richtig, solange er
+// galt, und er ist jetzt falsch — deshalb steht er nicht mehr da, sondern
+// hier, mit dem Grund für die Änderung.
+//
+// Er meinte den PLAN-Bedarf: „reicht der Bestand für diese Show?" ist eine
+// Frage der Show, und sie hier zu beantworten hiesse, den Plan nachzubauen
+// (ADR-006). Das gilt unverändert; nichts davon ist hinzugekommen.
+//
+// „Unter Ziel" ist die andere Deckung: gegen die Mindestmenge, die das HAUS
+// für sein eigenes Regal festgelegt hat (`InventoryItem.mindestmenge`, in der
+// Bestands-Ansicht gepflegt). Sie kennt keine Show, keinen Bedarf und kein
+// Plan-Modell — sie vergleicht zwei Zahlen aus diesem Repo. Der Eigentümer
+// sah genau diese Kachel in seiner Vorlage; sie ist die einzige Zahl auf so
+// einer Seite, die zu einer Handlung führt.
+//
+// Verglichen wird gegen das, was WIRKLICH IM REGAL LIEGT — `quantity` minus
+// dem, was auf offenen Ausgaben gebunden ist. Deshalb liest diese Ansicht
+// jetzt auch die Ausgabescheine: eine Prüfung gegen `quantity` gäbe
+// Entwarnung für Material, das gerade auf einem Truck steht, und genau dann
+// wird die Zahl gebraucht.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useRef, useState } from 'react'
 import { useInventoryStore } from '../domain/store/inventoryStore'
@@ -55,7 +78,21 @@ import { serializeInventory, parseInventory } from '../domain/lib/inventoryPorta
 import { derivePackList, packListTotalCount } from '../domain/lib/packList'
 import { buildPackListHtml } from '../domain/lib/inventoryPrint'
 import { nodePathLabel } from '../domain/lib/storageTree'
+import { committedByItem } from '../domain/lib/inventoryCommitment'
+import { deckung, nachzubestellen } from '../domain/lib/mindestmenge'
+import { useCheckoutStore } from '../domain/store/checkoutStore'
+import { toCsv } from '../lib/csv'
 import type { ImportReport } from '../domain/store/inventoryStore'
+
+/**
+ * Zahl mit passendem Wort.
+ *
+ * Klein, aber nicht kosmetisch: „1 Artikel liegen unter der Mindestmenge"
+ * lässt genau den Satz zweifelhaft aussehen, der zu einer Bestellung führen
+ * soll. Wer die Grammatik nicht hinbekommt, dem glaubt man die Zahl auch
+ * nicht.
+ */
+const zaehlwort = (n: number, eins: string, viele: string) => `${n} ${n === 1 ? eins : viele}`
 
 /** Ein Block der Aufschlüsselung. Fünf davon sehen gleich aus — also einmal. */
 function Aufschluesselung({ titel, zeilen }: { titel: string; zeilen: CountValue[] }) {
@@ -93,6 +130,7 @@ export function Bericht() {
   const items = useInventoryStore((s) => s.items)
   const nodes = useInventoryStore((s) => s.nodes)
   const units = useInventoryStore((s) => s.units)
+  const records = useCheckoutStore((s) => s.records)
   const exportSnapshot = useInventoryStore((s) => s.exportSnapshot)
   const importSnapshot = useInventoryStore((s) => s.importSnapshot)
 
@@ -103,6 +141,15 @@ export function Bericht() {
   const datei = useRef<HTMLInputElement>(null)
 
   const zahlen = useMemo(() => buildInventoryReport(items, nodes, units), [items, nodes, units])
+
+  // Die Bindung kommt aus den Ausgabescheinen und wird HEREINGEREICHT, statt
+  // in `deckung` noch einmal gerechnet zu werden: zwei Rechnungen ueber
+  // dieselben Ausgaben liefen frueher oder spaeter auseinander, und dann
+  // stuende dieselbe Zahl an zwei Stellen der App verschieden da.
+  const lage = useMemo(
+    () => deckung(items, committedByItem(records, units)),
+    [items, records, units],
+  )
 
   /** Nur echte Wurzeln: eine Packliste eines Regals im Regal ergäbe zwei Blätter. */
   const wurzeln = useMemo(() => nodes.filter((n) => !n.parentId), [nodes])
@@ -142,6 +189,28 @@ export function Bericht() {
       return
     }
     setBericht(importSnapshot(snap, modus))
+  }
+
+  const nachbestellListe = () => {
+    const zeilen = nachzubestellen(lage)
+    const csv = toCsv(
+      ['Artikel', 'Kategorie', 'Bestand', 'gebunden', 'verfuegbar', 'Mindestmenge', 'fehlt'],
+      zeilen.map((z) => [
+        z.model,
+        z.category ?? '',
+        z.bestand,
+        z.gebunden,
+        z.verfuegbar,
+        z.mindestmenge,
+        z.fehlt,
+      ]),
+    )
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'nachbestellen.csv'
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const blattOeffnen = () => {
@@ -187,6 +256,16 @@ export function Bericht() {
           </strong>
           <span>Tagesmiete</span>
         </div>
+        {/*
+          Die einzige Kachel hier, die zu einer HANDLUNG fuehrt: nachbestellen
+          oder sub-hiren. Sie faerbt sich nur, wenn wirklich etwas unter dem
+          Ziel liegt — eine dauerhaft rote Zahl liest nach einer Woche
+          niemand mehr.
+        */}
+        <div className={lage.unter > 0 ? 'kachel achtung' : 'kachel'}>
+          <strong>{lage.unter}</strong>
+          <span>unter Ziel</span>
+        </div>
       </div>
       {/*
         Der Satz, ohne den die Zahl darüber lügt. Er steht direkt daneben und
@@ -205,6 +284,90 @@ export function Bericht() {
         <Aufschluesselung titel="Material-Art" zeilen={zahlen.byMaterial} />
         <Aufschluesselung titel="Lagerort" zeilen={zahlen.byLocation} />
         <Aufschluesselung titel="Zustand der Einheiten" zeilen={zahlen.unitsByCondition} />
+      </div>
+
+      {/* ── Unter Ziel ───────────────────────────────────────────────── */}
+      <div className="block">
+        <h3>Unter Ziel</h3>
+        {lage.zeilen.length === 0 ? (
+          // Ein Satz, kein Baukasten: die Wortstellung gehört zur Sprache,
+          // und aus Fragmenten zusammengesetzt stünde hier ein Leerzeichen
+          // vor dem Punkt.
+          <p className="hinweis">
+            {lage.unbewertet === 0
+              ? 'Der Bestand ist leer — es gibt nichts zu vergleichen.'
+              : `Für keinen der ${zaehlwort(lage.unbewertet, 'Artikel', 'Artikel')} im Bestand ist eine Mindestmenge hinterlegt. Ohne eine solche Zahl gibt es nichts zu vergleichen — die Spalte „Ziel" in der Bestands-Ansicht legt sie fest.`}
+          </p>
+        ) : (
+          <>
+            {/*
+              Der Satz sagt zuerst, wieviele Artikel die Aussage ueberhaupt
+              betrifft. Ohne ihn saehe ein Lager, in dem drei von vierhundert
+              Artikeln eine Mindestmenge haben, aus wie ein Lager, in dem
+              alles reicht.
+            */}
+            <p className={lage.unter > 0 ? 'warnung' : 'hinweis'}>
+              {lage.unter > 0
+                ? `${zaehlwort(lage.unter, 'Artikel liegt', 'Artikel liegen')} unter der hinterlegten Mindestmenge.`
+                : 'Kein Artikel liegt unter seiner hinterlegten Mindestmenge.'}
+              {lage.knapp > 0
+                ? ` ${zaehlwort(lage.knapp, 'Artikel steht', 'Artikel stehen')} genau darauf — die nächste Ausgabe reisst die Lücke.`
+                : ''}
+              {lage.unbewertet > 0
+                ? ` Für ${zaehlwort(lage.unbewertet, 'weiteren Artikel', 'weitere Artikel')} ist keine Mindestmenge hinterlegt; über sie sagt diese Liste nichts.`
+                : ''}
+            </p>
+            <div className="tabelle-rahmen">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Artikel</th>
+                    <th className="rechts">Bestand</th>
+                    <th className="rechts">gebunden</th>
+                    <th className="rechts">verfügbar</th>
+                    <th className="rechts">Ziel</th>
+                    <th className="rechts">fehlt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lage.zeilen.map((z) => (
+                    <tr key={z.itemId} className={`lage-${z.lage}`}>
+                      <td>
+                        {z.model}
+                        {z.category ? <span className="leise"> · {z.category}</span> : null}
+                      </td>
+                      <td className="rechts">{z.bestand}</td>
+                      {/*
+                        „gebunden" steht mit in der Zeile und nicht nur in der
+                        Rechnung: sonst sieht der Lagerist eine Fehlmenge und
+                        nicht, dass die Ware nicht fehlt, sondern unterwegs
+                        ist. Das sind zwei verschiedene Handlungen.
+                      */}
+                      <td className="rechts">{z.gebunden > 0 ? z.gebunden : ''}</td>
+                      <td className="rechts">{z.verfuegbar}</td>
+                      <td className="rechts">{z.mindestmenge}</td>
+                      <td className="rechts">{z.fehlt > 0 ? z.fehlt : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="zeile">
+              <button
+                type="button"
+                onClick={nachbestellListe}
+                disabled={lage.unter === 0}
+              >
+                Nachbestell-Liste (CSV)
+              </button>
+              <span className="hinweis">
+                {lage.unter === 0
+                  ? 'Nichts nachzubestellen.'
+                  : 'Nur die Artikel unter Ziel, mit der Fehlmenge.'}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Packliste ────────────────────────────────────────────────── */}

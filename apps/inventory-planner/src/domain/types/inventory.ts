@@ -123,6 +123,26 @@ export interface InventoryItem {
   deviceTypeId?: string
   /** Gesamtmenge im Bestand. */
   quantity: number
+  /**
+   * Mindestmenge — ab wann das Haus nachbestellt oder sub-hired (B-65).
+   *
+   * Der Eigentümer sah in seiner Vorlage eine Kachel „Unter Ziel". Sie
+   * beantwortet die einzige Frage, für die eine Bestandszahl allein nicht
+   * reicht: nicht „wieviel ist da", sondern „ist das genug".
+   *
+   * OPTIONAL, UND DAS IST DER PUNKT. Ein Artikel ohne Mindestmenge ist nicht
+   * „bei null", sondern UNBEWERTET — für ihn gibt es keine Aussage, und die
+   * Liste sagt das, statt ihn stillschweigend als in Ordnung zu zählen. Eine
+   * Vorgabe zu erfinden (etwa 1) hiesse, für jeden Artikel des Hauses eine
+   * Entscheidung zu treffen, die niemand getroffen hat.
+   *
+   * Verglichen wird sie NICHT mit `quantity`, sondern mit dem, was
+   * tatsächlich im Regal liegt: `quantity` minus dem, was auf offenen
+   * Ausgaben gebunden ist (`inventoryCommitment`). Alles andere meldete
+   * Entwarnung für Material, das gerade auf einem Truck steht — und genau
+   * dafür wird die Zahl gebraucht.
+   */
+  mindestmenge?: number
   /** Mietpreis pro Tag (Kalkulation, Phase 5). */
   rentPricePerDay?: number
   /** Lagerort (z. B. "Regal A3"). */

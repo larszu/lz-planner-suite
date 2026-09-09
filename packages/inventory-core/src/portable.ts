@@ -37,7 +37,20 @@ export const INVENTORY_FORMAT = 'avplan-inventory';
 // entstehen. Dieser Planer wertet sie nicht aus; er FUEHRT sie, damit eine
 // Datei mit Versicherungswerten hier durchlaeuft, ohne sie zu verlieren.
 // Aeltere Dateien (v1-v3) lesen wir unveraendert weiter.
-export const INVENTORY_FORMAT_VERSION = 4;
+//
+// Version 5 (B-65): `InventoryItem.mindestmenge` -- ab wann das Haus
+// nachbestellt oder sub-hired. Ausgewertet wird sie im Lager-Werkzeug
+// (`inventory-planner`, Block „Unter Ziel"); dieses Paket fuehrt sie, damit
+// sie unterwegs nicht verlorengeht. Der Verlust, den die Version verhindert,
+// sitzt wie bei 3 und 4 nicht hier, sondern im cable-planner: dessen
+// `healItem` baut jeden Artikel Feld fuer Feld neu auf und haette eine Datei
+// mit gepflegten Mindestmengen still ohne sie zurueckgeschrieben. Die Kachel
+// „Unter Ziel" stuende danach auf 0 und haette ueber nichts recht -- keine
+// Fehlermeldung, sondern eine gruene Zahl.
+//
+// Aeltere Dateien (v1-v4) lesen wir unveraendert weiter; ihre Artikel haben
+// schlicht keine Mindestmenge, und das ist nicht 0, sondern UNBEWERTET.
+export const INVENTORY_FORMAT_VERSION = 5;
 
 export interface InventorySnapshot {
   items: InventoryItem[];

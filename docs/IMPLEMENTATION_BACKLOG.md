@@ -555,9 +555,9 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 * **Status:** **der Hauptbefund ist ERLEDIGT** — `inventory#2` (Inventur),
   `#3` (Bericht), `#4` (Werte & Schäden): 10 → 7 → 3 → **0** Module ohne
-  Weg. Was aus den Bildschirmfotos an NEUEN Funktionen kommt (Mindestmenge,
-  Fristen-Ampel, Kassenbon-Import, Einkaufsliste, Kamera-Scan), bleibt
-  **offen**.
+  Weg. Vom NEUEN aus den Bildschirmfotos ist die **Mindestmenge („Unter
+  Ziel") GEBAUT** (`inventory#5` plus der Format-Nachzug in vier Repos);
+  **offen** bleiben Fristen-Ampel, Kassenbon-Import und Kamera-Scan.
 * **Auslöser:** Der Eigentümer schickte fünf Bildschirmfotos einer fremden
   Bestands-App („Vorratix", Haushalts-Vorrat) mit dem Satz: „Analysiere diese
   paar Fotos für das Lagermodul. Es fehlen noch einige Funktionen."
@@ -600,16 +600,16 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   | Erwarteter Prefix (`L#`) als Vorgabe und Prüfung | Lagerplatz-Codes gegen ein Hausschema prüfen | **fehlt** (`prefix`: 0 Fundstellen) |
   | Ausweg ohne Scan („Ohne Scan einbuchen", Raum/Objekt wählen) | Aufkleber unlesbar, Hand-Eingabe | **fehlt** |
   | Taschenlampe, Kamerawechsel im Scanner | dunkler Truck, Case über Kopf | **fehlt** (keine Scan-Oberfläche) |
-  | Kennzahlen-Startseite (Bestand, „Unter Ziel", fällig) | Was muss ich heute anfassen? | **fehlt** |
-  | Soll-/Mindestmenge, „Unter Ziel" | Meldebestand je Artikel | **fehlt** (`mindest`/`reorder`: 0) |
+  | Kennzahlen-Startseite (Bestand, „Unter Ziel", fällig) | Was muss ich heute anfassen? | **halb**: Kennzahlen und „Unter Ziel" stehen (`inventory#3`, `#5`), „fällig" fehlt |
+  | Soll-/Mindestmenge, „Unter Ziel" | Meldebestand je Artikel | **GEBAUT** (`inventory#5`) |
   | „Bald ablaufend / Abgelaufen / Diese Woche fällig" | DGUV-V3-Prüftermin, Kalibrierung, Akku-Alter, Versicherungsende | **halb**: `insuranceSchedule` rechnet, nichts zeigt es, und die übrigen Fristen gibt es nicht |
   | „Anomalien — auffällige Artikel prüfen" | Inventur-Abweichung, Ware am falschen Platz | **halb**: `inventoryAudit` (390 Zeilen) hat keine Oberfläche |
   | „Verlauf" | wer hat wann was gebucht | **halb**: `storageMoves` bewegt, eine Historie je Artikel fehlt |
   | Kassenbon-Import (Foto → Positionen) | Lieferschein/Rechnung → Wareneingang | **fehlt** |
-  | „Einkauf"-Reiter | was muss beschafft oder sub-hired werden | **fehlt** |
+  | „Einkauf"-Reiter | was muss beschafft oder sub-hired werden | **halb**: die Nachbestell-Liste als CSV steht (`inventory#5`), ein eigener Reiter nicht |
   | Artikelgruppen als gepflegte Liste | Kategorie ist heute freier Text | **fehlt** |
   | „Beispieldaten erstellen" | Seed (vorhanden in `@avplan/ui`) | **prüfen**, ob das Lager daran hängt |
-  | Bestand exportieren | `inventoryPortable`/`inventoryReport` | **halb**: gebaut, kein Knopf |
+  | Bestand exportieren | `inventoryPortable`/`inventoryReport` | **GEBAUT** (`inventory#3`) |
 
 * **GEBAUT, erste Zeile — `inventory#2` (2026-09-09):** Die Ansicht
   **Inventur** als vierter Reiter. Sie hängt `inventoryScan` und
@@ -651,10 +651,57 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Lagers ist bedienbar". Wer ein neues `domain/lib/`-Modul anlegt und keine
   Ansicht daran hängt, sieht es sofort — genau der Moment, in dem dieser
   Eintrag sonst wieder von vorn anfinge.
-* **Was jetzt drankommt, ist das Neue aus der Tabelle oben:** Mindest-/
-  Soll-Menge („Unter Ziel"), die Fristen-Ampel (DGUV V3, Kalibrierung,
-  Akku-Alter — die Vorlage nennt es MHD), der Kassenbon-Import, die
-  Einkaufs-/Nachbestellliste und der Kamera-Scan.
+* **GEBAUT, vierte Zeile und das erste NEUE — `inventory#5` (2026-09-09):**
+  Die **Mindestmenge** je Artikel und der Block **„Unter Ziel"**. Damit ist
+  die erste Zeile der Tabelle oben erledigt, die keine vorhandene Rechnung
+  an einen Knopf hängt, sondern etwas baut, das es nicht gab.
+
+  Drei Entscheidungen, die man später sonst nachfragt:
+
+  1. **Es ist kein Bedarf, und deshalb kein Verstoss gegen ADR-006.** Der
+     Bedarf eines PLANS ist eine Frage des Plans — er kommt weiterhin als
+     `BedarfsZeile[]` herüber. Die Mindestmenge ist die andere Sorte Zahl:
+     eine Entscheidung des HAUSES über sein eigenes Regal, unabhängig von
+     jeder Show. „Von den kurzen XLR wollen wir immer zwanzig dahaben" ist
+     keine Show-Planung. `grenze:check` bestätigt es.
+  2. **Verglichen wird gegen das Regal, nicht gegen `quantity`.**
+     `verfuegbar = quantity − gebunden` (aus `committedByItem`). Eine
+     Prüfung gegen `quantity` gäbe Entwarnung für Material, das gerade auf
+     einem Truck steht — und genau dann, mitten in der Show, wird die Zahl
+     gebraucht. Die Spalte „gebunden" steht deshalb mit in der Zeile: sonst
+     sieht der Lagerist eine Fehlmenge und nicht, dass die Ware nicht
+     fehlt, sondern unterwegs ist.
+  3. **Ohne hinterlegte Mindestmenge ist ein Artikel UNBEWERTET, nicht
+     „ok".** Er zählt in keine der drei Lagen, sondern in eine eigene Zahl,
+     und der Satz über der Tabelle nennt sie. Ohne diese Zahl sähe ein
+     Lager, in dem drei von vierhundert Artikeln gepflegt sind, aus wie ein
+     Lager, in dem alles reicht.
+
+* **Ein Feld im Lager kostet fünf Repos, und das ist der Preis des Formats.**
+  `mindestmenge` steht in `InventoryItem`, und `InventoryItem` reist über
+  `avplan-inventory`. Der cable-planner baut beim Laden jeden Artikel Feld
+  für Feld neu auf — ein Feld, das sein Typ nicht kennt, hätte er eingelesen
+  und beim Export still weggeschrieben. Der Lagerist sähe danach „Unter
+  Ziel" auf 0, ohne Fehlermeldung und ohne dass jemand etwas gelöscht hätte.
+  Also: Format-Version **4 → 5** in allen vier Repos, die das Format tragen
+  (`inventory#5`, `cable#807`, `multicam#124`, `light#111`).
+
+  Dabei fiel auf, dass der Kopf des Contract-Guards im cable-planner seit
+  dem Lager-Schnitt (ADR-006) **falsch** war: er nannte „ALLE DREI Apps
+  (cable / multicam / light)" und schickte den nächsten Mitwirkenden damit
+  an drei Stellen und am `inventory-planner` vorbei — ausgerechnet an dem
+  Repo, in dem der Bestand inzwischen wirklich gepflegt wird. Korrigiert,
+  mit Dateipfad je Repo.
+
+* **Offen geblieben und benannt:** `inventory-planner` ist das einzige der
+  vier, das **keine** eingefrorene Feldliste hat, obwohl es das Format
+  besitzt. Dass die Version stimmt, prüft dort seit `inventory#5` ein Test;
+  die Feldliste prüft nichts. Eigener Vorgang.
+
+* **Was jetzt drankommt, ist der Rest der Tabelle oben:** die Fristen-Ampel
+  (DGUV V3, Kalibrierung, Akku-Alter — die Vorlage nennt es MHD), der
+  Kassenbon-Import und der Kamera-Scan. Die Nachbestell-Liste gibt es als
+  CSV; ein eigener „Einkauf"-Reiter wäre die nächste Stufe davon.
 * **Nicht entschieden, gehört dem Eigentümer:** ob das Lagermodul
   Verbrauchsmaterial mit Haltbarkeit führen soll (Batterien, Gaffa, Filter)
   oder nur Rental-Material mit Prüfterminen. Die Vorlage zeigt Ersteres, das

@@ -86,6 +86,11 @@ const erreichbar = (): Set<string> => {
  *    3 → 0  Ansicht `Werte & Schäden` — `insuranceSchedule`,
  *           `damageRegister`, `inventoryCommitment`.
  *
+ * UND DANN HAT DIE NULL IHRE ERSTE PROBE BESTANDEN. `mindestmenge.ts` kam
+ * neu dazu (B-65, „Unter Ziel"); ohne den Block im Bericht stünde die Zahl
+ * sofort wieder auf 1. Genau dafür ist sie da: nicht als Denkmal für einen
+ * erledigten Durchgang, sondern als Bedingung für jedes neue Rechenwerk.
+ *
  * Beim ersten Schritt hätte eine gepflegte Liste die falsche Zahl gemeldet
  * (zwei statt drei). Das ist der Grund, warum hier gerechnet und nicht
  * aufgezählt wird.
@@ -125,6 +130,8 @@ describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
       'inventoryPortable.ts',
       'packList.ts',
       'inventoryPrint.ts',
+      // Ansicht `Bericht`, Block „Unter Ziel"
+      'mindestmenge.ts',
       // Ansicht `Werte & Schäden`
       'insuranceSchedule.ts',
       'damageRegister.ts',
