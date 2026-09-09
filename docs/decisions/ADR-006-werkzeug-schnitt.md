@@ -166,3 +166,147 @@ Ordner, den man heraushebt — kein Umbau mehr.
 **Was ausdrücklich nicht passiert:** kein „großer Wurf" in einem Schritt. Jeder Bereich wird
 einzeln geschnitten, mit grünem CI dazwischen. Der Cable-Planner bleibt in jedem Zwischenstand
 lauffähig — er ist das Werkzeug, mit dem gearbeitet wird, nicht ein Umbauprojekt.
+
+## Der Vertrag „Festinstallation" — Schritt 1, ausgeschrieben (2026-09-09)
+
+Der Eigentümer hat am 2026-09-09 für die Issues #665/#666/#667 „Repo anlegen, Gerüst bauen"
+gewählt. Punkt 1 dieses ADRs verlangt die Fragenliste, *bevor* eine Datei umzieht — hier steht
+sie.
+
+### Warum diese Liste anders zustande kommt als die für das Lager
+
+Beim Lager war Schritt 1 eine **Messung**: die Domäne lag im Planer, und der Vertrag war der
+vollständige Import-Querschnitt zwischen ihr und dem Rest. Hier gibt es nichts zu messen — das
+Gebäude steht noch in keiner Zeile Code. Diese Liste ist also **erklärt, nicht gemessen**, und
+dieser Unterschied gehört hierher: wer sie später für ein Messergebnis hält, hält eine
+Entwurfsentscheidung für einen Befund.
+
+Praktisch heißt das: **die Liste kann sich beim Bauen als zu kurz erweisen** — dann wird sie hier
+erweitert, mit Datum, bevor die Erweiterung in Code steht. Was sie nicht darf, ist stillschweigend
+wachsen; genau daraus entsteht der Kabelbaum zwischen zwei Repos, gegen den das Kriterium oben
+geschrieben ist.
+
+### Was der Plan das Gebäude fragt
+
+Sechs Fragen. Alles, was der Show-Plan von einer Festinstallation braucht, ist eine Auskunft über
+**Punkte, die schon da waren, bevor der Plan existierte** — und die noch da sind, wenn er weg ist.
+
+| Frage | Der Vertrag |
+| --- | --- |
+| **Was gibt dieser Anschlusspunkt her?** | `einspeisung(punktId)` → `{ id, bezeichnung, anschlussart, netzform, absicherungA, charakteristik, rcdTyp, dauerleistungW, raumId }`. Anschlussart aus einer geschlossenen Liste (CEE 63/32/16, Powerlock, Klemme, Schuko), Netzform TN-S/TN-C-S/TT/IT. **Das ist die Zahl, die der Plan nicht ein zweites Mal ableiten darf** (Punkt 4 oben). |
+| **Wo ist dieser Punkt?** | `ort(objektId)` → `{ raumId, raumName, etage, hausbezeichner }`. Der Bezeichner **des Hauses** (TIA-606 o. ä.), nicht der des Plans. Der Plan zeigt ihn an und schreibt ihn auf seine Blätter; er erfindet keinen eigenen. |
+| **Welche Kreise hängen zusammen?** | `kreisGeschwister(punktId)` → `punktId[]`: was am selben RCD bzw. derselben Absicherung hängt. Ohne diese Auskunft plant man das Rig auf zwei Dosen, die gemeinsam abschalten — und merkt es in der Show. |
+| **Was ist hier belegt oder tabu?** | `verfuegbarkeit(punktId)` → `{ frei, belegtDurch?, geschaltet?, gedimmt?, hinweis? }`. „Geschaltet" und „gedimmt" sind hier keine Feinheit: eine Dose, die an einem Dimmer oder an der Hausbeleuchtungs-Schaltung hängt, ist für ein Netzteil kein Stromanschluss. |
+| **Welche Klinke hat die Haussteuerung?** | `steuerklinken()` → `{ id, system ('knx'\|'dali'\|'crestron'\|'vissonic'\|…), adresse, richtung ('lesen'\|'schalten'), bedeutung }[]`. **Nur die benannten Klinken, nicht das Bus-Modell.** Der Plan will wissen, was er ansprechen darf und was das bewirkt — nicht, wie die Gruppenadressen des Hauses strukturiert sind. Das ist der Kern von #667. |
+| **Gehört diese Strecke dem Haus?** | `hausStrecke(planKabelId)` → `hausStreckeId \| undefined`. Die Antwort auf den Prüfstein „wird das am Abbautag wieder eingepackt?", von der Seite, die es weiß. |
+
+### Der eine Rückweg
+
+Genau **ein** Schreibweg vom Plan ins Gebäude, aus demselben Grund wie `useTypBestaetigen` beim
+Lager: `mangelMelden(hausObjektId, befund)`. Wenn beim Aufbau auffällt, dass eine Dose tot ist,
+ein RCD auslöst oder eine Klinke nicht das tut, was sie laut Vertrag tut, dann ist das eine
+**Aussage eines Menschen über das Gebäude** — sie gehört ans Gebäude, sonst ist sie nach dem
+Abbau verloren und die nächste Show findet denselben Fehler noch einmal.
+
+Alles andere fließt nicht zurück. Eine Show ändert das Haus nicht; sie benutzt es. Ein Planer, der
+Lasten, Belegungen oder Kreise ins Gebäude zurückschreibt, hat aus dem Werkzeug des Betreibers ein
+Anhängsel seiner Show gemacht.
+
+### Zwei Invarianten, die hier besonders leicht brechen
+
+* **ADR-002 — erklärt, nie erschlossen.** Ein `Raum 3` im Plan und ein `Raum 3` im Gebäude sind
+  dasselbe, weil ein Mensch das gesagt hat, nicht weil die Zeichenketten gleich sind. Die
+  Zuordnung ist ein Feld, kein Namensvergleich.
+* **ADR-005 — bewahren, verweigern oder melden.** Was das Gebäude-Werkzeug schickt und der Plan
+  nicht versteht, wird nicht verworfen. Der Plan trägt es unverändert weiter (`hausForeign`,
+  analog zu `venueForeign`/`avForeign`/`personForeign`) oder sagt, dass er es nicht kann.
+
+### Was ausdrücklich NICHT zum Gebäude-Werkzeug gehört
+
+**Fünf** Module tragen das Wort „Festinstallation" in der eigenen Kopfzeile (gezählt am
+2026-09-09: `types/lifecycle.ts`, `lib/assetRegister.ts`, `lib/installerLists.ts`,
+`lib/handoverPackage.ts`, `lib/jobHandover.ts`) — und **keines davon zieht um**. Sie sehen aus wie
+die neue Domäne, sind aber Sichten auf den Kabelgraph *dieses* Plans; Bedingung 3 des Kriteriums
+(„ohne den Kabelgraph vollständig") ist bei allen verletzt. Dazu vier weitere, die das Wort nicht
+tragen, aber denselben Verdacht wecken:
+
+- **`types/lifecycle.ts`** — `InstallStatus`, `ServiceRecord`, `ChangeLogEntry`, `PendingChange`
+  hängen an Kabeln und Geräten dieses Projekts. Der Lebenszyklus **des Plans** ist nicht der
+  Lebenszyklus **des Hauses**.
+- **`lib/assetRegister.ts`** — liest `project.equipment`. Ein Register der eigenen Geräte, kein
+  Gebäude-Inventar.
+- **`lib/installerLists.ts`** — Pull-, Termination- und Kabel-Schedule sind aus dem Kabelgraph
+  abgeleitet. Dass Installateure sie lesen, macht sie nicht zum Gebäude.
+- **`lib/handoverPackage.ts`** — trägt „Festinstallation" in Zeile 2 und ist trotzdem ein
+  Dokument *aus diesem Projekt*. Beim Lager-Vertrag stand es auf der Nicht-Liste mit dem Verweis
+  „gehört zur anderen Domäne dieses ADRs"; das ist hiermit präzisiert: es gehört zur
+  Festinstallations-**Frage**, aber in den Planer.
+- **`lib/asBuilt.ts`, `lib/jobHandover.ts`, `lib/postHandover.ts`** — drei Module mit „Handover"
+  bzw. „As-Built" im Namen, drei verschiedene Dinge, keines davon das Gebäude: der Abgleich Plan
+  gegen Wirklichkeit, die Frage „woraus wird nächstes Jahr geplant", die Übergabe an die Post.
+  Dieselbe Namensfalle wie bei `handoverPackage` im Lager-Vertrag — und der Grund, warum diese
+  Liste die Kopfzeilen zählt statt sich auf Dateinamen zu verlassen.
+- **`types/circuit.ts` + `lib/circuitSolver.ts`** — siehe die Strom-Zeile oben: Show-Strom ist
+  Kern.
+
+Und auf Issue-Ebene, weil der Kommentar an den drei Issues vom 2026-09-07 an einer Stelle
+überholt ist:
+
+| Issue | Wohin | Warum |
+| --- | --- | --- |
+| **#665** Festinstallations-Produkte | **teilt sich** | Schaltschrank, UP-/AP-Dose, feste Schalterstelle → Gebäude-Werkzeug. Mehrfachsteckdose, Verteiler, Patchblende, Durchgangsbuchse → **bleibt Kern**, ist als passiver Port-Träger (B-52) bereits gebaut. |
+| **#666** Elektroplanung | **bleibt Kern** | Der Kommentar vom 2026-09-07 nennt „Wechselschaltungen mit Logikprüfung" als ausgelagert. Das war einen Tag später überholt: der Eigentümer hat es ausdrücklich verlangt, `cable#771/#782/#788` haben es gebaut, und die Strom-Zeile oben hält es fest. **Nur Kreise, die dem Haus gehören, gehen ins neue Werkzeug.** |
+| **#667** Haussteuerung/Mediensteuerung | **zieht um** | KNX, DALI, Crestron, Vissonic. Der Plan behält davon nur die benannten Klinken aus der Fragenliste. |
+
+### Wie der Vertrag gehalten wird
+
+**Der Wächter misst diesen Abschnitt, nicht eine Abschrift davon.**
+`packages/facility-core/test/vertrag.test.ts` liest die Tabelle oben aus dieser Datei, zieht die
+Funktionsnamen aus den sechs Zeilen und vergleicht sie mit `VERTRAG_FRAGEN` im Code — in beide
+Richtungen. Eine siebte Funktion ohne siebte Zeile ist rot, eine gestrichene Zeile ohne
+gestrichene Funktion ebenso. Dasselbe für den einen Rückweg.
+
+Eine zweite Liste im Test hätte genügt und wäre falsch gewesen: sie wäre die zweite Wahrheit, gegen
+die ADR-001 geschrieben ist, und sie driftet lautlos von diesem Abschnitt weg — was ein Wächter,
+der sie liest, nie bemerken könnte.
+
+Die zweite Hälfte des Wächters ist Punkt 4 (**die Tür rechnet nicht selbst**). Er hängt an der
+Stelle, an der es am meisten verlockt: `belastbarkeit()` gibt `watt: null` mit Grund zurück, wenn
+das Gebäude keine Dauerleistung angibt. `absicherungA × 230` wäre die naheliegendste Zeile des
+Pakets und die gefährlichste — der Nennstrom ist die Auslöseschwelle des Schutzschalters, nicht die
+zulässige Dauerlast, und die gerechnete Zahl sähe aus wie eine Auskunft des Hauses. Ein Test
+verlangt ausdrücklich, dass sie nirgends auftaucht.
+
+Und die Regel, die alle sechs Fragen teilen: **„nicht angegeben" ist nicht „nein".** Fehlt die
+Angabe, kommt `{ bekannt: false, grund }` zurück und keine leere Liste, `undefined` und kein
+`false`. Eine leere Geschwister-Liste liest sich als „teilt sich mit niemandem" — eine Zusicherung,
+die das Gebäude nie gegeben hat, und danach hängt das Rig auf zwei Dosen an einem RCD.
+
+Zehn Gegenproben, alle rot und zurückgebaut grün: siebte Frage im Code · gestrichene Zeile im ADR ·
+`belastbarkeit` rechnet `A × 230` · `geschaltet: p.geschaltet ?? false` · leere Liste statt
+„unbekannt" · Namensabgleich als Rückfall in `hausStrecke` · `vonRaumId` als Ort einer Strecke ·
+Mangel auf ein unbekanntes Objekt angenommen · `mangelMelden` verändert das übergebene Gebäude ·
+`hausForeign` fällt beim Rückweg weg.
+
+### Was als Nächstes ansteht
+
+**Schritt 2 ist gebaut (2026-09-09): `packages/facility-core`.** Das Paket trägt das Modell
+(Raum, Anschlusspunkt, Stromkreis, Verteilung/Schaltschrank, Steuerklinke, Hausstrecke, Mangel)
+und die sechs Fragen samt Rückweg als reine Funktionen. Es hat noch keinen Aufrufer, und das ist
+richtig so: der Vertrag steht vor dem Verbraucher, sonst entsteht er aus dem, was der erste
+Aufrufer zufällig braucht.
+
+Zwei Dinge sind im Modell ausdrücklich **nicht** dasselbe wie im Planer, obwohl sie gleich heißen:
+der `Stromkreis` des Gebäudes ist nicht der `circuit.ts` der Show (der wird am Abbautag wieder
+eingepackt), und der `Anschlusspunkt` fasst Einspeisung und Dose zu einem Typ zusammen, weil der
+Plan von beiden dieselben sechs Angaben braucht.
+
+Offen ist **Schritt 3**: `larszu/facility-planner` mit demselben Gerüst wie die anderen Planer
+(Vite + React + TS, CI auf `pull_request`, `avplan.sourceLanguage: 'de'`, proprietäre Lizenz,
+`private: true`), die Oberfläche zu den drei Modellen, dann die Aufnahme in
+`scripts/planner-drift.mjs` — und der Umzug dieses Pakets dorthin.
+
+**Blockiert, und woran:** das Anlegen des Repos scheitert an den Rechten der GitHub-App —
+`POST https://api.github.com/user/repos` antwortet `403 Resource not accessible by integration`.
+Das leere Repo muss der Eigentümer anlegen (oder der App das Recht geben). Schritt 2 war davon
+nicht betroffen und ist deshalb vorgezogen worden.

@@ -1,0 +1,28 @@
+{
+  "name": "@avplan/facility-core",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Der Vertrag zwischen Show-Plan und Gebaeude (ADR-006, Schritt 1): sechs Fragen, ein Rueckweg",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "license": "UNLICENSED"
+}

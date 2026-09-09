@@ -239,7 +239,11 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-58 · Der Tally-Pi prüft an seinen Schreib-Wegen nichts
 
-* **Status:** offen — **Befund erhoben 2026-09-09** beim Bau von B-6.
+* **Status:** **entschieden 2026-09-09 (E-25, Eigentümer): bleibt offen, wird
+  aber GESAGT.** Kein Schreibschutz auf dem Pi; der Schutz ist das Netz, in dem
+  er steht. Der Cable-Planner schreibt beim Eintragen der Adresse hin, dass der
+  Pi keinen Nachweis verlangt — das ist der Unterschied zwischen einer
+  bekannten und einer unbekannten Lage. Befund erhoben beim Bau von B-6.
 * **Befund (gemessen, `tally-pi/guide_server.py`):** `do_POST` behandelt
   `/bindings`, `/tally-config`, `/tally-out/…`, `/cue`, `/cue/clear` und
   weitere — und **kein** Zweig prüft irgendeine Berechtigung. `grep` über die
@@ -263,8 +267,61 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   verlangt und der Direktweg nur in ein Netz gehört, dem man das zutraut. Das
   ist kein Ersatz für den Schutz, aber es ist der Unterschied zwischen einer
   bekannten und einer unbekannten Lage.
-* **Aufwand:** mittel (Entscheidung nötig: was gilt als Schreibweg, wie kommt
-  die eigene Seite an ihren Nachweis)
+* **Die Entscheidung, und warum sie vertretbar ist (E-25).** Ein Token-Gate
+  nur für den Planer wäre eine Beschriftung gewesen (siehe oben). Der einzige
+  Weg, der wirklich schützt, trennt die ganze HTTP-Fläche in read-only und
+  angemeldet — jede Seite und jeder Poster müssten mit, und der Pi steht in
+  einem Produktionsnetz, das der Betreiber selbst aufspannt. Der Eigentümer
+  hat deshalb den Status quo gewählt: **nicht die Sicherheit gesenkt, sondern
+  die Lage benannt.**
+  **Was das aufhebt, wenn sich die Lage ändert:** sobald der Pi in einem Netz
+  steht, das nicht dem Betreiber gehört (Haus-WLAN, geteilte Produktionsleitung,
+  Gast-Netz), gilt diese Entscheidung nicht mehr. Sie steht hier mit Datum,
+  damit der nächste Leser sie prüft, statt sie zu erben.
+* **Aufwand:** entfällt (entschieden)
+
+### B-60 · Zwei entschiedene Werkzeuge, die an einem 403 hängen
+
+* **Status:** **entschieden 2026-09-09 (E-26 und E-27, Eigentümer), Bau
+  blockiert.** Beide Male hat der Eigentümer die weitergehende Variante
+  gewählt: `facility-planner` als eigenes Repo mit Gerüst, und das Lager als
+  eigenes Repo **mit eigener Oberfläche** statt nur als Paket hinter dem
+  Planer.
+* **Woran es hängt, wörtlich:** `POST https://api.github.com/user/repos`
+  antwortet `403 Resource not accessible by integration`. Die GitHub-App
+  dieser Sitzung darf keine Repositories anlegen; sie darf in den acht
+  bestehenden arbeiten. Das ist keine Rechte-Frage des Eigentümers an sich —
+  er kann die beiden leeren Repos in zehn Sekunden selbst anlegen — sondern
+  eine Grenze des Werkzeugs, und sie gehört benannt statt umgangen. **Was
+  ausdrücklich nicht passiert:** die beiden Domänen ersatzweise doch im
+  `cable-planner` weiterbauen. Das wäre genau der Zuwachs, gegen den ADR-006
+  geschrieben ist, und er wäre danach schwerer zu trennen als heute.
+* **Was NICHT blockiert ist, und deshalb vorgezogen wurde:** Schritt 1 **und
+  Schritt 2** des ADR-006-Verfahrens. Schritt 1 („die Fragen zuerst, bevor eine
+  Datei umzieht") steht für das Lager seit dem 2026-09-07 im ADR, für die
+  Festinstallation seit dem 2026-09-09 — sechs Fragen an das Gebäude, ein
+  Rückweg (`mangelMelden`), und die gemessene Liste der fünf Module, die
+  „Festinstallation" in der Kopfzeile tragen und trotzdem **nicht** mitziehen.
+  Schritt 2 („Paket vor Repo") ist für beide Seiten erledigt: das Lager liegt
+  seit dem 2026-09-07 als `cable-planner/src/renderer/lager/` hinter vier Haken,
+  die Festinstallation seit dem 2026-09-09 als **`packages/facility-core`** —
+  Modell (Raum, Anschlusspunkt, Stromkreis, Verteilung, Steuerklinke,
+  Hausstrecke, Mangel) plus die sechs Fragen als reine Funktionen, 31 Tests,
+  zehn Gegenproben.
+  **Das Paket hat noch keinen Aufrufer, und das ist Absicht:** der Vertrag steht
+  vor dem Verbraucher, sonst entsteht er aus dem, was der erste Aufrufer zufällig
+  braucht. Sein Wächter liest die Fragenliste **aus dem ADR** statt aus einer
+  Abschrift im Test — eine zweite Liste wäre die zweite Wahrheit und driftete
+  lautlos.
+* **Was der Eigentümer tun muss, damit es weitergeht:** zwei leere Repos
+  anlegen — `larszu/facility-planner` und `larszu/inventory-planner` — oder
+  der App das Recht geben, das selbst zu tun. Alles danach ist nicht mehr
+  blockiert: Gerüst wie bei den anderen Planern (Vite + React + TS, CI auf
+  `pull_request`, `avplan.sourceLanguage`, proprietäre Lizenz,
+  `private: true`), Aufnahme in `scripts/planner-drift.mjs`, und für das Lager
+  der Umzug von `cable-planner/src/renderer/lager/`, der seit Schritt 2 ein
+  Ordner ist, den man heraushebt.
+* **Aufwand:** groß (beide zusammen) — aber erst nach dem Anlegen messbar.
 
 ### B-7 · Intercom-Vokabular existiert zweimal
 
@@ -811,7 +868,7 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 * **Was offen bleibt:** die Shell führt weiter ein eigenes, einfacheres Modell.
   Der Seed trägt nur, wofür sie eine Quelle hat; Ports und Datenblatt bleiben
   beim Planer. ~~DMX-Universum~~ (trägt der Seed als `SeedFixture.universe`),
-  ~~Rigging-Höhe~~ **seit 2026-09-09 ebenfalls** (`suite#201`) — und dabei kam
+  ~~Rigging-Höhe~~ **seit 2026-09-09 ebenfalls** (`suite#200`) — und dabei kam
   ein Defekt heraus, der schwerer wog als das fehlende Feld:
 
   **Ein erneuter Seed setzte im Licht-Planer Hänge-Höhe und Ausrichtung
@@ -1795,8 +1852,13 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-39 · Was der Projekt-Fluss noch nicht trägt
 
-* **Status:** offen (nur noch Punkt 5; 1, 2, 3 und 4 erledigt — Punkt 1 seit
-  2026-09-09 samt der Licht-Seite, dem letzten benannten Rest) — **Punkt 1 ist
+* **Status:** ~~offen~~ **erledigt 2026-09-09 — alle fünf Punkte.** Punkt 5
+  (der Cross-Link ohne Sender) fiel mit `suite#199`, Punkt 1 mit `suite#169`
+  und, für die Licht-Seite, mit `suite#200`; 2, 3 und 4 lagen schon vorher. Die
+  Zeile stand danach noch einen halben Tag auf „offen (nur noch Punkt 5)",
+  obwohl Punkt 5 im selben Dokument als erledigt vermerkt war — ein Status, der
+  seiner eigenen Liste widerspricht, ist schlimmer als gar keiner: er lässt
+  Arbeit als offen erscheinen, die niemand mehr findet — **Punkt 1 ist
   am 2026-09-08 gebaut** (`suite#169`): der Raum geht zurück, und zwar durch
   die Konfliktregel aus E-21 (Eigentum je Feld; geteilte Felder melden den
   Widerspruch als Befund, statt still zu überschreiben)
@@ -1849,7 +1911,7 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
      übernommene Seed sofort einen Widerspruch gegen sich selbst.
 
      ~~**Was ausdrücklich NOCH NICHT gebaut ist: die Licht-Seite.**~~
-     **Erledigt 2026-09-09 (`suite#201`).** Der Licht-Planer las den Raum aus
+     **Erledigt 2026-09-09 (`suite#200`).** Der Licht-Planer las den Raum aus
      dem Seed gar nicht: wer in der Suite auf „Licht" wechselte, sah seine
      Scheinwerfer an den richtigen Koordinaten in einer **leeren Fläche** —
      ohne Bühne, ohne Raumgrenze, ohne Anhaltspunkt, wo das alles steht.
@@ -1956,7 +2018,7 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-59 · Der Seed setzte zurück, was er nicht sagte — in allen drei Planern
 
-* **Status:** **GEBAUT 2026-09-09** — `suite#201`. Befund beim Bau von
+* **Status:** **GEBAUT 2026-09-09** — `suite#200`. Befund beim Bau von
   B-39 Punkt 1 erhoben und daraufhin als Sweep durch alle drei Brücken
   gezogen.
 * **Befund (gemessen am gebauten Stand):** `connectShellSeed` wendet **jede**
@@ -3257,6 +3319,15 @@ und die Zeilen E-4, E-5 und E-14 zeigen, dass hier auch schon Entscheidungen
 korrigiert worden sind. Wer eine davon umdreht, findet hier, wogegen er
 argumentiert.
 
+**Drei Zeilen sind am 2026-09-09 dazugekommen** — E-25, E-26 und E-27, alle
+drei vom Eigentümer selbst entschieden (Schreibschutz des Tally-Pi, das Werkzeug
+für Festinstallationen, das Lager als eigenes Werkzeug mit eigener Oberfläche).
+E-26 und E-27 sind entschieden, aber **nicht baubar**: das Anlegen der beiden
+Repos scheitert an den Rechten der GitHub-App
+(`POST /user/repos` → `403 Resource not accessible by integration`). Das ist
+eine dritte Tatsachen-Sperre neben den beiden im nächsten Absatz — sie fällt,
+wenn die leeren Repos existieren, und nicht durch einen weiteren Beschluss.
+
 **Zwei Zeilen tragen eine Bedingung, die kein Beschluss aufhebt** und die
 deshalb ausdrücklich zur Entscheidung gehört: E-24 wartet auf eine echte
 Beispieldatei (das Format ist unbelegt und liegt hinter dem Egress-Filter) und
@@ -3293,6 +3364,9 @@ Anzeige-Regel — sie steht in E-23 und ist dort schärfer formuliert als vorher
 | ~~E-23~~ | ~~Spricht die Suite eine **Show-Control-Sprache**?~~ | **entschieden 2026-09-08 vom Eigentümer: AUSGEHEND UND EINGEHEND; die Vokabel bleibt OSC.** Der ausgehende Teil ist unverändert der der Vorentscheidung: der Plan BENENNT je Ausspielziel eine OSC-Adresse bzw. Companion-Position und druckt sie, als Konfiguration. **Neu ist der eingehende Teil, und mit ihm die einzige Bedingung, die diese Entscheidung noch trägt** — sie hat sich vom Umfang auf die ANZEIGE verschoben und ist dort schärfer als vorher: was aus einer eingehenden Nachricht auf den Schirm kommt, ist eine EMPFANGSMELDUNG und nie ein Anlagenzustand. Also: „Cue 12 um 14:22:07 empfangen", mit Alter und Absender — nicht „Kamera 3 bereit", nicht grün/rot über der Anlage. Das ist dieselbe Regel, die ADR-003 für unbestätigten Zustand aufstellt, und sie ist hier der ganze Unterschied zwischen einer brauchbaren Mitschrift und der Entwarnung, für die dieses Repo keinen Beleg hat. **Dazu vier Auflagen für den Port:** er ist aus als Vorgabe, wird je Projekt eingeschaltet, lauscht auf einer Adresse, die der Nutzer nennt (nicht `0.0.0.0` als Vorgabe), und meldet sichtbar, wenn er nicht binden konnte — ein stiller Nicht-Empfang sieht aus wie „keine Cues", und das ist die Entwarnung durch die Hintertür. **Gegenrede (die frühere Fassung, gegen die entschieden wurde):** NUR AUSGEHEND. Die Bedarfs-Datenbank stellt die Massnahme unter eine Bedingung, die sich nicht wegrecherchieren lässt: *„do NOT build a live monitoring dashboard, which would make the suite responsible for a false all-clear"*. Wer Zustand anzeigt, haftet für die Entwarnung — und dieses Repo hat keinen Weg, eine Entwarnung zu verifizieren. **Warum die Umkehr damit vereinbar ist:** die Quelle verbietet ein *monitoring dashboard*, nicht das Zuhören. Empfangen und Anzeigen sind zwei Schritte; der Satz trifft den zweiten. Die Auflage oben verbietet genau den, den er verbietet. Dass Companion sich inzwischen auch AUSLESEN lässt (`CUSTOM-VARIABLE … GET-VALUE`, gemergt 2026-03-04), war schon in der Vorentscheidung vermerkt und ist jetzt der Weg, auf dem der eingehende Teil überhaupt etwas zu lesen bekommt. OSC, weil es die breiteste Anschlussfähigkeit hat. **GEBAUT 2026-09-08 in `cable#785`:** `renderer/types/showControl.ts` (Empfangsmeldung, Alter, Schema-Heilung), `main/services/oscListener.ts` (Socket; gelesen wird NUR die Adresse, die Argumente nur als Länge — eine falsch gelesene Zahl sähe aus wie eine Messung, dieselbe Überlegung wie bei Invariante 23), IPC-Bereich `showControl:*`, und das Empfangs-Panel ohne jede Ampelfarbe. Die vier Auflagen stehen im Code und nicht in der Prosa: `OSC_LAUSCHER_AUS` ist `{ aktiv: false, adresse: '' }`, der Lauscher hängt am Projekt statt an der App, `startOscListener` weist eine leere Adresse zurück, und er liefert IMMER einen Zustand — `nicht-gebunden` mit Grund eingeschlossen. `normalisiereOscLauscher` schaltet auch eine fremde `.avplan` ohne Adresse ab, statt deren Angabe zu glauben. `tests/oscEmpfang.test.ts` löst ausserdem zwei Sätze ein, die anderswo als Zusicherung standen (wer ein Feld `zustand` ergänzt, hat die Entscheidung umgedreht; die Mitschrift erreicht den Projekt-Speicher nicht). Acht Gegenproben, alle rot. **Offen bleibt** der Import eines Companion-Variablenstands als zweite Quelle. **Mit der Auflage aus der Recherche:** wo eine Companion-Adresse steht, schreibt das Blatt dazu, dass deren Schnittstelle opt-in ist — sonst zeigt der Plan einen Weg, den es beim Kunden nicht gibt |
 | ~~E-24~~ | ~~Bindet die Suite **CuePilot** und **LiveEdit** an — und wenn ja, in welcher Richtung?~~ | **entschieden 2026-09-08: NUR LESEN (Variante a). (b) und (c) sind damit WON'T** — (c) fällt unter dieselbe Bedingung wie E-23, und (b) setzt ein dokumentiertes Format voraus, das dieses Repo nicht belegen kann. Die Richtung ist damit dieselbe wie bei E-18, und aus demselben Grund: die Autorenschaft bleibt beim Werkzeug, in dem der Cue-Track ohnehin entsteht. **Die Entscheidung ist gefallen, der Bau wartet auf eine Tatsache**, und das ist kein Aufschub, sondern die Bedingung: ohne eine echte Beispieldatei oder eine Formatdoku wäre der Leser geraten. `cuepilot.com`, `liveedit.app` und `cuepilot.zendesk.com` liegen hinter dem Egress-Filter (zuletzt geprüft 2026-09-08). Was der Leser tun soll, steht dagegen fest: einen Cue-Track einlesen und gegen den technischen Plan halten — welche Kamera, welches Kabel, welche Funkstrecke hängt an diesem Cue. Sobald eine Beispieldatei vorliegt, ist das dieselbe Bauform wie der Ablauf-Leser |
 | ~~E-19~~ | ~~Sind die vier Runtime-Repos Teil der **Suite** oder bewusst eigenständig?~~ | **entschieden 2026-09-05** (`suite#99`): Teil der Suite, aber als Geräte über eine Adresse statt als mitgelieferte Ansicht. Beides zugleich — laufende Anwendung und Attrappe im Fenster — war die Variante, die es nicht gibt |
+| ~~E-25~~ | ~~Bekommt der **Tally-Pi** einen Schreibschutz an seinen HTTP-Wegen?~~ | **entschieden 2026-09-09 vom Eigentümer: NEIN — der Status quo bleibt, aber er wird GESAGT.** Siehe B-58 für den vollständigen Befund. Die Kurzfassung des Grundes: der Pi liefert seine eigene Bedienseite aus und schreibt darüber ohne Kopf, also sperrt ein Token entweder die eigene Seite aus oder liegt für jeden im Netz bereit. Ein Schutz, der genau das nicht verhindert, wogegen er antritt, ist eine Beschriftung. Der Eigentümer hat deshalb **nicht die Sicherheit gesenkt, sondern die Lage benannt**: die Einstellungs-Karte im Cable-Planner schreibt beim Eintragen der Adresse hin, dass der Pi keinen Nachweis verlangt (`settings.integrations.tallyPi.noToken`), und `tests/tallyDirektweg.test.ts` hält fest, dass der Dienst auch keinen mitschickt. **Die Entscheidung trägt ihre eigene Verfallsbedingung:** sobald der Pi in einem Netz steht, das nicht dem Betreiber gehört (Haus-WLAN, geteilte Produktionsleitung, Gast-Netz), gilt sie nicht mehr |
+| ~~E-26~~ | ~~Was passiert mit **Festinstallation, Elektroplanung und Haussteuerung** (`cable#665/#666/#667`)?~~ | **entschieden 2026-09-09 vom Eigentümer: eigenes Repo, Gerüst bauen** — `larszu/facility-planner`, eingebunden wie die anderen Planer, erste Modelle Schaltschrank / UP-AP-Dose / Stromkreis. Der Vertrag dazu (Schritt 1 nach ADR-006) steht seit demselben Tag im ADR: sechs Fragen, ein Rückweg, und die ausdrückliche Liste dessen, was **nicht** mitzieht. **Zwei Dinge korrigiert die Entscheidung an der Fassung vom 2026-09-07:** `#666` (Wechselschaltungen mit Logikprüfung) **bleibt Kern** — der Eigentümer hat es am 2026-09-08 ausdrücklich verlangt und `cable#771/#782/#788` haben es gebaut; und `#665` teilt sich, weil Mehrfachsteckdose und Verteiler Show-Material sind (B-52) und nur Schaltschrank und UP-/AP-Dose dem Haus gehören. **Blockiert am Anlegen des Repos:** `POST /user/repos` → `403 Resource not accessible by integration` |
+| ~~E-27~~ | ~~Wird das **Lager** ein eigenes Werkzeug — und mit welcher Oberfläche?~~ | **entschieden 2026-09-09 vom Eigentümer: eigenes Repo MIT eigener Oberfläche** — nicht nur ein Paket, das der Planer benutzt. Bestand, Ausgabeschein und Sub-Hire bekommen ihre eigene Bedienung für den Lageristen, die Suite bindet sie ein wie die Planer. Damit ist die offene Hälfte von ADR-006 geschlossen: Schritt 1 (der Vertrag) steht seit 2026-09-07 im ADR, Schritt 2 (Paket vor Repo) ist gebaut — `src/renderer/lager/` hinter vier Haken und einem Schreibweg, gehalten von `tests/lagerVertrag.test.ts` —, offen ist Schritt 3. **Blockiert am selben 403** wie E-26 |
 
 ---
 
