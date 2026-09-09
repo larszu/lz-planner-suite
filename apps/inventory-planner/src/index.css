@@ -507,6 +507,32 @@ th {
   }
 }
 
+/* ── Fristen-Ampel (B-65, fuenfte Zeile) ───────────────────────────────────
+   Dieselbe Regel wie bei „Unter Ziel": nur was zu tun ist, traegt Farbe.
+   `faellig` bleibt in der normalen Schrift — es ist eine Vorwarnung und
+   kein Fehler, und beides gleich einzufaerben hiesse, nichts
+   hervorzuheben. Die Kacheln stehen im Raster der Bericht-Ansicht; die
+   Regeln dafuer erbt `.werte` ueber `.kennzahlen`/`.kachel` nicht, also
+   stehen sie hier. */
+.werte .kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.werte .kachel.achtung {
+  border-color: var(--warn);
+}
+
+.werte .kachel.achtung strong {
+  color: var(--warn);
+}
+
+.werte tr.lage-ueberfaellig td {
+  color: var(--warn);
+}
+
 .werte p.warnung {
   color: var(--warn);
   max-width: 52rem;

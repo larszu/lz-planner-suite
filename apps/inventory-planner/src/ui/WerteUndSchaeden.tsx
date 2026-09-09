@@ -44,9 +44,30 @@
 //   verschiedene Zahlen, und welche gemeint ist, entscheidet der Vertrag —
 //   nicht diese App.
 //
-//   Sie ÄNDERT KEINEN ZUSTAND. Ein Schaden wird bei der Rückgabe
-//   aufgenommen; hier wird er gelesen. Zwei Orte, an denen dasselbe
-//   entsteht, laufen auseinander.
+//   Sie ÄNDERT KEINEN ZUSTAND — ausser an einer Stelle: den FRISTEN, siehe
+//   unten. Ein Schaden wird bei der Rückgabe aufgenommen; hier wird er
+//   gelesen. Zwei Orte, an denen dasselbe entsteht, laufen auseinander.
+//
+// ─── NACHTRAG: DIE FRISTEN-AMPEL (B-65, fünfte Zeile) ──────────────────────
+//
+// Sie steht hier, weil sie dieselbe Frage beantwortet wie die drei anderen:
+// „womit muss ich rechnen." Ein Gerät, dessen DGUV-V3-Prüfung abgelaufen
+// ist, ist kein Ortsproblem, sondern ein Risiko — dieselbe Kategorie wie
+// ein Schaden und eine Unterversicherung.
+//
+// UND SIE IST DIE EINE STELLE, AN DER DIESE ANSICHT SCHREIBT. Das ist ein
+// Bruch mit dem Satz darüber, und er ist bewusst: eine Prüffrist wird
+// nirgendwo sonst erfasst. Sie an einem zweiten Ort zu erfassen, damit
+// diese Ansicht rein bleiben kann, hiesse, den Lageristen zwischen zwei
+// Fenstern hin- und herschicken — und die Regel „ein Ort je Sache" gälte
+// dann für die Fristen nicht mehr. Der Schaden bleibt lesend: der entsteht
+// bei der Rückgabe und hat dort seinen Ort.
+//
+// DREI LAGEN UND EINE NICHT-AUSSAGE. Überfällig, fällig (Vorwarnzeit),
+// ok — und daneben die Einheiten OHNE eingetragene Frist, als eigene Zahl.
+// Sie als „ok" zu zählen wäre bei Prüffristen die teuerste Verwechslung,
+// die diese Anwendung anbieten könnte: ein Lager, in dem niemand je etwas
+// eingetragen hat, sähe aus wie eines, in dem alles geprüft ist.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react'
 import { useInventoryStore } from '../domain/store/inventoryStore'
@@ -61,6 +82,14 @@ import {
 import { damageEntries, damageTally, damageTable } from '../domain/lib/damageRegister'
 import { committedByItem, commitmentNote } from '../domain/lib/inventoryCommitment'
 import { unitLabel } from '../domain/lib/unitIdentity'
+import {
+  fristenLage,
+  anzugehen,
+  alterMonate,
+  terminVon,
+  FRIST_ART_LABEL,
+} from '../domain/lib/fristen'
+import type { Frist, FristArt } from '../domain/types/inventory'
 import { toCsv, type CsvTable } from '../lib/csv'
 
 /** Eine Tabelle als CSV herunterladen. Vier Knöpfe brauchen dasselbe. */
@@ -78,9 +107,20 @@ const csvLaden = (tabelle: CsvTable, name: string) => {
 export function WerteUndSchaeden() {
   const items = useInventoryStore((s) => s.items)
   const units = useInventoryStore((s) => s.units)
+  const updateUnit = useInventoryStore((s) => s.updateUnit)
   const records = useCheckoutStore((s) => s.records)
 
   const [nach, setNach] = useState<'person' | 'container' | 'job'>('person')
+  // 30 Tage: die Zeit, in der sich ein Prueftermin noch vereinbaren laesst.
+  // Sie steht als Eingabe da und nicht als Konstante im Code, weil sie eine
+  // Entscheidung des Hauses ist und nicht dieser Datei.
+  const [vorwarn, setVorwarn] = useState(30)
+  const [neueFrist, setNeueFrist] = useState<{ unitId: string; art: FristArt; zuletzt: string; intervall: string }>({
+    unitId: '',
+    art: 'dguv-v3',
+    zuletzt: '',
+    intervall: '12',
+  })
 
   const modellVon = useMemo(() => {
     const nachId = new Map(items.map((i) => [i.id, i.model]))
@@ -99,6 +139,13 @@ export function WerteUndSchaeden() {
   const verteilung = useMemo(() => damageTally(records, nach), [records, nach])
   const gebunden = useMemo(() => committedByItem(records, units), [records, units])
 
+  // Die Uhr steht in der ANSICHT und nicht in der Ableitung: `fristenLage`
+  // nimmt `heute` entgegen, statt es zu lesen — dieselbe Regel wie ueberall
+  // unter `domain/`. Nur so ist die Ampel testbar, ohne die Systemzeit zu
+  // stellen.
+  const heute = new Date().toISOString().slice(0, 10)
+  const fristen = useMemo(() => fristenLage(units, items, heute, vorwarn), [units, items, heute, vorwarn])
+
   const gebundeneZeilen = useMemo(
     () =>
       items
@@ -107,8 +154,231 @@ export function WerteUndSchaeden() {
     [items, gebunden],
   )
 
+  const fristSetzen = () => {
+    const u = units.find((x) => x.id === neueFrist.unitId)
+    if (!u || !neueFrist.zuletzt) return
+    const intervall = Number(neueFrist.intervall)
+    if (!Number.isFinite(intervall) || intervall <= 0) return
+    // Angehaengt, nicht ersetzt: eine Einheit hat mehrere Termine, und ein
+    // zweiter Eintrag derselben Art ist die Verlaengerung, nicht ein Fehler.
+    // Was der Mensch nicht mehr braucht, entfernt er ueber die Zeile.
+    const frist: Frist = {
+      art: neueFrist.art,
+      zuletzt: neueFrist.zuletzt,
+      intervallMonate: Math.round(intervall),
+    }
+    updateUnit(u.id, { fristen: [...(u.fristen ?? []), frist] })
+    setNeueFrist((n) => ({ ...n, zuletzt: '' }))
+  }
+
+  const fristEntfernen = (unitId: string, faellig: string, art: FristArt) => {
+    const u = units.find((x) => x.id === unitId)
+    if (!u?.fristen) return
+    // Ueber Art UND Termin, nicht ueber einen Index: die Tabelle ist
+    // sortiert, ein Index aus der Zeile zeigte auf den falschen Eintrag.
+    //
+    // Der Termin kommt aus `terminVon` und nicht aus `f.faellig`: bei einer
+    // Frist aus zuletzt+Intervall steht in `f.faellig` nichts, die Zeile
+    // zeigt aber das gerechnete Datum. Ein Vergleich gegen das Feld
+    // entfernte solche Fristen NIE — der Knopf saehe aus, als taete er
+    // nichts.
+    const rest = u.fristen.filter((f) => !(f.art === art && terminVon(f)?.faellig === faellig))
+    updateUnit(unitId, { fristen: rest.length > 0 ? rest : undefined })
+  }
+
   return (
     <section className="werte">
+      {/* ── Fristen ──────────────────────────────────────────────────── */}
+      <div className="block">
+        <h3>Fristen</h3>
+        {units.length === 0 ? (
+          <p className="hinweis">
+            Keine serialisierten Einheiten. Eine Prüffrist hängt am einzelnen
+            Gerät, nicht am Modell — „die ULXD2 sind im März geprüft" ist eine
+            Aussage über zwölf Geräte, von denen zwei in der Werkstatt standen.
+          </p>
+        ) : (
+          <>
+            <div className="kennzahlen">
+              <div className={fristen.ueberfaellig > 0 ? 'kachel achtung' : 'kachel'}>
+                <strong>{fristen.ueberfaellig}</strong>
+                <span>überfällig</span>
+              </div>
+              <div className="kachel">
+                <strong>{fristen.faellig}</strong>
+                <span>fällig in {vorwarn} Tagen</span>
+              </div>
+              <div className="kachel">
+                <strong>{fristen.ok}</strong>
+                <span>später</span>
+              </div>
+              {/*
+                Die vierte Kachel ist KEINE vierte Lage. Sie zaehlt die
+                Einheiten, ueber die diese Ampel nichts sagt — und ohne sie
+                saehe ein Lager, in dem niemand je eine Frist gepflegt hat,
+                aus wie eines, in dem alles geprueft ist.
+              */}
+              <div className="kachel">
+                <strong>{fristen.ohneFrist}</strong>
+                <span>ohne Frist hinterlegt</span>
+              </div>
+            </div>
+
+            <p className={fristen.ueberfaellig > 0 ? 'warnung' : 'hinweis'}>
+              {fristen.ohneFrist > 0
+                ? `Für ${fristen.ohneFrist === 1 ? 'eine Einheit' : `${fristen.ohneFrist} Einheiten`} ist keine Frist hinterlegt — über sie sagt diese Ampel nichts, weder „geprüft" noch „fällig".`
+                : 'Jede Einheit trägt mindestens eine Frist; die Ampel deckt den ganzen Bestand.'}
+            </p>
+
+            <div className="zeile">
+              <label>
+                Vorwarnzeit (Tage)
+                <input
+                  type="number"
+                  min="0"
+                  value={vorwarn}
+                  onChange={(e) => {
+                    const n = Number(e.target.value)
+                    if (Number.isFinite(n) && n >= 0) setVorwarn(Math.round(n))
+                  }}
+                  aria-label="Vorwarnzeit in Tagen"
+                  className="schmal"
+                />
+              </label>
+            </div>
+
+            {anzugehen(fristen).length === 0 ? (
+              <p className="hinweis">
+                Nichts überfällig und nichts in den nächsten {vorwarn} Tagen fällig.
+              </p>
+            ) : (
+              <div className="tabelle-rahmen">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Einheit</th>
+                      <th>Modell</th>
+                      <th>Art</th>
+                      <th>fällig</th>
+                      <th className="rechts">Tage</th>
+                      <th>Termin</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {anzugehen(fristen).map((z) => (
+                      <tr key={`${z.unitId}-${z.art}-${z.faellig}`} className={`lage-${z.lage}`}>
+                        <td>{z.einheit}</td>
+                        <td>{z.model}</td>
+                        <td>
+                          {FRIST_ART_LABEL[z.art]}
+                          {z.bezeichnung ? <span className="leise"> · {z.bezeichnung}</span> : null}
+                        </td>
+                        <td>{z.faellig}</td>
+                        <td className="rechts">{z.tage < 0 ? `${-z.tage} über` : z.tage}</td>
+                        {/*
+                          Ob der Termin eingetragen oder gerechnet ist, steht
+                          IN der Zeile. Ein gerechneter Termin, der wie ein
+                          eingetragener aussieht, ist genau die Sorte Zahl,
+                          gegen die dieses Repo anschreibt.
+                        */}
+                        <td className="leise">
+                          {z.quelle === 'eingetragen' ? 'eingetragen' : 'aus Intervall'}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="still"
+                            onClick={() => fristEntfernen(z.unitId, z.faellig, z.art)}
+                          >
+                            Entfernen
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── Frist eintragen ─────────────────────────────────────── */}
+            <div className="zeile">
+              <label>
+                Einheit
+                <select
+                  value={neueFrist.unitId}
+                  onChange={(e) => setNeueFrist((n) => ({ ...n, unitId: e.target.value }))}
+                  aria-label="Einheit für die neue Frist"
+                >
+                  <option value="">— Einheit —</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {unitLabel(u, 'house')} · {modellVon(u)}
+                      {alterMonate(u, heute) !== undefined
+                        ? ` · ${alterMonate(u, heute)} Mon. alt`
+                        : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Art
+                <select
+                  value={neueFrist.art}
+                  onChange={(e) => setNeueFrist((n) => ({ ...n, art: e.target.value as FristArt }))}
+                  aria-label="Art der Frist"
+                >
+                  {(Object.keys(FRIST_ART_LABEL) as FristArt[]).map((a) => (
+                    <option key={a} value={a}>
+                      {FRIST_ART_LABEL[a]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                zuletzt erledigt
+                <input
+                  type="date"
+                  value={neueFrist.zuletzt}
+                  onChange={(e) => setNeueFrist((n) => ({ ...n, zuletzt: e.target.value }))}
+                  aria-label="Datum der letzten Erledigung"
+                />
+              </label>
+              <label>
+                Intervall (Monate)
+                <input
+                  type="number"
+                  min="1"
+                  value={neueFrist.intervall}
+                  onChange={(e) => setNeueFrist((n) => ({ ...n, intervall: e.target.value }))}
+                  aria-label="Intervall in Monaten"
+                  className="schmal"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={fristSetzen}
+                disabled={!neueFrist.unitId || !neueFrist.zuletzt}
+              >
+                Frist eintragen
+              </button>
+            </div>
+            {/*
+              Das ALTER steht in der Auswahl oben und bekommt hier KEINE
+              Ampel. Wie alt ein Akku sein darf, haengt an Zellchemie,
+              Ladezyklen und daran, was das Haus sich leistet — eine
+              Schwelle dafuer waere eine Wartungsempfehlung ohne Fundstelle.
+              Wer eine will, traegt sie als Frist der Art „Akku" ein.
+            */}
+            <p className="hinweis">
+              Das Alter neben der Einheit kommt aus ihrem Kaufdatum und ist eine
+              Angabe, kein Urteil: ab wann ein Akku zu alt ist, entscheidet das
+              Haus — als Frist der Art „Akku".
+            </p>
+          </>
+        )}
+      </div>
+
       {/* ── Werte ────────────────────────────────────────────────────── */}
       <div className="block">
         <h3>Werte</h3>

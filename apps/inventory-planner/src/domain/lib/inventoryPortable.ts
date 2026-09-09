@@ -63,7 +63,25 @@ export const INVENTORY_FORMAT = 'avplan-inventory'
 // dasselbe Format byte-gleich, und dort haelt `tests/inventoryContract.test.ts`
 // die Feldliste fest. Beide zusammen oder keines: eine Datei aus dem Lager,
 // die der Planer nicht mehr liest, ist schlimmer als ein fehlendes Feld.
-export const INVENTORY_FORMAT_VERSION = 5
+// Version 6 (B-65): `InventoryUnit.fristen` — was an einer Einheit
+// turnusmaessig faellig ist (DGUV-V3-Pruefung, Kalibrierung, Wartung,
+// Akku). Dieselbe Begruendung wie bei 2 bis 5, eine Ebene tiefer:
+// `inventoryStore.healUnit` baut JEDE Einheit Feld fuer Feld neu auf. Ein
+// Stand, der das Feld nicht kennt, laese eine Datei mit gepflegten
+// Pruefterminen ein und schriebe sie still ohne sie zurueck — und die
+// Fristen-Ampel meldete danach fuer jedes Geraet „keine Frist hinterlegt".
+//
+// Das wiegt hier schwerer als bei jedem Feld davor. Eine verlorene
+// Mindestmenge kostet eine Nachbestellung; eine verlorene DGUV-V3-Frist
+// stellt ein ungepruefetes Geraet auf eine Veranstaltung. Die Anwendung
+// wuerde in dem Moment nicht schweigen, sondern das Gegenteil sagen: „nichts
+// faellig".
+//
+// Mit der erhoehten Version weigert sich ein aelterer Stand stattdessen zu
+// lesen. Aeltere Dateien (v1-v5) lesen wir unveraendert weiter; ihre
+// Einheiten haben schlicht keine Fristen, und das ist nicht „geprueft",
+// sondern UNBEWERTET — `fristenLage` zaehlt sie getrennt.
+export const INVENTORY_FORMAT_VERSION = 6
 
 export interface InventorySnapshot {
   items: InventoryItem[]

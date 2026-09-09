@@ -80,6 +80,7 @@ import { buildPackListHtml } from '../domain/lib/inventoryPrint'
 import { nodePathLabel } from '../domain/lib/storageTree'
 import { committedByItem } from '../domain/lib/inventoryCommitment'
 import { deckung, nachzubestellen } from '../domain/lib/mindestmenge'
+import { fristenLage } from '../domain/lib/fristen'
 import { useCheckoutStore } from '../domain/store/checkoutStore'
 import { toCsv } from '../lib/csv'
 import type { ImportReport } from '../domain/store/inventoryStore'
@@ -149,6 +150,16 @@ export function Bericht() {
   const lage = useMemo(
     () => deckung(items, committedByItem(records, units)),
     [items, records, units],
+  )
+
+  // Die Uhr steht in der Ansicht, nicht in der Ableitung — `fristenLage`
+  // nimmt `heute` entgegen. Gerechnet wird hier NUR fuer die Kachel; die
+  // Liste und das Eintragen stehen in „Werte & Schaeden", wo die Fristen
+  // hingehoeren. Zwei AUFRUFE derselben reinen Funktion sind kein zweites
+  // Rechenwerk — zwei eigene Rechnungen waeren eines.
+  const fristen = useMemo(
+    () => fristenLage(units, items, new Date().toISOString().slice(0, 10)),
+    [units, items],
   )
 
   /** Nur echte Wurzeln: eine Packliste eines Regals im Regal ergäbe zwei Blätter. */
@@ -265,6 +276,18 @@ export function Bericht() {
         <div className={lage.unter > 0 ? 'kachel achtung' : 'kachel'}>
           <strong>{lage.unter}</strong>
           <span>unter Ziel</span>
+        </div>
+        {/*
+          Die zweite Kachel, die zu einer Handlung fuehrt. Sie zaehlt
+          ueberfaellig UND faellig zusammen, weil beides auf denselben
+          Wochenplan gehoert; welches davon brennt, sagt die Liste in
+          „Werte & Schaeden". Gefaerbt wird nur, wenn etwas UEBERFAELLIG
+          ist — eine Kachel, die schon bei einer Vorwarnung rot wird, ist
+          nach einer Woche Hintergrundrauschen.
+        */}
+        <div className={fristen.ueberfaellig > 0 ? 'kachel achtung' : 'kachel'}>
+          <strong>{fristen.ueberfaellig + fristen.faellig}</strong>
+          <span>Fristen fällig</span>
         </div>
       </div>
       {/*

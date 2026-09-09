@@ -555,9 +555,10 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 * **Status:** **der Hauptbefund ist ERLEDIGT** — `inventory#2` (Inventur),
   `#3` (Bericht), `#4` (Werte & Schäden): 10 → 7 → 3 → **0** Module ohne
-  Weg. Vom NEUEN aus den Bildschirmfotos ist die **Mindestmenge („Unter
-  Ziel") GEBAUT** (`inventory#5` plus der Format-Nachzug in vier Repos);
-  **offen** bleiben Fristen-Ampel, Kassenbon-Import und Kamera-Scan.
+  Weg. Vom NEUEN aus den Bildschirmfotos sind **Mindestmenge („Unter Ziel")**
+  und die **Fristen-Ampel** GEBAUT (`inventory#5` und `#6`, je mit
+  Format-Nachzug in vier Repos); **offen** bleiben Kassenbon-Import und
+  Kamera-Scan.
 * **Auslöser:** Der Eigentümer schickte fünf Bildschirmfotos einer fremden
   Bestands-App („Vorratix", Haushalts-Vorrat) mit dem Satz: „Analysiere diese
   paar Fotos für das Lagermodul. Es fehlen noch einige Funktionen."
@@ -600,9 +601,9 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   | Erwarteter Prefix (`L#`) als Vorgabe und Prüfung | Lagerplatz-Codes gegen ein Hausschema prüfen | **fehlt** (`prefix`: 0 Fundstellen) |
   | Ausweg ohne Scan („Ohne Scan einbuchen", Raum/Objekt wählen) | Aufkleber unlesbar, Hand-Eingabe | **fehlt** |
   | Taschenlampe, Kamerawechsel im Scanner | dunkler Truck, Case über Kopf | **fehlt** (keine Scan-Oberfläche) |
-  | Kennzahlen-Startseite (Bestand, „Unter Ziel", fällig) | Was muss ich heute anfassen? | **halb**: Kennzahlen und „Unter Ziel" stehen (`inventory#3`, `#5`), „fällig" fehlt |
+  | Kennzahlen-Startseite (Bestand, „Unter Ziel", fällig) | Was muss ich heute anfassen? | **GEBAUT** (`inventory#3`, `#5`, `#6`) |
   | Soll-/Mindestmenge, „Unter Ziel" | Meldebestand je Artikel | **GEBAUT** (`inventory#5`) |
-  | „Bald ablaufend / Abgelaufen / Diese Woche fällig" | DGUV-V3-Prüftermin, Kalibrierung, Akku-Alter, Versicherungsende | **halb**: `insuranceSchedule` rechnet, nichts zeigt es, und die übrigen Fristen gibt es nicht |
+  | „Bald ablaufend / Abgelaufen / Diese Woche fällig" | DGUV-V3-Prüftermin, Kalibrierung, Akku-Alter, Versicherungsende | **GEBAUT** (`inventory#6`) |
   | „Anomalien — auffällige Artikel prüfen" | Inventur-Abweichung, Ware am falschen Platz | **halb**: `inventoryAudit` (390 Zeilen) hat keine Oberfläche |
   | „Verlauf" | wer hat wann was gebucht | **halb**: `storageMoves` bewegt, eine Historie je Artikel fehlt |
   | Kassenbon-Import (Foto → Positionen) | Lieferschein/Rechnung → Wareneingang | **fehlt** |
@@ -698,8 +699,49 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   besitzt. Dass die Version stimmt, prüft dort seit `inventory#5` ein Test;
   die Feldliste prüft nichts. Eigener Vorgang.
 
-* **Was jetzt drankommt, ist der Rest der Tabelle oben:** die Fristen-Ampel
-  (DGUV V3, Kalibrierung, Akku-Alter — die Vorlage nennt es MHD), der
+* **GEBAUT, fünfte Zeile — `inventory#6` (2026-09-09):** die
+  **Fristen-Ampel**. DGUV-V3-Prüfung, Kalibrierung, Wartung, Akku — Liste
+  und Eintragen in „Werte & Schäden", Kachel im Bericht.
+
+  Vier Entscheidungen, die man später sonst nachfragt:
+
+  1. **Ein generischer Termin statt drei Feldern.** Der Eigentümer nannte
+     drei Sorten; drei Felder wären drei Formulare, drei Heilungen, drei
+     Auswertungen — und beim vierten Termin (Klettergurt, TÜV am Anhänger,
+     Ablauf eines Mietvertrags) fienge alles von vorn an. Ein Termin ist
+     immer dieselbe Sache: ein Datum, ab dem etwas nicht mehr gilt.
+  2. **Ohne eingetragene Frist ist eine Einheit UNBEWERTET, nicht „ok".**
+     Dieselbe Regel wie bei der Mindestmenge, und hier mit dem höchsten
+     Einsatz: ein Lager, in dem niemand je eine Prüffrist gepflegt hat,
+     dürfte nicht aussehen wie eines, in dem alles geprüft ist.
+  3. **Eine Wahrheit, eine Ableitung, und sie sagt es.** Ein eingetragenes
+     `faellig` gilt; sonst wird aus `zuletzt` + `intervallMonate` gerechnet
+     und die Zeile trägt „aus Intervall". Fehlt beides, gibt es keinen
+     Termin — und es wird keiner geraten.
+  4. **Das Akku-Alter wird gezeigt, nicht beurteilt.** Es kommt aus
+     `anschaffung.am` und ist eine Tatsache. Ab wann ein Akku zu alt ist,
+     ist keine: das hängt an Zellchemie, Ladezyklen und daran, was das Haus
+     sich leistet. Wer eine Schwelle will, trägt sie als Frist ein.
+
+* **DIE OFFENE EIGENTÜMER-FRAGE UNTEN IST DAMIT NICHT ENTSCHIEDEN, ABER
+  ENTSCHÄRFT.** Ob das Lager Verbrauchsmaterial mit Haltbarkeit führen soll,
+  steht weiter offen — nur hängt daran jetzt kein Schema mehr: ein
+  Ablaufdatum ist in diesem Modell ein Termin ohne Intervall und braucht
+  kein eigenes Feld, egal wie die Antwort ausfällt. Was sie noch entscheidet,
+  ist die BEDIENUNG (führt man Chargen? bucht man Verbrauch ab?).
+
+* **Zwei Wächter-Befunde nebenbei, beide gemessen und behoben:**
+  `fristEntfernen` verglich gegen `f.faellig` und hätte eine aus dem
+  Intervall gerechnete Frist NIE entfernt — der Knopf hätte ausgesehen, als
+  täte er nichts. Und `quellsprache-check` schlug auf richtigem Code an: sein
+  JSX-Muster nahm `=>` als Tag-Ende und las den Code danach als sichtbaren
+  Text. Genau die Falle, die im Kopf derselben Datei schon einmal
+  beschrieben ist („ein Wächter, der bei richtigem Code anschlägt, wird
+  abgeschaltet und nicht gelesen"); die Beschränkung auf `.tsx` hatte sie
+  nur verkleinert. Nachgemessen kostet die Korrektur null deutsche Treffer,
+  und die Selbstprobe fällt weiterhin auf.
+
+* **Was jetzt drankommt, ist der Rest der Tabelle oben:** der
   Kassenbon-Import und der Kamera-Scan. Die Nachbestell-Liste gibt es als
   CSV; ein eigener „Einkauf"-Reiter wäre die nächste Stufe davon.
 * **Nicht entschieden, gehört dem Eigentümer:** ob das Lagermodul

@@ -110,12 +110,23 @@ describe('Die Mindestmenge überlebt Laden und Austausch (B-65)', () => {
     expect(zurueck?.items[0].mindestmenge).toBe(20)
   })
 
-  it('6. das Format ist auf 5 gegangen, und ein älterer Stand liest nicht mehr still mit', () => {
+  it('6. das Format ist mindestens auf 5, und ein neuerer Stand wird abgelehnt', () => {
     // Die Versions-Nummer IST der Schutz: ohne sie läse ein Stand ohne dieses
     // Feld die Datei anstandslos und schriebe sie gekürzt zurück. Die zweite
     // Zeile prüft die Weigerung aus dieser Richtung — eine Datei, die neuer
     // ist als dieser Stand, wird abgelehnt statt halb verstanden.
-    expect(INVENTORY_FORMAT_VERSION).toBe(5)
+    //
+    // NICHT AUF 5 FESTGENAGELT, und das ist eine Korrektur: hier stand
+    // `toBe(5)`, und der nächste Feld-Zuwachs (`fristen`, Version 6) machte
+    // die Zeile rot, obwohl an der Mindestmenge nichts falsch war. Die
+    // EXAKTE Nummer gehört genau einmal geprüft — in den Test des jeweils
+    // jüngsten Zuwachses. Stünde sie in jedem Feature-Test, bräche jede
+    // Erhöhung N Tests, und wer sie repariert, tippt N Zahlen um, ohne über
+    // eine davon nachzudenken.
+    //
+    // Was diese Zeile wirklich sichern soll, ist: als dieses Feld dazukam,
+    // wurde die Version erhöht. Das hält `>= 5` genauso fest.
+    expect(INVENTORY_FORMAT_VERSION).toBeGreaterThanOrEqual(5)
     expect(
       parseInventory(
         JSON.stringify({ format: INVENTORY_FORMAT, version: INVENTORY_FORMAT_VERSION + 1 }),

@@ -101,6 +101,58 @@ export interface Versicherungswert {
   stand?: string
 }
 
+/**
+ * Was an einer Einheit turnusmässig fällig ist (B-65).
+ *
+ * ═══════════════════════════════════════════════════════════════════════
+ * WARUM EIN GENERISCHER TERMIN UND NICHT DREI FELDER
+ * ═══════════════════════════════════════════════════════════════════════
+ *
+ * Der Eigentümer nannte drei: DGUV-V3-Prüfung, Kalibrierung, Akku-Alter.
+ * Drei Felder dafür wären drei Formulare, drei Heilungen, drei Auswertungen
+ * — und beim vierten Termin (Klettergurt-Prüfung, TÜV am Anhänger, Ablauf
+ * eines Mietvertrags) fienge alles von vorn an.
+ *
+ * Ein Termin ist immer dieselbe Sache: ein Datum, ab dem etwas nicht mehr
+ * gilt. Woran es hängt, sagt `art`.
+ *
+ * DAS BEANTWORTET AUCH DIE OFFENE EIGENTÜMER-FRAGE, ohne sie zu
+ * entscheiden. Im Backlog steht: soll das Lager Verbrauchsmaterial mit
+ * Haltbarkeit führen (Batterien, Gaffa, Filter) oder nur Rental-Material
+ * mit Prüfterminen? Ein Ablaufdatum ist in diesem Modell ein Termin ohne
+ * Intervall — es braucht kein eigenes Feld, egal wie die Antwort ausfällt.
+ * Was die Antwort noch entscheidet, ist die BEDIENUNG (führt man Chargen?
+ * bucht man Verbrauch ab?), und die steht weiterhin offen.
+ */
+export type FristArt = 'dguv-v3' | 'kalibrierung' | 'wartung' | 'akku' | 'sonstige'
+
+export interface Frist {
+  art: FristArt
+  /**
+   * Freitext, wenn `art` es nicht sagt.
+   *
+   * Bei `sonstige` ist er das Einzige, was den Termin benennt — ohne ihn
+   * stünde in der Liste „sonstige", und niemand wüsste, was zu tun ist.
+   */
+  bezeichnung?: string
+  /** Wann sie zuletzt erledigt wurde (ISO-Datum). */
+  zuletzt?: string
+  /** Abstand bis zur nächsten, in Monaten. */
+  intervallMonate?: number
+  /**
+   * Der nächste Termin (ISO-Datum).
+   *
+   * ES GIBT GENAU EINE WAHRHEIT UND EINE ABLEITUNG DAVON. Steht hier ein
+   * Datum, gilt es. Steht keines, und sind `zuletzt` und `intervallMonate`
+   * da, rechnet `domain/lib/fristen.ts` eines aus — und sagt in der Zeile
+   * dazu, dass es gerechnet ist. Fehlt beides, gibt es keinen Termin, und
+   * es wird keiner geraten: eine erfundene Frist schickt jemanden zu einer
+   * Prüfung, die niemand angesetzt hat, oder schlimmer, sie gibt Entwarnung
+   * für eine, die längst fällig war.
+   */
+  faellig?: string
+}
+
 export interface InventoryItem {
   id: string
   /** Modell-/Artikelname (Pflicht, Anzeigename). */
@@ -417,6 +469,15 @@ export interface InventoryUnit {
   anschaffung?: Anschaffung
   /** Bedarf 118 — wofür sie versichert ist. Siehe `Versicherungswert`. */
   versicherungswert?: Versicherungswert
+  /**
+   * B-65 — was an dieser Einheit turnusmässig fällig ist. Siehe `Frist`.
+   *
+   * An der EINHEIT und nicht am Artikel: geprüft, kalibriert und mit einer
+   * Plakette beklebt wird das einzelne Gerät. „Die ULXD2 sind im März
+   * geprüft" ist eine Aussage über zwölf Geräte, von denen zwei in der
+   * Werkstatt standen — und genau die zwei nimmt jemand mit.
+   */
+  fristen?: Frist[]
   /** Freie Notiz. */
   notes?: string
   /** Append-only Historie (Bewegungen, Zustandswechsel). */

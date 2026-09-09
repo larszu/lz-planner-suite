@@ -78,6 +78,34 @@ export interface Versicherungswert {
   stand?: string
 }
 
+/**
+ * Was an einer Einheit turnusmaessig faellig ist (B-65).
+ *
+ * Gepflegt und ausgewertet wird das im Lager-Werkzeug
+ * (`inventory-planner`, Block „Fristen"); dieses Paket FUEHRT es, weil es
+ * ueber `avplan-inventory` reist. Der cable-planner baut beim Laden jede
+ * Einheit Feld fuer Feld neu auf -- ein Feld, das der Typ nicht kennt,
+ * haette er eingelesen und beim Export still weggeschrieben. Die Ampel im
+ * Lager wuerde danach nicht schweigen, sondern „nichts faellig" melden.
+ *
+ * Ein generischer Termin und nicht drei Felder: ein Termin ist immer
+ * dieselbe Sache -- ein Datum, ab dem etwas nicht mehr gilt. Woran es
+ * haengt, sagt `art`.
+ */
+export type FristArt = 'dguv-v3' | 'kalibrierung' | 'wartung' | 'akku' | 'sonstige'
+
+export interface Frist {
+  art: FristArt
+  /** Freitext, wenn `art` es nicht sagt (bei `sonstige` das Einzige). */
+  bezeichnung?: string
+  /** Wann sie zuletzt erledigt wurde (ISO-Datum). */
+  zuletzt?: string
+  /** Abstand bis zur naechsten, in Monaten. */
+  intervallMonate?: number
+  /** Der naechste Termin (ISO-Datum). Ohne ihn und ohne Intervall gibt es keinen. */
+  faellig?: string
+}
+
 export interface InventoryItem {
   id: string
   /** Modell-/Artikelname (Pflicht, Anzeigename). */
@@ -378,6 +406,12 @@ export interface InventoryUnit {
   anschaffung?: Anschaffung
   /** Bedarf 118 — wofuer sie versichert ist. Siehe `Versicherungswert`. */
   versicherungswert?: Versicherungswert
+  /**
+   * B-65 -- was an dieser Einheit turnusmaessig faellig ist. Siehe `Frist`.
+   * An der EINHEIT und nicht am Artikel: geprueft, kalibriert und mit einer
+   * Plakette beklebt wird das einzelne Geraet.
+   */
+  fristen?: Frist[]
   /** Freie Notiz. */
   notes?: string
   /** Append-only Historie (Bewegungen, Zustandswechsel). */

@@ -123,8 +123,21 @@ export const fallbackMuster = () =>
  * meldete prompt eine Store-Zeile („for (const it of current) if …") als
  * englischen Fallback. Ein Waechter, der bei richtigem Code anschlaegt, wird
  * abgeschaltet und nicht gelesen.
+ *
+ * UND DIESELBE FALLE STAND NOCH IN DER DATEI (korrigiert 2026-09-09). Die
+ * Beschraenkung auf `.tsx` hat sie nur verkleinert, nicht behoben: eine
+ * `.tsx`-Datei enthaelt auch gewoehnlichen Code, und dort steht `=>`. Der
+ * Pfeil endete im Muster als Tag-Ende, und die Zeilen danach wurden als
+ * sichtbarer Text gelesen — beim Bau der Fristen-Ampel schlug der Waechter
+ * so auf `(x) => x.id === neueFrist.unitId) / if (!u || …) return` an, weil
+ * darin das englische Wort „if" steht. An dem Code war nichts falsch.
+ *
+ * Ausgenommen sind deshalb beide Faelle, in denen ein `>` sicher KEIN
+ * Tag-Ende ist: `=>` (Pfeilfunktion) und `>=` (Vergleich). Das kostet keine
+ * Abdeckung — ein JSX-Tag endet nie so —, und es nimmt dem Waechter den
+ * einzigen Grund, den jemand haette, ihn abzuschalten.
  */
-export const jsxTextMuster = () => />([^<>{}]{4,300})</g;
+export const jsxTextMuster = () => /(?<!=)>(?!=)([^<>{}]{4,300})</g;
 
 function alleDateien(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

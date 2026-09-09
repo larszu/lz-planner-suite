@@ -22,6 +22,8 @@ import type {
   Geldbetrag,
   Anschaffung,
   Versicherungswert,
+  Frist,
+  FristArt,
 } from '../types/inventory'
 import { normaliseFaultEvent } from '../lib/faultHistory'
 import type { BedarfsZeile } from '../types/bedarf'
@@ -294,6 +296,51 @@ const healVersicherungswert = (raw: unknown): Versicherungswert | undefined => {
   return { betrag, ...(typeof r.stand === 'string' && r.stand.trim() ? { stand: r.stand.trim() } : {}) }
 }
 
+const FRIST_ARTEN: FristArt[] = ['dguv-v3', 'kalibrierung', 'wartung', 'akku', 'sonstige']
+
+/**
+ * Fristen heilen (B-65).
+ *
+ * EIN TERMIN OHNE JEDE ZEITANGABE IST KEIN TERMIN und faellt weg: weder
+ * `faellig` noch (`zuletzt` + `intervallMonate`) heisst, dass nichts
+ * auszurechnen ist. So ein Eintrag stuende in der Liste und saehe aus wie
+ * eine Zusage, dass jemand den Termin im Blick hat.
+ *
+ * Eine unbekannte `art` wird zu `sonstige` und NICHT verworfen: dass ein
+ * neuerer Stand eine Sorte kennt, die dieser nicht kennt, ist kein Grund,
+ * einen eingetragenen Termin zu loeschen. Die `bezeichnung` bleibt dabei
+ * stehen, damit der Mensch weiterhin liest, worum es geht.
+ */
+const healFristen = (raw: unknown): Frist[] | undefined => {
+  if (!Array.isArray(raw)) return undefined
+  const out: Frist[] = []
+  for (const e of raw) {
+    if (!e || typeof e !== 'object') continue
+    const f = e as Partial<Frist>
+    const faellig = typeof f.faellig === 'string' && f.faellig.trim() ? f.faellig.trim() : undefined
+    const zuletzt = typeof f.zuletzt === 'string' && f.zuletzt.trim() ? f.zuletzt.trim() : undefined
+    const intervallMonate =
+      typeof f.intervallMonate === 'number' && f.intervallMonate > 0
+        ? Math.round(f.intervallMonate)
+        : undefined
+    if (!faellig && !(zuletzt && intervallMonate)) continue
+    const art: FristArt =
+      typeof f.art === 'string' && (FRIST_ARTEN as string[]).includes(f.art)
+        ? (f.art as FristArt)
+        : 'sonstige'
+    out.push({
+      art,
+      ...(typeof f.bezeichnung === 'string' && f.bezeichnung.trim()
+        ? { bezeichnung: f.bezeichnung.trim() }
+        : {}),
+      ...(zuletzt ? { zuletzt } : {}),
+      ...(intervallMonate ? { intervallMonate } : {}),
+      ...(faellig ? { faellig } : {}),
+    })
+  }
+  return out.length > 0 ? out : undefined
+}
+
 const healUnit = (raw: unknown): InventoryUnit | null => {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Partial<InventoryUnit>
@@ -349,6 +396,10 @@ const healUnit = (raw: unknown): InventoryUnit | null => {
     // (siehe `inventoryPortable.ts`).
     anschaffung: healAnschaffung(r.anschaffung),
     versicherungswert: healVersicherungswert(r.versicherungswert),
+    // B-65 — dieselbe Falle, dritter Anlauf: was hier fehlt, ist beim
+    // naechsten Laden weg. Bei einer Pruef-Frist heisst das, dass ein
+    // ungeprueftes Geraet still aus der Ampel verschwindet.
+    fristen: healFristen(r.fristen),
     history,
     createdAt: typeof r.createdAt === 'string' ? r.createdAt : now,
     updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : now,
@@ -500,6 +551,9 @@ interface InventoryState {
         // der Einheit und werden hier gepflegt, nicht ueber Bewegungen.
         | 'anschaffung'
         | 'versicherungswert'
+        // B-65 — die Termine der Einheit. Stammdaten wie die zwei darueber:
+        // sie entstehen nicht aus einer Bewegung, sondern werden gepflegt.
+        | 'fristen'
       >
     >,
   ) => void

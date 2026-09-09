@@ -50,7 +50,25 @@ export const INVENTORY_FORMAT = 'avplan-inventory';
 //
 // Aeltere Dateien (v1-v4) lesen wir unveraendert weiter; ihre Artikel haben
 // schlicht keine Mindestmenge, und das ist nicht 0, sondern UNBEWERTET.
-export const INVENTORY_FORMAT_VERSION = 5;
+//
+// Version 6 (B-65): `InventoryUnit.fristen` -- was an einer Einheit
+// turnusmaessig faellig ist (DGUV-V3-Pruefung, Kalibrierung, Wartung,
+// Akku). Ausgewertet wird das im Lager-Werkzeug; dieses Paket fuehrt es,
+// damit es unterwegs nicht verlorengeht. Der Verlust, den die Version
+// verhindert, sitzt wie bei 3, 4 und 5 nicht hier, sondern im
+// cable-planner: dessen `healUnit` baut jede Einheit Feld fuer Feld neu
+// auf.
+//
+// Und er wiegt hier mehr als bei jedem Feld davor. Eine verlorene
+// Mindestmenge kostet eine Nachbestellung; eine verlorene DGUV-V3-Frist
+// stellt ein ungepruefetes Geraet auf eine Veranstaltung -- und die Ampel
+// im Lager wuerde dabei nicht schweigen, sondern das Gegenteil sagen:
+// „nichts faellig".
+//
+// Aeltere Dateien (v1-v5) lesen wir unveraendert weiter; ihre Einheiten
+// haben schlicht keine Fristen, und das ist nicht „geprueft", sondern
+// UNBEWERTET.
+export const INVENTORY_FORMAT_VERSION = 6;
 
 export interface InventorySnapshot {
   items: InventoryItem[];

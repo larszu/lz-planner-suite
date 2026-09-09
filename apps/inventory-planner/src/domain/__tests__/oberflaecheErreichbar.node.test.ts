@@ -90,6 +90,9 @@ const erreichbar = (): Set<string> => {
  * neu dazu (B-65, „Unter Ziel"); ohne den Block im Bericht stünde die Zahl
  * sofort wieder auf 1. Genau dafür ist sie da: nicht als Denkmal für einen
  * erledigten Durchgang, sondern als Bedingung für jedes neue Rechenwerk.
+ * Beim zweiten Mal (`fristen.ts`, die Fristen-Ampel) war es dieselbe
+ * Bedingung, und sie war beim Bauen schon eingepreist — was der Zweck der
+ * Sache ist.
  *
  * Beim ersten Schritt hätte eine gepflegte Liste die falsche Zahl gemeldet
  * (zwei statt drei). Das ist der Grund, warum hier gerechnet und nicht
@@ -136,6 +139,8 @@ describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
       'insuranceSchedule.ts',
       'damageRegister.ts',
       'inventoryCommitment.ts',
+      // Ansicht `Werte & Schäden`, Block „Fristen"
+      'fristen.ts',
     ]) {
       expect(
         gesehen.has(join(LIB, m)),
