@@ -201,7 +201,7 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-7 · Intercom-Vokabular existiert zweimal
 
-* **Status:** offen — **entschieden (E-2, 2026-09-08, vom Eigentümer): eigener `.avplan`-Slot für Intercom; Vokabel bleibt das neutrale Format aus B-8, in einem gemeinsamen Paket.** Der Slot trägt nur, was der Plan nicht hergibt (Kanäle, Key-Gruppen, Beschriftung, Talk/Listen-Matrix); alles Übrige steht darin als Verweis über die Objekt-Id. Was bleibt, ist Bauarbeit
+* **Status:** offen, aber nur noch Schritt 1 von dreien — **entschieden (E-2, 2026-09-08, vom Eigentümer): eigener `.avplan`-Slot für Intercom; Vokabel bleibt das neutrale Format aus B-8, in einem gemeinsamen Paket.** Der Slot trägt nur, was der Plan nicht hergibt (Kanäle, Key-Gruppen, Beschriftung, Talk/Listen-Matrix); alles Übrige steht darin als Verweis über die Objekt-Id. **Schritt 2 und 3 des Zuschnitts unten sind mit `cable#791` erledigt** — die Tastenbelegung steht im Modell und der Export darf sie schreiben; offen ist der Slot selbst
 * **Befund:** `GreenGoConfig` lebt in `cable-planner`,
   `Broadcast-intercom/packages/shared/src/index.ts` (437 Zeilen, 33 Exporte)
   führt dasselbe Feld unabhängig. Kein gemeinsames Paket, kein Intercom-Slot in
@@ -223,13 +223,14 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
     listen}`. Das ist die Vokabel, die der Slot braucht — sie muss nur aus der
     *Austauschdatei* (mit `format`, `version`, `exportedAt`) in einen
     *Projekt-Slot* getrennt werden. Ein Projekt trägt keinen Format-Marker.
-  * **Die Key-Gruppen sind der Haken.** Sie existieren in KEINEM Modell:
-    `GreenGoUser` führt `groupIds` — eine ungeordnete MENGE —, und
-    `exportGreengo.ts` sagt in seinem eigenen Kommentar, warum das so ist:
-    „Der Plan kennt die Tastenpositionen gar nicht." Die Positionen leben
-    ausschliesslich im importierten Roh-Preset und werden von
+  * **Die Key-Gruppen waren der Haken.** Sie existierten in KEINEM Modell:
+    `GreenGoUser` führte `groupIds` — eine ungeordnete MENGE —, und
+    `exportGreengo.ts` sagte in seinem eigenen Kommentar, warum das so ist:
+    „Der Plan kennt die Tastenpositionen gar nicht." Die Positionen lebten
+    ausschliesslich im importierten Roh-Preset und wurden von
     `mergeButtonFunctions` geschützt: „Positionen kommen aus dem Preset und
-    werden nie neu vergeben."
+    werden nie neu vergeben." **Erledigt mit `cable#791`** — siehe Schritt 2
+    und 3 unten.
 
 * **Damit ist die erste Frage von E-2 nicht Bauarbeit, sondern eine
   Umkehrung.** Wenn der Slot die Tastenbelegung führt, ist der Plan ab dann
@@ -239,21 +240,38 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Datenverlust im Editor-Weg, und er „fällt nicht am Bildschirm auf, sondern
   in der Probe". Wer den Slot einführt, ohne diese Merge-Regel mitzudrehen,
   baut den Verlust wieder ein.
-* **Zuschnitt, der daraus folgt** (drei Schritte, in dieser Reihenfolge):
-  1. Den Slot mit dem anlegen, was schon modelliert ist — Kanäle, Stationen,
-     Talk/Listen, Beschriftung —, als Projekt-Slot statt Austauschdatei.
-  2. Die Tastenbelegung ins Modell heben: beim Import aus `ButtonFunctions`
-     lesen (die Struktur steht in `importGreengo.ts:302-311` und
-     `exportGreengo.ts:66-75`, also lesbar und nicht geraten) statt sie zur
-     Gruppenmenge einzuschmelzen.
-  3. Erst dann `mergeButtonFunctions` umdrehen: was der Plan jetzt WEISS,
-     darf er auch schreiben. Vorher nicht.
-* **Was dabei NICHT passieren darf:** Schritt 1 ohne 2 und 3 auszuliefern.
-  Dann stünde die Zugehörigkeit an zwei Orten — im Slot und in
-  `greengoConfig` — und die Tastenbelegung an einem dritten (dem Roh-Preset).
-  `greengoConfig` hängt ausserdem an zehn Stellen im Renderer (Knoten-Layout,
-  Beschriftung, Canvas, Mobile-Share); sie zur Projektion zu machen ist die
-  eigentliche Grösse dieses Punktes.
+* **Zuschnitt, der daraus folgt** (drei Schritte — Schritt 2 und 3 sind
+  erledigt, 1 steht noch aus):
+  1. **Offen.** Den Slot mit dem anlegen, was schon modelliert ist — Kanäle,
+     Stationen, Talk/Listen, Beschriftung —, als Projekt-Slot statt
+     Austauschdatei.
+  2. ~~Die Tastenbelegung ins Modell heben~~ **erledigt 2026-09-09
+     (`cable#791`).** `GreenGoKey {page, button, groupId}` und
+     `GreenGoUser.keys`; der Import liest `ButtonFunctions` jetzt IMMER statt
+     nur im Rückfall, über ALLE Seiten und mit Position. `groupIds` bleibt
+     daneben stehen, weil eine Zugehörigkeit ohne Taste ein realer Zustand
+     ist („Karte voll"), und ist jetzt die Vereinigung aus Mitgliederliste und
+     Tastenbelegung — womit „jede Gruppe auf einer Taste steht in `groupIds`"
+     von selbst gilt statt gehofft zu werden.
+  3. ~~`mergeButtonFunctions` umdrehen~~ **erledigt im selben PR.** Die Regel
+     nimmt `planKenntPositionen`: kennt der Plan die Karte, ist seine Karte
+     die Karte — über alle Seiten; kennt er sie nicht (Projekt von vor E-2),
+     gilt die alte Regel unverändert. Der Kommentar, der die
+     Gegenentscheidung begründete, ist mitgedreht. Was der Import nie als
+     Gruppe lesen konnte (`'--'`, Objekte, eine Sonderfunktion späterer
+     Firmware), bleibt Wert für Wert stehen — der Teil von ADR-005 Regel 2,
+     der weiter gilt.
+* **Die Warnung von 2026-09-08 ist damit nicht hinfällig, sondern erfüllt.**
+  Sie lautete: Schritt 1 ohne 2 und 3 auszuliefern. Dann stünde die
+  Zugehörigkeit an zwei Orten — im Slot und in `greengoConfig` — und die
+  Tastenbelegung an einem dritten (dem Roh-Preset). **Der dritte Ort ist weg:**
+  die Tastenbelegung steht im Modell. Wer Schritt 1 jetzt baut, hat sie
+  bereits, und der Slot muss sie als DIESELBE eine Angabe führen — nicht als
+  zweite Kopie neben `GreenGoUser.keys`, sonst entsteht der Verlust an anderer
+  Stelle neu.
+* **Was für Schritt 1 die eigentliche Grösse bleibt:** `greengoConfig` hängt
+  an zehn Stellen im Renderer (Knoten-Layout, Beschriftung, Canvas,
+  Mobile-Share); sie zur Projektion zu machen ist der Aufwand dieses Punktes.
 
 ---
 
@@ -2644,6 +2662,31 @@ belegbar, dort sind sie erprobt.
   Netz; und die Regel „schaltbar genau dann, wenn es Stellungen gibt" wurde
   zunächst ein zweites Mal geprüft, obwohl sie schon einen Ort hat.
 * **Damit ist B-52 abgeschlossen.**
+
+### B-53 · Die vendorierten Doku-Kennzahlen nennen eine Version, die es nicht mehr gibt
+
+* **Status:** offen, klein. Aufgefallen beim Vendoring von `cable#791`
+  (E-2 Schritt 2+3) am 2026-09-09.
+* **Befund:** `apps/cable-planner/package.json` steht auf `8.3.1`, der
+  Upstream auf `9.0.1`. `scripts/update-doc-stats.mjs` liest die Version von
+  dort, also schreiben `docs/architecture.md`, `docs/app-structure.html` und
+  `docs/comparison.html` in der Suite „Stand: v8.3.1" über einen Quelltext,
+  der v9.0.1 ist. Modul-Zahl und LOC daneben stimmen — nur die Version nicht,
+  und das ist die unangenehmere Sorte falsch: eine Zahl, die sich richtig
+  anfühlt.
+* **Warum das nicht einfach ein Vendoring-Loch ist:** `planner-drift.mjs`
+  lässt `package.json` mit Absicht draussen („Monorepo und Standalone haben
+  unterschiedliche Abhängigkeiten"). Der Ausschluss ist richtig für die
+  Abhängigkeiten und schüttet das Versionsfeld mit aus — es hat mit dem
+  Monorepo-Zuschnitt nichts zu tun.
+* **Abhilfe (nicht im selben PR gemacht, um ihn nicht zu verbreitern):**
+  entweder das Feld `version` beim Vendoring mitziehen — dann braucht
+  `planner-drift.mjs` eine benannte Ausnahme vom Ausschluss, damit die
+  nächste Sitzung nicht wieder darüber stolpert — oder `update-doc-stats.mjs`
+  in der Suite die Version aus dem Upstream-Stand lesen lassen. Die erste
+  Variante ist die ehrlichere: die vendorierte App IST v9.0.1.
+* **Aufwand:** klein.
+
 
 ## Eigentümer-Entscheidungen
 
