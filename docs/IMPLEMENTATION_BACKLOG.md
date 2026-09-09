@@ -212,6 +212,48 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   `GreenGoConfig` als Ausgabe-Projektion — und ja, `.avplan` bekommt den vierten
   Slot.
 * **Aufwand:** groß
+* **Nachgemessen 2026-09-08, bevor gebaut wurde — und der Befund verschiebt
+  den Zuschnitt.** Die Zeile oben sagte „was bleibt, ist Bauarbeit". Das
+  stimmt für drei der vier Dinge, die der Slot tragen soll, und für das vierte
+  nicht.
+
+  * **Kanalzuordnung, Beschriftung, Talk/Listen-Matrix** stehen fertig in
+    `types/intercomExchange.ts` (B-8): `IntercomChannel`, `IntercomStation`
+    mit `shortName` und `equipmentId`, `IntercomMembership {channelId, talk,
+    listen}`. Das ist die Vokabel, die der Slot braucht — sie muss nur aus der
+    *Austauschdatei* (mit `format`, `version`, `exportedAt`) in einen
+    *Projekt-Slot* getrennt werden. Ein Projekt trägt keinen Format-Marker.
+  * **Die Key-Gruppen sind der Haken.** Sie existieren in KEINEM Modell:
+    `GreenGoUser` führt `groupIds` — eine ungeordnete MENGE —, und
+    `exportGreengo.ts` sagt in seinem eigenen Kommentar, warum das so ist:
+    „Der Plan kennt die Tastenpositionen gar nicht." Die Positionen leben
+    ausschliesslich im importierten Roh-Preset und werden von
+    `mergeButtonFunctions` geschützt: „Positionen kommen aus dem Preset und
+    werden nie neu vergeben."
+
+* **Damit ist die erste Frage von E-2 nicht Bauarbeit, sondern eine
+  Umkehrung.** Wenn der Slot die Tastenbelegung führt, ist der Plan ab dann
+  ihr Eigentümer — und `mergeButtonFunctions` verkörpert heute die
+  entgegengesetzte Entscheidung, aus einem benannten Grund: ein Export, der
+  Positionen aus der Array-Reihenfolge neu erfand, war der letzte
+  Datenverlust im Editor-Weg, und er „fällt nicht am Bildschirm auf, sondern
+  in der Probe". Wer den Slot einführt, ohne diese Merge-Regel mitzudrehen,
+  baut den Verlust wieder ein.
+* **Zuschnitt, der daraus folgt** (drei Schritte, in dieser Reihenfolge):
+  1. Den Slot mit dem anlegen, was schon modelliert ist — Kanäle, Stationen,
+     Talk/Listen, Beschriftung —, als Projekt-Slot statt Austauschdatei.
+  2. Die Tastenbelegung ins Modell heben: beim Import aus `ButtonFunctions`
+     lesen (die Struktur steht in `importGreengo.ts:302-311` und
+     `exportGreengo.ts:66-75`, also lesbar und nicht geraten) statt sie zur
+     Gruppenmenge einzuschmelzen.
+  3. Erst dann `mergeButtonFunctions` umdrehen: was der Plan jetzt WEISS,
+     darf er auch schreiben. Vorher nicht.
+* **Was dabei NICHT passieren darf:** Schritt 1 ohne 2 und 3 auszuliefern.
+  Dann stünde die Zugehörigkeit an zwei Orten — im Slot und in
+  `greengoConfig` — und die Tastenbelegung an einem dritten (dem Roh-Preset).
+  `greengoConfig` hängt ausserdem an zehn Stellen im Renderer (Knoten-Layout,
+  Beschriftung, Canvas, Mobile-Share); sie zur Projektion zu machen ist die
+  eigentliche Grösse dieses Punktes.
 
 ---
 
