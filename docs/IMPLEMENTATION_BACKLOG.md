@@ -2831,6 +2831,33 @@ eine Antwort:**
   ausdrücklich, ohne sie zu bauen).
 
 
+### B-56 · „Upstream changes not yet carried over: None" heisst nicht „nichts fehlt"
+
+* **Status:** Befund erhoben 2026-09-09 beim Vendoring von `cable#793`.
+  Behoben ist der konkrete Fall; die Lehre steht hier, weil sie beim nächsten
+  Vendoring wieder greift.
+* **Was passiert ist.** Nach dem Vendoring meldete `planner-drift.mjs` unter
+  „Upstream changes not yet carried over" ein sauberes **None** — und
+  `tests/scanNieAllein.test.ts` fehlte in der Suite trotzdem. Fast wäre die
+  Baseline mit dieser Lücke neu geschrieben und die Lücke damit als
+  Normalzustand festgeschrieben worden.
+* **Warum das kein Fehler des Skripts ist.** Der Abschnitt sagt selbst, was er
+  misst: „Lines upstream ADDED **since the baseline** … that are missing from
+  the suite copy **entirely**." Er vergleicht ZEILEN in Dateien, die es auf
+  beiden Seiten gibt. Eine ganze NEUE Datei taucht dort nicht auf — sie steht
+  in der Tabelle darüber, in der Spalte **`only-upstream`**.
+* **Die Regel fürs nächste Mal:** beim Vendoring wird die Spalte
+  `only-upstream` gelesen, nicht der Absatz darunter. `only-upstream: 1` heisst
+  „eine Datei ist upstream und hier nicht" — und das ist genau der Fall, den
+  ein Drei-Wege-Merge nie zeigt, weil er nur Dateien anfasst, die es beidseits
+  gibt. Dasselbe gilt für den Typ-Check: er fand beim Intercom-Slot einen
+  suite-eigenen Leser (`shellRevealBridge.ts`), den der Merge ebenfalls nicht
+  sehen konnte.
+* **Zusammen ergibt das drei Prüfungen nach jedem Vendoring**, und keine
+  ersetzt eine andere: die Konflikt-Anzeige des Merges, `only-upstream` in der
+  Drift-Tabelle, und `tsc` plus Testlauf IN der vendorierten Kopie.
+
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden

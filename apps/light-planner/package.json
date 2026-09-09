@@ -35,10 +35,10 @@
     "console:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/console-export-check.ts",
     "shop:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/shop-order-check.ts",
     "labels:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/label-sheet-check.ts",
-  "cables:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/rig-cables-check.ts",
-  "equipment:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/equipment-export-check.ts",
-  "autopatch:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/autopatch-boundary-check.ts",
-  "order:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/running-order-check.ts",
+    "cables:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/rig-cables-check.ts",
+    "equipment:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/equipment-export-check.ts",
+    "autopatch:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/autopatch-boundary-check.ts",
+    "order:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/running-order-check.ts",
     "venue:check": "node --experimental-strip-types scripts/venue-exchange-check.ts",
     "avplan:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/avplan-check.ts",
     "mvr:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/mvr-check.ts",
@@ -49,7 +49,8 @@
     "docs:check": "node --experimental-strip-types scripts/docs-reachable-check.ts",
     "actions:check": "node --experimental-strip-types scripts/actions-node-runtime.ts",
     "brand:check": "node --experimental-strip-types scripts/brand-tokens-check.ts",
-    "preview:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/inventory-import-preview-check.ts"
+    "preview:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/inventory-import-preview-check.ts",
+    "retime:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/retime-check.ts"
   },
   "dependencies": {
     "@avplan/inventory-core": "*",
