@@ -76,16 +76,24 @@ const erreichbar = (): Set<string> => {
 /**
  * Wie viele Module noch keinen Weg haben.
  *
- * Sank am 2026-09-09 von 10 auf 7. Zwei davon waren beabsichtigt
- * (`inventoryScan`, `inventoryAudit`); das dritte war `unitIdentity`, und
- * das ist der Punkt, warum hier gerechnet und nicht gezählt wird: es kam
- * MIT, weil `inventoryAudit` seinen `unitLabel` braucht. Eine gepflegte
- * Liste hätte zwei gemeldet und die Zahl wäre falsch geblieben.
+ * 2026-09-09, in zwei Schritten von 10 auf 3:
  *
- * Wer die nächste Ansicht baut, setzt diese Zahl herunter — nicht der Test
- * soll nachgeben, sondern der Zustand.
+ *   10 → 7  Ansicht `Inventur` — `inventoryScan`, `inventoryAudit`, und
+ *           `unitIdentity` kam MIT, weil `auditScan` seinen `unitLabel`
+ *           braucht.
+ *    7 → 3  Ansicht `Bericht` — `inventoryReport`, `inventoryPortable`,
+ *           `packList`, `inventoryPrint`.
+ *
+ * Beide Male hätte eine gepflegte Liste die falsche Zahl gemeldet: beim
+ * ersten Mal zwei statt drei. Das ist der Grund, warum hier gerechnet und
+ * nicht aufgezählt wird.
+ *
+ * Übrig sind `damageRegister`, `insuranceSchedule` und
+ * `inventoryCommitment` — die drei, die von Schäden, Fristen und Zusagen
+ * handeln. Wer die nächste Ansicht baut, setzt diese Zahl herunter; nicht
+ * der Test soll nachgeben, sondern der Zustand.
  */
-const SCHRANKE = 7
+const SCHRANKE = 3
 
 describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
   const gesehen = erreichbar()
@@ -100,12 +108,24 @@ describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
     expect(gesehen.size, 'der Import-Graph ist leer geblieben').toBeGreaterThan(20)
   })
 
-  it('2. Scan und Inventur sind erreichbar — dafür wurde die Ansicht gebaut', () => {
-    for (const m of ['inventoryScan.ts', 'inventoryAudit.ts']) {
+  it('2. wofür eine Ansicht gebaut wurde, ist auch erreichbar', () => {
+    // Namentlich und nicht nur über die Zahl: die Schranke allein liesse
+    // offen, WELCHE sieben erreicht sind. Fiele eine dieser Ansichten weg,
+    // koennte eine andere die Zahl halten und der Verlust bliebe unbenannt.
+    for (const m of [
+      // Ansicht `Inventur`
+      'inventoryScan.ts',
+      'inventoryAudit.ts',
+      // Ansicht `Bericht`
+      'inventoryReport.ts',
+      'inventoryPortable.ts',
+      'packList.ts',
+      'inventoryPrint.ts',
+    ]) {
       expect(
         gesehen.has(join(LIB, m)),
         `${m} ist von ui/App.tsx aus nicht erreichbar — dann gibt es die ` +
-          'Inventur-Ansicht für den Lageristen nicht',
+          'Ansicht, für die es gebaut wurde, für den Lageristen nicht',
       ).toBe(true)
     }
   })
@@ -127,11 +147,13 @@ describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
     ).toBe(ohneWeg.length)
   })
 
-  it('5. die Ansicht liegt im Verzeichnis der Oberfläche', () => {
+  it('5. die Ansichten liegen im Verzeichnis der Oberfläche', () => {
     // Klein, aber es hält die Grenze aus ADR-006: Rechnen unter `domain/`,
     // Bedienen unter `ui/`.
-    const p = join(SRC, 'ui', 'Inventur.tsx')
-    expect(existsSync(p), 'src/ui/Inventur.tsx fehlt').toBe(true)
-    expect(relative(SRC, p).startsWith('ui')).toBe(true)
+    for (const datei of ['Inventur.tsx', 'Bericht.tsx']) {
+      const p = join(SRC, 'ui', datei)
+      expect(existsSync(p), `src/ui/${datei} fehlt`).toBe(true)
+      expect(relative(SRC, p).startsWith('ui')).toBe(true)
+    }
   })
 })

@@ -277,3 +277,118 @@ th {
 .inventur tr.ergebnis-not-in-inventory td {
   color: var(--warn);
 }
+
+/* ── Bericht (B-65, zweite Zeile) ──────────────────────────────────────────
+   Kacheln oben, Aufschlüsselungen als Raster darunter, Packliste und
+   Austausch als eigene Blöcke. Dieselben Regeln wie in der Inventur: keine
+   Rundungen, keine Schatten (ADR-007), Trefferflächen bei 24 px, und unter
+   900 px brechen die Spalten untereinander. */
+.bericht .kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.bericht .kachel {
+  border: 1px solid var(--rand);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.bericht .kachel strong {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.bericht .kachel span {
+  color: var(--leise);
+  font-size: 0.85rem;
+}
+
+.bericht .block {
+  border: 1px solid var(--rand);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.bericht .block h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.6rem;
+}
+
+.bericht .spalten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.bericht .zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.bericht label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--leise);
+  font-size: 0.85rem;
+}
+
+.bericht select,
+.bericht input[type='file'] {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  min-height: 24px;
+  font: inherit;
+}
+
+.bericht button {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.4rem 0.9rem;
+  min-height: 24px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bericht button:disabled {
+  color: var(--leise);
+  cursor: default;
+}
+
+/* Wie in der Inventur: `.warnung td` weiter oben trifft einen Absatz nicht,
+   und genau dieser soll auffallen — er sagt, worauf die Tagesmiete daneben
+   NICHT beruht. */
+.bericht p.warnung {
+  color: var(--warn);
+  max-width: 52rem;
+  line-height: 1.5;
+}
+
+.bericht .hinweis {
+  color: var(--leise);
+  max-width: 52rem;
+  line-height: 1.5;
+}
+
+.bericht .abgewiesen {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--warn);
+}
+
+.bericht .abgewiesen em {
+  color: var(--leise);
+  font-style: normal;
+}

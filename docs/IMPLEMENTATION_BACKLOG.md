@@ -553,8 +553,9 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-65 · Das Lagermodul hat zehn gebaute Rechenwerke ohne eine einzige Bedienung
 
-* **Status:** **erste Zeile GEBAUT** (`inventory#2`: Inventur-Ansicht, 10 → 7
-  Module ohne Weg), der Rest **offen** — Befund gemessen 2026-09-09.
+* **Status:** **zwei Zeilen GEBAUT** (`inventory#2` Inventur, `inventory#3`
+  Bericht — 10 → 7 → **3** Module ohne Weg), der Rest **offen** — Befund
+  gemessen 2026-09-09.
 * **Auslöser:** Der Eigentümer schickte fünf Bildschirmfotos einer fremden
   Bestands-App („Vorratix", Haushalts-Vorrat) mit dem Satz: „Analysiere diese
   paar Fotos für das Lagermodul. Es fehlen noch einige Funktionen."
@@ -616,6 +617,19 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   der Suche, und der Weg ohne Scan als Abhak-Liste. Ein Wächter rechnet den
   Import-Graph nach, statt eine Liste zu pflegen — sonst hätte er zwei
   gemeldet statt drei.
+* **GEBAUT, zweite Zeile — `inventory#3` (2026-09-09):** Die Ansicht
+  **Bericht** hängt `inventoryReport`, `inventoryPortable`, `packList` und
+  `inventoryPrint` an: Kennzahlen, Packliste als A4-Blatt, und der
+  Austausch über `avplan-inventory`. **7 → 3.** Drei Entscheidungen stehen
+  im Kopf der Datei: die Tagesmiete sagt daneben, über wie viele
+  Positionen sie NICHT rechnet; der Import fragt `merge` oder `replace`
+  (Vorgabe `merge`); und der Import-Bericht wird gezeigt, nicht nur seine
+  Zahl — einen Ablehnungs*grund* gibt `ImportRejection` nicht mit, und
+  einen zu erfinden wäre schlimmer als keiner.
+* **Was noch keinen Weg hat — drei:** `damageRegister`,
+  `insuranceSchedule`, `inventoryCommitment`. Sie gehören inhaltlich
+  zusammen (Schäden, Fristen, Zusagen) und sind damit vermutlich **eine**
+  weitere Ansicht, nicht drei.
 * **Die Reihenfolge, und sie ergibt sich aus dem Hauptbefund:** zuerst die
   zehn unerreichbaren Module an eine Oberfläche hängen, dann das Neue bauen.
   Eine elfte Rechnung ohne Knopf wäre der teuerste Weg, das Problem zu
