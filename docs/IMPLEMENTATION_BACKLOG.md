@@ -2707,6 +2707,43 @@ belegbar, dort sind sie erprobt.
 * **Aufwand:** klein.
 
 
+### B-54 · Der Beleg-Dialog baute den Beleg selbst — geprüft war der andere Weg
+
+* **Status:** ~~offen~~ **erledigt 2026-09-09.** Gefunden beim Abarbeiten von
+  **Bedarf 99** („BillingDoc must carry due date and payment terms as
+  structured data, not prose").
+* **Befund, und er hat zwei Hälften.**
+  * `apps/shell/src/data/billing.ts` führt `buildBillingDoc` — die Funktion,
+    auf die sich `apps/shell/test/billing.test.ts` bezieht. **Kein
+    ausgelieferter Weg rief sie auf.** Der Beleg-Dialog
+    (`BillingModal.tsx`) setzte den `BillingDoc` in einem eigenen `useMemo`
+    ein zweites Mal zusammen. Die Wächter prüften damit einen Weg, den kein
+    Nutzer nimmt, und der Weg, den er nimmt, war ungeprüft — die Defektform
+    `zwei-rechnungen` in ihrer unangenehmsten Ausprägung.
+  * Der Rückfall in `buildBillingDoc` war ein **fest verdrahteter deutscher
+    Satz**: `Zahlbar innerhalb von N Tagen ohne Abzug`. Auf einem Beleg, den
+    ein englischsprachiger Nutzer verschickt, eine deutsche Zeile, an der
+    keine Übersetzung vorbeikommt. Live wurde sie nicht, weil der Dialog
+    seinen eigenen — übersetzten — Satz mitbrachte; sie wartete nur darauf,
+    dass jemand den Bauer benutzt.
+* **Was gebaut wurde.** Ein Bauer. `BuildDocOptions` nimmt jetzt auch
+  Besteuerung, Ein- und Schlusstext, Angebots-Gültigkeit und Zahlungsziel
+  entgegen; der Dialog reicht seine Eingaben hinein statt selbst zu bauen.
+  Der Satz zum Zahlungsziel bleibt beim Dialog, weil nur die Oberfläche
+  übersetzen kann — **das Dokument trägt die Zahl** (`paymentTermDays`), und
+  genau das verlangt Bedarf 99. Fehlt der Satz, trägt der Beleg nur die
+  Dauer; erfunden wird keiner mehr.
+* **`undefined` und leer sind nicht dasselbe.** Bei Ein- und Schlusstext
+  heisst `undefined` „nimm die Vorgabe des Projekts" und ein leerer String
+  „der Nutzer hat das Feld geleert". Mit `||` fielen die beiden zusammen —
+  der gelöschte Schlusstext stünde beim Erzeugen wieder da. Deshalb `??`.
+* **Sechs Gegenproben, alle rot** (`apps/shell/test/billing.test.ts`).
+* **Was Bedarf 99 ausdrücklich NICHT bekommt:** Mahnketten. Die Antwort in
+  der Bedarfsdatenbank sagt es selbst — „Dunning is the accounting tool's
+  job - do not rebuild it." Gesetzliche Fristen werden hier nicht modelliert
+  und nicht geraten.
+
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden

@@ -13,7 +13,7 @@ import {
 } from '@avplan/lexware-core'
 import { format, useT } from '../i18n'
 import { billToContact, resolveBilling, type BillingSettings, type InvoiceRecord, type SuiteProject } from '../data/project'
-import { addDaysIso, deriveLineItems, toBillingContact, type LineSource } from '../data/billing'
+import { buildBillingDoc, deriveLineItems, toBillingContact, type LineSource } from '../data/billing'
 import { canSendLexware, lexwareBridge, sendLexware } from '../embed/lexwareBridge'
 
 const eur = (n: number) => n.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
@@ -217,26 +217,35 @@ function BillingBody({ project, onPersistSettings, onRecordInvoice }: { project:
   const invalidCount = rowIssues.filter((r) => r.name || r.qty || r.price).length
   const valid = !!recipient && items.length > 0 && invalidCount === 0
 
+  // EIN BAUER, NICHT ZWEI (Bedarf 99). Hier stand derselbe Zusammenbau ein
+  // zweites Mal — mit eigenen Feldern und einem eigenen Zahlungsziel-Satz.
+  // `buildBillingDoc` lief damit nur noch in den Tests: geprueft war ein Weg,
+  // den kein Nutzer nimmt, und der Weg, den er nimmt, war ungeprueft.
+  //
+  // Der Dialog reicht seine Eingaben als Ueberschreibungen hinein. Der SATZ
+  // zum Zahlungsziel kommt weiter von hier, weil nur die Oberflaeche
+  // uebersetzen kann; das Dokument selbst traegt die Zahl.
   const doc = useMemo<BillingDoc | null>(() => {
     if (!recipient) return null
-    const base: BillingDoc = {
+    return buildBillingDoc(project, {
       kind,
+      voucherDate,
+      source,
+      lineItems: items,
       contact: toBillingContact(recipient),
       taxType,
-      currency: 'EUR',
-      voucherDate,
-      title: project.meta.name,
-      introduction: intro || undefined,
-      remark: remark || undefined,
-      lineItems: items,
-    }
-    if (kind === 'quotation') base.expirationDate = addDaysIso(voucherDate, validDays)
-    else {
-      base.paymentTermDays = payDays
-      base.paymentTermLabel = format(t('billing.paymentTermLabel', 'Zahlbar innerhalb von {n} Tagen ohne Abzug'), { n: payDays })
-    }
-    return base
-  }, [recipient, kind, taxType, voucherDate, project.meta.name, intro, remark, items, validDays, payDays, t])
+      // Roh und nicht `|| undefined`: ein geleertes Feld bleibt geleert,
+      // statt auf die Projekt-Vorgabe zurueckzufallen.
+      introduction: intro,
+      remark,
+      quoteValidDays: validDays,
+      paymentTermDays: payDays,
+      paymentTermLabel: format(
+        t('billing.paymentTermLabel', 'Zahlbar innerhalb von {n} Tagen ohne Abzug'),
+        { n: payDays },
+      ),
+    })
+  }, [recipient, project, kind, source, taxType, voucherDate, intro, remark, items, validDays, payDays, t])
 
   const payloadJson = useMemo(() => {
     if (!doc || !doc.lineItems.length) return ''
