@@ -90,7 +90,23 @@ describe('Modul-Registry — jede Anwendung ist von der Shell aus erreichbar', (
         muster: /^PORT\s*=\s*(?:8080\b|int\(os\.environ\.get\("GUIDE_PORT",\s*"8080"\)\))/m,
       },
       { id: 'kamera', datei: 'sony-camera-bridge/packages/web-rcp/vite.config.ts', muster: /port:\s*3700/ },
-      { id: 'intercom', datei: 'Broadcast-intercom/apps/server/src/index.ts', muster: /PORT\s*\|\|\s*4001/ },
+      {
+        id: 'intercom',
+        // KORRIGIERT 2026-09-09. Hier stand `apps/server/src/index.ts` mit
+        // `PORT || 4001` — und die Zeile war gruen, waehrend das Modul auf
+        // den falschen Port zeigte. 4001 ist der KERN: WebSocket und API,
+        // ohne eine einzige statische Datei (nachgesehen: kein
+        // `express.static`, kein `sendFile` im Server). Die Bedienoberflaeche
+        // liegt auf 5200, das README sagt es woertlich („Open
+        // http://localhost:5200").
+        //
+        // Der Guard prueft also ab jetzt die Datei, aus der die Shell ihre
+        // Zahl WIRKLICH nimmt. Vorher teilte er den Denkfehler der Sache, die
+        // er pruefen sollte — und ein Waechter mit demselben Fehler ist auf
+        // genau diesem Fehler gruen.
+        datei: 'Broadcast-intercom/apps/web/vite.config.ts',
+        muster: /port:\s*5200/,
+      },
       { id: 'medien', datei: 'pi-media-station/main.py', muster: /web_port",\s*5000/ },
     ]
     let geprueft = 0

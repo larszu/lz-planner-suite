@@ -144,3 +144,136 @@ th {
   max-width: 46rem;
   line-height: 1.5;
 }
+
+/* ── Inventur (B-65) ───────────────────────────────────────────────────────
+   Zwei Schritte untereinander, dann zwei Spalten nebeneinander: was hier
+   liegen soll und was erfasst wurde. Die Spalten brechen unter 900 px
+   untereinander — im Lager steht jemand mit einem Tablet vor dem Regal, und
+   eine Tabelle, die dort seitlich wegläuft, ist unbedienbar (dieselbe Regel
+   wie B-44 Teil 3 im Kabel-Planer).
+
+   Keine Rundungen, keine Schatten (ADR-007). Die Trefferflächen der Knöpfe
+   bleiben bei den 24 px, die WCAG 2.2 SC 2.5.8 nennt — hier über `padding`,
+   weil es Textknöpfe sind. */
+.inventur .schritt {
+  border: 1px solid var(--rand);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.inventur .schritt h2,
+.inventur .schritt h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.6rem;
+}
+
+.inventur .zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.inventur label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--leise);
+  font-size: 0.85rem;
+}
+
+.inventur input,
+.inventur select {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  min-height: 24px;
+  font: inherit;
+}
+
+.inventur button {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.4rem 0.9rem;
+  min-height: 24px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.inventur button:disabled {
+  color: var(--leise);
+  cursor: default;
+}
+
+.inventur .ohne-scan {
+  margin-top: 0.75rem;
+}
+
+/* Der Warnhinweis ist ein Absatz, nicht eine Tabellenzelle — `.warnung td`
+   weiter oben trifft ihn nicht, und ohne diese Regel stünde er unauffällig
+   im Fliesstext. Genau diese Meldung soll aber auffallen: sie kommt, bevor
+   jemand hundert Objekte am falschen Ort verbucht. */
+.inventur p.warnung {
+  color: var(--warn);
+  max-width: 46rem;
+  line-height: 1.5;
+}
+
+.inventur .hinweis {
+  color: var(--leise);
+  max-width: 46rem;
+  line-height: 1.5;
+}
+
+.inventur .spalten {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+@media (max-width: 900px) {
+  .inventur .spalten {
+    grid-template-columns: 1fr;
+  }
+}
+
+.inventur .abhaken,
+.inventur .fehlt {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.inventur .abhaken li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--rand);
+}
+
+.inventur .abhaken li.erledigt span {
+  color: var(--leise);
+}
+
+.inventur .abhaken em {
+  color: var(--leise);
+  font-style: normal;
+}
+
+.inventur .fehlt li {
+  padding: 0.25rem 0;
+  color: var(--warn);
+}
+
+/* Die Ergebnis-Arten. Nur zwei bekommen Farbe: „am falschen Ort" und „nicht
+   im Bestand" sind die beiden, wegen denen jemand hinterher etwas tut. Alles
+   einzufärben hiesse, nichts hervorzuheben. */
+.inventur tr.ergebnis-wrong-place td,
+.inventur tr.ergebnis-not-in-inventory td {
+  color: var(--warn);
+}

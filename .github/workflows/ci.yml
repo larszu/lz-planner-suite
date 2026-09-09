@@ -125,6 +125,14 @@ jobs:
       # schon steht, was Sache sei.
       - name: Backlog-Kopfzeilen widersprechen ihrem Rumpf nicht
         run: npm run backlog:check
+      # Dieselbe Alterung, eine Datei weiter: die STATUS-Tabelle fuehrte fuenf
+      # Zeilen als MISSING/PARTIAL/BROKEN, waehrend der Backlog-Eintrag, den
+      # sie selbst nannten, laengst ERLEDIGT sagte (B-6, B-18, B-19, B-25,
+      # B-26 -- alle fuenf am Baum nachgemessen). Die Tabelle ist die Seite,
+      # auf die jemand schaut, der wissen will, was es schon gibt; eine Zeile
+      # mit MISSING schickt ihn los, etwas zu bauen, das steht.
+      - name: Status-Tabelle ist nicht aelter als ihr Backlog-Eintrag
+        run: npm run status:check
       # B-17: Die Shell zeigt im Dev-Betrieb auf Ports, auf denen wirklich
       # jemand hoert. Gemessen wird nicht gegen die README (die kann veralten,
       # ohne dass es auffaellt), sondern Shell-Fallback gegen vite.config.

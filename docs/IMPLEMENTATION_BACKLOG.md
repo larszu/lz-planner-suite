@@ -551,9 +551,93 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   liest die andere Hälfte des Eintrags mit.
 * **Aufwand:** ~~groß~~ erledigt
 
+### B-65 · Das Lagermodul hat zehn gebaute Rechenwerke ohne eine einzige Bedienung
+
+* **Status:** **erste Zeile GEBAUT** (`inventory#2`: Inventur-Ansicht, 10 → 7
+  Module ohne Weg), der Rest **offen** — Befund gemessen 2026-09-09.
+* **Auslöser:** Der Eigentümer schickte fünf Bildschirmfotos einer fremden
+  Bestands-App („Vorratix", Haushalts-Vorrat) mit dem Satz: „Analysiere diese
+  paar Fotos für das Lagermodul. Es fehlen noch einige Funktionen."
+  Die App ist inhaltlich etwas anderes — Lebensmittel statt Rental-Material —,
+  aber die **Bedien-Formen** darin sind genau die, die hier fehlen. Deshalb
+  taugt sie als Vorlage für die Form und nicht für den Inhalt: ein
+  Mindesthaltbarkeitsdatum ist kein Prüftermin nach DGUV V3, aber „was ist
+  diese Woche fällig" ist dieselbe Frage.
+* **Der Hauptbefund, und er ist die eigentliche Nachricht:** von **18**
+  Modulen in `apps/inventory-planner/src/domain/lib/` sind **10 von keiner
+  Oberfläche aus erreichbar** — nachgerechnet über den Import-Graph ab
+  `ui/App.tsx` und `main.tsx`, nicht geschätzt:
+
+  | erreicht (8) | nicht erreicht (10) |
+  |---|---|
+  | `containerCheckout` | `damageRegister` |
+  | `custodyPeriod` | `insuranceSchedule` |
+  | `faultHistory` | `inventoryAudit` |
+  | `handoverSignature` | `inventoryCommitment` |
+  | `inventoryMerge` | `inventoryPortable` |
+  | `ownership` | `inventoryPrint` |
+  | `storageMoves` | `inventoryReport` |
+  | `storageTree` | `inventoryScan` |
+  | | `packList` |
+  | | `unitIdentity` |
+
+  Die App hat drei Reiter (`bestand`, `ausgabe`, `subhire`). Inventur,
+  Schadensregister, Versicherungsfristen, Packliste, Etiketten-Druck,
+  Bericht, Einheiten-Identität und die **Scan-Auflösung** sind gebaut,
+  getestet — und für den Lageristen nicht vorhanden. Das ist dieselbe
+  Defektform wie B-15 (`powerWatts` als Schreib-nur-Feld), nur zehnmal:
+  Code, den kein Weg erreicht, ist für den Nutzer kein Code.
+
+* **Was die Bildschirmfotos an Formen zeigen** — je Zeile: was dort zu sehen
+  ist, was es hier hieße, und ob es das schon gibt.
+
+  | Form in der Vorlage | im Lagermodul | Zustand |
+  |---|---|---|
+  | Geführter Scan in Schritten („Schritt 1: Lagerplatz scannen") | Platz scannen → Artikel scannen → buchen | **fehlt** (`inventoryScan` löst auf, niemand ruft es) |
+  | Erwarteter Prefix (`L#`) als Vorgabe und Prüfung | Lagerplatz-Codes gegen ein Hausschema prüfen | **fehlt** (`prefix`: 0 Fundstellen) |
+  | Ausweg ohne Scan („Ohne Scan einbuchen", Raum/Objekt wählen) | Aufkleber unlesbar, Hand-Eingabe | **fehlt** |
+  | Taschenlampe, Kamerawechsel im Scanner | dunkler Truck, Case über Kopf | **fehlt** (keine Scan-Oberfläche) |
+  | Kennzahlen-Startseite (Bestand, „Unter Ziel", fällig) | Was muss ich heute anfassen? | **fehlt** |
+  | Soll-/Mindestmenge, „Unter Ziel" | Meldebestand je Artikel | **fehlt** (`mindest`/`reorder`: 0) |
+  | „Bald ablaufend / Abgelaufen / Diese Woche fällig" | DGUV-V3-Prüftermin, Kalibrierung, Akku-Alter, Versicherungsende | **halb**: `insuranceSchedule` rechnet, nichts zeigt es, und die übrigen Fristen gibt es nicht |
+  | „Anomalien — auffällige Artikel prüfen" | Inventur-Abweichung, Ware am falschen Platz | **halb**: `inventoryAudit` (390 Zeilen) hat keine Oberfläche |
+  | „Verlauf" | wer hat wann was gebucht | **halb**: `storageMoves` bewegt, eine Historie je Artikel fehlt |
+  | Kassenbon-Import (Foto → Positionen) | Lieferschein/Rechnung → Wareneingang | **fehlt** |
+  | „Einkauf"-Reiter | was muss beschafft oder sub-hired werden | **fehlt** |
+  | Artikelgruppen als gepflegte Liste | Kategorie ist heute freier Text | **fehlt** |
+  | „Beispieldaten erstellen" | Seed (vorhanden in `@avplan/ui`) | **prüfen**, ob das Lager daran hängt |
+  | Bestand exportieren | `inventoryPortable`/`inventoryReport` | **halb**: gebaut, kein Knopf |
+
+* **GEBAUT, erste Zeile — `inventory#2` (2026-09-09):** Die Ansicht
+  **Inventur** als vierter Reiter. Sie hängt `inventoryScan` und
+  `inventoryAudit` an, und `unitIdentity` kam mit (`auditScan` braucht
+  seinen `unitLabel`). **10 → 7.** Die Form ist die aus den Bildschirmfotos:
+  zwei Schritte in dieser Reihenfolge, erwarteter Prefix mit Prüfung *vor*
+  der Suche, und der Weg ohne Scan als Abhak-Liste. Ein Wächter rechnet den
+  Import-Graph nach, statt eine Liste zu pflegen — sonst hätte er zwei
+  gemeldet statt drei.
+* **Die Reihenfolge, und sie ergibt sich aus dem Hauptbefund:** zuerst die
+  zehn unerreichbaren Module an eine Oberfläche hängen, dann das Neue bauen.
+  Eine elfte Rechnung ohne Knopf wäre der teuerste Weg, das Problem zu
+  vergrößern. Konkret zuerst: **Scan-Oberfläche** (`inventoryScan` +
+  `inventoryAudit` sind beide daran) — sie ist der Zugang, an dem in der
+  Vorlage alles hängt, und ohne sie bleibt jede weitere Funktion Tipparbeit.
+* **Nicht entschieden, gehört dem Eigentümer:** ob das Lagermodul
+  Verbrauchsmaterial mit Haltbarkeit führen soll (Batterien, Gaffa, Filter)
+  oder nur Rental-Material mit Prüfterminen. Die Vorlage zeigt Ersteres, das
+  Haus lebt von Letzterem, und die Antwort entscheidet, ob „Ablaufdatum" ein
+  eigenes Feld wird oder ein Fall von „Frist".
+* **Aufwand:** groß — und teilbar: jede Zeile der Tabelle ist für sich
+  lieferbar.
+
+---
+
 ### B-11 · Sechs Kataloge ohne Beleg
 
-* **Status:** offen
+* **Status:** Recherche **offen** (Hersteller-Domänen im Egress-Filter,
+  dreimal nachgemessen) — der Teil, der von hier aus ging, ist **GEBAUT**:
+  seit `cable#806` sagt jeder der sechs Köpfe seine Beleglage, statt sie zu
+  behaupten.
 * **Befund (korrigiert):** Von 17 `*Catalog.ts` führen 8 kein
   `manufacturerUrl` — davon können zwei es gar nicht (`connectorCatalog` hält
   Steckertypen, `wirelessCatalog` hält `WirelessDevice`; das Feld sitzt an
@@ -583,6 +667,40 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   auf einen Händler (Behringer X32 → Markertek), während der Eintrag 25
   Zeilen darunter auf `behringer.com` zeigt. Seit `cable#672` hält ein Guard
   das fest, mit einer begründeten Ausnahme, die von selbst wegfällt.
+* **Was 2026-09-09 dazukam und GEBAUT ist — `cable#806`:** Beim dritten
+  Nachmessen fiel auf, dass vier der sechs beleglosen Kataloge in ihrem
+  **Kopf** ein Datenblatt behaupten, das kein einziger Eintrag hinterlegt:
+
+  | Katalog | Einträge | Belege | Der Satz, der dort stand |
+  |---|---:|---:|---|
+  | `blackmagicCatalog` | 32 | 0 | „port counts taken from the official datasheets" |
+  | `cameraCatalog` | 20 | 0 | „sourced from official datasheets / manufacturer spec pages" |
+  | `monitorCatalog` | 36 | 0 | „sourced from official datasheets" |
+  | `ubiquitiCatalog` | 40 | 0 | „based on the official datasheets / ui.com spec pages" |
+
+  Zusammen **128 Einträge**. Das ist die Recherche-Lücke nicht kleiner,
+  aber es ist der Teil davon, der von hier aus reparierbar war — und der
+  schlimmere. Wer eine Port-Zahl anzweifelt (der Nutzer meldete am selben
+  Tag „die presets stimmen häufig nicht ganz genau"), liest den Kopf,
+  findet den Satz und hört auf zu suchen. Eine Behauptung ohne Link ist
+  schlechter als ein leeres Feld, weil sie Prüfbarkeit behauptet, die es
+  nicht gibt — **dieselbe Defektform, gegen die dieser Eintrag oben die
+  159 URLs verweigert.** `catalogueEvidence.ts` sichert seit Initiative 11
+  die Zahlen ab; die Prosa darüber lag außerhalb jeder Messung.
+
+  Alle sechs Köpfe tragen jetzt die Zeile
+  `// BELEGLAGE: kein Datenblatt-Link je Eintrag (B-11).`
+  `tests/katalogBeleglage.test.ts` hält die Regel in **beide** Richtungen:
+  0 Belege → Zeile nötig und kein Datenblatt-Anspruch darüber; ≥1 Beleg →
+  Zeile verboten. Die zweite Hälfte ist die wichtigere — sie lässt die
+  Markierung verschwinden, sobald die Belege nachgetragen sind. Eine
+  Markierung, die nach der Reparatur stehen bleibt, lügt wieder, nur in die
+  andere Richtung.
+* **Was den Rest entsperrt — Eigentümer-Sache, eines von dreien:**
+  1. die fünf Hersteller-Domänen im Egress-Filter freigeben,
+  2. die Datenblätter als PDF ins Repo oder in die Sitzung legen,
+  3. entscheiden, dass die 159 Einträge unbelegt bleiben — dann sagt der
+     Kopf es seit `cable#806` wenigstens.
 * **Aufwand:** mittel (Recherche, kein Code) — braucht eine Umgebung mit
   Netzzugang zu den Herstellern
 

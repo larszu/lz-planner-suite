@@ -17,5 +17,13 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Tests, die das DATEISYSTEM lesen, tragen `.node.test.ts` und gehoeren
+  // nicht in dieses Projekt: hier ist `lib` auf DOM gestellt und `types`
+  // kennt kein Node. Sie stehen stattdessen in `tsconfig.node.json`, das
+  // beides hat — dieselbe Trennung, die `vite.config.ts` dort schon hat.
+  //
+  // Der Grund fuer die Namensregel statt einer Dateiliste: eine Liste
+  // vergisst der Naechste, ein Suffix nicht.
+  "exclude": ["src/**/*.node.test.ts"]
 }

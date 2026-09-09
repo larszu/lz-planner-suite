@@ -721,7 +721,7 @@ function RuntimeSection({
       <p className="mt-1 text-[12px] text-av-text-muted">
         {t(
           'chrome.settings.runtimesHint',
-          'Diese vier Anwendungen laufen eigenständig — auf einem Pi im Netz oder als eigener Dienst. Die Suite zeigt ihre Oberfläche, sobald die Adresse stimmt.',
+          'Diese vier Anwendungen laufen eigenständig. Die Vorgabe ist dieser Rechner — alle vier lassen sich lokal starten; „Pi im Netz" schaltet auf das Gerät um. Die Suite zeigt die Oberfläche, sobald die Adresse antwortet.',
         )}
       </p>
       <div className="mt-3 space-y-2">
@@ -762,12 +762,53 @@ function RuntimeSection({
                   </button>
                 </div>
               </div>
+              {/*
+                Die Vorwahlen. Ohne sie hiess „jetzt doch am Pi" bzw. „jetzt
+                doch lokal": Hostnamen abtippen, Port abtippen, und beides
+                richtig treffen. Der aktive Eintrag ist markiert, damit man
+                sieht, WO man gerade ist — sonst raet man aus dem Feld.
+              */}
+              {r.presets.length > 1 && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {r.presets.map((v) => {
+                    const aktiv = a.host === v.host && a.port === v.port
+                    return (
+                      <button
+                        key={v.label}
+                        type="button"
+                        className="av-btn text-[11px]"
+                        data-variant={aktiv ? 'accent' : 'subtle'}
+                        aria-pressed={aktiv}
+                        title={`${v.was} — ${v.host}:${v.port}`}
+                        onClick={() =>
+                          onChange({ ...addresses, [r.id]: { host: v.host, port: v.port } })
+                        }
+                      >
+                        {v.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
               <div className="mt-1 text-[11px] text-av-text-faint">
                 {zustand === 'suche' && t('chrome.settings.runtimeSearching', 'wird gesucht …')}
                 {zustand === 'da' && t('chrome.settings.runtimeFound', 'antwortet')}
-                {zustand === 'weg' && t('chrome.settings.runtimeMissing', 'keine Antwort — läuft die Anwendung?')}
                 {zustand === 'offen' && r.was}
               </div>
+              {/*
+                Bleibt die Antwort aus, steht hier der Befehl, der die
+                Anwendung startet — nicht nur „keine Antwort". Vorher endete
+                der Weg genau hier, und bei Tally und Medien war der Rat
+                („Der Pi muss laufen") seit `run-local.py` sogar falsch.
+              */}
+              {zustand === 'weg' && (
+                <div className="mt-1 text-[11px] text-av-text-faint">
+                  <span className="text-av-warn">
+                    {t('chrome.settings.runtimeMissing', 'keine Antwort — läuft die Anwendung?')}
+                  </span>{' '}
+                  {r.start}
+                </div>
+              )}
             </div>
           )
         })}
