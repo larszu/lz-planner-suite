@@ -79,8 +79,24 @@ export const header: Record<string, string> = {
   'header.panel.close': 'Aktuelles Panel schließen',
   'header.sidebar.settings': 'Einstellungen',
   'header.sidebar.templates': 'Vorlagen',
+  // Titel und aria-label tragen hier ABSICHTLICH verschiedenen Text: der
+  // Titel steht neben dem Knopf und darf kurz sein, das aria-label wird ohne
+  // Umgebung vorgelesen und nennt deshalb, um welche Spalte es geht. Die
+  // Suite-Kopie hat beide auf denselben Schluessel gelegt — das ist eine
+  // Zusammenlegung, keine Uebersetzung.
+  // UI-Zoom im Kopf (Issue #61). „Strg" statt „Ctrl": die deutsche Tastatur
+  // beschriftet die Taste so, und eine Hilfe, die eine andere Taste nennt als
+  // die auf dem Gerät, ist keine.
+  'header.zoom.title': 'UI-Zoom (Strg + / - / 0)',
+  'header.zoom.out.title': 'Kleiner (Strg -)',
+  'header.zoom.out': 'UI verkleinern',
+  'header.zoom.reset': 'Auf 100 % zurücksetzen (Strg 0)',
+  'header.zoom.in.title': 'Größer (Strg +)',
+  'header.zoom.in': 'UI vergrößern',
   'header.sidebar.open': 'Spalte einblenden',
   'header.sidebar.collapse': 'Spalte ausblenden',
+  'header.sidebar.open.aria': 'Seitenspalte einblenden',
+  'header.sidebar.collapse.aria': 'Seitenspalte ausblenden',
   'header.inventory': 'Lager',
   'header.inventory.title': 'Lager / Bestand',
 
@@ -98,6 +114,7 @@ export const header: Record<string, string> = {
   'header.wizard.next': 'Weiter',
 
   // ── StartupAssistant: Welcome-Dialog ──
+  'header.welcome.close': 'Schließen',
   'header.welcome.title': 'Willkommen beim MultiCam Planner',
   'header.welcome.intro': 'Wie möchten Sie beginnen?',
   'header.welcome.load.title': 'Plan laden',
@@ -140,7 +157,4 @@ export const header: Record<string, string> = {
   'header.exchange.cableSection': 'Kabel-Planner',
   'header.foreignLamps.hide': 'Fremd-Lampen ausblenden',
   'header.foreignLamps.show': 'Fremd-Lampen einblenden',
-  'header.sidebar.open.aria': 'Seitenspalte einblenden',
-  'header.sidebar.collapse.aria': 'Seitenspalte ausblenden',
-  'header.welcome.close': 'Schließen',
 };

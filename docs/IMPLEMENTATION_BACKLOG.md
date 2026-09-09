@@ -1210,7 +1210,26 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-61 · `multicam-planner`: deutsche Texte in einer englisch-quelligen Oberfläche — und der Wächter sieht sie nicht
 
-* **Status:** offen. Aufgefallen beim Abschluss von B-25 (`multicam#116`).
+* **Status:** **ERLEDIGT 2026-09-09** — `multicam#118`. Aufgefallen beim
+  Abschluss von B-25 (`multicam#116`).
+* **Gebaut in zwei Schritten, in der Reihenfolge aus B-26:** erst den Zähler
+  scharf machen und die heutige Zahl (**37**) als GRENZE festhalten, dann
+  übersetzen und die Grenze auf **0** senken. Andersherum übersetzt man
+  einmal und lässt die Lücke ab morgen wieder wachsen.
+* **Die beiden Fehler, die derselbe Wächter im `sony-camera-bridge` gemacht
+  hat, sind hier gegengeprobt vermieden:** ohne Kommentar-Filter meldet er
+  **47 statt 37** (zehn Fehltreffer aus den deutschen Kommentaren dieses
+  Repos), ohne JSX-Messung nur **23** — vierzehn der 37 stehen zwischen den
+  Tags und nicht in Anführungszeichen.
+* **Gewickelt wurden sieben Dateien**, zwei neue Teil-Wörterbücher
+  (`de/rig.ts`, `de/shotlist.ts`), 59 Schlüssel. Drei Stellen brauchten eine
+  Entscheidung und tragen sie am Eintrag: die Tastenlegende der
+  Rig-Steuerung (ein Schlüssel je Wort, weil die fetten Tastenkürzel Markup
+  sind), der leere Zustand der Shotlist (das abschliessende „klicken"
+  entfällt — im Deutschen steht das Verb am Ende, im Englischen vor dem
+  Knopfnamen) und der UI-Zoom („Strg" im Deutschen, „Ctrl" im Englischen).
+* **Was dabei herausfiel und einen eigenen Punkt bekam:** der Lauf lässt sich
+  NICHT in die deutsch-quelligen Repos kopieren. Siehe **B-63**.
 * **Befund (gemessen 2026-09-09, nach dem Rückweg):** Die 14 Dateien, die die
   Suite-Kopie gewickelt hat, sind durch. Was bleibt, sind Dateien, die es
   **drüben genauso ungewickelt gibt** — der Rückweg hilft dort also nicht,
@@ -1248,6 +1267,59 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   morgen wieder wachsen.
 * **Aufwand:** mittel — die Zeichenketten sind gezählt und liegen beieinander;
   die Wicklung ist mechanisch, das Wörterbuch ist schon da.
+
+### B-63 · Der Sprachmix-Zähler lässt sich nicht in die deutsch-quelligen Repos kopieren — gemessen
+
+* **Status:** offen. Befund erhoben 2026-09-09 beim Bau von B-61.
+* **Was B-61 gebaut hat:** `multicam-planner` zählt seit `multicam#118`
+  nicht mehr nur die `t()`-Fallbacks, sondern auch den **ungewickelten**
+  sichtbaren Text — und deckelt ihn. Grenze steht auf 0.
+* **Die naheliegende Fortsetzung wäre, denselben Lauf in `cable-planner` und
+  `light-planner` zu tragen. Sie ist gemessen worden und funktioniert nicht.**
+
+  Das JSX-Muster ist `>text<`. In einer `.tsx`-Datei trifft das auch **Code**:
+  `>` und `<` sind Vergleichsoperatoren, und dazwischen steht dann ein Stück
+  Quelltext — `if (clipped.length > 2)`, `arr.filter(n => n.id === x)`.
+
+  Dass es in MultiCam trotzdem sauber misst, liegt an einer Asymmetrie:
+  gezählt wird dort nur, was als **deutsch** durchgeht. Ein Code-Schnipsel
+  trägt `if`, `for`, `const`, `return`, `this` — englische Stoppwörter, wird
+  also als englisch klassifiziert und fällt aus der Zählung. In einem
+  deutsch-quelligen Repo ist die Zielsprache **englisch**, und damit zählt
+  genau das mit.
+
+  | Lauf | Treffer | Art |
+  | --- | ---: | --- |
+  | `multicam-planner`, Ziel `de` (der echte) | 0 | — |
+  | `multicam-planner`, Ziel `en` (Gegenprobe) | 6 | ausnahmslos Code |
+  | `cable-planner`, Ziel `en` | 35 | ausnahmslos Code |
+  | `light-planner`, Ziel `en` | 12 | ausnahmslos Code |
+
+* **Der Schaden einer Kopie wäre nicht „ein paar Fehltreffer", sondern das
+  Ende des Wächters:** 47 gemeldete Code-Zeilen als angeblicher
+  Sprachmisch-Verstoss — nach dem dritten Mal schaltet ihn jemand ab. Genau
+  das Ende, das `sony#22` für seinen Vorgänger beschreibt.
+* **Die eigentliche Frage bleibt offen und ist berechtigt:** haben
+  `cable-planner` und `light-planner` denselben blinden Fleck? Ihr
+  `lang:check` misst wie der frühere MultiCam-Lauf **nur** die
+  `t()`-Fallbacks (2324 bzw. 333 deutsche, 0 englische). Ob dort englische
+  Beschriftungen ungewickelt herumstehen, ist damit **nicht gemessen** — und
+  es als „vermutlich nicht" abzutun wäre dieselbe Behauptung ohne Messung,
+  gegen die dieses Backlog sonst schreibt.
+* **Was es dafür braucht:** ein JSX-Muster, das Code von Text unterscheidet.
+  Der billige Weg ist eine Zusatzbedingung am Treffer (keine Klammern, kein
+  `=>`, kein `===`, kein Semikolon, keine Zuweisung); der saubere ist, den
+  JSX-Text über den Parser zu holen statt über einen regulären Ausdruck.
+  Welcher reicht, entscheidet sich an der Messung — der billige Weg ist
+  zuerst zu probieren, weil er die Zahl sofort liefert und man an der Liste
+  sieht, ob noch Code darin steht.
+* **Beim Bauen zu beachten:** `npm run lang:parity` in der Suite hält die
+  Wortlisten der beiden Kopien zusammen. Wer in einem Repo die Listen
+  anfasst, fasst sie drüben mit an — die Erweiterung selbst betrifft die
+  Listen nicht, aber wer dabei ein Stoppwort ergänzt, merkt es sonst erst in
+  der Suite-CI.
+* **Aufwand:** klein bis mittel — die Messung steht, der Rest ist ein
+  besseres Muster und zwei Deckel.
 
 ### B-62 · Die Kopfzeile eines Backlog-Eintrags altert schneller als sein Rumpf — jetzt mit Wächter
 
