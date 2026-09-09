@@ -17,7 +17,7 @@
     "dist:win": "npm run build && electron-builder --win nsis portable --publish never",
     "dist:mac": "npm run build && electron-builder --mac --x64 --arm64 --publish never",
     "lint": "eslint .",
-    "test": "vitest run && npm run avplan:check && npm run venue:check && npm run mvr:check && npm run spec:check && npm run identity:check && npm run i18n:check && npm run docs:check && npm run patch:check && npm run groups:check && npm run identity:mvr && npm run merge:check && npm run preflight:check && npm run universe:check && npm run power:check && npm run reports:check && npm run console:check && npm run shop:check && npm run labels:check && npm run cables:check && npm run equipment:check && npm run autopatch:check && npm run order:check && npm run access:check && npm run brand:check && npm run diff:check && npm run lang:check && npm run notes:check && npm run preview:check && npm run retime:check && npm run stamp:check && npm run storage:check",
+    "test": "vitest run && npm run avplan:check && npm run venue:check && npm run mvr:check && npm run spec:check && npm run identity:check && npm run i18n:check && npm run docs:check && npm run patch:check && npm run groups:check && npm run identity:mvr && npm run merge:check && npm run preflight:check && npm run universe:check && npm run power:check && npm run reports:check && npm run console:check && npm run shop:check && npm run labels:check && npm run cables:check && npm run equipment:check && npm run autopatch:check && npm run order:check && npm run access:check && npm run brand:check && npm run diff:check && npm run lang:check && npm run notes:check && npm run preview:check && npm run retime:check && npm run stamp:check && npm run storage:check && npm run actuals:check",
     "test:watch": "vitest",
     "diff:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/version-diff-check.ts",
     "storage:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/inventory-storage-check.ts",
@@ -51,7 +51,8 @@
     "brand:check": "node --experimental-strip-types scripts/brand-tokens-check.ts",
     "preview:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/inventory-import-preview-check.ts",
     "retime:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/retime-check.ts",
-    "access:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/order-access-check.ts"
+    "access:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/order-access-check.ts",
+    "actuals:check": "node --experimental-strip-types --import ./scripts/register-ts-ext.mjs scripts/actuals-check.ts"
   },
   "dependencies": {
     "@avplan/inventory-core": "*",
