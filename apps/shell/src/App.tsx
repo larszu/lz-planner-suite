@@ -449,7 +449,14 @@ export function App() {
 
   const [moduleId, setModuleId] = useState<ModuleId>('overview')
   const [selected, setSelected] = useState<Record<ModuleId, string | null>>(
-    jeModul<string | null>({ overview: null, signal: 'v012', cameras: 'cam2', licht: 'lx3', board: null }, null),
+    // `lager` und `gebaeude` stehen bewusst auf null: beide tragen
+    // `libraryTabs: []` — es gibt in der Shell nichts, was sich auswaehlen
+    // liesse, und eine erfundene Kennung zeigte auf ein Objekt, das es
+    // nicht gibt.
+    jeModul<string | null>(
+      { overview: null, signal: 'v012', cameras: 'cam2', licht: 'lx3', lager: null, gebaeude: null, board: null },
+      null,
+    ),
   )
   // In der gepackten Desktop-Suite sind die echten Planer-Renderer mitverpackt
   // und werden lokal ausgeliefert — dann direkt den echten Planer einblenden
@@ -465,6 +472,8 @@ export function App() {
         signal: BUNDLED_PLANNERS,
         cameras: BUNDLED_PLANNERS,
         licht: BUNDLED_PLANNERS,
+        lager: BUNDLED_PLANNERS,
+        gebaeude: BUNDLED_PLANNERS,
         board: false,
       },
       true,

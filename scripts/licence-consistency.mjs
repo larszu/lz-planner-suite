@@ -29,7 +29,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const APPS = ['cable-planner', 'multicam-planner', 'light-planner']
+const APPS = ['cable-planner', 'multicam-planner', 'light-planner', 'inventory-planner', 'larszu-facility-planner']
 
 /** Zeilenenden und Rand-Leerraum weg — ein CRLF ist kein Lizenzwechsel. */
 const normalise = (text) =>

@@ -6,16 +6,14 @@
 // rechnet (Punkt 4), und dass die sechs Fragen sechs bleiben, solange dieser
 // Abschnitt sechs sagt."
 //
-// Der erste Block misst genau das, und zwar gegen das ADR selbst statt gegen
-// eine zweite Liste im Test — eine abgeschriebene Liste waere die zweite
-// Wahrheit, gegen die ADR-001 geschrieben ist, und sie driftet lautlos.
+// Der Abgleich der sechs Fragen GEGEN DAS ADR steht in der Suite, wo ADR und
+// Code im selben Baum liegen; hier bleibt, was ohne das ADR pruefbar ist.
 //
 // Die uebrigen Bloecke messen die eine Regel, die alle sechs Fragen teilen:
 // „nicht angegeben" ist nicht „nein".
 // ───────────────────────────────────────────────────────────────────────────
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
+import { leeresGebaeude, type Anschlusspunkt, type Gebaeude } from '../modell'
 import {
   VERTRAG_FRAGEN,
   VERTRAG_RUECKWEG,
@@ -23,49 +21,28 @@ import {
   einspeisung,
   hausStrecke,
   kreisGeschwister,
-  leeresGebaeude,
   mangelMelden,
   ort,
   steuerklinken,
   verfuegbarkeit,
-  type Anschlusspunkt,
-  type Gebaeude,
-} from '../src/index'
-import * as vertragModul from '../src/vertrag'
+} from '../vertrag'
+import * as vertragModul from '../vertrag'
 
-const adrPfad = fileURLToPath(
-  new URL('../../../docs/decisions/ADR-006-werkzeug-schnitt.md', import.meta.url),
-)
-const adr = readFileSync(adrPfad, 'utf8')
-
-/** Schneidet einen `###`-Abschnitt des ADR heraus. */
-const abschnitt = (ueberschrift: string): string => {
-  const start = adr.indexOf(`### ${ueberschrift}`)
-  expect(start, `ADR-Abschnitt „${ueberschrift}" fehlt`).toBeGreaterThanOrEqual(0)
-  const rest = adr.slice(start + 4)
-  const ende = rest.indexOf('\n### ')
-  return ende === -1 ? rest : rest.slice(0, ende)
-}
-
-/** Alle `name(...)`-Aufrufe in Backticks, in Reihenfolge und ohne Duplikate. */
-const aufrufe = (text: string): string[] => [
-  ...new Set([...text.matchAll(/`([a-zA-Z][a-zA-Z0-9]*)\(/g)].map((m) => m[1])),
-]
-
-// ─── Der Vertrag bleibt so gross, wie das ADR ihn erklaert ──────────────────
+// ─── Der Vertrag bleibt so gross, wie er erklaert ist ───────────────────────
+//
+// DER ABGLEICH GEGEN DAS ADR STEHT NICHT HIER, und das ist Absicht. Er lebt in
+// der Suite (`packages/facility-core/test/vertrag.test.ts` bzw., nach dem
+// Umzug, gegen die vendorte Kopie): dort liegen ADR und Code im selben Baum,
+// und nur dort kann ein Test die Tabelle im ADR wirklich lesen. Eine Abschrift
+// der sechs Namen HIER waere die zweite Wahrheit, gegen die ADR-001
+// geschrieben ist — sie driftete lautlos vom ADR weg, und der Test bliebe
+// gruen.
+//
+// Was hier bleibt, ist die Haelfte, die ohne das ADR pruefbar ist: dass jede
+// genannte Frage wirklich eine Funktion ist, und dass keine unbenannte siebte
+// dazukommt.
 
 describe('Vertragsumfang', () => {
-  it('die sechs Fragen im Code sind die sechs Zeilen im ADR', () => {
-    const imAdr = aufrufe(abschnitt('Was der Plan das Gebäude fragt'))
-    expect(imAdr).toHaveLength(6)
-    expect([...VERTRAG_FRAGEN].sort()).toEqual([...imAdr].sort())
-  })
-
-  it('der Rueckweg im Code ist der eine Rueckweg im ADR', () => {
-    const imAdr = aufrufe(abschnitt('Der eine Rückweg'))
-    expect(imAdr).toEqual([VERTRAG_RUECKWEG])
-  })
-
   it('jede genannte Frage ist auch wirklich eine Funktion', () => {
     for (const name of [...VERTRAG_FRAGEN, VERTRAG_RUECKWEG]) {
       expect(typeof (vertragModul as Record<string, unknown>)[name], name).toBe('function')

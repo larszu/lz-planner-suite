@@ -25,7 +25,7 @@
     "drift": 26,
     "total": 42,
     "missingUpstream": false,
-    "upstreamSha": "485f5c1384bb",
+    "upstreamSha": "6273020e235b",
     "version": "4.3.3",
     "upstreamVersion": "4.3.3"
   },
@@ -40,8 +40,38 @@
     "drift": 23,
     "total": 42,
     "missingUpstream": false,
-    "upstreamSha": "8e42a6d495e7",
+    "upstreamSha": "a6ea319b86e5",
     "version": "1.0.0",
     "upstreamVersion": "1.0.0"
+  },
+  "inventory-planner": {
+    "only-upstream": 0,
+    "only-suite": 0,
+    "two-way": 0,
+    "upstream-ahead": 0,
+    "suite-ahead": 0,
+    "expected-overlay": 0,
+    "dead-upstream": 0,
+    "drift": 0,
+    "total": 0,
+    "missingUpstream": false,
+    "upstreamSha": "8c03ce688e3b",
+    "version": "0.1.0",
+    "upstreamVersion": "0.1.0"
+  },
+  "larszu-facility-planner": {
+    "only-upstream": 0,
+    "only-suite": 0,
+    "two-way": 0,
+    "upstream-ahead": 0,
+    "suite-ahead": 0,
+    "expected-overlay": 0,
+    "dead-upstream": 0,
+    "drift": 0,
+    "total": 0,
+    "missingUpstream": false,
+    "upstreamSha": "8a524f48c139",
+    "version": "0.1.0",
+    "upstreamVersion": "0.1.0"
   }
 }

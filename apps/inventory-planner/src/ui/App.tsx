@@ -1,0 +1,61 @@
+// ───────────────────────────────────────────────────────────────────────────
+// Die Oberfläche des Lagers (E-27, ADR-006 Schritt 3).
+//
+// Der Eigentümer hat am 2026-09-09 nicht „ein Paket" gewählt, sondern ein
+// eigenes Werkzeug MIT eigener Bedienung: „Bestand, Ausgabeschein, Sub-Hire
+// bekommen ihre eigene Bedienung für den Lageristen."
+//
+// Das ist der Unterschied, um den es beim ganzen Schnitt geht. Im
+// Cable-Planner war das Lager ein Dialog IM Plan — bedienbar nur von jemandem,
+// der einen Plan offen hat. Der Lagerist hat keinen Plan offen. Er hat ein
+// Regal.
+//
+// DREI SICHTEN, WEIL ES DREI FRAGEN SIND (der Vertrag aus ADR-006):
+//   Bestand        Was ist da, wieviel, und wo liegt es?
+//   Ausgabeschein  Was ist draußen, bei wem, und seit wann?
+//   Sub-Hire       Was gehört uns nicht — und wann muss es zurück?
+// ───────────────────────────────────────────────────────────────────────────
+import { useState } from 'react'
+import { Bestand } from './Bestand'
+import { Ausgabescheine } from './Ausgabescheine'
+import { SubHire } from './SubHire'
+
+type Reiter = 'bestand' | 'ausgabe' | 'subhire'
+
+const REITER: { id: Reiter; titel: string; frage: string }[] = [
+  { id: 'bestand', titel: 'Bestand', frage: 'Was ist da, wieviel, und wo liegt es?' },
+  { id: 'ausgabe', titel: 'Ausgabescheine', frage: 'Was ist draußen, bei wem, und seit wann?' },
+  { id: 'subhire', titel: 'Sub-Hire', frage: 'Was gehört uns nicht — und wann muss es zurück?' },
+]
+
+export function App() {
+  const [reiter, setReiter] = useState<Reiter>('bestand')
+  const aktiv = REITER.find((r) => r.id === reiter)!
+
+  return (
+    <div className="app">
+      <header className="kopf">
+        <h1>Lager</h1>
+        <nav>
+          {REITER.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => setReiter(r.id)}
+              aria-pressed={r.id === reiter}
+              className={r.id === reiter ? 'reiter aktiv' : 'reiter'}
+            >
+              {r.titel}
+            </button>
+          ))}
+        </nav>
+      </header>
+      <p className="frage">{aktiv.frage}</p>
+      <main>
+        {reiter === 'bestand' && <Bestand />}
+        {reiter === 'ausgabe' && <Ausgabescheine />}
+        {reiter === 'subhire' && <SubHire />}
+      </main>
+    </div>
+  )
+}

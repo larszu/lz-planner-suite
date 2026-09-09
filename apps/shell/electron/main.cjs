@@ -25,6 +25,15 @@ const PLANNERS = {
   'planner-signal': 'signal',
   'planner-cameras': 'cameras',
   'planner-licht': 'licht',
+  // Die beiden ausgelagerten Werkzeuge (E-26/E-27). Sie standen in der
+  // Modul-Registry und in `copy-planners.mjs`, aber NICHT hier — im
+  // gepackten Build fiel die Shell fuer sie deshalb auf die Dev-Adresse
+  // zurueck (`plannerUrl` nimmt den Fallback, wenn `__suitePlanners` den
+  // Schluessel nicht kennt) und lud `http://localhost:4185/`. Auf dem
+  // Rechner des Nutzers laeuft dort nichts: ERR_CONNECTION_REFUSED, ein
+  // leerer Rahmen, keine Meldung. `suite-smoke.mjs` hat es gefunden.
+  'planner-lager': 'lager',
+  'planner-gebaeude': 'gebaeude',
 }
 
 // Privilegierte Schemata MÜSSEN vor app.whenReady registriert werden. standard:

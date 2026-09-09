@@ -1,0 +1,43 @@
+name: CI
+
+# Der Merge-Gate. Nach der stehenden Regel wird nur bei gruenem CI gemergt —
+# ein Repo ohne Checks hat also kein Tor, sondern eine offene Tuer.
+#
+# Auf `pull_request`, weil genau dort gemergt wird. Nur auf `push: main` zu
+# laufen hiesse, den Fehler nach dem Merge zu finden.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck + Build
+        run: npm run build
+      # `npm test` faehrt die Waechter mit (vitest, Grenze zum Plan,
+      # Quellsprache) — und zwar aus EINEM Grund: die Suite vendoriert dieses
+      # Repo und ruft dort `npm run test --workspaces`. Ein Waechter, der nur
+      # hier als eigener Workflow-Schritt staende, liefe in der vendorten Kopie
+      # nie mit; ihr Workflow-Abbild feuert nicht. Der Waechter der Suite
+      # (`ci:complete`) meldet genau das.
+      - name: Tests + Waechter (Grenze zum Plan, Quellsprache)
+        run: npm test

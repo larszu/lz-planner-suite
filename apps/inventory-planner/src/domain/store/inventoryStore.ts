@@ -1,0 +1,916 @@
+import { create } from 'zustand'
+import { v4 as uuidv4 } from 'uuid'
+import { mergeById } from '../lib/inventoryMerge'
+import { STORAGE_KEYS } from '../../lib/storageKeys'
+import { moveRefusal } from '../lib/storageMoves'
+import { nodePathLabel } from '../lib/storageTree'
+import { useStorageMoveStore } from './storageMoveStore'
+import type { MoveRefusal } from '../types/storageMove'
+import type {
+  InventoryItem,
+  InventoryCase,
+  StorageNode,
+  StorageNodeKind,
+  InventorySet,
+  SetComponent,
+  InventoryUnit,
+  UnitEvent,
+  UnitCondition,
+  FaultService,
+  PhysicalDimensions,
+  InventoryMaterialKind,
+  Geldbetrag,
+  Anschaffung,
+  Versicherungswert,
+} from '../types/inventory'
+import { normaliseFaultEvent } from '../lib/faultHistory'
+import type { BedarfsZeile } from '../types/bedarf'
+
+/**
+ * Phase 2 — Zentraler Bestand (docs/inventory-rental-readiness.md).
+ *
+ * Projektübergreifender Lager-Bestand, persistiert in localStorage
+ * (`cable-planner:inventory`) — bewusst gleiche Strategie wie uiStore/
+ * settingsStore/Library, damit der Bestand in Web UND Desktop überlebt und
+ * unabhängig vom geöffneten Plan ist. Eine spätere Migration auf eine
+ * IPC-JSON-DB ist möglich, ohne die Consumer zu ändern (die reden nur mit
+ * diesem Store).
+ */
+
+const KEY = STORAGE_KEYS.inventory
+
+interface PersistedInventory {
+  items: InventoryItem[]
+  /** Lager-Baum (Lagerplätze + Container) — LPN-Modell. */
+  nodes: StorageNode[]
+  /** Logische Sets/Kits. */
+  sets: InventorySet[]
+  /** Serialisierte Einzel-Einheiten. */
+  units: InventoryUnit[]
+}
+
+const defaults: PersistedInventory = { items: [], nodes: [], sets: [], units: [] }
+
+/** Heilt optionale Maße (nur positive Zahlen; sonst weglassen — nichts erfinden). */
+const healDimensions = (raw: unknown): PhysicalDimensions | undefined => {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Partial<PhysicalDimensions>
+  const num = (v: unknown): number | undefined =>
+    typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined
+  const d: PhysicalDimensions = {
+    widthMm: num(r.widthMm),
+    heightMm: num(r.heightMm),
+    depthMm: num(r.depthMm),
+    weightKg: num(r.weightKg),
+  }
+  return d.widthMm || d.heightMm || d.depthMm || d.weightKg ? d : undefined
+}
+
+const healCodeType = (v: unknown): InventoryItem['codeType'] =>
+  v === 'qr' || v === 'barcode' ? v : undefined
+
+const healMaterialKinds = (v: unknown): InventoryMaterialKind[] | undefined => {
+  if (!Array.isArray(v)) return undefined
+  const kinds = v.filter((k): k is InventoryMaterialKind => k === 'rental' || k === 'consumable')
+  return kinds.length ? [...new Set(kinds)] : undefined
+}
+
+/** Heilt ein geladenes Item: erzwingt Pflichtfelder, kappt Unsinn. */
+/**
+ * ADR-005 — Was ein Import nicht bewahren konnte.
+ *
+ * Die Heilung weist Eintraege ohne Pflichtfelder ab; das ist richtig, denn ein
+ * Lagerort ohne Namen ist kein Lagerort. Falsch war nur, es zu verschweigen.
+ * `label` ist der beste menschenlesbare Griff, den der Rohsatz noch hergibt —
+ * damit jemand die Zeile in seiner Quelldatei wiederfindet.
+ */
+export interface ImportRejection {
+  kind: 'item' | 'node' | 'set' | 'unit'
+  label: string
+}
+
+export interface ImportReport {
+  imported: number
+  rejected: ImportRejection[]
+}
+
+/** Bester Griff auf einen Rohsatz, der die Heilung nicht bestanden hat. */
+const rawLabel = (raw: unknown): string => {
+  if (!raw || typeof raw !== 'object') return 'ohne Inhalt'
+  const r = raw as Record<string, unknown>
+  for (const key of ['model', 'name', 'id', 'itemId', 'code']) {
+    const v = r[key]
+    if (typeof v === 'string' && v.trim()) return v.trim()
+  }
+  return 'ohne Kennung'
+}
+
+const healItem = (raw: unknown): InventoryItem | null => {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Partial<InventoryItem>
+  if (typeof r.model !== 'string' || r.model.trim() === '') return null
+  const now = new Date().toISOString()
+  return {
+    id: typeof r.id === 'string' && r.id ? r.id : uuidv4(),
+    model: r.model,
+    manufacturer: typeof r.manufacturer === 'string' ? r.manufacturer : undefined,
+    category: typeof r.category === 'string' ? r.category : undefined,
+    // ADR-002 — die Typ-Identitaet muss die Heilung ueberleben; genau hier
+    // ginge sie sonst still verloren.
+    deviceTypeId:
+      typeof r.deviceTypeId === 'string' && r.deviceTypeId.trim() ? r.deviceTypeId : undefined,
+    quantity: typeof r.quantity === 'number' && r.quantity >= 0 ? Math.round(r.quantity) : 0,
+    rentPricePerDay:
+      typeof r.rentPricePerDay === 'number' && r.rentPricePerDay >= 0 ? r.rentPricePerDay : undefined,
+    stockLocation: typeof r.stockLocation === 'string' ? r.stockLocation : undefined,
+    supplier: typeof r.supplier === 'string' ? r.supplier : undefined,
+    ownership:
+      r.ownership === 'owned' || r.ownership === 'rented' || r.ownership === 'subhire'
+        ? r.ownership
+        : undefined,
+    code: typeof r.code === 'string' && r.code.trim() ? r.code.trim() : undefined,
+    codeType: healCodeType(r.codeType),
+    locationId: typeof r.locationId === 'string' && r.locationId ? r.locationId : undefined,
+    dimensions: healDimensions(r.dimensions),
+    // Bedarf 118 — Ursprungsland fuers Carnet-Datenblatt. Zwei Buchstaben nach
+    // ISO 3166-1, gross geschrieben; laenger ist es kein Kuerzel und wird
+    // unveraendert durchgereicht, statt beschnitten zu werden (ein
+    // abgeschnittenes Land waere ein falsches).
+    ursprungsland:
+      typeof r.ursprungsland === 'string' && r.ursprungsland.trim()
+        ? r.ursprungsland.trim().toUpperCase()
+        : undefined,
+    materialKinds: healMaterialKinds(r.materialKinds),
+    notes: typeof r.notes === 'string' ? r.notes : undefined,
+    createdAt: typeof r.createdAt === 'string' ? r.createdAt : now,
+    updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : now,
+  }
+}
+
+const NODE_KINDS = new Set<StorageNodeKind>(['depot', 'room', 'shelf', 'bin', 'case', 'transportCase'])
+
+/** Heilt einen geladenen Lager-Knoten. */
+const healNode = (raw: unknown): StorageNode | null => {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Partial<StorageNode>
+  if (typeof r.name !== 'string' || r.name.trim() === '') return null
+  if (!r.kind || !NODE_KINDS.has(r.kind)) return null
+  const now = new Date().toISOString()
+  return {
+    id: typeof r.id === 'string' && r.id ? r.id : uuidv4(),
+    name: r.name,
+    kind: r.kind,
+    parentId: typeof r.parentId === 'string' && r.parentId ? r.parentId : undefined,
+    code: typeof r.code === 'string' && r.code.trim() ? r.code.trim() : undefined,
+    codeType: healCodeType(r.codeType),
+    dimensions: healDimensions(r.dimensions),
+    notes: typeof r.notes === 'string' ? r.notes : undefined,
+    createdAt: typeof r.createdAt === 'string' ? r.createdAt : now,
+    updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : now,
+  }
+}
+
+/** Heilt ein geladenes Set. */
+const healSet = (raw: unknown): InventorySet | null => {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Partial<InventorySet>
+  if (typeof r.name !== 'string' || r.name.trim() === '') return null
+  const now = new Date().toISOString()
+  const components: SetComponent[] = Array.isArray(r.components)
+    ? r.components
+        .map((c): SetComponent | null => {
+          if (!c || typeof c !== 'object') return null
+          const cc = c as Partial<SetComponent>
+          if (typeof cc.itemId !== 'string' || !cc.itemId) return null
+          const qty = typeof cc.quantity === 'number' && cc.quantity > 0 ? Math.round(cc.quantity) : 1
+          return { itemId: cc.itemId, quantity: qty }
+        })
+        .filter((c): c is SetComponent => c !== null)
+    : []
+  return {
+    id: typeof r.id === 'string' && r.id ? r.id : uuidv4(),
+    name: r.name,
+    components,
+    notes: typeof r.notes === 'string' ? r.notes : undefined,
+    createdAt: typeof r.createdAt === 'string' ? r.createdAt : now,
+    updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : now,
+  }
+}
+
+/**
+ * Migriert das Alt-Format (`cases: InventoryCase[]` mit `contents`) auf das
+ * LPN-Modell: jedes Case → StorageNode(kind 'case'), jeder Inhalt → das
+ * `locationId` des Artikels zeigt auf diesen Case-Knoten (letztes Case gewinnt,
+ * da ein Artikel im Bulk-Modell einen aktuellen Ort hat). Idempotent: läuft nur,
+ * wenn noch keine `nodes` vorhanden sind.
+ */
+const migrateLegacyCases = (
+  parsed: { cases?: unknown },
+  items: InventoryItem[],
+): { nodes: StorageNode[]; items: InventoryItem[] } => {
+  const rawCases = Array.isArray(parsed.cases) ? parsed.cases : []
+  if (rawCases.length === 0) return { nodes: [], items }
+  const nodes: StorageNode[] = []
+  const locByItem = new Map<string, string>()
+  for (const rc of rawCases) {
+    if (!rc || typeof rc !== 'object') continue
+    const c = rc as Partial<InventoryCase>
+    if (typeof c.name !== 'string' || !c.name.trim()) continue
+    const id = typeof c.id === 'string' && c.id ? c.id : uuidv4()
+    const now = new Date().toISOString()
+    nodes.push({
+      id,
+      name: c.name,
+      kind: 'case',
+      code: typeof c.code === 'string' && c.code.trim() ? c.code.trim() : undefined,
+      codeType: healCodeType(c.codeType),
+      dimensions: healDimensions(c.dimensions),
+      notes: typeof c.notes === 'string' ? c.notes : undefined,
+      createdAt: typeof c.createdAt === 'string' ? c.createdAt : now,
+      updatedAt: typeof c.updatedAt === 'string' ? c.updatedAt : now,
+    })
+    if (Array.isArray(c.contents)) {
+      for (const p of c.contents) {
+        const pc = p as Partial<{ itemId: string }>
+        if (typeof pc?.itemId === 'string' && pc.itemId) locByItem.set(pc.itemId, id)
+      }
+    }
+  }
+  const migratedItems = items.map((it) =>
+    locByItem.has(it.id) ? { ...it, locationId: locByItem.get(it.id) } : it,
+  )
+  return { nodes, items: migratedItems }
+}
+
+const UNIT_CONDITIONS = new Set<UnitCondition>(['ok', 'defect', 'inRepair', 'retired'])
+
+/** Heilt eine geladene Einheit. */
+/**
+ * Einen Geldbetrag aus einer Datei heilen (Bedarf 118).
+ *
+ * OHNE WAEHRUNG KEIN BETRAG — dieselbe Regel wie bei der Eingabe
+ * (`geldAusEingabe`), nur fuer die andere Richtung. Eine Datei von einem
+ * anderen Rechner kann eine Zahl ohne Kuerzel tragen; sie stillschweigend zu
+ * „EUR" zu erklaeren waere eine Annahme ueber einen fremden
+ * Versicherungsvertrag. Ohne Waehrung faellt der Betrag weg, und die
+ * Versicherungsliste fuehrt die Einheit als „ohne angegebenen Wert" — sichtbar
+ * statt still falsch.
+ */
+const healGeld = (raw: unknown): Geldbetrag | undefined => {
+  if (!raw || typeof raw !== 'object') return undefined
+  const g = raw as Partial<Geldbetrag>
+  const w = typeof g.waehrung === 'string' ? g.waehrung.trim().toUpperCase() : ''
+  if (!w) return undefined
+  if (typeof g.cent !== 'number' || !Number.isFinite(g.cent)) return undefined
+  return { cent: Math.round(g.cent), waehrung: w }
+}
+
+/**
+ * Anschaffung heilen. Das Datum allein ist keine Angabe und faellt mit dem
+ * Betrag weg — ein Kaufdatum ohne Preis ist nichts, was auf eine Liste kommt.
+ */
+const healAnschaffung = (raw: unknown): Anschaffung | undefined => {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Partial<Anschaffung>
+  const betrag = healGeld(r.betrag)
+  if (!betrag) return undefined
+  return { betrag, ...(typeof r.am === 'string' && r.am.trim() ? { am: r.am.trim() } : {}) }
+}
+
+/** Versicherungswert heilen — dieselbe Regel, anderes Datumsfeld. */
+const healVersicherungswert = (raw: unknown): Versicherungswert | undefined => {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Partial<Versicherungswert>
+  const betrag = healGeld(r.betrag)
+  if (!betrag) return undefined
+  return { betrag, ...(typeof r.stand === 'string' && r.stand.trim() ? { stand: r.stand.trim() } : {}) }
+}
+
+const healUnit = (raw: unknown): InventoryUnit | null => {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Partial<InventoryUnit>
+  if (typeof r.itemId !== 'string' || !r.itemId) return null
+  const now = new Date().toISOString()
+  const history: UnitEvent[] = Array.isArray(r.history)
+    ? r.history
+        .map((e): UnitEvent | null => {
+          if (!e || typeof e !== 'object') return null
+          const ev = e as Partial<UnitEvent>
+          if (typeof ev.at !== 'string' || typeof ev.detail !== 'string') return null
+          // BEDARF 52 — `fault` MUSS hier stehen. Ohne diesen Zweig faellt
+          // jedes gespeicherte Fehler-Ereignis beim naechsten Laden auf
+          // `note` zurueck: der Text bliebe stehen, aber `services` und
+          // `resolved` waeren weg und die Zaehlung „welche Trommel ist
+          // verdaechtig" ergaebe still null. Genau das Vergessen, gegen das
+          // dieser Bedarf geschrieben ist — nur diesmal von der Software.
+          const kind =
+            ev.kind === 'created' ||
+            ev.kind === 'moved' ||
+            ev.kind === 'condition' ||
+            ev.kind === 'note' ||
+            ev.kind === 'fault'
+              ? ev.kind
+              : 'note'
+          return {
+            at: ev.at,
+            kind,
+            detail: ev.detail,
+            ...(kind === 'fault' ? normaliseFaultEvent(ev) : {}),
+          }
+        })
+        .filter((e): e is UnitEvent => e !== null)
+    : []
+  return {
+    id: typeof r.id === 'string' && r.id ? r.id : uuidv4(),
+    itemId: r.itemId,
+    serial: typeof r.serial === 'string' && r.serial.trim() ? r.serial.trim() : undefined,
+    // Bedarf 107 — die Hausreferenz kommt NEU dazu und wird NICHT aus `serial`
+    // abgeleitet. Welche der beiden Identitaeten in einem Altbestand im
+    // `serial`-Feld steht, weiss dieser Planer nicht; eine geratene Umbuchung
+    // machte aus einer Herstellernummer eine Hausnummer, die die Versicherung
+    // nicht kennt. Neues Feld, Vorgabewert leer, nie ueberschreiben.
+    houseRef: typeof r.houseRef === 'string' && r.houseRef.trim() ? r.houseRef.trim() : undefined,
+    code: typeof r.code === 'string' && r.code.trim() ? r.code.trim() : undefined,
+    codeType: healCodeType(r.codeType),
+    locationId: typeof r.locationId === 'string' && r.locationId ? r.locationId : undefined,
+    condition: r.condition && UNIT_CONDITIONS.has(r.condition) ? r.condition : 'ok',
+    notes: typeof r.notes === 'string' ? r.notes : undefined,
+    // Bedarf 118 — die beiden Werte. Sie MUESSEN hier stehen: `healUnit` baut
+    // jede Einheit Feld fuer Feld neu auf, ein hier vergessenes Feld ist beim
+    // naechsten Laden still weg. Genau deshalb steigt auch die Format-Version
+    // (siehe `inventoryPortable.ts`).
+    anschaffung: healAnschaffung(r.anschaffung),
+    versicherungswert: healVersicherungswert(r.versicherungswert),
+    history,
+    createdAt: typeof r.createdAt === 'string' ? r.createdAt : now,
+    updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : now,
+  }
+}
+
+const load = (): PersistedInventory => {
+  try {
+    const raw = localStorage.getItem(KEY)
+    if (!raw) return defaults
+    const parsed = JSON.parse(raw) as Partial<PersistedInventory> & { cases?: unknown }
+    let items = Array.isArray(parsed.items)
+      ? parsed.items.map(healItem).filter((i): i is InventoryItem => i !== null)
+      : []
+    let nodes = Array.isArray(parsed.nodes)
+      ? parsed.nodes.map(healNode).filter((n): n is StorageNode => n !== null)
+      : []
+    // Alt-Format-Migration: nur, wenn noch keine nodes existieren.
+    if (nodes.length === 0 && Array.isArray(parsed.cases) && parsed.cases.length > 0) {
+      const migrated = migrateLegacyCases(parsed, items)
+      nodes = migrated.nodes
+      items = migrated.items
+    }
+    const sets = Array.isArray(parsed.sets)
+      ? parsed.sets.map(healSet).filter((s): s is InventorySet => s !== null)
+      : []
+    const units = Array.isArray(parsed.units)
+      ? parsed.units.map(healUnit).filter((u): u is InventoryUnit => u !== null)
+      : []
+    return { items, nodes, sets, units }
+  } catch {
+    return defaults
+  }
+}
+
+const persist = (
+  items: InventoryItem[],
+  nodes: StorageNode[],
+  sets: InventorySet[],
+  units: InventoryUnit[],
+) => {
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ items, nodes, sets, units }))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Felder, die ein neues Item übergeben darf (alles außer den vom Store
+ *  verwalteten id/createdAt/updatedAt). */
+export type InventoryItemInput = Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>
+/** Felder, die ein neuer Lager-Knoten übergeben darf. */
+export type StorageNodeInput = Omit<StorageNode, 'id' | 'createdAt' | 'updatedAt'>
+/** Felder, die ein neues Set übergeben darf. */
+export type InventorySetInput = Omit<InventorySet, 'id' | 'createdAt' | 'updatedAt'>
+/** Felder, die eine neue Einheit übergeben darf (Store verwaltet id/history/Zeit). */
+export type InventoryUnitInput = Omit<InventoryUnit, 'id' | 'history' | 'createdAt' | 'updatedAt'>
+
+interface InventoryState {
+  items: InventoryItem[]
+  /** Lager-Baum: Lagerplätze + Container (LPN-Modell). */
+  nodes: StorageNode[]
+  /** Logische Sets/Kits. */
+  sets: InventorySet[]
+  /** Serialisierte Einzel-Einheiten. */
+  units: InventoryUnit[]
+  /** Legt einen neuen Artikel an, liefert die erzeugte id. */
+  addItem: (input: InventoryItemInput) => string
+  /** Aktualisiert Felder eines Artikels (id/createdAt bleiben unangetastet). */
+  updateItem: (id: string, patch: Partial<Omit<InventoryItemInput, 'locationId'>>) => void
+  /** Entfernt einen Artikel (und aus allen Set-Komponenten). */
+  removeItem: (id: string) => void
+  /**
+   * Seed aus dem aktuellen Plan (ADR-002): gruppiert Equipment ueber die
+   * Katalog-Identitaet `deviceTypeId`, sonst ueber Name + Kategorie, und legt
+   * je Gruppe einen Artikel mit Menge = Anzahl der Instanzen an. Der
+   * Modellname kommt bei typisierten Geraeten aus dem Katalog, nicht vom
+   * Geraet.
+   *
+   * Vorhandene Artikel werden NICHT dupliziert: Ihre Menge wird auf
+   * max(bestehend, gezaehlt) angehoben, und eine fehlende Typ-Identitaet wird
+   * nachgetragen. Liefert die Anzahl neu angelegter Artikel.
+   */
+  seedAusBedarf: (bedarf: readonly BedarfsZeile[]) => number
+  /** Legt einen Lager-Knoten (Lagerplatz oder Container) an, liefert die id. */
+  addNode: (input: StorageNodeInput) => string
+  /** Aktualisiert Felder eines Knotens (parentId via moveNode). */
+  updateNode: (id: string, patch: Partial<Omit<StorageNodeInput, 'parentId'>>) => void
+  /**
+   * Hängt einen Knoten unter einen neuen Parent (Verschieben im Baum /
+   * Case-in-Case). Zyklen (Knoten in sich/seinen Nachfahren) werden abgewiesen.
+   */
+  /**
+   * Bedarf 106 — einen Lagerort/Container umhaengen.
+   *
+   * Liefert die ABSAGE, wenn es nicht geht, statt still nichts zu tun. Der
+   * Zyklus-Schutz gab bisher `{}` zurueck: die Kiste blieb stehen, und
+   * niemand erfuhr, warum. Ein Vorgang, der ohne Grund nichts tut, ist fuer
+   * den Bedienenden ununterscheidbar von einem kaputten Programm — und beim
+   * naechsten Mal raeumt er von Hand um und traegt es nirgends ein. Genau das
+   * ist die „stale location" aus dem Beleg.
+   */
+  moveNode: (id: string, newParentId: string | undefined) => MoveRefusal | undefined
+  /**
+   * Bedarf 106 — einen ARTIKEL (Bulk-Ware) einraeumen oder umraeumen.
+   *
+   * Ein eigener Vorgang und keine Nebenwirkung von `updateItem`: dieselbe
+   * Funktion, die eine Notiz aendert, verschob bisher auch Ware, und keine
+   * der beiden Aenderungen war von der anderen zu unterscheiden. Der Bedarf
+   * sagt es woertlich — „a 'move' verb, not a side effect".
+   */
+  moveItem: (id: string, nodeId: string | undefined) => MoveRefusal | undefined
+  /**
+   * Entfernt einen Knoten. Direkte Kinder werden zum Parent des gelöschten
+   * Knotens hochgezogen (kein Waisen-Subtree); Artikel, die dort lagen,
+   * verlieren ihren Lagerort (locationId → undefined).
+   */
+  removeNode: (id: string) => void
+  /**
+   * Weist einem Artikel einen Lagerort zu (Lagerplatz ODER Container). Zeigt
+   * `nodeId` auf einen Container, ist der Artikel damit eingepackt. `undefined`
+   * = kein Lagerort. Kein Pack-Zustand außerhalb des Baums — LPN-Prinzip.
+   */
+  // BEDARF 106 — `setItemLocation` ist ENTFALLEN. Es schrieb den Lagerort als
+  // stilles Feld und hinterliess nichts; damit war es die zweite Tuer neben
+  // `updateItem`, durch die eine Bewegung ohne Vorgang ging. Wer einen Artikel
+  // einraeumt oder umraeumt, nimmt `moveItem` — es prueft, protokolliert und
+  // sagt, wenn es nicht geht.
+  /** Legt ein Set an, liefert die id. */
+  addSet: (input: InventorySetInput) => string
+  /** Aktualisiert Felder eines Sets. */
+  updateSet: (id: string, patch: Partial<InventorySetInput>) => void
+  /** Entfernt ein Set (Artikel bleiben im Bestand). */
+  removeSet: (id: string) => void
+  /** Legt eine serialisierte Einheit an (mit „created"-Historieneintrag). */
+  addUnit: (input: InventoryUnitInput) => string
+  /** Aktualisiert Stammfelder einer Einheit (Ort/Zustand via move/condition). */
+  updateUnit: (
+    id: string,
+    patch: Partial<
+      Pick<
+        InventoryUnit,
+        | 'serial'
+        | 'houseRef'
+        | 'code'
+        | 'codeType'
+        | 'notes'
+        // Bedarf 118 — Anschaffungspreis und Versicherungswert sind Stammdaten
+        // der Einheit und werden hier gepflegt, nicht ueber Bewegungen.
+        | 'anschaffung'
+        | 'versicherungswert'
+      >
+    >,
+  ) => void
+  /** Entfernt eine Einheit. */
+  removeUnit: (id: string) => void
+  /** Verschiebt eine Einheit an einen Lagerort (hängt „moved" an die Historie). */
+  moveUnit: (id: string, nodeId: string | undefined, locationLabel: string) => void
+  /** Ändert den Zustand einer Einheit (hängt „condition" an die Historie). */
+  setUnitCondition: (id: string, condition: UnitCondition) => void
+  /**
+   * Bedarf 52 — einen Fehler an dieser Einheit festhalten.
+   *
+   * Append-only wie die uebrige Historie: ein Fehler wird nicht bearbeitet,
+   * sondern spaeter als erledigt NACHGETRAGEN (`resolveUnitFault`). Ein
+   * ueberschriebener Fehlereintrag waere genau das Vergessen, gegen das dieser
+   * Bedarf geschrieben ist.
+   */
+  reportUnitFault: (id: string, detail: string, services: FaultService[]) => void
+  /** Bedarf 52 — den n-ten Fehlereintrag einer Einheit als erledigt markieren. */
+  resolveUnitFault: (id: string, at: string) => void
+  /** Aktueller Bestand als portabler Snapshot (für App-übergreifenden Export). */
+  exportSnapshot: () => { items: InventoryItem[]; nodes: StorageNode[]; sets: InventorySet[]; units: InventoryUnit[] }
+  /**
+   * Importiert einen Snapshot. `replace` ersetzt den gesamten Bestand,
+   * `merge` fügt per id zusammen (Import gewinnt bei Kollision). Alle Felder
+   * werden geheilt (gleiche Regeln wie beim Laden).
+   *
+   * ADR-005 — liefert einen Bericht, keine blosse Zahl. Vorher wurden
+   * Eintraege, die die Heilung nicht ueberstehen, still weggefiltert und nur
+   * die Ueberlebenden gezaehlt: eine Datei, deren Haelfte abgewiesen wurde,
+   * meldete einen gruenen Erfolg mit kleinerer Zahl. Wer nicht bewahren kann,
+   * sagt es an der Stelle, an der es passiert.
+   */
+  importSnapshot: (
+    snap: { items?: unknown[]; nodes?: unknown[]; sets?: unknown[]; units?: unknown[] },
+    mode: 'replace' | 'merge',
+  ) => ImportReport
+}
+
+const initial = load()
+
+/** Normalisierungs-Schlüssel für Dedupe (Modell + Kategorie). */
+const dedupeKey = (model: string, category?: string) =>
+  `${model.trim().toLowerCase()}|${(category ?? '').trim().toLowerCase()}`
+
+export const useInventoryStore = create<InventoryState>((set, get) => ({
+  items: initial.items,
+  nodes: initial.nodes,
+  sets: initial.sets,
+  units: initial.units,
+  addItem: (input) => {
+    const now = new Date().toISOString()
+    const item: InventoryItem = { ...input, id: uuidv4(), createdAt: now, updatedAt: now }
+    set((state) => {
+      const items = [...state.items, item]
+      persist(items, state.nodes, state.sets, state.units)
+      return { items }
+    })
+    return item.id
+  },
+  updateItem: (id, patch) =>
+    set((state) => {
+      const items = state.items.map((it) =>
+        it.id === id ? { ...it, ...patch, updatedAt: new Date().toISOString() } : it,
+      )
+      persist(items, state.nodes, state.sets, state.units)
+      return { items }
+    }),
+  removeItem: (id) =>
+    set((state) => {
+      const items = state.items.filter((it) => it.id !== id)
+      // Aus allen Set-Komponenten entfernen, damit keine toten Referenzen bleiben.
+      const sets = state.sets.map((s) =>
+        s.components.some((c) => c.itemId === id)
+          ? { ...s, components: s.components.filter((c) => c.itemId !== id), updatedAt: new Date().toISOString() }
+          : s,
+      )
+      // Serialisierte Einheiten dieses Modells mit-entfernen (keine Waisen-Units).
+      const units = state.units.filter((u) => u.itemId !== id)
+      persist(items, state.nodes, sets, units)
+      return { items, sets, units }
+    }),
+  seedAusBedarf: (bedarf) => {
+    // Der Bedarf kommt FERTIG herein (siehe `types/bedarf.ts`). Frueher stand
+    // hier `deriveDemand(equipment)` — das Lager rechnete aus Plan-Geraeten
+    // selbst, wieviel wovon gebraucht wird. Ueber eine Repo-Grenze waere das
+    // die zweite Ableitung derselben Zahl, gegen die ADR-006 Punkt 4
+    // geschrieben ist: der Plan kennt seinen Bedarf, das Lager kennt seinen
+    // Bestand, und keiner rechnet die Sache des anderen nach.
+    let created = 0
+    const now = new Date().toISOString()
+    const current = get().items
+    const next = [...current]
+    const byType = new Map<string, InventoryItem>()
+    for (const it of current) if (it.deviceTypeId) byType.set(it.deviceTypeId, it)
+    const byName = new Map<string, InventoryItem>()
+    for (const it of current) byName.set(dedupeKey(it.model, it.category), it)
+
+    for (const zeile of bedarf) {
+      // Ueber die Katalog-Id, wo es sie gibt; sonst ueber Name + Kategorie.
+      // Die Reihenfolge ist Absicht: eine Id ist eine ANGABE, ein Namensgleich
+      // eine Vermutung (ADR-002).
+      const hit =
+        (zeile.deviceTypeId ? byType.get(zeile.deviceTypeId) : undefined) ??
+        byName.get(dedupeKey(zeile.label, zeile.category))
+      if (hit) {
+        const idx = next.findIndex((x) => x.id === hit.id)
+        if (idx >= 0) {
+          // Menge nur ANHEBEN, nie senken: der Bestand ist gezaehlt, der
+          // Bedarf gerechnet. Wer den Bestand nach unten korrigiert, weil ein
+          // Plan weniger braucht, hat Material verloren, das im Regal steht.
+          const raise = zeile.quantity > next[idx].quantity
+          const addType = zeile.deviceTypeId != null && next[idx].deviceTypeId == null
+          if (raise || addType) {
+            next[idx] = {
+              ...next[idx],
+              ...(raise ? { quantity: zeile.quantity } : {}),
+              ...(addType ? { deviceTypeId: zeile.deviceTypeId } : {}),
+              updatedAt: now,
+            }
+          }
+        }
+        continue
+      }
+      next.push({
+        id: uuidv4(),
+        model: zeile.label,
+        category: zeile.category,
+        ...(zeile.deviceTypeId ? { deviceTypeId: zeile.deviceTypeId } : {}),
+        quantity: zeile.quantity,
+        rentPricePerDay: zeile.muster?.rentPricePerDay,
+        stockLocation: zeile.muster?.stockLocation,
+        supplier: zeile.muster?.supplier,
+        ownership: zeile.muster?.ownership,
+        createdAt: now,
+        updatedAt: now,
+      })
+      created += 1
+    }
+
+    persist(next, get().nodes, get().sets, get().units)
+    set({ items: next })
+    return created
+  },
+  addNode: (input) => {
+    const now = new Date().toISOString()
+    const node: StorageNode = { ...input, id: uuidv4(), createdAt: now, updatedAt: now }
+    set((state) => {
+      const nodes = [...state.nodes, node]
+      persist(state.items, nodes, state.sets, state.units)
+      return { nodes }
+    })
+    return node.id
+  },
+  updateNode: (id, patch) =>
+    set((state) => {
+      const nodes = state.nodes.map((n) =>
+        n.id === id ? { ...n, ...patch, updatedAt: new Date().toISOString() } : n,
+      )
+      persist(state.items, nodes, state.sets, state.units)
+      return { nodes }
+    }),
+  moveNode: (id, newParentId) => {
+    // Bedarf 106 — die Absage hat einen Namen. `moveRefusal` prueft alles an
+    // einer Stelle (unbekanntes Objekt, unbekanntes Ziel, Zyklus, schon dort)
+    // und liefert den Grund; der Aufrufer zeigt ihn an.
+    const state = get()
+    const knoten = state.nodes.find((n) => n.id === id)
+    const absage = moveRefusal(
+      state.nodes,
+      'node',
+      knoten ? { id, currentPlaceId: knoten.parentId } : undefined,
+      newParentId,
+    )
+    if (absage) return absage
+    const label = newParentId ? nodePathLabel(state.nodes, newParentId) : undefined
+    set((s2) => {
+      const nodes = s2.nodes.map((n) =>
+        n.id === id ? { ...n, parentId: newParentId, updatedAt: new Date().toISOString() } : n,
+      )
+      persist(s2.items, nodes, s2.sets, s2.units)
+      return { nodes }
+    })
+    useStorageMoveStore.getState().record('node', id, knoten?.parentId, newParentId, label)
+    return undefined
+  },
+  moveItem: (id, nodeId) => {
+    const state = get()
+    const artikel = state.items.find((i) => i.id === id)
+    const absage = moveRefusal(
+      state.nodes,
+      'item',
+      artikel ? { id, currentPlaceId: artikel.locationId } : undefined,
+      nodeId,
+    )
+    if (absage) return absage
+    const label = nodeId ? nodePathLabel(state.nodes, nodeId) : undefined
+    set((s2) => {
+      const items = s2.items.map((i) =>
+        i.id === id ? { ...i, locationId: nodeId, updatedAt: new Date().toISOString() } : i,
+      )
+      persist(items, s2.nodes, s2.sets, s2.units)
+      return { items }
+    })
+    useStorageMoveStore.getState().record('item', id, artikel?.locationId, nodeId, label)
+    return undefined
+  },
+  removeNode: (id) =>
+    set((state) => {
+      const removed = state.nodes.find((n) => n.id === id)
+      const parentId = removed?.parentId
+      // Kinder zum Parent des gelöschten Knotens hochziehen (kein Waisen-Subtree).
+      const nodes = state.nodes
+        .filter((n) => n.id !== id)
+        .map((n) =>
+          n.parentId === id ? { ...n, parentId, updatedAt: new Date().toISOString() } : n,
+        )
+      // Artikel, die hier lagen, verlieren ihren Lagerort.
+      const items = state.items.map((it) =>
+        it.locationId === id ? { ...it, locationId: undefined, updatedAt: new Date().toISOString() } : it,
+      )
+      // Einheiten, die hier lagen, ebenso (mit Historieneintrag).
+      const nowIso = new Date().toISOString()
+      const units = state.units.map((u) =>
+        u.locationId === id
+          ? {
+              ...u,
+              locationId: undefined,
+              history: [...u.history, { at: nowIso, kind: 'moved' as const, detail: 'Lagerort gelöscht' }],
+              updatedAt: nowIso,
+            }
+          : u,
+      )
+      persist(items, nodes, state.sets, units)
+      return { items, nodes, units }
+    }),
+  addSet: (input) => {
+    const now = new Date().toISOString()
+    const s: InventorySet = { ...input, components: input.components ?? [], id: uuidv4(), createdAt: now, updatedAt: now }
+    set((state) => {
+      const sets = [...state.sets, s]
+      persist(state.items, state.nodes, sets, state.units)
+      return { sets }
+    })
+    return s.id
+  },
+  updateSet: (id, patch) =>
+    set((state) => {
+      const sets = state.sets.map((s) =>
+        s.id === id ? { ...s, ...patch, updatedAt: new Date().toISOString() } : s,
+      )
+      persist(state.items, state.nodes, sets, state.units)
+      return { sets }
+    }),
+  removeSet: (id) =>
+    set((state) => {
+      const sets = state.sets.filter((s) => s.id !== id)
+      persist(state.items, state.nodes, sets, state.units)
+      return { sets }
+    }),
+  addUnit: (input) => {
+    const now = new Date().toISOString()
+    const unit: InventoryUnit = {
+      ...input,
+      id: uuidv4(),
+      history: [{ at: now, kind: 'created', detail: 'angelegt' }],
+      createdAt: now,
+      updatedAt: now,
+    }
+    set((state) => {
+      const units = [...state.units, unit]
+      persist(state.items, state.nodes, state.sets, units)
+      return { units }
+    })
+    return unit.id
+  },
+  updateUnit: (id, patch) =>
+    set((state) => {
+      const units = state.units.map((u) =>
+        u.id === id ? { ...u, ...patch, updatedAt: new Date().toISOString() } : u,
+      )
+      persist(state.items, state.nodes, state.sets, units)
+      return { units }
+    }),
+  removeUnit: (id) =>
+    set((state) => {
+      const units = state.units.filter((u) => u.id !== id)
+      persist(state.items, state.nodes, state.sets, units)
+      return { units }
+    }),
+  moveUnit: (id, nodeId, locationLabel) =>
+    set((state) => {
+      const now = new Date().toISOString()
+      const vorher = state.units.find((u) => u.id === id)?.locationId
+      const units = state.units.map((u) =>
+        u.id === id
+          ? {
+              ...u,
+              locationId: nodeId,
+              history: [...u.history, { at: now, kind: 'moved' as const, detail: nodeId ? `nach ${locationLabel}` : 'aus Lagerort entfernt' }],
+              updatedAt: now,
+            }
+          : u,
+      )
+      persist(state.items, state.nodes, state.sets, units)
+      // Bedarf 106 — auch die Einheit landet im Journal. Ihre eigene Historie
+      // bleibt, wo sie ist (sie faehrt mit dem Objekt mit); das Journal
+      // beantwortet die andere Frage: „was wurde in diesem Lager wann
+      // umgeraeumt", ueber alle drei Arten hinweg.
+      useStorageMoveStore
+        .getState()
+        .record('unit', id, vorher, nodeId, nodeId ? locationLabel : undefined)
+      return { units }
+    }),
+  setUnitCondition: (id, condition) =>
+    set((state) => {
+      const now = new Date().toISOString()
+      const units = state.units.map((u) =>
+        u.id === id
+          ? {
+              ...u,
+              condition,
+              history: [...u.history, { at: now, kind: 'condition' as const, detail: `Zustand → ${condition}` }],
+              updatedAt: now,
+            }
+          : u,
+      )
+      persist(state.items, state.nodes, state.sets, units)
+      return { units }
+    }),
+  // BEDARF 52 — der Fehler wird ANGEHAENGT, nie ersetzt. Der Zustand der
+  // Einheit wird dabei NICHT automatisch auf „defekt" gesetzt: ob ein
+  // Bild-Aussetzer die Trommel oder den Wandler betraf, weiss der Planer
+  // nicht, und eine automatisch gesperrte Trommel waere eine Behauptung.
+  reportUnitFault: (id, detail, services) =>
+    set((state) => {
+      const now = new Date().toISOString()
+      const text = detail.trim()
+      if (!text) return {}
+      const units = state.units.map((u) =>
+        u.id === id
+          ? {
+              ...u,
+              history: [
+                ...u.history,
+                {
+                  at: now,
+                  kind: 'fault' as const,
+                  detail: text,
+                  ...(services.length > 0 ? { services: [...new Set(services)] } : {}),
+                },
+              ],
+              updatedAt: now,
+            }
+          : u,
+      )
+      persist(state.items, state.nodes, state.sets, units)
+      return { units }
+    }),
+
+  // Erledigt wird der Eintrag an seinem Zeitstempel markiert — der Text bleibt
+  // stehen. „Behoben" ist eine Ergaenzung der Historie, kein Loeschen aus ihr.
+  resolveUnitFault: (id, at) =>
+    set((state) => {
+      const now = new Date().toISOString()
+      const units = state.units.map((u) =>
+        u.id === id
+          ? {
+              ...u,
+              history: u.history.map((e) =>
+                e.kind === 'fault' && e.at === at ? { ...e, resolved: true } : e,
+              ),
+              updatedAt: now,
+            }
+          : u,
+      )
+      persist(state.items, state.nodes, state.sets, units)
+      return { units }
+    }),
+  exportSnapshot: () => {
+    const s = get()
+    return { items: s.items, nodes: s.nodes, sets: s.sets, units: s.units }
+  },
+  importSnapshot: (snap, mode) => {
+    // ADR-005 — die Abweisungen werden mitgeschrieben, statt weggefiltert zu
+    // werden. Der Grund kommt aus derselben Heilung, die abweist; es gibt also
+    // keine zweite Bedingungsliste, die auseinanderlaufen koennte.
+    const rejected: ImportRejection[] = []
+    const keep = <T>(
+      kind: ImportRejection['kind'],
+      raws: unknown[],
+      heal: (raw: unknown) => T | null,
+    ): T[] => {
+      const out: T[] = []
+      for (const raw of raws) {
+        const healed = heal(raw)
+        if (healed === null) rejected.push({ kind, label: rawLabel(raw) })
+        else out.push(healed)
+      }
+      return out
+    }
+    const inItems = keep('item', snap.items ?? [], healItem)
+    const inNodes = keep('node', snap.nodes ?? [], healNode)
+    const inSets = keep('set', snap.sets ?? [], healSet)
+    const inUnits = keep('unit', snap.units ?? [], healUnit)
+    const total = inItems.length + inNodes.length + inSets.length + inUnits.length
+    set((state) => {
+      // ADR-005, Regel 2 — hier stand `byId.set(x.id, x)`: der eingehende
+      // Datensatz ersetzte den vorhandenen als Ganzes. Eine v1-Datei ohne
+      // `deviceTypeId` loeschte damit still die bestaetigte Typ-Identitaet
+      // des lokalen Artikels. `mergeById` schreibt jetzt feldweise fort;
+      // wer wirklich ersetzen will, nimmt den Modus 'replace'.
+      const items = mode === 'replace' ? inItems : mergeById(state.items, inItems)
+      const nodes = mode === 'replace' ? inNodes : mergeById(state.nodes, inNodes)
+      const sets = mode === 'replace' ? inSets : mergeById(state.sets, inSets)
+      const units = mode === 'replace' ? inUnits : mergeById(state.units, inUnits)
+      persist(items, nodes, sets, units)
+      return { items, nodes, sets, units }
+    })
+    return { imported: total, rejected }
+  },
+}))

@@ -13,8 +13,8 @@
     "apps/*"
   ],
   "scripts": {
-    "build:packages": "npm run build --workspace @avplan/inventory-core --workspace @avplan/facility-core --workspace @avplan/onboarding-core --workspace @avplan/lexware-core --workspace @avplan/ui",
-    "build:planners": "npm run build --workspace cable-planner && npm run build --workspace multicam-planner && npm run build --workspace light-planner && node apps/shell/scripts/copy-planners.mjs",
+    "build:packages": "npm run build --workspace @avplan/inventory-core --workspace @avplan/onboarding-core --workspace @avplan/lexware-core --workspace @avplan/ui",
+    "build:planners": "npm run build --workspace cable-planner && npm run build --workspace multicam-planner && npm run build --workspace light-planner && npm run build --workspace inventory-planner && npm run build --workspace larszu-facility-planner && node apps/shell/scripts/copy-planners.mjs",
     "build": "npm run build:packages && npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "dev:cable": "npm run dev --workspace cable-planner",
@@ -35,7 +35,8 @@
     "deps:check": "node scripts/shell-deps-complete.mjs",
     "release:check": "node scripts/release-artefakte.mjs",
     "actions:check": "node scripts/actions-node-runtime.mjs",
-    "ui:smoke": "node scripts/suite-smoke.mjs"
+    "ui:smoke": "node scripts/suite-smoke.mjs",
+    "vertrag:parity": "node scripts/facility-vertrag-parity.mjs"
   },
   "devDependencies": {
     "minimatch": "^10.2.5",

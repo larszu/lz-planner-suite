@@ -8,10 +8,17 @@
 // Shell auf die VITE_PLANNER_*-Dev-URLs zuruck.
 const { contextBridge, ipcRenderer } = require('electron')
 
+// Diese Liste und `PLANNERS` in main.cjs muessen dieselben Schluessel tragen.
+// Fehlt einer hier, faellt die Shell fuer dieses Modul auf die Dev-Adresse
+// zurueck und laedt im gepackten Build ins Leere; fehlt er dort, antwortet
+// das Protokoll nicht. `suite-smoke.mjs` prueft beide Richtungen, indem es
+// JEDE hier genannte Adresse wirklich abruft.
 contextBridge.exposeInMainWorld('__suitePlanners', {
   signal: 'planner-signal://app/index.html',
   cameras: 'planner-cameras://app/index.html',
   licht: 'planner-licht://app/index.html',
+  lager: 'planner-lager://app/index.html',
+  gebaeude: 'planner-gebaeude://app/index.html',
 })
 
 // Nativer Cable-Modus (experimentell): ist er im Hauptprozess aktiv, bekommt

@@ -1,0 +1,201 @@
+name: Deploy Web (GitHub Pages)
+
+# Die ganze Suite im Browser: die Shell mit den FUENF echten Planern darin,
+# nicht mit ihren Vorschau-Attrappen.
+#
+# WIE DAS GEHT, OHNE ETWAS ZU ERFINDEN. `registry.ts` liest die Adresse jedes
+# Planers als `plannerUrl(key, env.VITE_PLANNER_<KEY>, devFallback)`. Im
+# gepackten Desktop kommt sie aus `window.__suitePlanners` (planner-*://), im
+# Entwicklungsbetrieb ist es der Dev-Server (4181-4185). Fuer diese Seite wird
+# die env-Stelle benutzt, die es dafuer schon gibt, und auf einen RELATIVEN
+# Pfad gesetzt: `./planners/<key>/`. Dort liegen die gebauten Renderer, die
+# `copy-planners.mjs` ohnehin fuer den Installer zusammentraegt.
+#
+# Kein neuer Sonderweg also — dieselbe Stelle, ein dritter Wert. Ein
+# eingebauter „Web-Modus" waere eine vierte Fassung derselben Entscheidung
+# gewesen.
+#
+# WAS AUF DIESER SEITE NICHT FUNKTIONIERT, UND WARUM DAS RICHTIG SO IST. Die
+# vier Laufzeit-Module (Tally, Kamerapult, Intercom, Medien) zeigen „nicht
+# erreichbar". Sie sind GERAETE im Netz und keine Zeichenflaechen — der Grund
+# steht ausgeschrieben in `apps/shell/src/modules/runtimes.ts`:
+#
+#   „Ein statisches Bundle ohne diesen Server zeigte eine Oberflaeche, die
+#    nichts bedient."
+#
+# Genau deshalb wird hier auch nichts fuer sie mitgeliefert. Der leere Rahmen
+# mit seiner Meldung ist die richtige Auskunft; eine mitgelieferte Attrappe
+# waere die falsche.
+#
+# ─── WARUM DER LAUF ERST FRAGT UND DANN VEROEFFENTLICHT ────────────────────
+#
+# Eine Pages-Site kann nur ein MENSCH in den Repo-Einstellungen anlegen. Der
+# `GITHUB_TOKEN` darf es nicht ("Resource not accessible by integration"), und
+# `actions/configure-pages` bricht ohne Site mit 404 ab.
+#
+# Im cable-planner stand dieser Workflow deshalb auf `push: [main]` und war
+# ueber Wochen bei JEDEM Push rot. Ein Lauf, der immer rot ist und immer rot
+# bleiben MUSS, ist schlimmer als keiner: er gewoehnt einem das Hinsehen ab,
+# und der naechste echte Fehler auf main faellt in derselben roten Spalte
+# nicht mehr auf. Die Loesung dort war ein zweiter Commit nach der Freigabe —
+# einer, den jemand machen muss und vergisst.
+#
+# Hier fragt der Lauf stattdessen die Pages-API, BEVOR er konfiguriert:
+# ohne Site wird trotzdem gebaut (das ist eine echte Pruefung), nur das
+# Veroeffentlichen entfaellt — mit einer Warnung und einer Anleitung in der
+# Lauf-Zusammenfassung. Sobald die Freigabe da ist, veroeffentlicht der
+# naechste Push von selbst.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      seite-aktiv: ${{ steps.pages-status.outputs.aktiv }}
+    env:
+      # Hier wird nie eine Electron-App gestartet, nur ein Web-Bundle gebaut.
+      # Spart den ~100-MB-Binary-Download; dieselbe Zeile steht in ci.yml.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Geteilte Pakete bauen
+        run: npm run build:packages
+
+      # Baut alle fuenf Planer und legt ihre Renderer nach
+      # `apps/shell/planners/<key>/` — derselbe Schritt, den auch der
+      # Desktop-Installer benutzt. Faellt einer aus, meldet `copy-planners`
+      # den fehlenden Pfad NAMENTLICH und bricht ab, statt eine Shell mit
+      # leeren Rahmen zu veroeffentlichen.
+      - name: Alle fuenf Planer bauen und einsammeln
+        run: npm run build:planners
+
+      - name: Shell bauen — die Planer relativ verdrahtet
+        env:
+          VITE_PLANNER_SIGNAL: ./planners/signal/
+          VITE_PLANNER_CAMERAS: ./planners/cameras/
+          VITE_PLANNER_LICHT: ./planners/licht/
+          VITE_PLANNER_LAGER: ./planners/lager/
+          VITE_PLANNER_GEBAEUDE: ./planners/gebaeude/
+        run: npm run build --workspace @avplan/shell
+
+      # `apps/shell/planners/` liegt nicht unter `public/`, wandert also nicht
+      # von selbst ins Bundle. Der Ordner ist absichtlich dort, wo ihn
+      # electron-builder erwartet; fuer die Seite wird er daneben gelegt.
+      - name: Planer neben die Shell legen
+        run: |
+          set -eu
+          cp -r apps/shell/planners apps/shell/dist/planners
+          # `signal-main` ist der Electron-HAUPTPROZESS des Kabel-Planers
+          # (IPC-Handler + Preload), den `copy-planners` fuer den Installer
+          # mitnimmt. Ein Browser laedt davon nie eine Zeile; auf der Seite
+          # waeren es 750 kB, die jeder Besucher mitbezahlt und niemand
+          # benutzt.
+          rm -rf apps/shell/dist/planners/signal-main
+          echo "--- was veroeffentlicht wird ---"
+          ls -1 apps/shell/dist
+          ls -1 apps/shell/dist/planners
+          du -sh apps/shell/dist
+
+      # Jeder Planer muss eine eigene index.html haben. Ohne diese Pruefung
+      # ginge ein leerer Ordner als „veroeffentlicht" durch, und der Besucher
+      # bekaeme beim Klick auf das Modul einen weissen Rahmen ohne Meldung.
+      - name: Jeder Planer hat wirklich eine Seite
+        run: |
+          set -eu
+          fehlt=0
+          for k in signal cameras licht lager gebaeude; do
+            if [ -f "apps/shell/dist/planners/$k/index.html" ]; then
+              echo "ok    $k"
+            else
+              echo "FEHLT $k/index.html"
+              fehlt=1
+            fi
+          done
+          [ "$fehlt" -eq 0 ] || { echo; echo "Eine Shell mit leeren Rahmen sieht aus wie eine kaputte Seite, nicht wie ein fehlender Build."; exit 1; }
+
+      - name: Ist Pages in diesem Repo aktiviert?
+        id: pages-status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -u
+          # 200 = Site existiert. 404 = nicht aktiviert. 000 = die Frage kam
+          # gar nicht durch; das ist KEIN "nicht aktiviert", und die Ausgabe
+          # sagt es getrennt.
+          #
+          # Der Fehlschlag wird am EXIT-CODE abgefangen, nicht mit `|| echo`:
+          # curl schreibt bei einem Verbindungsfehler selbst schon "000" nach
+          # stdout, ein angehaengtes zweites machte daraus "000000".
+          code="$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pages")" || code=000
+          echo "GET /repos/$GITHUB_REPOSITORY/pages -> HTTP $code"
+          if [ "$code" = "200" ]; then
+            echo "aktiv=true" >> "$GITHUB_OUTPUT"
+            echo "Pages ist aktiviert — es wird veroeffentlicht."
+            exit 0
+          fi
+          echo "aktiv=false" >> "$GITHUB_OUTPUT"
+          if [ "$code" = "000" ]; then
+            grund="Die Pages-API war nicht erreichbar (HTTP 000). Ob die Site existiert, ist damit UNBEKANNT — nicht widerlegt."
+          else
+            grund="Fuer dieses Repo ist keine Pages-Site angelegt (HTTP $code)."
+          fi
+          echo "::warning title=Nicht veroeffentlicht::$grund Der Build ist durchgelaufen, das Deploy wurde uebersprungen."
+          {
+            echo "## Nicht veroeffentlicht"
+            echo
+            echo "$grund"
+            echo
+            echo "Der Build ist durchgelaufen — es fehlt nur die Freigabe, und die kann"
+            echo "kein Workflow erteilen: der \`GITHUB_TOKEN\` darf keine Pages-Site anlegen."
+            echo
+            echo "**So wird die Seite live:** Repo-Einstellungen -> Pages -> *Source* auf"
+            echo "**GitHub Actions** stellen. Danach diesen Workflow einmal von Hand starten"
+            echo "(*Run workflow*) und nachsehen, dass er gruen durchlaeuft. Ab dann"
+            echo "veroeffentlicht jeder Push auf main von selbst — an dieser Datei ist"
+            echo "nichts zu aendern."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Pages konfigurieren
+        if: steps.pages-status.outputs.aktiv == 'true'
+        uses: actions/configure-pages@v6
+
+      - name: Seite hochladen
+        if: steps.pages-status.outputs.aktiv == 'true'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: apps/shell/dist
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.seite-aktiv == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

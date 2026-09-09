@@ -51,7 +51,7 @@ import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const APPS = ['cable-planner', 'multicam-planner', 'light-planner']
+const APPS = ['cable-planner', 'multicam-planner', 'light-planner', 'inventory-planner', 'larszu-facility-planner']
 
 /**
  * Verglichene Wurzeln je App. Anfangs war das nur `src`, was einen blinden

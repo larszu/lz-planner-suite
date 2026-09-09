@@ -71,6 +71,8 @@
   --mod-licht: var(--av-accent);
   --mod-overview: var(--av-accent);
   --mod-board: var(--av-accent);
+  --mod-lager: var(--av-accent);
+  --mod-gebaeude: var(--av-accent);
 
   /* ── Form: keine Rundungen, keine Schatten (Guide S. 10) ── */
   --av-r-control: 0;

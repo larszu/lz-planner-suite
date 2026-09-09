@@ -25,6 +25,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      # Die beiden ausgelagerten Werkzeuge (E-26/E-27). Sie fehlten hier, und
+      # das war keine Kleinigkeit: `planner-drift.mjs` fuehrt fuenf Wurzeln,
+      # aber nur drei standen in CI zur Verfuegung — fuer die anderen beiden
+      # konnte der Guard nichts finden, egal wie weit ihre Kopien wegliefen.
+      # Beide Repos sind oeffentlich, der Checkout mit dem GITHUB_TOKEN der
+      # Suite geht also durch (anders als bei `sony-camera-bridge`, siehe
+      # unten).
+      - name: Checkout inventory-planner
+        uses: actions/checkout@v5
+        continue-on-error: true
+        with:
+          repository: larszu/inventory-planner
+          path: upstream/inventory-planner
+          # Volle Historie, aus demselben Grund wie oben: der Baseline-Sha
+          # muss im Upstream-Klon aufloesbar sein, sonst meldet der Guard
+          # "Stand nicht bekannt" — ausgerechnet im bewegten Fall.
+          fetch-depth: 0
+
+      - name: Checkout larszu-facility-planner
+        uses: actions/checkout@v5
+        continue-on-error: true
+        with:
+          repository: larszu/larszu-facility-planner
+          path: upstream/larszu-facility-planner
+          fetch-depth: 0
+
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
@@ -67,6 +93,13 @@ jobs:
       # ihre Ergebnisse gegeneinander -- Verhalten, nicht Quelltext.
       - name: Stand-Stempel rechnet in allen drei Planern gleich
         run: npm run stamp:parity
+
+      # ADR-006: die sechs Fragen an das Gebaeude stehen im ADR UND im Code des
+      # Gebaeude-Werkzeugs. Nur hier liegen beide im selben Baum, also kann nur
+      # hier jemand nachsehen, ob sie noch dieselben sechs sind. Eine Abschrift
+      # der Namen im Werkzeug waere die zweite Wahrheit (ADR-001).
+      - name: Vertrag „Festinstallation" — ADR gegen Code
+        run: npm run vertrag:parity
 
       - name: Vendorte Features haben einen Bedienweg
         run: npm run features:reachable

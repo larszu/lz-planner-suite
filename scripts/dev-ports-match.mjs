@@ -40,6 +40,8 @@ const PAARE = [
   { modul: 'signal', app: 'cable-planner' },
   { modul: 'cameras', app: 'multicam-planner' },
   { modul: 'licht', app: 'light-planner' },
+  { modul: 'lager', app: 'inventory-planner' },
+  { modul: 'gebaeude', app: 'larszu-facility-planner' },
 ]
 
 const registry = lies('apps/shell/src/modules/registry.ts')

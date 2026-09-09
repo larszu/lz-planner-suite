@@ -61,7 +61,7 @@ export const RUNTIMES: RuntimeDef[] = [
     title: 'Tally-Anlage',
     icon: 'eye',
     accent: 'var(--mod-signal)',
-    hotkey: '6',
+    hotkey: '8',
     defaultHost: 'tally-pi.local',
     defaultPort: 8080,
     path: '/',
@@ -78,7 +78,7 @@ export const RUNTIMES: RuntimeDef[] = [
     title: 'Kamerapult (RCP/PTZ)',
     icon: 'camera',
     accent: 'var(--mod-cameras)',
-    hotkey: '7',
+    hotkey: '9',
     defaultHost: 'localhost',
     defaultPort: 3700,
     path: '/',
@@ -92,7 +92,7 @@ export const RUNTIMES: RuntimeDef[] = [
     title: 'Intercom',
     icon: 'nodes',
     accent: 'var(--mod-board)',
-    hotkey: '8',
+    hotkey: '0',
     defaultHost: 'localhost',
     defaultPort: 4001,
     path: '/',
@@ -106,7 +106,10 @@ export const RUNTIMES: RuntimeDef[] = [
     title: 'Medien-Station',
     icon: 'monitor',
     accent: 'var(--mod-licht)',
-    hotkey: '9',
+    // Die Ziffern sind mit elf Modulen aufgebraucht (1-7 Planung, 8-0 Betrieb).
+    // „m" wie Medien ist die naechstbeste Taste: merkbar, und `ModuleRail`
+    // vergleicht ohnehin gegen `e.key` und nicht gegen eine Ziffernreihe.
+    hotkey: 'm',
     defaultHost: 'faces.local',
     defaultPort: 5000,
     path: '/',

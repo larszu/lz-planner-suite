@@ -1,0 +1,146 @@
+/* Schlichte Grundgestalt. Die Marken-Palette der Suite (ADR-007) zieht mit dem
+   Einbetten nach; bis dahin ist eine lesbare Tabelle mehr wert als ein Thema,
+   das gleich wieder ersetzt wird. */
+:root {
+  color-scheme: dark;
+  --bg: #0f172a;
+  --flaeche: #1e293b;
+  --rand: #334155;
+  --text: #e2e8f0;
+  --leise: #94a3b8;
+  --warn: #f59e0b;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.kopf {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--rand);
+  padding-bottom: 0.5rem;
+}
+
+.kopf h1 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.reiter {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--leise);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.reiter.aktiv {
+  background: var(--flaeche);
+  border-color: var(--rand);
+  color: var(--text);
+}
+
+.frage {
+  color: var(--leise);
+  margin: 0.5rem 0 1rem;
+}
+
+.leiste {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+input,
+select,
+button {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button.still {
+  background: none;
+  color: var(--leise);
+}
+
+.schmal {
+  width: 5rem;
+}
+
+/* Breite Inhalte scrollen in ihrem eigenen Bereich statt die Seite zu
+   sprengen — dieselbe Regel wie im Cable-Planner (B-44 Teil 3). */
+.tabelle-rahmen {
+  overflow-x: auto;
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+caption {
+  text-align: left;
+  padding: 0.5rem;
+  color: var(--leise);
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--rand);
+  white-space: nowrap;
+}
+
+th {
+  color: var(--leise);
+  font-weight: 400;
+}
+
+.rechts {
+  text-align: right;
+}
+
+.leise {
+  color: var(--leise);
+}
+
+.zaehler {
+  color: var(--leise);
+}
+
+.warnung td {
+  color: var(--warn);
+}
+
+.leer {
+  color: var(--leise);
+  max-width: 46rem;
+  line-height: 1.5;
+}

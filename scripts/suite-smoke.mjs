@@ -47,7 +47,7 @@
  * @avplan/shell && npm run build:planners`.
  */
 import { _electron as electron } from 'playwright-core'
-import { mkdirSync, mkdtempSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -55,6 +55,28 @@ import { fileURLToPath } from 'node:url'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SHELL = join(ROOT, 'apps', 'shell')
 const OUT = process.env.SUITE_SHOTS || join(tmpdir(), 'av-planner-suite-shots')
+
+/**
+ * Die vier Geraete-Module aus `runtimes.ts` — Titel und Tastenkuerzel.
+ *
+ * Gelesen statt abgeschrieben, und zwar aus der Quelldatei und nicht aus dem
+ * gebauten Bundle: im Bundle sind die Namen minifiziert und die Zuordnung
+ * Taste-zu-Titel nicht mehr sicher herauszulesen. Der Preis ist ein
+ * Muster-Abgleich; die Gegenprobe dafuer steht direkt darunter (findet er
+ * nichts, meldet der Lauf es, statt still null Module zu pruefen).
+ */
+function leseRuntimes() {
+  const quelle = readFileSync(join(ROOT, 'apps/shell/src/modules/runtimes.ts'), 'utf8')
+  const gefunden = []
+  // `id`, `title` und `hotkey` desselben Eintrags, in dieser Reihenfolge.
+  // Dazwischen darf stehen, was will (Repo, Icon, Akzent, Kommentare) — nur
+  // kein naechstes `id:`, sonst rutschte die Paarung um einen Eintrag.
+  const muster =
+    /id:\s*'([^']+)'(?:(?!\bid:)[\s\S])*?title:\s*'([^']+)'(?:(?!\bid:)[\s\S])*?hotkey:\s*'([^']+)'/g
+  for (const m of quelle.matchAll(muster)) gefunden.push({ id: m[1], name: m[2], taste: m[3] })
+  return gefunden
+}
+
 mkdirSync(OUT, { recursive: true })
 
 const maengel = []
@@ -211,25 +233,51 @@ async function lauf(nativ) {
     // ein benanntes Modul mit einer Adresse und einer Erklaerung, nicht ein
     // toter Rahmen und nicht eine Attrappe. Der Weg selbst (`__suiteTally`)
     // muss bereitstehen, sonst faellt der Tally-Knopf im Signal-Modul aus.
-    // Die Namen stehen in `apps/shell/src/modules/runtimes.ts` (Feld `title`).
-    // Wer dort umbenennt, faellt hier auf -- so soll es sein: der Test prueft,
-    // dass das Modul SEINEN Namen zeigt, nicht irgendeinen.
-    const geraete = [
-      { taste: '6', name: 'Tally-Anlage' },
-      { taste: '7', name: 'Kamerapult' },
-      { taste: '8', name: 'Intercom' },
-      { taste: '9', name: 'Medien-Station' },
-    ]
+    // Name UND Taste kommen aus `apps/shell/src/modules/runtimes.ts`, nicht
+    // aus einer Abschrift hier.
+    //
+    // WARUM DAS GEAENDERT WURDE. Hier stand die Liste doppelt, mit den Tasten
+    // 6/7/8/9. Die Namen waren als Einzige an die Quelle gebunden ("wer dort
+    // umbenennt, faellt hier auf"); die TASTEN nicht. Als die Rail auf elf
+    // Module wuchs, wanderten die Geraete auf 8/9/0/m — und dieser Lauf
+    // drueckte weiter 6 und 7, landete auf „Gebaeude" und „Board" und meldete
+    // vier Geraete-Module als kaputt, die tadellos waren. Eine Abschrift, die
+    // nur zur Haelfte gebunden ist, ist keine halbe Bindung, sondern eine
+    // ganze zweite Wahrheit.
+    const geraete = leseRuntimes()
+    if (geraete.length !== 4) {
+      maengel.push(`${marke}: runtimes.ts nennt ${geraete.length} Geraete-Module statt 4 -- gelesen: ${geraete.map((g) => g.name).join(', ') || 'nichts'}`)
+    }
+    // GELESEN WIRD DER INHALTSBEREICH, NICHT `document.body`. Die Rail zeigt
+    // ALLE Modul-Namen die ganze Zeit an — gegen den ganzen Body geprueft war
+    // „Kamerapult" also auch dann zu finden, wenn ein voellig anderes Modul
+    // vorne stand. Genau das ist im Lauf 504 passiert: der Test drueckte
+    // wegen der veralteten Tasten die „7" (Board) und meldete trotzdem
+    // „Kamerapult: Modul da". Ein Test, der bei falscher Taste gruen wird,
+    // prueft nichts.
+    //
+    // Deshalb zwei Fragen statt einer: steht das RICHTIGE Modul vorne
+    // (`data-module`, gesetzt in App.tsx), und zeigt SEIN Inhaltsbereich
+    // (`<main>`) seinen Namen?
     for (const g of geraete) {
       await win.keyboard.press(g.taste)
       await win.waitForTimeout(5000)
-      const text = await win.evaluate(() => document.body.innerText || '')
-      if (text.includes(g.name) && /nicht erreichbar|not reachable/.test(text)) {
+      const sicht = await win.evaluate(() => ({
+        modul: document.querySelector('[data-module]')?.getAttribute('data-module') ?? null,
+        text: document.querySelector('main')?.innerText ?? '',
+      }))
+      if (sicht.modul !== g.id) {
+        maengel.push(
+          `${marke}: Taste „${g.taste}" haette „${g.id}" nach vorn holen sollen, vorne steht aber „${sicht.modul}"`,
+        )
+        continue
+      }
+      if (sicht.text.includes(g.name) && /nicht erreichbar|not reachable/.test(sicht.text)) {
         melde(`${g.name}: Modul da, ehrlicher Zustand ohne Geraet`)
-      } else if (text.includes(g.name)) {
+      } else if (sicht.text.includes(g.name)) {
         melde(`${g.name}: Modul da (Geraet antwortet offenbar)`)
       } else {
-        maengel.push(`${marke}: Geraete-Modul „${g.name}" ist nicht erreichbar oder zeigt nichts`)
+        maengel.push(`${marke}: Geraete-Modul „${g.name}" ist vorne, zeigt aber seinen Namen nicht`)
       }
     }
     const tallyBruecke = await win.evaluate(() => typeof window.__suiteTally?.write === 'function')
