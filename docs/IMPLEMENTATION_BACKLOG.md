@@ -2684,7 +2684,26 @@ belegbar, dort sind sie erprobt.
 
 ### B-53 · Die vendorierten Doku-Kennzahlen nennen eine Version, die es nicht mehr gibt
 
-* **Status:** offen, klein. Aufgefallen beim Vendoring von `cable#791`
+* **Status:** ~~offen~~ **erledigt 2026-09-09.** Gebaut in der Variante, die
+  der Befund unten als die ehrlichere bezeichnet: das Feld `version` wird beim
+  Vendoring mitgezogen, und `planner-drift.mjs` hat dafür die benannte Ausnahme
+  vom `package.json`-Ausschluss bekommen.
+  * **Nachgemessen beim Beheben** — es war nicht nur der cable-planner:
+    `apps/cable-planner` stand auf 8.3.1 gegen upstream 9.0.1,
+    `apps/multicam-planner` auf 4.3.0 gegen 4.3.3. Nur `light-planner` stimmte.
+    Zwei von drei, und die Doku des cable-planners schrieb es ab.
+  * **Der Wächter ist nachsichtig, wo er es sein muss.** Hat upstream seit der
+    Baseline erhöht, ist die abweichende Version kein Fehler dieses Repos,
+    sondern der fällige Nachzug: sie steht im Bericht und bricht keinen
+    fremden Suite-PR — dieselbe Regel, nach der die Drift-Zahl bei bewegtem
+    Upstream meldet statt fehlzuschlagen. Steht der Upstream genau da, wo die
+    Baseline ihn festhielt, dann IST die Abweichung hier entstanden, und dann
+    fällt der Lauf.
+  * **Gegengeprobt, dreimal:** Version wieder auseinandergezogen (rot) ·
+    dieselbe Abweichung mit ausgehängter Prüfung (grün — die Prüfung ist also
+    das, was sie findet) · Abweichung bei bewegtem Upstream (meldet, fällt
+    nicht).
+* **Der ursprüngliche Befund**, aufgefallen beim Vendoring von `cable#791`
   (E-2 Schritt 2+3) am 2026-09-09.
 * **Befund:** `apps/cable-planner/package.json` steht auf `8.3.1`, der
   Upstream auf `9.0.1`. `scripts/update-doc-stats.mjs` liest die Version von
