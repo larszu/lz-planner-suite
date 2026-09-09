@@ -2856,6 +2856,53 @@ eine Antwort:**
 * **Zusammen ergibt das drei Prüfungen nach jedem Vendoring**, und keine
   ersetzt eine andere: die Konflikt-Anzeige des Merges, `only-upstream` in der
   Drift-Tabelle, und `tsc` plus Testlauf IN der vendorierten Kopie.
+* **Nachtrag 2026-09-09 — eine vierte kommt dazu, siehe B-57:** *läuft* der
+  mitgebrachte Wächter hier überhaupt? Die drei Prüfungen oben beantworten,
+  ob die **Datei** angekommen ist. Keine von ihnen fragt, ob sie bei einem
+  Merge der Suite je **ausgeführt** wird.
+
+### B-57 · Das Vendoring holt die Datei, nicht ihre Ausführung
+
+* **Status:** Befund erhoben und behoben 2026-09-09, unmittelbar nach dem
+  Vendoring von `light#102`.
+* **Was passiert ist.** `access:check` kam mit `light#102` in die Suite,
+  war grün, und wäre bei keinem Merge gefahren. Nachgemessen betraf das
+  **17 Wächter in drei Apps**, darunter `retime:check` — beim Vendoring
+  davor auf genau dieselbe Weise hereingetragen und seither still.
+* **Warum es niemandem auffiel, obwohl es dafür einen Wächter gibt.** Es gibt
+  ihn sogar zweimal, und beide waren aus je eigenem Grund blind:
+  * Der `ci:complete` **der Suite** las nur die Wurzel-`package.json`. Ein
+    Lauf, der in `apps/light-planner/package.json` steht, kam in seiner Liste
+    nie vor — er konnte ihn nicht vermissen.
+  * Der `ci:complete` **innerhalb der vendorierten App** vergleicht gegen
+    `apps/<app>/.github/workflows/ci.yml`. Das ist eine **Kopie** aus dem
+    Upstream-Repo; GitHub liest nur `.github/` der Wurzel, also feuert sie
+    nie. Er war grün über einen Workflow, den es hier nicht gibt — und genau
+    dieses „grün über nichts" ist die Form, gegen die er erfunden wurde.
+* **Wie ein App-Wächter in der Suite wirklich läuft.** Der Workflow der Suite
+  fährt `npm run test --workspaces` und `npm run lint --workspaces`. Ein Lauf
+  fährt also genau dann mit, wenn das `test`-Skript **seiner App** ihn aufruft
+  — nicht, wenn er in der vendorierten Workflow-Kopie steht.
+* **Behoben.** `scripts/ci-runs-every-check.mjs` prüft jetzt zusätzlich jede
+  App unter `apps/`: jeder Lauf in Namensform `*:check` (und die übrigen
+  Prüf-Formen) muss von deren `test`/`lint` aus erreichbar sein — **transitiv**
+  gerechnet, damit eine App ihre Kette bündeln darf —, oder in `APP_OHNE_CI`
+  mit Grund stehen. Die 13 erreichbaren Läufe hängen jetzt an den
+  `test`-Skripten ihrer Apps; **vier** stehen als erklärte Ausnahme: dreimal
+  `actions:check` (prüft die inerte Workflow-Kopie; der `actions:check` der
+  Suite deckt die Workflows ab, die feuern) und `cable-planner/ui:smoke`
+  (braucht Electron-Binary und X-Server, die der Haupt-Job nicht hat; der
+  eigene Smoke-Job der Suite deckt dieselbe Frage ab).
+* **Gegengeprobt, sechsmal** — ein Wächter, den keine Gegenprobe rot bekommt,
+  ist eine Behauptung: Lauf aus dem `test` genommen (rot), Ausnahme gelöscht
+  (rot), Ausnahme steht obwohl der Lauf hängt (rot, „überflüssig"),
+  Begründung unter 40 Zeichen (rot), Ausnahme nennt einen Lauf, den es nicht
+  gibt (rot), und der Scan zeigt auf ein Verzeichnis ohne Apps (rot, beide
+  Untergrenzen einzeln nachgewiesen).
+* **Die Regel fürs nächste Mal:** ein vendorierter Wächter ist erst
+  angekommen, wenn `npm run ci:complete` der Suite ihn als erreichbar meldet.
+  „Die Datei ist da" und „der Lauf fährt" sind zwei Tatsachen, und das
+  Vendoring liefert nur die erste.
 
 
 ## Eigentümer-Entscheidungen

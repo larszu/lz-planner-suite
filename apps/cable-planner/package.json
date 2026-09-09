@@ -54,7 +54,7 @@
     "lint": "eslint .",
     "lang:check": "node scripts/quellsprache.mjs src/renderer de",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run && npm run lang:check",
     "test:watch": "vitest",
     "ui:smoke": "node scripts/ui-smoke.mjs",
     "ui:overflow": "node scripts/ui-overflow.mjs",

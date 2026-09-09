@@ -16,7 +16,7 @@
     "dist:mac": "npm run build && electron-builder --mac --x64 --arm64 --publish never",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run && npm run brand:check && npm run docs:reachable && npm run lang:check",
     "test:watch": "vitest",
     "docs:reachable": "node scripts/docs-reachable.mjs",
     "lang:check": "node scripts/quellsprache-check.mjs",
