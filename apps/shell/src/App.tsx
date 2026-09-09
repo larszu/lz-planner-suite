@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   CommandPalette,
   Icon,
@@ -33,7 +33,13 @@ import {
 } from './data/projectStore'
 import { ProjectHubModal } from './shell/ProjectHubModal'
 import { projectFromTemplateId } from './data/templateStore'
-import { sendPlannerCommand, sendPlannerReveal } from './embed/plannerBridge'
+import {
+  onPlannerFrameListening,
+  plannerRevealListening,
+  sendPlannerCommand,
+  sendPlannerReveal,
+} from './embed/plannerBridge'
+import { annahme, querziel, zustellung, type OffeneBitte } from './shell/crossLink'
 import { Topbar } from './shell/Topbar'
 import { SettingsModal } from './shell/SettingsModal'
 import { BillingModal } from './shell/BillingModal'
@@ -555,13 +561,89 @@ export function App() {
 
   useCommandPaletteHotkey(setPaletteOpen)
 
+  // B-18 — die Zeig-Bitte, die auf ihr Modul wartet. Sie traegt ihr Modul mit
+  // sich, damit sie nach einem weiteren Klick des Nutzers nicht im falschen
+  // Planer landet (siehe `zustellung` in `shell/crossLink.ts`).
+  const [offeneBitte, setOffeneBitte] = useState<OffeneBitte | null>(null)
+  // ERLEDIGT STATT GELOESCHT: die zugestellte Bitte wird nicht aus dem State
+  // entfernt, sondern hier als abgehakt vermerkt. Sie zu loeschen hiesse, im
+  // Effekt-Rumpf `setState` zu rufen — eine zweite Renderrunde, nur um etwas
+  // zu vergessen, das ohnehin niemand anzeigt. Der Vergleich laeuft ueber die
+  // OBJEKT-IDENTITAET: jeder Sprung legt eine neue Bitte an, auch der zweite
+  // auf dasselbe Ziel, und wird deshalb auch zweimal zugestellt.
+  const erledigt = useRef<OffeneBitte | null>(null)
+  // Der Wecker fuer den Normalfall: der Rahmen meldet sich erst nach
+  // `avplan:ready` fuer Zeig-Bitten an, Sekunden nach dem Modulwechsel — genau
+  // in dieser Luecke wartet die Bitte. Ohne dieses Signal muesste der Effekt
+  // pollen.
+  const [rahmenMeldung, setRahmenMeldung] = useState(0)
+  useEffect(() => onPlannerFrameListening(() => setRahmenMeldung((n) => n + 1)), [])
+
+  /**
+   * B-18 — DER SPRUNG NIMMT DIE AUSWAHL MIT.
+   *
+   * Ohne `target` ist das wie bisher ein blosser Modulwechsel. Mit `target`
+   * wird zusaetzlich dort ausgewaehlt und der eingebettete Planer gebeten, es
+   * zu zeigen — aber nicht sofort: sein Rahmen wird durch diesen Wechsel
+   * ueberhaupt erst gemountet. Die Bitte wartet deshalb als `offeneBitte`, bis
+   * der Rahmen des ZIEL-Moduls sich meldet. Sofort zu senden hiesse, in den
+   * Rahmen zu zeigen, den der Nutzer gerade verlaesst.
+   *
+   * Hat das Ziel-Modul gar keinen Planer (Uebersicht, Board), ist die Auswahl
+   * der ganze Sprung: die Shell zeigt sie in ihren eigenen Panels, und es gibt
+   * niemanden, den man noch bitten muesste.
+   */
+  const goToModule = useCallback(
+    (id: ModuleId, target?: string) => {
+      setModuleId(id)
+      if (!target) {
+        setOffeneBitte(null)
+        return
+      }
+      setSelected((s) => ({ ...s, [id]: target }))
+      // Die Annahme faellt HIER, im Augenblick des Sprungs — nicht im
+      // Zustell-Effekt. Ein zugeklappter Planer ist keine Zustellung, die noch
+      // aussteht, sondern eine Auskunft, die der Nutzer jetzt braucht: sein
+      // Sprung reicht bis zur Vorschau und nicht weiter.
+      const was = annahme({ hatPlaner: !!MODULE_BY_ID[id]?.planner, gemountet: !!mounted[id] })
+      setOffeneBitte(was.tun === 'bitte' ? { modul: id, id: target } : null)
+      if (was.tun === 'melden') {
+        pushToast(
+          tt(
+            'shell.reveal.plannerClosed',
+            'Der Planer ist zugeklappt — das Objekt ist in der Vorschau ausgewählt.',
+          ),
+        )
+      }
+    },
+    [mounted, pushToast, tt],
+  )
+
+
   // Cross-Links aus eingebetteten Planern ("Im Signal-Flow zeigen") annehmen +
   // im Planer lokal geänderte Einstellungen in die Shell-Quelle zurückspiegeln
   // (verhindert das Zurücksetzen beim Remount).
   useEffect(() => {
     return onShellMessage((msg) => {
       if (msg.type === 'avplan:navigate' && msg.module in MODULE_BY_ID) {
-        setModuleId(msg.module as ModuleId)
+        const ziel = msg.module as ModuleId
+        // B-18 — `msg.target` wurde hier frueher verworfen: der Planer bat
+        // „wechsle nach signal und zeig v012", die Shell wechselte und
+        // vergass das Objekt. Ein unbekanntes Modul bleibt weiterhin
+        // wirkungslos (die Bedingung oben) — die Shell springt nicht auf gut
+        // Glueck irgendwohin, nur weil eine Nachricht es verlangt.
+        //
+        // DIE ENTSPRECHUNG LOEST DIE SHELL AUF, nicht der Planer. Er kennt nur
+        // seinen eigenen Id-Raum (der Cable-Planner kennt `n_cam2`, nicht
+        // `cam2`); wo die Gewerks-Bruecke erklaert ist, steht sie hier in
+        // `SignalNode.represents`. Ist keine erklaert, faehrt die Id
+        // unveraendert weiter: dann spricht der Absender entweder schon den
+        // Id-Raum des Ziels, oder das Ziel antwortet „kenne ich nicht" — was
+        // beides besser ist, als die Bitte hier verstummen zu lassen.
+        goToModule(
+          ziel,
+          msg.target ? (querziel(project, { modul: moduleId, id: msg.target }, ziel) ?? msg.target) : undefined,
+        )
       } else if (msg.type === 'avplan:settingChanged') {
         if (moduleId === 'signal' || moduleId === 'cameras' || moduleId === 'licht') {
           changeAppSetting(moduleId, msg.key, msg.value as SettingValue)
@@ -582,7 +664,7 @@ export function App() {
         )
       }
     })
-  }, [changeAppSetting, moduleId, pushToast, tt])
+  }, [changeAppSetting, goToModule, moduleId, project, pushToast, tt])
 
   /**
    * E-11 — womit die Shell rechnet, wenn sie diese Id in einen Planer schickt.
@@ -627,7 +709,39 @@ export function App() {
     () => setMounted((m) => ({ ...m, [moduleId]: !m[moduleId] })),
     [moduleId],
   )
-  const goToModule = useCallback((id: ModuleId) => setModuleId(id), [])
+
+  /**
+   * B-18 — die offene Zeig-Bitte zustellen, sobald ihr Modul vorne steht und
+   * dessen Rahmen zuhoert.
+   *
+   * Die Entscheidung selbst steht in `zustellung` und nicht hier: ihre
+   * Ausgaenge lassen sich leicht zu einem zusammenziehen, und jeder
+   * Zusammenzug waere eine Falschauskunft (der Kommentar dort sagt, welcher).
+   * Als reine Funktion ist sie pruefbar, ohne die Shell zu rendern.
+   *
+   * DIESER EFFEKT RUFT KEIN `setState`. Was er zu vermerken hat — dass eine
+   * Bitte erledigt ist — steht in einem Ref, den nur er anfasst. Sonst
+   * loeste jede Zustellung eine zweite Renderrunde aus, nur um etwas zu
+   * vergessen, das ohnehin niemand anzeigt.
+   */
+  useEffect(() => {
+    const bitte = offeneBitte
+    if (bitte && erledigt.current === bitte) return
+    const was = zustellung(bitte, {
+      modul: moduleId,
+      planerOffen: plannerActive,
+      rahmenHoert: plannerRevealListening(),
+    })
+    if (was.tun === 'nichts' || was.tun === 'warten') return
+    // Ab hier ist die Bitte erledigt — auf beiden Wegen. Ohne diesen Vermerk
+    // stellte der naechste Wecker sie ein zweites Mal zu.
+    erledigt.current = bitte
+    if (was.tun === 'verwerfen') return
+    // `senden`: der Rahmen hoert, also kommt die Bitte an. Ob der Planer das
+    // Objekt KENNT, ist seine Antwort — sie laeuft ueber `avplan:revealResult`
+    // und wird oben zu einer Meldung, wenn er es nicht kennt.
+    if (bitte) sendPlannerReveal({ id: bitte.id, kind: revealKind(bitte.id) })
+  }, [offeneBitte, moduleId, plannerActive, rahmenMeldung, revealKind])
 
   const commands = useMemo(
     () => buildCommands(mod, {

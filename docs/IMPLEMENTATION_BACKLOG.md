@@ -452,7 +452,16 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-15 · `EquipmentItem.powerWatts` ist ein Schreib-nur-Feld
 
-* **Status:** offen — **entschieden (E-8, 2026-09-08): ja, mit genannter Herkunft je Zeile; `powerConsumptionWatts` hat Vorrang**
+* **Status:** **erledigt 2026-09-08** — `cable#769`. Entschieden (E-8,
+  2026-09-08): ja, mit genannter Herkunft je Zeile; `powerConsumptionWatts`
+  hat Vorrang. **Der Eintrag stand danach noch auf „offen" und war damit
+  falsch** (nachgemessen 2026-09-09): `wattsWithSource` steht in
+  `src/renderer/lib/equipmentSelectors.ts:125` und wird in
+  `components/Calculators/CalculatorsDialog.tsx:456` gelesen —
+  `const { watts: w, source } = wattsWithSource(e)`. Die Zahl kommt dort **nie
+  ohne ihre Herkunft** heraus, genau wie E-8 es verlangt; `effectiveWatts` ist
+  der Kurzweg für die Fälle, die nur die Zahl brauchen. Das Feld ist damit
+  kein Schreib-nur-Feld mehr.
 * **Befund (gemessen 2026-09-04, cable-planner):** `cable-planner` hat **zwei**
   Leistungsfelder am Gerät. `powerConsumptionWatts` (#76) ist laut eigener
   Typ-Doku „Fed into the Power-Consumption calculator and the equipment BOM
@@ -581,7 +590,8 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-18 · Cross-Link: die Shell hört, aber niemand ruft
 
-* **Status:** offen — **entschieden (E-11, 2026-09-08): ja, über den Id-Raum des Seed-Protokolls**
+* **Status:** **erledigt 2026-09-09** — `suite#199`. Entschieden (E-11,
+  2026-09-08): ja, über den Id-Raum des Seed-Protokolls.
 * **Befund (nachgeprüft 2026-09-04):** `avplan:navigate` kommt in der ganzen
   Suite **dreimal** vor, und keine davon ist ein Sender:
 
@@ -600,6 +610,48 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Hand wiederfinden.
 * **Aufwand:** klein (Sender ergänzen) — aber siehe E-11: es braucht einen
   gemeinsamen Id-Raum, sonst zeigt der Sprung ins Leere.
+* **Was gebaut wurde — und warum es mehr war als „Sender ergänzen":** der
+  gemeinsame Id-Raum, den E-11 verlangt, existierte **innerhalb** eines
+  Gewerks längst (die Seed-Id ist unverändert die Geräte-Id im Cable-Planner,
+  die Kamera-Id im MultiCam-Planner, die Fixture-Id im Light-Planner). Die
+  vier Cross-Links der Shell kreuzen aber die **Gewerks-Grenze**: die Kamera
+  `cam2` und ihr Knoten im Signalweg `n_cam2` sind dasselbe Blech in zwei
+  Datensätzen, und was die beiden verband, war eine **Namensähnlichkeit**.
+  Genau die darf niemand auswerten (ADR-002) — sie stimmt in den Demo-Daten
+  und bricht beim ersten Projekt, dessen Knoten anders heißen, und zwar
+  stumm.
+  * **`SignalNode.represents`** sagt die Entsprechung jetzt **aus**:
+    `{ kind: 'camera' | 'fixture'; id }`. Fehlt das Feld, heißt das „hier ist
+    keine Entsprechung erklärt" — nicht „es gibt keine".
+  * **`apps/shell/src/shell/crossLink.ts`** löst damit auf: `knotenFuer`
+    (Kamera/Fixture → Knoten), `objektAmKabel` (Kabel → Kamera an einem Ende,
+    Quell-Seite zuerst), `querziel` als die eine Rechnung, die alle vier
+    Knöpfe benutzen. Wo nichts erklärt ist, gibt sie `undefined` zurück und
+    der Sprung bleibt ein bloßer Modulwechsel wie bisher — das ist die
+    ehrliche Antwort, ein geratener Treffer sähe aus wie ein gelungener
+    Sprung.
+  * **Der Zeitpunkt war das zweite Problem.** Der Ziel-Planer steht beim Klick
+    noch gar nicht: sein iframe wird durch den Modulwechsel erst gemountet und
+    meldet sich Sekunden später mit `avplan:ready`. Wer die Zeig-Bitte sofort
+    abschickt, schickt sie in den Rahmen, den der Nutzer gerade **verlässt**.
+    Sie wartet deshalb als offene Bitte, die ihr Modul mitträgt; `zustellung`
+    entscheidet mit vier Ausgängen (`senden`, `warten`, `verwerfen`, `melden`),
+    und jeder Zusammenzug davon wäre eine Falschauskunft — der Kommentar dort
+    sagt, welche.
+  * **`avplan:navigate` honoriert `msg.target`.** Der Empfänger warf es
+    vorher weg. Die Auflösung der Gewerks-Brücke passiert dabei in der
+    **Shell**, nicht im Planer: `represents` steht im Shell-Modell, der Planer
+    kennt nur seinen eigenen Id-Raum.
+  * **`postNavigateToShell`** in `@avplan/ui/embed` — der Helfer, dessen
+    Fehlen der Befund oben zählt. Ein Kanal mit Typ und Empfänger, aber ohne
+    unterstützten Absender, wird von jedem Absender neu nachgebaut, und ein
+    Tippfehler im `type` tut dann still nichts.
+* **Gegengeprobt (10):** Namensabgleich als Rückfallebene, `kind` ignoriert,
+  fehlende Modul-Prüfung der offenen Bitte, `melden` zu `warten` zusammen-
+  gezogen, `to` vor `from` am Kabel, Kamera→Licht rät ein Fixture, Anmeldung
+  des Rahmens wird nicht gemeldet, `msg.target` wieder verworfen, Auflösung im
+  Empfänger übersprungen, Knopf ohne Ziel — jede Änderung macht genau eine
+  Regel rot.
 
 ### B-19 · Lexware: zwei Bedingungen, die sich gegenseitig ausschließen
 
@@ -845,7 +897,14 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-24 · Zwei übersetzte Dateien in `cable-planner`, die niemand rendert
 
-* **Status:** offen — **entschieden (E-16, 2026-09-08): gelöscht**
+* **Status:** **erledigt 2026-09-08** — `cable#769`. Entschieden (E-16,
+  2026-09-08): gelöscht. **Der Eintrag stand danach noch auf „offen" und war
+  damit falsch** (nachgemessen 2026-09-09): beide Dateien sind weg
+  (`components/Print/PrintDialog.tsx`, `components/Canvas/TitleBlock.tsx`
+  existieren nicht mehr), und `tests/i18nErreichbarkeit.test.ts` prüft die
+  Leere jetzt aktiv — die Liste der übersetzten, aber nirgends importierten
+  Dateien muss `[]` sein. Ein „bis dahin"-Wächter, der zwei Namen duldete,
+  ist zu einem Wächter geworden, der keinen mehr duldet.
 * **Befund (gemessen 2026-09-04, `tests/i18nErreichbarkeit.test.ts`):**
   `components/Print/PrintDialog.tsx` (16 KB, **34** `t()`-Aufrufe) und
   `components/Canvas/TitleBlock.tsx` (5 KB, **14**) werden **nirgends**
@@ -861,9 +920,9 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 * **Warum nicht nebenbei gelöscht:** 21 KB Code zu entfernen, den jemand
   vielleicht noch anschließen will, ist keine Aufräumarbeit, sondern eine
   Produktentscheidung.
-* **Bis dahin:** Der Test benennt beide bei jedem Lauf und lässt keine
-  **dritte** Datei still dazukommen.
-* **Aufwand:** klein (löschen) / mittel (verdrahten)
+* ~~**Bis dahin:** Der Test benennt beide bei jedem Lauf und lässt keine
+  **dritte** Datei still dazukommen.~~ Er lässt jetzt gar keine mehr zu.
+* **Aufwand:** klein (löschen) / mittel (verdrahten) — gelöscht.
 
 ### B-25 · `multicam-planner` upstream hat gar keine i18n
 
@@ -1725,9 +1784,11 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   4. ~~**Der Tab-Wechsel schaltet weiterhin nichts.**~~ **Erledigt (`suite#100`):**
      es waren dreizehn wirkungslose Tabs, und sie sind entfernt statt ausgebaut
      (E-9).
-  5. **Der Cross-Link hat weiter keinen Sender** (B-18). „Im Signal-Flow
-     zeigen" wechselt das Modul, die Auswahl bleibt zurück. **Weiter offen**,
-     hängt an E-11 (gemeinsamer Id-Raum).
+  5. ~~**Der Cross-Link hat weiter keinen Sender** (B-18).~~ **Erledigt
+     (`suite#199`):** „Im Signal-Flow zeigen" nimmt die Auswahl mit — über eine
+     **deklarierte** Entsprechung zwischen den Gewerken (`SignalNode.represents`),
+     nie über Namensähnlichkeit, und zugestellt erst, wenn der Rahmen des
+     Ziel-Moduls zuhört. Details in B-18.
 * **Aufwand:** 1 mittel (Entscheidung nötig), 5 klein
 
 ---
@@ -2214,7 +2275,15 @@ belegbar, dort sind sie erprobt.
 
 ### B-45 · Stromplanung, die diesen Namen verdient
 
-* **Status:** Kern GEBAUT — `cable#782`; die Schalter-Bauarten offen. **Wunsch des Eigentümers, 2026-09-08:** „Zudem fehlen
+* **Status:** **GEBAUT — `cable#782` (Kern) und `cable#788` (Schalter-Bauarten).**
+  Der Eintrag stand danach noch auf „die Schalter-Bauarten offen" und war
+  damit falsch (nachgemessen 2026-09-09): `types/circuit.ts:125–129` führt
+  `contactor` (Schütz), `relay`, `button` (Taster), `emergencyStop`, `rcd`
+  (FI) und `mcb` (LS) als eigene Bauarten in derselben
+  `satisfies Record<CircuitKind, …>`-Tabelle. Sie kamen in derselben Runde
+  wie B-52 Teil 2 heraus, weil beide dieselbe Tabelle anfassen — und der
+  Eintrag hier ist beim Nachtragen liegengeblieben.
+  **Wunsch des Eigentümers, 2026-09-08:** „Zudem fehlen
   noch die Möglichkeiten für ordentliche Stromplanung. Powerlock Kabel zieht
   man einzeln. Die müssen auch die Adern Farben bekommen. Und auch
   Lichtschalter und so müssen integrierbar sein."
@@ -2274,10 +2343,16 @@ belegbar, dort sind sie erprobt.
     eine ohne wird beim Laden verworfen (**Invariante 22**).
   * Die Farbe steht auf der **Ziehliste** („L1 (braun)"), nicht nur im Plan.
   * Die Powerlock-Kodierung ist Freitext — sie steht im Herstellerdokument.
-* **Was offen bleibt:** die Fortsetzung im Schaltbild-Rechner — Schütz/Relais,
+* ~~**Was offen bleibt:** die Fortsetzung im Schaltbild-Rechner — Schütz/Relais,
   Taster mit Stromstossschalter, Not-Aus, Fehlerstrom- und
-  Leitungsschutzschalter als eigene Bauarten.
-* **Aufwand:** gross — der Kern erledigt.
+  Leitungsschutzschalter als eigene Bauarten.~~ **Erledigt (`cable#788`).**
+  Die sechs teilen sich EINE Rechnung — elektrisch sind sie dasselbe wie
+  `switch`, sechs eigene Zeilen in `INNERE_VERBINDUNG` wären sechsmal
+  dieselbe Rechnung. Eigene Bauarten sind sie für **Beschriftung und
+  Ruhestellung**: Not-Aus, FI und LS sind im Ruhezustand **geschlossen**, und
+  genau daran fiel auf, dass drei Stellen unabhängig voneinander ausrechneten,
+  welche Stellung ohne Zutun gilt (Details in B-52 Teil 2).
+* **Aufwand:** gross — erledigt.
 
 ### B-46 · Steck- und Kabeladapter als eigene Objekte
 

@@ -216,6 +216,23 @@ export interface SignalNode {
   /** Position im Signal-Flow (0..1 relativ zur Fläche). */
   nx: number
   ny: number
+  /**
+   * B-18 — WOFUER dieser Knoten im Signalweg steht, wenn er fuer etwas steht,
+   * das ein anderes Gewerk ebenfalls fuehrt.
+   *
+   * Der Knoten `n_cam2` („CAM 2 — Sony FX9") und die Kamera `cam2` sind
+   * dasselbe Blech, aber zwei Datensaetze in zwei Gewerken: der Signalweg
+   * kennt Anschluesse, der Kameraplan kennt Brennweiten. Ohne dieses Feld
+   * verbindet die beiden nur eine Namensaehnlichkeit — und die darf niemand
+   * auswerten. Ein Sprung, der `n_cam2` per Zeichenkette zu `cam2` macht,
+   * trifft beim ersten anders benannten Projekt daneben und sagt es nicht
+   * (ADR-002: die Entsprechung wird DEKLARIERT, nie geraten).
+   *
+   * Fehlt das Feld, heisst das „hier ist keine Entsprechung erklaert" — nicht
+   * „es gibt keine". Der Cross-Link wechselt dann nur das Modul, statt eine
+   * Auswahl zu erfinden.
+   */
+  represents?: { kind: 'camera' | 'fixture'; id: string }
 }
 
 export interface Cable {
@@ -287,8 +304,8 @@ export const PROJECT: SuiteProject = {
     { id: 'lx6', name: 'LX 6', model: 'PAR 64 CP62', purpose: 'Effekt', dimmerPct: 40, dmxChannel: 16, x: 15.4, y: 5.6 },
   ],
   nodes: [
-    { id: 'n_cam1', name: 'CAM 1 — Sony FX9', sub: '3× SDI Out', group: 'floor', venue: true, nx: 0.08, ny: 0.12 },
-    { id: 'n_cam2', name: 'CAM 2 — Sony FX9', sub: '3× SDI Out', group: 'floor', venue: true, nx: 0.08, ny: 0.42 },
+    { id: 'n_cam1', name: 'CAM 1 — Sony FX9', sub: '3× SDI Out', group: 'floor', venue: true, nx: 0.08, ny: 0.12, represents: { kind: 'camera', id: 'cam1' } },
+    { id: 'n_cam2', name: 'CAM 2 — Sony FX9', sub: '3× SDI Out', group: 'floor', venue: true, nx: 0.08, ny: 0.42, represents: { kind: 'camera', id: 'cam2' } },
     { id: 'n_dimmer', name: 'Dimmer Rack 2', sub: '12 Kanäle · 16 A', group: 'floor', venue: true, nx: 0.08, ny: 0.72 },
     { id: 'n_atem', name: 'ATEM Constellation 8K', sub: '40× 12G-SDI In', group: 'regie', venue: false, nx: 0.62, ny: 0.14 },
     { id: 'n_hub', name: 'Videohub 40×40', sub: '12G-SDI Router', group: 'regie', venue: false, nx: 0.62, ny: 0.46 },

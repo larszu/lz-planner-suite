@@ -58,6 +58,7 @@ export {
   postThemeToFrame,
   postSettingsToFrame,
   postCommandToFrame,
+  postNavigateToShell,
   publishShellSetting,
   onShellMessage,
   type ShellMessage,

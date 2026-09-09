@@ -39,7 +39,15 @@ export interface ReadyMessage {
   app: string
 }
 
-/** Cross-Link: „Im Signal-Flow zeigen“ etc. — Planer bittet die Shell zu wechseln. */
+/**
+ * Cross-Link: „Im Signal-Flow zeigen“ etc. — Planer bittet die Shell zu wechseln.
+ *
+ * `target` ist die Id des Objekts, das im ZIEL-Modul gezeigt werden soll — im
+ * Id-Raum des Seed-Protokolls, wie bei `RevealMessage`. Fehlt es, ist die
+ * Bitte ein blosser Modulwechsel; das ist eine gueltige Bitte und kein
+ * halbfertiger Sprung (B-18): wo der Absender keine Entsprechung im Ziel-
+ * Gewerk kennt, waere eine erfundene schlimmer als keine.
+ */
 export interface NavigateMessage {
   type: 'avplan:navigate'
   module: string
@@ -228,6 +236,37 @@ export function postCommandToFrame(frame: Window | null | undefined, command: 'u
     frame?.postMessage({ type: 'avplan:command', command } satisfies CommandMessage, '*')
   } catch {
     /* iframe noch nicht bereit */
+  }
+}
+
+/**
+ * Planer-Seite → Shell: Modul wechseln und dort ein Objekt zeigen (B-18).
+ *
+ * Das Gegenstueck zu `postRevealToFrame`: der Sprung geht nicht von der Shell
+ * aus, sondern aus dem Planer heraus („dieses Kabel im Kameraplan"). Die Shell
+ * wechselt das Modul und stellt die Zeig-Bitte zu, sobald der Ziel-Rahmen
+ * bereit ist.
+ *
+ * WARUM DAS EIN HELFER IST UND KEIN HANDGESCHRIEBENES `postMessage`: bis hier
+ * gab es fuer diese Richtung keinen — der Kanal existierte im Typ und in der
+ * Shell, aber jeder Absender haette den Nachrichten-Aufbau selbst nachbauen
+ * muessen. Drei nachgebaute Absender sind drei Stellen, an denen ein Tippfehler
+ * im `type` still nichts tut.
+ *
+ * No-op im Standalone-Betrieb (kein Eltern-Fenster). Gibt zurueck, ob die
+ * Bitte abgeschickt wurde — `false` heisst „hier ist keine Shell", nicht
+ * „nicht gefunden".
+ */
+export function postNavigateToShell(module: string, target?: string): boolean {
+  try {
+    if (typeof window === 'undefined' || window.parent === window) return false
+    window.parent.postMessage(
+      { type: 'avplan:navigate', module, ...(target ? { target } : {}) } satisfies NavigateMessage,
+      '*',
+    )
+    return true
+  } catch {
+    return false
   }
 }
 

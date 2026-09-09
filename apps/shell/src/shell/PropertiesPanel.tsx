@@ -4,6 +4,7 @@ import type { SuiteProject } from '../data/project'
 import type { ModuleDef, ModuleId } from '../modules/registry'
 import { useT, type TFunc } from '../i18n'
 import { RUNTIMES } from '../modules/runtimes'
+import { knotenFuer, objektAmKabel } from './crossLink'
 import type { RuntimeHealth } from './runtimeHealth'
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -70,7 +71,15 @@ export function PropertiesPanel({
   module: ModuleDef
   project: SuiteProject | null
   selectedId: string | null
-  onNavigate: (id: ModuleId) => void
+  /**
+   * B-18 — der Sprung nimmt die Auswahl mit, wo es eine erklaerte Entsprechung
+   * im Ziel-Gewerk gibt. `target` ist deren Id IM ZIELMODUL, nicht die des
+   * angezeigten Objekts: die Kamera `cam2` heisst im Signalweg `n_cam2`, und
+   * welcher Knoten fuer sie steht, sagt `SignalNode.represents` — geraten wird
+   * es nicht (ADR-002). Fehlt die Erklaerung, faehrt der Sprung ohne Ziel: ein
+   * blosser Modulwechsel wie bisher.
+   */
+  onNavigate: (id: ModuleId, target?: string) => void
   /** Erreichbarkeit der vier Anlagen — gemessen in `useRuntimeHealth`. */
   runtimeHealth?: RuntimeHealth
 }) {
@@ -166,7 +175,16 @@ export function PropertiesPanel({
           <Group title={t('panels.group.route', 'Route')} accent={accent}>
             <Field label={t('panels.field.from', 'Von')}>{from?.name}</Field>
             <Field label={t('panels.field.to', 'Nach')}>{to?.name}</Field>
-            <Button variant="subtle" size="sm" className="mt-2" onClick={() => onNavigate('cameras')}>
+            {/* Das Kabel selbst kennt der Kameraplan nicht — dort stehen
+                Kameras. Mitgenommen wird deshalb die Kamera, fuer die ein
+                Knoten an diesem Kabel erklaertermassen steht; steht keiner
+                dafuer, wechselt der Knopf nur das Modul. */}
+            <Button
+              variant="subtle"
+              size="sm"
+              className="mt-2"
+              onClick={() => onNavigate('cameras', objektAmKabel(project, cable.id, 'camera'))}
+            >
               <Icon name="camera" size={14} /> {t('panels.action.showInCameraPlan', 'Im Kamera-Plan zeigen')}
             </Button>
           </Group>
@@ -187,11 +205,20 @@ export function PropertiesPanel({
             <Field label="H-FOV">{cam.hfovDeg.toFixed(1)}°</Field>
           </Group>
           <Group title={t('panels.group.cabling', 'Verkabelung')} icon="signal" accent="var(--mod-signal)">
-            <Button variant="subtle" size="sm" onClick={() => onNavigate('signal')}>
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={() => onNavigate('signal', knotenFuer(project, 'camera', cam.id))}
+            >
               <Icon name="signal" size={14} /> {t('panels.action.showInSignalFlow', 'Im Signal-Flow zeigen')}
             </Button>
           </Group>
           <Group title={t('panels.group.lightAtSubject', 'Licht am Motiv')} icon="light" accent="var(--mod-licht)">
+            {/* OHNE ZIEL, und das bleibt so: „das Licht am Motiv dieser
+                Kamera" ist kein Objekt, sondern mehrere, und keines davon
+                steht im Modell als DAS zugehoerige. Sich hier eines
+                auszusuchen waere geraten — der Sprung wechselt die Ebene und
+                ueberlaesst die Wahl dem Nutzer. */}
             <Button variant="subtle" size="sm" onClick={() => onNavigate('licht')}>
               <Icon name="light" size={14} /> {t('panels.action.toLightLayer', 'Zur Licht-Ebene')}
             </Button>
@@ -250,7 +277,11 @@ export function PropertiesPanel({
           <Field label={t('panels.field.channelUniverse', 'Kanal / Universe')}>{fx.dmxChannel} / 1</Field>
         </Group>
         <Group title={t('panels.group.cablingPower', 'Verkabelung & Strom')} icon="signal" accent="var(--mod-signal)">
-          <Button variant="subtle" size="sm" onClick={() => onNavigate('signal')}>
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={() => onNavigate('signal', knotenFuer(project, 'fixture', fx.id))}
+          >
             <Icon name="signal" size={14} /> {t('panels.action.showInSignalFlow', 'Im Signal-Flow zeigen')}
           </Button>
         </Group>
