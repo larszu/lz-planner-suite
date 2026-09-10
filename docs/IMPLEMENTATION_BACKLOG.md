@@ -282,11 +282,20 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-60 · Zwei entschiedene Werkzeuge, die an einem 403 hängen
 
-* **Status:** **entschieden 2026-09-09 (E-26 und E-27, Eigentümer), Bau
-  blockiert.** Beide Male hat der Eigentümer die weitergehende Variante
-  gewählt: `facility-planner` als eigenes Repo mit Gerüst, und das Lager als
-  eigenes Repo **mit eigener Oberfläche** statt nur als Paket hinter dem
-  Planer.
+* **Status: ERLEDIGT 2026-09-09.** Entschieden (E-26 und E-27, Eigentümer),
+  gebaut, und der 403 spielt keine Rolle mehr — beide Repos stehen. Beide Male
+  hat der Eigentümer die weitergehende Variante gewählt: `facility-planner`
+  als eigenes Repo mit Gerüst, und das Lager als eigenes Repo **mit eigener
+  Oberfläche** statt nur als Paket hinter dem Planer.
+
+  **Diese Zeile sagte bis 2026-09-10 „Bau blockiert", während im Rumpf
+  desselben Eintrags „Erledigt am 2026-09-09" stand.** Genau die Form, gegen
+  die `backlog:check` geschrieben ist — und er war blind dafür, weil er
+  „offen" sucht und hier „blockiert" stand, und weil er die Fertig-Marke nur
+  in VERSALIEN kennt, im Rumpf aber „**Erledigt**" steht. Beides ist mit
+  diesem Eintrag behoben; der Wächter kennt jetzt auch „blockiert" und die
+  fett gesetzte Marke. Gemessen: über 61 Einträge fand die neue Fassung genau
+  diesen einen und keinen Fehlalarm.
 * **Woran es hängt, wörtlich:** `POST https://api.github.com/user/repos`
   antwortet `403 Resource not accessible by integration`. Die GitHub-App
   dieser Sitzung darf keine Repositories anlegen; sie darf in den acht

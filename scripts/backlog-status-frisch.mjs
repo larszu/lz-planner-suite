@@ -65,31 +65,118 @@ const DATEI = resolve(HIER, 'docs', 'IMPLEMENTATION_BACKLOG.md')
 /** `~~offen~~` heisst „nicht mehr offen" — vor dem Messen weg damit. */
 const ohneDurchgestrichenes = (text) => text.replace(/~~[\s\S]*?~~/g, '')
 
-const OFFEN = /\b(offen|noch nicht gebaut|steht aus)\b/i
-const FERTIG = /\b(ERLEDIGT|GEBAUT)\b/
+// „blockiert" gehoert dazu, und der Beleg ist B-60 (gefunden 2026-09-10).
+// Seine Kopfzeile sagte „Bau blockiert", waehrend im Rumpf desselben Eintrags
+// „**Erledigt am 2026-09-09**" stand — beide Repos waren laengst angelegt.
+// Fuer den, der die Statuszeile ueberfliegt, ist „blockiert" dieselbe Aussage
+// wie „offen", nur staerker: fang gar nicht erst an. Dass der Waechter das
+// Wort nicht kannte, war der Unterschied zwischen einem Eintrag, den man
+// abhakt, und einem, der ein Jahr lang jemanden abschreckt.
+const OFFEN = /\b(offen|noch nicht gebaut|steht aus|blockiert|geblockt)\b/i
+
+// Die Fertig-Marke im RUMPF: Versalien wie bisher, dazu die fett gesetzte
+// Form „**Erledigt" / „**Gebaut". Auch die ist eine Auszeichnung und keine
+// Prosa — sie steht am Anfang eines Aufzaehlungspunkts, nicht mitten im Satz.
+// Genau in dieser Form stand B-60s Widerspruch, und die reine Versalien-
+// Fassung sah ihn nicht.
+const FERTIG = /\b(ERLEDIGT|GEBAUT)\b|\*\*(Erledigt|Gebaut)\b/
+
+// In der KOPFZEILE zaehlt „erledigt" oder „gebaut" in JEDER Schreibweise als
+// „hier steht schon, dass es fertig ist" — und das ist ausdruecklich nur eine
+// ENTSCHULDIGUNG, nie ein Grund zu melden.
+//
+// Der Unterschied ist der ganze Punkt. Der Kopf dieser Datei erklaert, warum
+// die Fertig-Marke sonst nur in Versalien geprueft wird: eine
+// gross-/kleinschreibungsblinde Fassung schlug auf B-11s Prosa an („gegen die
+// die Belegkette dieses Repos gebaut ist"), und ein Waechter mit Fehlalarmen
+// wird abgeschaltet. Hier kann dasselbe Wort keinen Fehlalarm ausloesen,
+// sondern hoechstens einen Fund UNTERDRUECKEN — die harmlosere Richtung.
+//
+// UND NUR IM ERSTEN SATZ, nicht irgendwo in der Kopfzeile. Der Unterschied
+// ist beim Bauen aufgefallen und war kein Detail: die erste Fassung suchte
+// im ganzen Status-Absatz, und ausgerechnet B-60 — der Eintrag, dessen
+// Widerspruch dieser Waechter finden sollte — entkam damit, weil sein
+// Absatz weiter unten den Satz „waehrend im Rumpf ... ‚Erledigt am ...'
+// stand" fuehrt. Ein Eintrag, der seinen eigenen Fehler beschreibt, machte
+// die Pruefung auf sich selbst blind.
+//
+// Der erste Satz IST das Urteil; alles danach ist Begruendung. Gemessen
+// 2026-09-10 ueber 63 Eintraege: kein Fehlalarm.
+//
+// Was es kostet, steht ehrlich hier: eine Kopfzeile, deren erster Satz das
+// Wort „gebaut" nur in Prosa fuehrt, entkommt der Pruefung. Ohne diese
+// Einschraenkung meldete der Lauf dagegen B-39 falsch, dessen Kopf
+// „erledigt 2026-09-09 — alle fuenf Punkte" sagt.
+const KOPF_FERTIG = /\b(erledigt|gebaut)\b/i
+
+/** Der erste Satz einer Kopfzeile — das Urteil, ohne die Begruendung. */
+const ersterSatz = (t) => {
+  const s = t.trim()
+  const m = s.match(/\.(\s|$)/)
+  return m ? s.slice(0, m.index + 1) : s
+}
 
 const text = readFileSync(DATEI, 'utf8')
 const bloecke = text.split(/\n(?=### )/)
 const funde = []
+const ohneStatus = []
 let geprueft = 0
+let eintraege = 0
 
 for (const block of bloecke) {
   if (!block.startsWith('### ')) continue
+  eintraege++
   const titel = block.split('\n', 1)[0].replace(/^###\s*/, '')
-  // Die Kopfzeile ist der erste Aufzaehlungspunkt „* **Status:** …" bis zum
+  // Die Kopfzeile ist der erste Aufzaehlungspunkt „* **Status: …" bis zum
   // naechsten Punkt derselben Ebene.
-  const m = block.match(/^\* \*\*Status:\*\*([\s\S]*?)(?=\n\* )/m)
-  if (!m) continue
+  //
+  // ZWEI SCHREIBWEISEN, und die zweite hat den Waechter blind gemacht
+  // (gemessen 2026-09-10):
+  //
+  //     * **Status:** offen — …        die urspruengliche Form
+  //     * **Status: ERLEDIGT.** …      das Urteil steht MIT im Fettdruck
+  //
+  // Die alte Fassung verlangte das schliessende `**` unmittelbar hinter
+  // `Status:` und uebersprang die zweite Form STILL. Drei von 63 Eintraegen
+  // (B-42, B-60, B-65) fielen so heraus, und der Lauf meldete zufrieden „60
+  // geprueft" — eine Zahl, die niemand nachrechnet, weil niemand weiss, dass
+  // es 63 sein muessten. Ausgerechnet B-60 war der Eintrag, dessen
+  // Widerspruch dieser Waechter finden sollte.
+  const m = block.match(/^\* \*\*Status:(?:\*\*)?([\s\S]*?)(?=\n\* )/m)
+  if (!m) {
+    ohneStatus.push(titel)
+    continue
+  }
   geprueft++
   const status = ohneDurchgestrichenes(m[1])
   const rumpf = ohneDurchgestrichenes(block.slice(m.index + m[0].length))
-  if (OFFEN.test(status) && !FERTIG.test(status) && FERTIG.test(rumpf)) {
+  if (OFFEN.test(status) && !KOPF_FERTIG.test(ersterSatz(status)) && FERTIG.test(rumpf)) {
     const beleg = rumpf.match(new RegExp(`[^\\n]*${FERTIG.source}[^\\n]*`))
     funde.push({ titel, status: status.replace(/\s+/g, ' ').trim().slice(0, 120), beleg: beleg?.[0].trim().slice(0, 120) })
   }
 }
 
-console.log(`${geprueft} Backlog-Eintraege mit Status-Zeile geprueft.`)
+console.log(`${geprueft} von ${eintraege} Backlog-Eintraegen geprueft.`)
+
+// SELBSTPROBE: jeder Eintrag hat eine Status-Zeile, und dieser Lauf hat sie
+// gesehen. Ohne sie ist „60 geprueft" eine Zahl ohne Nenner — und genau so
+// hat dieser Waechter drei Eintraege lang nichts gemerkt. Ein uebersprungener
+// Eintrag ist kein kleinerer Messbereich, sondern ein blinder Fleck, der
+// aussieht wie ein gruener Lauf.
+if (ohneStatus.length > 0) {
+  console.error(
+    `\n${ohneStatus.length} Eintrag/Eintraege ohne erkennbare Status-Zeile:\n`,
+  )
+  for (const t of ohneStatus) console.error(`  ${t}`)
+  console.error(
+    '\nEntweder fehlt die Zeile — dann gehoert sie hin, denn sie ist das, was\n' +
+      'jemand ueberfliegt — oder sie ist anders geschrieben, als dieser Lauf\n' +
+      'sie kennt. Im zweiten Fall ist der Waechter zu eng und nicht der\n' +
+      'Eintrag zu frei: er hat schon einmal drei Eintraege still uebersprungen.',
+  )
+  process.exit(1)
+}
+
 if (funde.length === 0) {
   console.log('Keine Kopfzeile widerspricht ihrem Rumpf.')
   process.exit(0)
