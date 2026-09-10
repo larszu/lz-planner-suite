@@ -13,7 +13,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build:packages": "npm run build --workspace @avplan/inventory-core --workspace @avplan/onboarding-core --workspace @avplan/lexware-core --workspace @avplan/ui",
+    "build:packages": "npm run build --workspace @avplan/inventory-core --workspace @avplan/onboarding-core --workspace @avplan/lexware-core --workspace @avplan/dmx-core --workspace @avplan/ui",
     "build:planners": "npm run build --workspace cable-planner && npm run build --workspace multicam-planner && npm run build --workspace light-planner && npm run build --workspace inventory-planner && npm run build --workspace larszu-facility-planner && node apps/shell/scripts/copy-planners.mjs",
     "build": "npm run build:packages && npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

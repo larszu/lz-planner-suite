@@ -70,6 +70,7 @@
     "actions:check": "node scripts/actions-node-runtime.mjs"
   },
   "dependencies": {
+    "@avplan/dmx-core": "*",
     "@avplan/inventory-core": "*",
     "@avplan/lexware-core": "*",
     "@avplan/onboarding-core": "*",

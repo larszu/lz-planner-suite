@@ -154,6 +154,12 @@ const REPLACED_BY_PACKAGE = {
     'renderer/lager/lib/inventoryPortable.ts', // -> @avplan/inventory-core (Wire-Format)
     'renderer/types/inventory.ts',
     'renderer/lib/inventoryPortable.ts',
+    // Seit 2026-09-10: das DMX-Modell (Modi, Adressvergabe, Befunde) kommt aus
+    // `@avplan/dmx-core`. `renderer/lib/dmx/index.ts` bleibt als Weiterleitung
+    // stehen, damit keine Aufrufstelle abweicht — nur die Rechnung selbst
+    // liegt einmal statt dreimal im Baum.
+    'renderer/lib/dmx/types.ts',        // -> @avplan/dmx-core
+    'renderer/lib/dmx/adressierung.ts', // -> @avplan/dmx-core
   ],
   'multicam-planner': [
     'inventory/types.ts',
@@ -284,6 +290,21 @@ const UEBERSETZT = {
     {
       zeile: "import type { InventoryItem, StorageNode, InventorySet, InventoryUnit } from '../src/renderer/lager/types/inventory'",
       wo: "apps/cable-planner/tests/inventoryContract.test.ts: importiert aus @avplan/inventory-core",
+    },
+    // Dasselbe fuer das DMX-Modell (2026-09-10): upstream reicht
+    // `lib/dmx/index.ts` die beiden Nachbardateien durch, in der Suite kommt
+    // dieselbe Rechnung aus `@avplan/dmx-core` (REPLACED_BY_PACKAGE oben).
+    // Die beiden Zeilen koennen hier nie woertlich stehen — sie fehlen aber
+    // auch nicht: die Weiterleitung exportiert genau dieselben Namen, und
+    // `apps/cable-planner/tests/dmxAdressierung.test.ts` prueft sie ueber
+    // denselben Pfad `../src/renderer/lib/dmx`.
+    {
+      zeile: "export * from './types'",
+      wo: "apps/cable-planner/src/renderer/lib/dmx/index.ts: export * from '@avplan/dmx-core'",
+    },
+    {
+      zeile: "export * from './adressierung'",
+      wo: "apps/cable-planner/src/renderer/lib/dmx/index.ts: export * from '@avplan/dmx-core'",
     },
   ],
   'multicam-planner': [

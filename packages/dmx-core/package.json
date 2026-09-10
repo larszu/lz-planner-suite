@@ -1,0 +1,28 @@
+{
+  "name": "@avplan/dmx-core",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Geteiltes DMX-Modell: Geraeteprofile mit Modi, Adressvergabe und Befunde fuer alle Planner-Apps",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "license": "UNLICENSED"
+}

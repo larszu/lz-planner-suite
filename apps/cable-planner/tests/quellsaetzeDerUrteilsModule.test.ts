@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { klassifiziere } from '../scripts/quellsprache.mjs'
 
@@ -47,6 +47,22 @@ import { klassifiziere } from '../scripts/quellsprache.mjs'
 
 const WURZEL = join(process.cwd(), 'src', 'renderer')
 
+/**
+ * IN DER SUITE zusaetzlich: das DMX-Modell liegt hier nicht unter
+ * `src/renderer/lib/dmx/`, sondern im gemeinsamen Paket `@avplan/dmx-core`
+ * (`renderer/lib/dmx/index.ts` ist nur die Weiterleitung, siehe
+ * `REPLACED_BY_PACKAGE` in `scripts/planner-drift.mjs`). Der Scan endete an
+ * der App-Grenze und haette das Modul damit einfach nicht mehr gesehen — und
+ * genau das ist die Bauform, gegen die dieser Waechter steht: eine Pruefung,
+ * die gruen ist, weil sie nicht mehr hinsieht.
+ *
+ * Die Gegenprobe unten fragt deshalb nach `dmx-core/adressierung.ts` statt
+ * nach `lib/dmx/adressierung.ts` — dieselbe Datei, ein anderer Ort.
+ */
+const PAKETE: { wurzel: string; praefix: string }[] = [
+  { wurzel: join(process.cwd(), '..', '..', 'packages', 'dmx-core', 'src'), praefix: 'dmx-core' },
+]
+
 const dateien = (dir: string): string[] =>
   readdirSync(dir).flatMap((eintrag) => {
     const voll = join(dir, eintrag)
@@ -64,6 +80,22 @@ const dateien = (dir: string): string[] =>
 const VORLAGE =
   /\beinsetzen\(\s*(?:\n\s*)?(?:'((?:[^'\\]|\\.)+?)'|"((?:[^"\\]|\\.)+?)"|`((?:[^`\\]|\\.)+?)`)/g
 
+/**
+ * Die ZWEITE Form: ein Woerterbuch-Schluessel, direkt gefolgt vom Satz.
+ *
+ * `lib/dmx/adressierung.ts` reicht beides an einen eigenen `befund()`-Bauer
+ * weiter, statt `einsetzen` mit einem Literal aufzurufen — das Muster oben
+ * sieht davon nichts. Gemessen beim Bau des Moduls (2026-09-10): sieben
+ * englische Saetze standen dort und waren fuer BEIDE Waechter unsichtbar,
+ * fuer `lang:check` wie fuer diesen Test.
+ *
+ * Entscheidbar ist es trotzdem: ein Schluessel sieht aus wie `'bereich.name'`,
+ * und was als naechstes Literal folgt, ist der Satz dazu. Kein Ermessen, keine
+ * Wortliste.
+ */
+const SCHLUESSEL_UND_SATZ =
+  /'([a-z][a-zA-Z0-9]*\.[a-zA-Z0-9.]+)',\s*(?:\n\s*)?(?:'((?:[^'\\]|\\.){12,}?)'|"((?:[^"\\]|\\.){12,}?)")/g
+
 const ohneKommentare = (text: string) =>
   text.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ')
 
@@ -72,15 +104,34 @@ interface Fund {
   satz: string
 }
 
+const alleQuellen = (): { datei: string; rel: string }[] => {
+  const liste = dateien(WURZEL).map((datei) => ({
+    datei,
+    rel: relative(WURZEL, datei).split('\\').join('/'),
+  }))
+  for (const paket of PAKETE) {
+    if (!existsSync(paket.wurzel)) continue
+    for (const datei of dateien(paket.wurzel)) {
+      liste.push({
+        datei,
+        rel: `${paket.praefix}/${relative(paket.wurzel, datei).split('\\').join('/')}`,
+      })
+    }
+  }
+  return liste
+}
+
 const saetze = (): Fund[] => {
   const gefunden: Fund[] = []
-  for (const datei of dateien(WURZEL)) {
-    const rel = relative(WURZEL, datei).split('\\').join('/')
+  for (const { datei, rel } of alleQuellen()) {
     // Das Woerterbuch IST die Uebersetzung — dort steht Deutsch mit Absicht.
     if (rel.includes('i18n')) continue
     const quelle = ohneKommentare(readFileSync(datei, 'utf8'))
     for (const m of quelle.matchAll(VORLAGE)) {
       gefunden.push({ datei: rel, satz: m[1] ?? m[2] ?? m[3] ?? '' })
+    }
+    for (const m of quelle.matchAll(SCHLUESSEL_UND_SATZ)) {
+      gefunden.push({ datei: rel, satz: m[2] ?? m[3] ?? '' })
     }
   }
   return gefunden
@@ -114,6 +165,10 @@ describe('Die Saetze der sprachfreien Urteils-Module', () => {
       'types/displayCapability.ts',
       'lib/labelDerivation.ts',
       'lib/portGroups.ts',
+      // Ueber die zweite Form gefunden — steht hier, damit ein Rueckfall auf
+      // ein Muster, das sie nicht mehr sieht, auffaellt. In der Suite kommt
+      // die Datei aus `packages/dmx-core`, siehe `PAKETE` oben.
+      'dmx-core/adressierung.ts',
     ]) {
       expect(dateienMitSatz.has(modul), `${modul} liefert keinen Satz mehr`).toBe(true)
     }
