@@ -42,15 +42,46 @@
 //   liefert dafür die Liste — der Knopf dazu ist der nächste Schritt, nicht
 //   dieser.
 //
-//   Sie ÖFFNET KEINE KAMERA. Der Code kommt hier über die Tastatur, und das
-//   ist im Lager der Normalfall: ein Handscanner tippt. Die Kamera-Variante
-//   der Vorlage ist ein eigener Schritt (B-65), und ein halb gebauter
-//   Kamera-Knopf, der auf dem Rechner des Lageristen nichts tut, wäre
-//   schlechter als keiner.
+// ─── NACHTRAG: DIE KAMERA IST DAZUGEKOMMEN (B-65, sechste Zeile) ───────────
+//
+// Hier stand „Sie ÖFFNET KEINE KAMERA … ein halb gebauter Kamera-Knopf, der
+// auf dem Rechner des Lageristen nichts tut, wäre schlechter als keiner."
+// Der Satz war richtig, und er hat den Bau dieser Zeile geführt: der Knopf
+// erscheint nur, wo er wirklich etwas tut, und sonst steht dort der GRUND.
+//
+// Nachgemessen 2026-09-10 in genau der Chromium-Fassung, die dieses Projekt
+// baut und als Electron ausliefert: `navigator.mediaDevices` ist da (auch
+// unter `file://`), `window.BarcodeDetector` NICHT. Die native Schnittstelle
+// liegt auf Android und ChromeOS, auf Linux- und Windows-Desktops nicht. Ein
+// Knopf ohne diese Prüfung öffnete im Lagerbüro eine Kamera, die nie einen
+// Code erkennt — und der Lagerist hielte sein Case so lange davor, bis er
+// glaubt, das Etikett sei kaputt.
+//
+// `scanFaehigkeit()` in `lib/codeLeser.ts` entscheidet das, mit vier
+// unterscheidbaren Gründen. Der Handscanner (er tippt in das Feld) und
+// „Ohne Scan wählen" bleiben unverändert die Wege, die überall gehen — die
+// Kamera kommt DANEBEN und ersetzt nichts.
+//
+//   Der Weg zum Desktop führte über ein mitgeliefertes WASM (zxing-wasm,
+//   MIT, ~1 MB gegen 260 kB heutigen Bundle). Ob dieses Megabyte hier
+//   hineingehört, ist eine Eigentümer-Frage und steht im Backlog — sie ist
+//   hier NICHT still entschieden, sondern offen gelassen: `CodeLeser` ist
+//   eine Schnittstelle mit einer Methode, ein zweiter Leser ist ein Modul
+//   und keine Umbaustelle.
+//
+//   Sie SCHREIBT WEITERHIN NICHTS in den Bestand — auch nicht über die
+//   Kamera. Ein Kamera-Treffer geht durch dieselbe `auditScan`-Zeile wie ein
+//   getippter Code.
 // ───────────────────────────────────────────────────────────────────────────
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useInventoryStore } from '../domain/store/inventoryStore'
 import { nodePathLabel } from '../domain/lib/storageTree'
+import {
+  scanFaehigkeit,
+  nativerLeser,
+  einLesen,
+  HINDERNIS_TEXT,
+} from '../lib/codeLeser'
 import {
   auditPick,
   auditScan,
@@ -148,6 +179,113 @@ export function Inventur() {
     setTreffer([])
     window.setTimeout(() => codeFeld.current?.focus(), 0)
   }
+
+  // ── Die Kamera ──────────────────────────────────────────────────────────
+  //
+  // Die Faehigkeit wird EINMAL beim Mounten gemessen, nicht bei jedem
+  // Rendern: sie aendert sich nicht, und eine Messung im Render-Pfad waere
+  // eine Zusicherung, die je nach Zeitpunkt anders ausfaellt.
+  const [faehigkeit] = useState(() => scanFaehigkeit())
+  const [kameraAn, setKameraAn] = useState(false)
+  const [kameraFehler, setKameraFehler] = useState<string | null>(null)
+  const [lampeAn, setLampeAn] = useState(false)
+  const [hatLampe, setHatLampe] = useState(false)
+  const [hinten, setHinten] = useState(true)
+  const video = useRef<HTMLVideoElement | null>(null)
+  const strom = useRef<MediaStream | null>(null)
+  const zuletztGesehen = useRef(new Map<string, number>())
+
+  const kameraAus = useCallback(() => {
+    // Der Strom wird AUSDRUECKLICH gestoppt und nicht dem Garbage Collector
+    // ueberlassen: eine laufende Kameraleuchte neben einer geschlossenen
+    // Ansicht ist fuer den Menschen davor ein Geraet, das ihn filmt.
+    strom.current?.getTracks().forEach((t) => t.stop())
+    strom.current = null
+    if (video.current) video.current.srcObject = null
+    setKameraAn(false)
+    setLampeAn(false)
+    setHatLampe(false)
+  }, [])
+
+  // Beim Verlassen der Ansicht geht die Kamera aus — siehe oben.
+  useEffect(() => kameraAus, [kameraAus])
+
+  const kameraStarten = async () => {
+    if (!faehigkeit.moeglich) return
+    setKameraFehler(null)
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        // `facingMode` statt einer Geraete-Id: welche Kamera „hinten" ist,
+        // weiss das Geraet besser als eine Liste, die wir sortieren.
+        video: { facingMode: hinten ? 'environment' : 'user' },
+      })
+      strom.current = s
+      if (video.current) {
+        video.current.srcObject = s
+        await video.current.play()
+      }
+      const spur = s.getVideoTracks()[0]
+      // Die Taschenlampe gibt es nur an manchen Geraeten. Der Knopf
+      // erscheint deshalb nur, wenn die Spur sie WIRKLICH kann — dieselbe
+      // Regel wie beim Scan-Knopf selbst.
+      const faehig = spur?.getCapabilities?.() as { torch?: boolean } | undefined
+      setHatLampe(faehig?.torch === true)
+      setKameraAn(true)
+    } catch (e) {
+      // `NotAllowedError` heisst: der Mensch hat abgelehnt. Das ist keine
+      // Stoerung, sondern eine Antwort — und sie bekommt ihren eigenen Satz.
+      const abgelehnt = e instanceof DOMException && e.name === 'NotAllowedError'
+      setKameraFehler(
+        abgelehnt ? HINDERNIS_TEXT['keine-erlaubnis'] : e instanceof Error ? e.message : String(e),
+      )
+      kameraAus()
+    }
+  }
+
+  const lampeSchalten = async () => {
+    const spur = strom.current?.getVideoTracks()[0]
+    if (!spur) return
+    const neu = !lampeAn
+    try {
+      await spur.applyConstraints({ advanced: [{ torch: neu } as MediaTrackConstraintSet] })
+      setLampeAn(neu)
+    } catch (e) {
+      setKameraFehler(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  const kameraWechseln = async () => {
+    const nachHinten = !hinten
+    setHinten(nachHinten)
+    if (!kameraAn) return
+    kameraAus()
+    // Der Wechsel geht ueber Stoppen und neu Anfordern: zwei Stroeme
+    // gleichzeitig halten manche Geraete gar nicht erst.
+    setTimeout(() => void kameraStarten(), 0)
+  }
+
+  // ── Die Lese-Schleife ───────────────────────────────────────────────────
+  //
+  // Der Takt gehoert der Ansicht, das Lesen dem Modul: `einLesen` macht
+  // genau einen Versuch und ist deshalb ohne Kamera getestet.
+  useEffect(() => {
+    if (!kameraAn || !ortId) return
+    const leser = nativerLeser()
+    if (!leser) return
+    let laeuft = true
+    const takt = window.setInterval(() => {
+      const v = video.current
+      if (!laeuft || !v || v.readyState < 2) return
+      void einLesen(leser, v, zuletztGesehen.current, Date.now(), {
+        aufCode: (c) => setTreffer((t) => [auditScan(c, ortId, quellen), ...t]),
+        aufFehler: (m) => setKameraFehler(m),
+      })
+    }, 250)
+    return () => {
+      laeuft = false
+      window.clearInterval(takt)
+    }
+  }, [kameraAn, ortId, quellen])
 
   // ── Schritt 2: die Objekte ──────────────────────────────────────────────
   const scannen = () => {
@@ -280,6 +418,73 @@ export function Inventur() {
                 Blatt laden (CSV)
               </button>
             </div>
+
+            {/* ── Kamera ─────────────────────────────────────────────── */}
+            {faehigkeit.moeglich ? (
+              <div className="kamera">
+                <div className="zeile">
+                  <button type="button" onClick={kameraAn ? kameraAus : () => void kameraStarten()}>
+                    {kameraAn ? 'Kamera aus' : 'Mit Kamera scannen'}
+                  </button>
+                  {kameraAn && (
+                    <>
+                      <button type="button" onClick={() => void kameraWechseln()}>
+                        {hinten ? 'Auf Frontkamera' : 'Auf Rückkamera'}
+                      </button>
+                      {/*
+                        Der Lampen-Knopf erscheint nur, wenn die Spur die
+                        Taschenlampe WIRKLICH kann. Ein Knopf, der auf dem
+                        Laptop nichts tut, ist derselbe Fehler wie ein
+                        Scan-Knopf ohne Leser — nur eine Ebene tiefer.
+                      */}
+                      {hatLampe && (
+                        <button type="button" onClick={() => void lampeSchalten()}>
+                          {lampeAn ? 'Licht aus' : 'Licht an'}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+                {/*
+                  Das Video steht auch ohne Strom im Baum: `srcObject` wird
+                  auf ein bereits gemountetes Element gesetzt, und ein
+                  Element, das erst mit dem Strom entsteht, ist beim Setzen
+                  noch nicht da.
+                */}
+                <video
+                  ref={video}
+                  className={kameraAn ? 'sucher' : 'sucher aus'}
+                  muted
+                  playsInline
+                  aria-label="Sucher der Kamera"
+                />
+                {kameraAn && (
+                  <p className="hinweis">
+                    Erkannte Codes landen in derselben Liste wie getippte. Wer
+                    zweimal dasselbe Etikett vor die Kamera hält, bekommt zwei
+                    Zeilen — dazwischen liegt eine Sperre von anderthalb
+                    Sekunden, damit ein Aufkleber im Bild nicht dreissig Zeilen
+                    pro Sekunde erzeugt.
+                  </p>
+                )}
+              </div>
+            ) : (
+              /*
+                KEIN toter Knopf, sondern der Grund. Welcher es ist,
+                entscheidet `scanFaehigkeit()` — und die vier Gründe führen zu
+                verschiedenen nächsten Schritten, deshalb steht hier der eine,
+                der zutrifft, und nicht „Kamera nicht verfügbar".
+              */
+              <p className="hinweis">
+                <strong>Kein Kamera-Scan auf diesem Gerät.</strong>{' '}
+                {HINDERNIS_TEXT[faehigkeit.grund]}
+              </p>
+            )}
+            {kameraFehler && (
+              <p className="warnung" role="alert">
+                {kameraFehler}
+              </p>
+            )}
           </div>
 
           <div className="spalten">

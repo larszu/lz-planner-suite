@@ -29,11 +29,13 @@ import { SubHire } from './SubHire'
 import { Inventur } from './Inventur'
 import { Bericht } from './Bericht'
 import { WerteUndSchaeden } from './WerteUndSchaeden'
+import { Wareneingang } from './Wareneingang'
 
-type Reiter = 'bestand' | 'inventur' | 'ausgabe' | 'subhire' | 'bericht' | 'werte'
+type Reiter = 'bestand' | 'eingang' | 'inventur' | 'ausgabe' | 'subhire' | 'bericht' | 'werte'
 
 const REITER: { id: Reiter; titel: string; frage: string }[] = [
   { id: 'bestand', titel: 'Bestand', frage: 'Was ist da, wieviel, und wo liegt es?' },
+  { id: 'eingang', titel: 'Wareneingang', frage: 'Was ist gekommen — und was macht das mit dem Bestand?' },
   { id: 'inventur', titel: 'Inventur', frage: 'Liegt hier, was hier liegen soll?' },
   { id: 'ausgabe', titel: 'Ausgabescheine', frage: 'Was ist draußen, bei wem, und seit wann?' },
   { id: 'bericht', titel: 'Bericht', frage: 'Was steckt drin — und wie kommt es hier raus?' },
@@ -66,6 +68,7 @@ export function App() {
       <p className="frage">{aktiv.frage}</p>
       <main>
         {reiter === 'bestand' && <Bestand />}
+        {reiter === 'eingang' && <Wareneingang />}
         {reiter === 'inventur' && <Inventur />}
         {reiter === 'ausgabe' && <Ausgabescheine />}
         {reiter === 'bericht' && <Bericht />}

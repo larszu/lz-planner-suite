@@ -553,12 +553,17 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 
 ### B-65 · Das Lagermodul hat zehn gebaute Rechenwerke ohne eine einzige Bedienung
 
-* **Status:** **der Hauptbefund ist ERLEDIGT** — `inventory#2` (Inventur),
-  `#3` (Bericht), `#4` (Werte & Schäden): 10 → 7 → 3 → **0** Module ohne
-  Weg. Vom NEUEN aus den Bildschirmfotos sind **Mindestmenge („Unter Ziel")**
-  und die **Fristen-Ampel** GEBAUT (`inventory#5` und `#6`, je mit
-  Format-Nachzug in vier Repos); **offen** bleiben Kassenbon-Import und
-  Kamera-Scan.
+* **Status: ERLEDIGT.** Der Hauptbefund (`inventory#2`, `#3`, `#4`:
+  10 → 7 → 3 → **0** Module ohne Weg) und das ganze NEUE aus den
+  Bildschirmfotos — Mindestmenge (`#5`), Fristen-Ampel (`#6`), Kamera-Scan
+  (`#7`), Wareneingang (`#8`). Die Tabelle unten hat keine `fehlt`-Zeile
+  mehr.
+
+  **Offen sind nur noch zwei ABHÄNGIGKEITS-Entscheidungen des Eigentümers**,
+  und beide sind so gebaut, dass sie später ohne Umbau fallen können:
+  ein mitgeliefertes WASM (`zxing-wasm`, MIT, ~1 MB gegen 269 kB Bundle),
+  damit der Kamera-Scan auch auf dem Desktop dekodiert; und OCR, damit der
+  Wareneingang ein Beleg-FOTO liest statt Text. Siehe unten.
 * **Auslöser:** Der Eigentümer schickte fünf Bildschirmfotos einer fremden
   Bestands-App („Vorratix", Haushalts-Vorrat) mit dem Satz: „Analysiere diese
   paar Fotos für das Lagermodul. Es fehlen noch einige Funktionen."
@@ -600,15 +605,15 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   | Geführter Scan in Schritten („Schritt 1: Lagerplatz scannen") | Platz scannen → Artikel scannen → buchen | **fehlt** (`inventoryScan` löst auf, niemand ruft es) |
   | Erwarteter Prefix (`L#`) als Vorgabe und Prüfung | Lagerplatz-Codes gegen ein Hausschema prüfen | **fehlt** (`prefix`: 0 Fundstellen) |
   | Ausweg ohne Scan („Ohne Scan einbuchen", Raum/Objekt wählen) | Aufkleber unlesbar, Hand-Eingabe | **fehlt** |
-  | Taschenlampe, Kamerawechsel im Scanner | dunkler Truck, Case über Kopf | **fehlt** (keine Scan-Oberfläche) |
+  | Taschenlampe, Kamerawechsel im Scanner | dunkler Truck, Case über Kopf | **GEBAUT** (`inventory#7`) — mit dem gemessenen Vorbehalt unten |
   | Kennzahlen-Startseite (Bestand, „Unter Ziel", fällig) | Was muss ich heute anfassen? | **GEBAUT** (`inventory#3`, `#5`, `#6`) |
   | Soll-/Mindestmenge, „Unter Ziel" | Meldebestand je Artikel | **GEBAUT** (`inventory#5`) |
   | „Bald ablaufend / Abgelaufen / Diese Woche fällig" | DGUV-V3-Prüftermin, Kalibrierung, Akku-Alter, Versicherungsende | **GEBAUT** (`inventory#6`) |
   | „Anomalien — auffällige Artikel prüfen" | Inventur-Abweichung, Ware am falschen Platz | **halb**: `inventoryAudit` (390 Zeilen) hat keine Oberfläche |
   | „Verlauf" | wer hat wann was gebucht | **halb**: `storageMoves` bewegt, eine Historie je Artikel fehlt |
-  | Kassenbon-Import (Foto → Positionen) | Lieferschein/Rechnung → Wareneingang | **fehlt** |
+  | Kassenbon-Import (Foto → Positionen) | Lieferschein/Rechnung → Wareneingang | **GEBAUT als Text-Weg** (`inventory#8`); das FOTO braucht OCR und ist die Eigentümer-Frage unten |
   | „Einkauf"-Reiter | was muss beschafft oder sub-hired werden | **halb**: die Nachbestell-Liste als CSV steht (`inventory#5`), ein eigener Reiter nicht |
-  | Artikelgruppen als gepflegte Liste | Kategorie ist heute freier Text | **fehlt** |
+  | Artikelgruppen als gepflegte Liste | Kategorie ist heute freier Text | **offen** — kein B-65-Befund, sondern eine eigene Frage (siehe unten) |
   | „Beispieldaten erstellen" | Seed (vorhanden in `@avplan/ui`) | **prüfen**, ob das Lager daran hängt |
   | Bestand exportieren | `inventoryPortable`/`inventoryReport` | **GEBAUT** (`inventory#3`) |
 
@@ -741,9 +746,69 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   nur verkleinert. Nachgemessen kostet die Korrektur null deutsche Treffer,
   und die Selbstprobe fällt weiterhin auf.
 
-* **Was jetzt drankommt, ist der Rest der Tabelle oben:** der
-  Kassenbon-Import und der Kamera-Scan. Die Nachbestell-Liste gibt es als
-  CSV; ein eigener „Einkauf"-Reiter wäre die nächste Stufe davon.
+* **GEBAUT, sechste Zeile — `inventory#7` (2026-09-10):** der
+  **Kamera-Scan** mit Taschenlampe und Kamerawechsel.
+
+  **Der Befund entschied die Form, nicht umgekehrt.** Im Kopf der
+  Inventur-Ansicht stand seit ihrem Bau: „ein halb gebauter Kamera-Knopf, der
+  auf dem Rechner des Lageristen nichts tut, wäre schlechter als keiner."
+  Nachgemessen in genau der Chromium-Fassung, die dieses Projekt baut und als
+  Electron ausliefert: `navigator.mediaDevices` ist da (auch unter `file://`),
+  **`window.BarcodeDetector` NICHT**. Die native Schnittstelle liegt auf
+  Android und ChromeOS, auf Linux- und Windows-Desktops nicht.
+
+  Deshalb: **ein Grund mit Namen statt eines toten Knopfs.** Vier
+  unterscheidbare Gründe (unsicherer Kontext, keine Kamera-API, kein Decoder,
+  keine Erlaubnis), und dazu, was auf diesem Gerät WIRKLICH geht — der
+  Handscanner tippt in das Feld, „Ohne Scan wählen" steht daneben. Dieselbe
+  Regel eine Ebene tiefer: der Lampen-Knopf erscheint nur, wenn die Videospur
+  `torch` wirklich kann.
+
+  Gemessen statt behauptet: der Kamerawechsel beendet die alte Spur, bevor er
+  die neue öffnet (`ended`, dann `live`), und „Kamera aus" beendet jede Spur.
+  Das ist keine Kosmetik — eine laufende Kameraleuchte neben einer
+  geschlossenen Ansicht ist für den Menschen davor ein Gerät, das ihn filmt.
+
+* **GEBAUT, siebte und letzte Zeile — `inventory#8` (2026-09-10):** der
+  **Wareneingang**. Aus den Positionen eines Lieferscheins wird Bestand.
+
+  **Er liest Text und kein Bild, und das ist der Unterschied zwischen der
+  Vorlage und diesem Haus.** Eine Privatperson bekommt keine Datei vom
+  Supermarkt, nur Papier — für sie ist das Foto der einzige Weg. Ein
+  Rental-Haus bekommt beides, und eine OCR-Erkennung müsste jemand danach
+  Zeile für Zeile nachprüfen; wer das ohnehin tut, tippt in derselben Zeit
+  die vier Positionen ab, um die es meistens geht.
+
+  Drei Dinge, die er ausdrücklich nicht tut: er bucht nichts beim Lesen (erst
+  lesen, dann buchen, dazwischen eine Tabelle mit „was daraus würde"), er
+  erfindet keine Menge (ein blosser Name im Beleg bleibt offen stehen statt
+  als 1 gebucht zu werden), und er überspringt keine Zeile still — was nicht
+  lesbar war, steht mit Rohtext und Grund da. *Zwölf Positionen im Beleg, elf
+  gebucht, und niemand sieht es* ist der teuerste Ausgang, und dagegen ist er
+  gebaut.
+
+  Und der **Preis aus dem Beleg wird nicht übernommen**: dort steht ein
+  Einkaufspreis, das einzige Preisfeld dieses Repos ist die Tagesmiete.
+  Beides gleichzusetzen füllte die Tagesmiete im Bericht mit Einkaufspreisen —
+  die Summe dort sähe danach vollständig aus und wäre falsch.
+
+* **NICHT ZU ENTSCHEIDEN OHNE DEN EIGENTÜMER — zwei Abhängigkeiten:**
+
+  1. **`zxing-wasm` (MIT, ~1 MB) für den Decoder auf dem Desktop.** Ohne ihn
+     bleibt der Kamera-Scan ein Weg für Telefone; die App baut heute 269 kB.
+     `CodeLeser` in `lib/codeLeser.ts` ist genau dafür eine Schnittstelle mit
+     EINER Methode — ein zweiter Leser ist dann ein Modul und keine
+     Umbaustelle.
+  2. **OCR für das Beleg-Foto.** Dieselbe Sorte Frage, eine Grössenordnung
+     grösser, und mit dem Zusatzproblem, dass ein OCR-Ergebnis geprüft werden
+     muss, um verlässlich zu sein.
+
+  Beide sind bewusst offen gelassen und nicht still entschieden.
+
+* **Was aus der Tabelle bleibt, ist KEIN B-65-Befund mehr:** die
+  Artikelgruppen als gepflegte Liste (Kategorie ist heute freier Text). Das
+  ist eine eigene Frage über Stammdaten und gehört in einen eigenen Eintrag,
+  wenn der Eigentümer sie stellt.
 * **Nicht entschieden, gehört dem Eigentümer:** ob das Lagermodul
   Verbrauchsmaterial mit Haltbarkeit führen soll (Batterien, Gaffa, Filter)
   oder nur Rental-Material mit Prüfterminen. Die Vorlage zeigt Ersteres, das

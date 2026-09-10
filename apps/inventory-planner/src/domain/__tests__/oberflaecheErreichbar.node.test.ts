@@ -141,6 +141,8 @@ describe('B-65 — die Oberfläche erreicht ihre Rechenwerke', () => {
       'inventoryCommitment.ts',
       // Ansicht `Werte & Schäden`, Block „Fristen"
       'fristen.ts',
+      // Ansicht `Wareneingang`
+      'wareneingang.ts',
     ]) {
       expect(
         gesehen.has(join(LIB, m)),

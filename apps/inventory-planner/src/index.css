@@ -278,6 +278,108 @@ th {
   color: var(--warn);
 }
 
+/* ── Wareneingang (B-65, siebte und letzte Zeile) ──────────────────────────
+   Erbt die Bloecke der Bericht-Ansicht. Eigene Regeln braucht nur das
+   Beleg-Feld und die unlesbare Zeile — sie ist das Einzige, was der Mensch
+   JETZT beheben muss, und traegt als Einzige Farbe. */
+.eingang textarea {
+  width: 100%;
+  min-height: 8rem;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.eingang .block {
+  border: 1px solid var(--rand);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.eingang .block h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.6rem;
+}
+
+.eingang .zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-top: 0.75rem;
+}
+
+.eingang label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--leise);
+  font-size: 0.85rem;
+}
+
+.eingang select,
+.eingang input,
+.eingang button {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  min-height: 24px;
+  font: inherit;
+}
+
+.eingang button {
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+}
+
+.eingang button:disabled {
+  color: var(--leise);
+  cursor: default;
+}
+
+.eingang p.warnung {
+  color: var(--warn);
+  max-width: 52rem;
+  line-height: 1.5;
+}
+
+.eingang .hinweis {
+  color: var(--leise);
+  max-width: 52rem;
+  line-height: 1.5;
+}
+
+.eingang tr.lage-unlesbar td {
+  color: var(--warn);
+}
+
+/* ── Kamera-Sucher (B-65, sechste Zeile) ───────────────────────────────────
+   Der Sucher steht auch ohne Strom im Baum (`srcObject` braucht ein
+   gemountetes Element) und ist dann eingeklappt statt entfernt — ein
+   schwarzes Rechteck ueber der halben Seite waere eine Kamera, die laeuft,
+   und genau das tut sie dann nicht. */
+.inventur .kamera {
+  margin: 0.75rem 0;
+}
+
+.inventur .sucher {
+  display: block;
+  width: 100%;
+  max-width: 22rem;
+  margin-top: 0.5rem;
+  background: #000;
+  border: 1px solid var(--rand);
+}
+
+.inventur .sucher.aus {
+  display: none;
+}
+
 /* ── Bericht (B-65, zweite Zeile) ──────────────────────────────────────────
    Kacheln oben, Aufschlüsselungen als Raster darunter, Packliste und
    Austausch als eigene Blöcke. Dieselben Regeln wie in der Inventur: keine
