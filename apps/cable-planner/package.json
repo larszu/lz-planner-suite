@@ -57,6 +57,7 @@
     "test": "vitest run && npm run lang:check",
     "test:watch": "vitest",
     "ui:smoke": "node scripts/ui-smoke.mjs",
+    "mobil:check": "npm run build:renderer && node scripts/mobil-grenze-check.mjs",
     "ui:targets": "node scripts/ui-targets.mjs",
     "ui:overflow": "node scripts/ui-overflow.mjs",
     "ui:labels": "node scripts/ui-labels.mjs",

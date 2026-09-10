@@ -85,6 +85,16 @@ interface GebaeudeState {
   /** Der eine Rueckweg. Gibt den Grund zurueck, wenn die Meldung abgelehnt wird. */
   mangelEintragen: (m: Omit<Mangel, 'id'>) => string | undefined
   entfernen: (id: string) => void
+  /**
+   * Ein eingelesenes Gebaeude uebernehmen (Issue #2).
+   *
+   * ERSETZT, und zwar ganz. Ein Zusammenfuehren zweier Gebaeude waere die
+   * naheliegende Bequemlichkeit und die falsche: zwei Haeuser haben
+   * unabhaengig vergebene Ids, und ein `p1` von hier ist nicht das `p1` von
+   * dort. Wer sie mischt, bekommt eine Dose mit der Absicherung einer
+   * anderen — an dieser Zahl plant jemand eine Last.
+   */
+  gebaeudeSetzen: (g: Gebaeude) => void
 }
 
 const mit = (
@@ -98,6 +108,11 @@ const mit = (
 
 export const useGebaeudeStore = create<GebaeudeState>((set, get) => ({
   gebaeude: laden(),
+  gebaeudeSetzen: (g) =>
+    set((s) => {
+      const geheilt = heileGebaeude(g)
+      return { gebaeude: geheilt, schreibfehler: sichern(geheilt) }
+    }),
 
   raumAnlegen: (r) => {
     const id = uuidv4()

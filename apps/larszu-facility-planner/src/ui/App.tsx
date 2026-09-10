@@ -29,6 +29,7 @@
 // den zwei Repos lesen.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { leseGebaeude, serialisiereGebaeude } from '../domain/gebaeudeDatei'
 import { Anschlusspunkte } from './Anschlusspunkte'
 import { Verteilung } from './Verteilung'
 import { Steuerung } from './Steuerung'
@@ -63,6 +64,45 @@ export function App() {
   const schreibfehler = useGebaeudeStore((s) => s.schreibfehler)
   const aktiv = REITER.find((r) => r.id === reiter)!
 
+  // ── Die Datei (Issue #2) ────────────────────────────────────────────────
+  //
+  // Der Vertrag war bis hierher sechs Funktionen über einem Objekt, das nur
+  // im localStorage DIESER App lebte — ein anderes Programm konnte ihn nicht
+  // ansehen. Die Datei ist die Berührung, und sie geht nur in eine Richtung
+  // heraus: der Plan liest, was das Haus erklärt.
+  const gebaeude = useGebaeudeStore((s) => s.gebaeude)
+  const gebaeudeSetzen = useGebaeudeStore((s) => s.gebaeudeSetzen)
+  const [dateiFehler, setDateiFehler] = useState<string | null>(null)
+
+  const exportieren = () => {
+    const url = URL.createObjectURL(
+      new Blob([serialisiereGebaeude(gebaeude, { exportiertAm: new Date().toISOString(), app: 'facility-planner' })], {
+        type: 'application/json',
+      }),
+    )
+    const a = document.createElement('a')
+    a.href = url
+    // Der Dateiname trägt den Gebäudenamen: wer drei Häuser betreut, hat
+    // sonst dreimal `gebaeude.avfacility` im Download-Ordner.
+    a.download = `${gebaeude.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'gebaeude'}.avfacility`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const importieren = async (datei: File) => {
+    setDateiFehler(null)
+    const gelesen = leseGebaeude(await datei.text())
+    if (!gelesen) {
+      // Ein Leser, der eine fremde Datei „so gut es geht" liest, liefert ein
+      // Gebäude, das niemand eingetragen hat.
+      setDateiFehler(
+        'Das ist keine Gebäude-Datei dieses Werkzeugs, oder sie stammt aus einer neueren Fassung. Es wurde nichts übernommen.',
+      )
+      return
+    }
+    gebaeudeSetzen(gelesen)
+  }
+
   return (
     <div className="app">
       <header className="kopf">
@@ -80,7 +120,27 @@ export function App() {
             </button>
           ))}
         </nav>
+        <div className="datei">
+          <button type="button" onClick={exportieren} title="Das Gebäude als .avfacility sichern — der Kabelplaner liest diese Datei.">
+            Gebäude sichern
+          </button>
+          <label className="datei-knopf">
+            Gebäude laden
+            <input
+              type="file"
+              accept=".avfacility,application/json"
+              onChange={(e) => {
+                const datei = e.target.files?.[0]
+                e.target.value = ''
+                if (datei) void importieren(datei)
+              }}
+              aria-label="Gebäude-Datei laden"
+            />
+          </label>
+        </div>
       </header>
+
+      {dateiFehler && <p className="fehler">{dateiFehler}</p>}
 
       {/* Ein gescheiterter Schreibvorgang steht OBEN und nicht im Protokoll:
           wer ihn nicht sieht, arbeitet weiter und verliert alles beim

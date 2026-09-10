@@ -1157,9 +1157,21 @@ export const MenuBar = ({
 
       <div className="flex shrink-0 items-center gap-2">
         {/* Eingebettet: Undo/Redo steuert die Suite-Shell über die Command-
-            Bridge — die eigenen Buttons hier ausblenden. */}
+            Bridge — die eigenen Buttons hier ausblenden.
+
+            UND AUF DEM TELEFON GANZ WEG (gemessen 2026-09-10, B-66). Die
+            Kopfzeile ist 40 px hoch und bricht nicht um; passt ihr Inhalt
+            nicht, schiebt die linke Gruppe die rechte aus dem Bild — und dort
+            steht der einzige Weg in die Einstellungen. Gemessen auf 390 px:
+            mit deutschen Menue-Beschriftungen endete die rechte Gruppe bei
+            Pixel 425. Undo/Redo sind hier NUR eine Abkuerzung: dieselben
+            beiden Punkte stehen mitsamt Tastenkuerzel im Bearbeiten-Menue,
+            das auf dem Telefon ohnehin der Weg ist. Zwei 28-px-Knoepfe, die
+            keinen Finger tragen (Norm 44), gegen einen Einstellungen-Knopf,
+            der ausserhalb des Bildes liegt — die Rechnung ist eindeutig.
+            Erst ab `sm` (640 px) sind sie wieder da. */}
         {!isEmbedded && (
-          <div className="flex items-center rounded border border-cp-border bg-cp-surface-1">
+          <div className="hidden items-center rounded border border-cp-border bg-cp-surface-1 sm:flex">
             <button
               type="button"
               onClick={() => projectHistory.undo()}
@@ -1304,10 +1316,24 @@ const Menu = ({ label, children }: MenuProps) => {
         }}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`rounded px-2 py-1 text-cp-text-bright hover:bg-cp-surface-2 ${open ? 'bg-cp-surface-2' : ''}`}
+        /* `px-1` unter `sm`, `px-2` darueber (B-66, gemessen 2026-09-10).
+           Die Kopfzeile bricht nicht um; was nicht hineinpasst, schiebt die
+           rechte Gruppe aus dem Bild, und dort steht der Einstellungen-Knopf.
+           Fuenf Menues mal 8 Pixel sind 40 Pixel — auf Deutsch fehlten 11.
+           Die Schrift bleibt gleich gross: schmaler wird der Abstand, nicht
+           das Wort. Ob es reicht, ist keine Meinung — `mobil:check` misst es
+           in JEDER ausgelieferten Sprache. */
+        className={`rounded px-1 py-1 text-cp-text-bright hover:bg-cp-surface-2 sm:px-2 ${open ? 'bg-cp-surface-2' : ''}`}
       >
         {label}
-        <span className="ml-1 text-cp-xs text-cp-text-muted" aria-hidden="true">▾</span>
+        {/* Das Pfeilchen erst ab `sm` (B-66, gemessen 2026-09-10). Diese
+            Fassung zeichnet es als SCHRIFTZEICHEN und nicht als 11-px-Symbol
+            wie der Upstream — damit ist jedes Menue hier 10 Pixel breiter,
+            fuenf Menues also 50, und auf Deutsch passte die Kopfzeile
+            deshalb nicht mehr ins Telefon-Bild (rechte Gruppe bis 412 statt
+            390). Auf einem Telefon ist die Aufforderung ohnehin das Tippen
+            und nicht der Pfeil. */}
+        <span className="ml-1 hidden text-cp-xs text-cp-text-muted sm:inline" aria-hidden="true">▾</span>
       </button>
       {open && (
         <div

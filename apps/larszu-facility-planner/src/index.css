@@ -25,6 +25,24 @@ body {
   padding: 1rem;
 }
 
+/* ── Die Datei-Knoepfe im Kopf (Issue #2) ───────────────────────────────
+   Ein Datei-Feld sieht nirgends aus wie ein Knopf: das Label IST der Knopf,
+   das Feld darin bleibt unsichtbar. */
+.kopf .datei {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+}
+.kopf .datei-knopf {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.kopf .datei-knopf input[type='file'] {
+  display: none;
+}
+
 .kopf {
   display: flex;
   align-items: baseline;

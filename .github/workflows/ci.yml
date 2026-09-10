@@ -200,6 +200,18 @@ jobs:
           npm run build:planners
       - name: Headless-Smoke
         run: xvfb-run -a npm run ui:smoke
+      # Im SELBEN Job, weil er dasselbe teuer Gebaute braucht: `build:planners`
+      # hat den Renderer des Cable-Planners schon erzeugt. Einen X-Server
+      # braucht er NICHT -- er startet ein eigenes Chromium headless in einem
+      # 390x844 grossen Fenster mit Fingerbedienung und misst, was am
+      # 2026-09-10 gemeldet wurde: "Man kann das gesamte Fenster aus Versehen
+      # verschieben." Der Elektron-Lauf darueber sieht das nicht, weil er im
+      # Schreibtisch-Format misst; genau dort war der Fehler unsichtbar.
+      #
+      # Er steht hier und nicht im `test`-Skript der App: `npm test
+      # --workspaces` laeuft im Haupt-Job, und der hat keinen Browser.
+      - name: Cable-Planner bleibt auf dem Telefon im Fenster
+        run: npm run mobil:check --workspace cable-planner
       - name: Screenshots bei Fehlschlag
         if: failure()
         uses: actions/upload-artifact@v6
