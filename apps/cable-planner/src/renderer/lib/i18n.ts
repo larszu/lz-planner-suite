@@ -8,7 +8,7 @@ import { useUiStore, type Language } from '../store/uiStore'
  * language is a dictionary that overrides it. Missing keys show the English
  * source, so wrapping a string can never break the UI.
  *
- * Coverage status: COMPREHENSIVE (4650 keys with a German translation).
+ * Coverage status: COMPREHENSIVE (4760 keys with a German translation).
  *
  * The English dictionary contains all user-visible strings in the application:
  *

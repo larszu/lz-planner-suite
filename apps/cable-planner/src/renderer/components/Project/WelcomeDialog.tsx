@@ -87,14 +87,14 @@ export const WelcomeDialog = ({ open, onNew, onOpen, onClose }: WelcomeDialogPro
     >
       {recents.length > 0 && (
         <div className="pt-3">
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-cp-text-muted">
+          <div className="mb-1 text-cp-xs font-semibold uppercase tracking-wider text-cp-text-muted">
             {t('project.welcome.recents', 'Recently used')}
           </div>
           <div className="max-h-32 space-y-1 overflow-auto">
             {recents.slice(0, 6).map((path) => (
               <div
                 key={path}
-                className="flex items-center gap-2 rounded border border-cp-border-muted bg-cp-surface-3/40 px-2 py-1 text-[11px] text-cp-text-muted"
+                className="flex items-center gap-2 rounded border border-cp-border-muted bg-cp-surface-3/40 px-2 py-1 text-cp-xs text-cp-text-muted"
                 title={path}
               >
                 <Icon icon={Clock} size="sm" />
@@ -102,7 +102,7 @@ export const WelcomeDialog = ({ open, onNew, onOpen, onClose }: WelcomeDialogPro
               </div>
             ))}
           </div>
-          <p className="mt-1 text-[10px] text-cp-text-muted">
+          <p className="mt-1 text-cp-xs text-cp-text-muted">
             {t(
               'project.welcome.recentsHint',
               'Click "Open project…" and choose one of the files in the file picker.',

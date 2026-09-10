@@ -235,7 +235,7 @@ export const RACK_DRAFT_FIELDS_NOT_FROM_EQUIPMENT = [
  */
 export const itemFromEquipment = (eq: EquipmentItem): GroupPreset['items'][number] => ({
   name: eq.name,
-  category: eq.category ?? 'Sonstiges',
+  category: eq.category ?? 'Other',
   inputs: eq.inputs,
   outputs: eq.outputs,
   // ADR-002 — die Katalog-Identitaet muss die Umwandlung ueberleben.
@@ -341,7 +341,7 @@ export const presetFromBlackBoxRack = (
     },
     items: snap.items.map((it, idx) => ({
       name: it.name,
-      category: 'Sonstiges',
+      category: 'Other',
       inputs: inputsByItem.get(idx) ?? [],
       outputs: outputsByItem.get(idx) ?? [],
       isRackDevice: true,

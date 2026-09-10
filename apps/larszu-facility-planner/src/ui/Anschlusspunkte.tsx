@@ -16,11 +16,25 @@
 import { useState } from 'react'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { belastbarkeit, einspeisung, ort, verfuegbarkeit } from '../domain/vertrag'
-import type { Anschlussart, Netzform, RcdTyp } from '../domain/modell'
+import type { Anschlussart, Bauform, Netzform, RcdTyp } from '../domain/modell'
 
 const ANSCHLUSSARTEN: Anschlussart[] = ['cee63', 'cee32', 'cee16', 'powerlock', 'klemme', 'schuko']
 const NETZFORMEN: Netzform[] = ['TN-S', 'TN-C-S', 'TT', 'IT']
 const RCD: RcdTyp[] = ['A', 'F', 'B', 'keiner']
+
+/**
+ * Die Bauformen aus Issue #1. `sonstige` steht bewusst mit drin: das Haus hat
+ * Gehäuse, die keine Liste vorwegnimmt, und sie in eine der fünf zu pressen
+ * wäre eine Angabe, die niemand gemacht hat.
+ */
+const BAUFORMEN: Bauform[] = [
+  'wanddose',
+  'bodentank',
+  'unterflurdose',
+  'bruestungskanal',
+  'wandauslass',
+  'sonstige',
+]
 
 /** Ja / nein / nichts gesagt — als drei Zustände, nicht als zwei. */
 const jaNein = (v: boolean | undefined): string =>
@@ -91,6 +105,7 @@ export function Anschlusspunkte() {
               <tr>
                 <th>Bezeichnung</th>
                 <th>Art</th>
+                <th>Bauform</th>
                 <th>Anschluss</th>
                 <th>Netzform</th>
                 <th className="rechts">Absicherung</th>
@@ -112,6 +127,35 @@ export function Anschlusspunkte() {
                   <tr key={p.id}>
                     <td>{a.bezeichnung}</td>
                     <td>{p.art === 'einspeisung' ? 'Einspeisung' : 'Dose'}</td>
+                    {/* Issue #1 — die Bauform ist NICHT die Montageart. Ein
+                        Bodentank und eine Unterflurdose sind beide
+                        `montage: 'boden'` und verhalten sich vollkommen
+                        verschieden: der Tank nimmt einen Satz Kupplungen auf
+                        und laesst den Deckel offen, die Unterflurdose fasst
+                        einen Stecker und muss buendig schliessen. Wer nur die
+                        Montageart fuehrt, plant beides als dasselbe. */}
+                    <td>
+                      {p.art === 'einspeisung' ? (
+                        '—'
+                      ) : (
+                        <select
+                          value={p.bauform ?? ''}
+                          onChange={(e) =>
+                            punktAendern(p.id, {
+                              bauform: (e.target.value || undefined) as Bauform | undefined,
+                            })
+                          }
+                          aria-label={`Bauform von ${a.bezeichnung}`}
+                        >
+                          <option value="">nicht angegeben</option>
+                          {BAUFORMEN.map((x) => (
+                            <option key={x} value={x}>
+                              {x}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </td>
                     <td>
                       <select
                         value={p.anschlussart}

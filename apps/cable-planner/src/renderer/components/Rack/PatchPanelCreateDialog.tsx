@@ -40,7 +40,7 @@ const COMMON_PORT_COUNTS = [12, 16, 24, 32, 48]
 
 export const PatchPanelCreateDialog = ({ open, onClose, onCreated }: PatchPanelCreateDialogProps) => {
   const t = useTranslation()
-  const [name, setName] = useState('Patchblende')
+  const [name, setName] = useState('Patch panel')
   const [heightUnits, setHeightUnits] = useState(1)
   const [portCount, setPortCount] = useState(24)
   // v7.9.77 / #170 — Adapter-Patchblende: Front und Rear können
@@ -85,8 +85,8 @@ export const PatchPanelCreateDialog = ({ open, onClose, onCreated }: PatchPanelC
     // outputs (Rear-Seite) bekommen unabhängige Connector-Typen.
     // Klassische Patchblende: frontConnector === rearConnector (= adapterMode false).
     const template: EquipmentTemplate = {
-      name: name.trim() || 'Patchblende',
-      category: adapterMode ? 'Patchblende (Adapter)' : 'Patchblende',
+      name: name.trim() || 'Patch panel',
+      category: adapterMode ? 'Patch panels (adapter)' : 'Patch panels',
       inputs: ports.map((p) => ({
         id: uuidv4(),
         name: `${p.label} (Front)`,
@@ -219,7 +219,7 @@ export const PatchPanelCreateDialog = ({ open, onClose, onCreated }: PatchPanelC
                       key={n}
                       type="button"
                       onClick={() => setPortCount(n)}
-                      className={`rounded px-2 py-0.5 text-[10px] ${
+                      className={`rounded px-2 py-0.5 text-cp-xs ${
                         portCount === n
                           ? 'bg-sky-700 text-white'
                           : 'bg-cp-surface-2 text-cp-text-muted hover:bg-cp-surface-4'
@@ -245,7 +245,7 @@ export const PatchPanelCreateDialog = ({ open, onClose, onCreated }: PatchPanelC
               />
               <span className="flex-1">
                 <span className="font-medium text-cp-text-bright">{t('rack.patchPanel.adapter', 'Adapter patch panel')}</span>
-                <span className="ml-1 text-[10px] text-cp-text-muted">
+                <span className="ml-1 text-cp-xs text-cp-text-muted">
                   {t('rack.patchPanel.adapterHint', '(front ≠ rear connector, with internal adapter cable)')}
                 </span>
               </span>
@@ -278,7 +278,7 @@ export const PatchPanelCreateDialog = ({ open, onClose, onCreated }: PatchPanelC
                 </label>
               )}
             </div>
-            <span className="block text-[10px] text-cp-text-muted">
+            <span className="block text-cp-xs text-cp-text-muted">
               {format(t('rack.patchPanel.appliesToAllPorts', 'Applies to all {count} ports. Adjust individually in the "Per-port detail" tab.'), { count: portCount })}
               {adapterMode
                 ? ` ${t('rack.patchPanel.adapterCouplingNote', 'Each front port couples internally via an adapter cable to the matching rear port.')}`
@@ -289,7 +289,7 @@ export const PatchPanelCreateDialog = ({ open, onClose, onCreated }: PatchPanelC
 
         {tab === 'ports' && (
           <div className="space-y-2">
-            <div className="text-[10px] text-cp-text-muted">
+            <div className="text-cp-xs text-cp-text-muted">
               {t('rack.patchPanel.perPortNote', 'Per port label and connector type are overridable. Leave empty for default.')}
               {adapterMode && ` ${t('rack.patchPanel.perPortAdapterNote', 'In adapter mode the front and rear connectors are chosen independently.')}`}
             </div>

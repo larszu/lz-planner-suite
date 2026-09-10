@@ -1,5 +1,7 @@
+import { RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format, useTranslation } from '../../lib/i18n'
+import { Icon } from '../shared/Icon'
 
 /** Struktur fuer farb-kodierte Label-Rendering. Wenn ein Eintrag
  *  mehr als nur `port` enthaelt, rendert der Matrix-Header die Teile
@@ -208,7 +210,7 @@ export const VideohubRoutingMatrix = ({
   if (!useGrid) {
     return (
       <div className="overflow-auto max-h-64 rounded border border-cp-border bg-cp-surface-3 p-2">
-        <div className="mb-2 text-[10px] text-amber-300">
+        <div className="mb-2 text-cp-xs text-amber-300">
           {totalInputs}×{totalOutputs} ({cellCount.toLocaleString()} Crosspoints) —{' '}
           {t('export.listModeOverload', 'List mode, because at this size the crosspoint matrix overloads browser rendering.')}
         </div>
@@ -332,7 +334,7 @@ export const VideohubRoutingMatrix = ({
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between text-[11px] text-cp-text-muted">
+      <div className="flex items-center justify-between text-cp-xs text-cp-text-muted">
         <span>
           {t('export.resizeTip', 'Tip: drag the right edge of a column / bottom edge of a row like in Excel.')}
         </span>
@@ -342,9 +344,10 @@ export const VideohubRoutingMatrix = ({
           <button
             type="button"
             onClick={resetLayout}
-            className="rounded bg-cp-surface-2 px-2 py-0.5 text-[11px] text-cp-text-secondary hover:bg-cp-surface-4"
+            className="rounded bg-cp-surface-2 px-2 py-0.5 text-cp-xs text-cp-text-secondary hover:bg-cp-surface-4"
           >
-            ↺ {t('export.resetLayout', 'Reset layout')}
+            <Icon icon={RotateCcw} size="xs" className="mr-1 inline" />
+            {t('export.resetLayout', 'Reset layout')}
           </button>
         )}
       </div>

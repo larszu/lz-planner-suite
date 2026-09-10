@@ -40,7 +40,7 @@ export const VideohubRoutingList = ({
   const t = useTranslation()
   return (
     <div className="rounded-cp-control border border-cp-border bg-cp-surface-3">
-      <div className="border-b border-cp-border-muted bg-cp-surface-1 px-3 py-2 text-[11px] uppercase tracking-wide text-cp-text-muted">
+      <div className="border-b border-cp-border-muted bg-cp-surface-1 px-3 py-2 text-cp-xs uppercase tracking-wide text-cp-text-muted">
         {t('export.routingListHeader', 'Routing list')} · {totalOutputs} Outputs · {totalInputs} {t('export.inputsAvailable', 'inputs available')}
       </div>
       <div
@@ -57,7 +57,7 @@ export const VideohubRoutingList = ({
             >
               {/* Output-Nummer (mono, neutral) */}
               <span
-                className="w-9 shrink-0 text-right font-mono text-[12px] font-semibold text-cp-text-muted"
+                className="w-9 shrink-0 text-right font-mono text-cp-xs font-semibold text-cp-text-muted"
                 title={`Output ${oi + 1}`}
               >
                 {oi + 1}

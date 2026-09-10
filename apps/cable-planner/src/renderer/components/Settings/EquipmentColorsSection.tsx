@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react'
+import { Moon, RotateCcw, Sun, X } from 'lucide-react'
 import { useUiStore } from '../../store/uiStore'
 import { SettingsCard } from './SettingsCard'
 import { Icon } from '../shared/Icon'
@@ -43,10 +43,11 @@ export const EquipmentColorsSection = () => {
               <button
                 type="button"
                 onClick={() => resetEquipmentColors(theme)}
-                className="rounded bg-cp-surface-4 px-2 py-0.5 text-[10px] hover:bg-cp-surface-5"
+                className="inline-flex items-center gap-1 rounded bg-cp-surface-4 px-2 py-0.5 text-cp-xs hover:bg-cp-surface-5"
                 title={t('settings.eqColors.resetTitle', 'Reset to default')}
               >
-                {t('settings.eqColors.reset', '↺ Reset')}
+                <Icon icon={RotateCcw} size="xs" />
+                {t('settings.eqColors.reset', 'Reset')}
               </button>
             </div>
             <div className="space-y-1.5">
@@ -61,7 +62,7 @@ export const EquipmentColorsSection = () => {
                       className="h-6 w-10 cursor-pointer rounded border border-cp-border bg-cp-surface-1 p-0.5"
                       title={r.hint}
                     />
-                    <span className="font-mono text-[10px] text-cp-text-muted">
+                    <span className="font-mono text-cp-xs text-cp-text-muted">
                       {equipmentColors[theme][r.key]}
                     </span>
                   </div>
@@ -71,7 +72,7 @@ export const EquipmentColorsSection = () => {
           </div>
         ))}
       </div>
-      <div className="mt-2 text-[10px] text-cp-text-muted">
+      <div className="mt-2 text-cp-xs text-cp-text-muted">
         {t(
           'settings.eqColors.note',
           'Note: Devices with their own color (Properties → device color) still override the body value individually.',
@@ -83,7 +84,7 @@ export const EquipmentColorsSection = () => {
           <div className="text-cp-xs font-semibold text-cp-text-bright">
             {t('settings.eqColors.defaultDeviceColor', 'Default device color')}
           </div>
-          <div className="text-[10px] text-cp-text-muted">
+          <div className="text-cp-xs text-cp-text-muted">
             {t(
               'settings.eqColors.defaultDeviceColorHint',
               'Newly added devices start with this color (Properties → device color can change it individually). Empty: uses the theme body color.',
@@ -101,9 +102,10 @@ export const EquipmentColorsSection = () => {
             <button
               type="button"
               onClick={() => setDefaultDeviceColor(undefined)}
-              className="rounded bg-cp-surface-4 px-2 py-0.5 text-[10px] hover:bg-cp-surface-5"
+              className="inline-flex items-center gap-1 rounded bg-cp-surface-4 px-2 py-0.5 text-cp-xs hover:bg-cp-surface-5"
             >
-              {t('settings.eqColors.resetX', '✕ Reset')}
+              <Icon icon={X} size="xs" />
+              {t('settings.eqColors.resetX', 'Reset')}
             </button>
           )}
         </div>

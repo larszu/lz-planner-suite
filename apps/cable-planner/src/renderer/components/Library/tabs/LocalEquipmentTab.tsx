@@ -107,7 +107,7 @@ export const LocalEquipmentTab = ({
   // einklappen (Default-collapsed). Laueft nur einmal.
   useEffect(() => {
     if (collapsedInitRef.current) return
-    const usedCats = new Set(customLibrary.map((t) => t.category || 'Sonstiges'))
+    const usedCats = new Set(customLibrary.map((t) => t.category || 'Other'))
     const allCats = new Set([...knownCategories, ...usedCats])
     if (allCats.size === 0) return
     collapsedInitRef.current = true
@@ -156,7 +156,7 @@ export const LocalEquipmentTab = ({
               <Icon icon={X} size="sm" />
             </button>
           ) : (
-            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] uppercase tracking-wider text-cp-text-muted">
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-cp-xs uppercase tracking-wider text-cp-text-muted">
               {t('library.search.shortcut', 'Ctrl+F')}
             </span>
           )}
@@ -185,13 +185,13 @@ export const LocalEquipmentTab = ({
             if (allCollapsed) {
               setCollapsedCats(new Set())
             } else {
-              const usedCats = new Set(customLibrary.map((t) => t.category || 'Sonstiges'))
+              const usedCats = new Set(customLibrary.map((t) => t.category || 'Other'))
               const allCats = Array.from(new Set([...knownCategories, ...usedCats])).filter(Boolean)
               setCollapsedCats(new Set(allCats))
             }
           }}
           allCollapsed={(() => {
-            const usedCats = new Set(customLibrary.map((t) => t.category || 'Sonstiges'))
+            const usedCats = new Set(customLibrary.map((t) => t.category || 'Other'))
             const allCats = Array.from(new Set([...knownCategories, ...usedCats])).filter(Boolean)
             return allCats.length > 0 && allCats.every((cat) => collapsedCats.has(cat))
           })()}
@@ -247,7 +247,7 @@ export const LocalEquipmentTab = ({
 
       <div className="flex-1 min-h-0 space-y-1 overflow-auto">
         {(() => {
-          const usedCats = new Set(customLibrary.map((t) => t.category || 'Sonstiges'))
+          const usedCats = new Set(customLibrary.map((t) => t.category || 'Other'))
           // v7.9.5 — Kategorien-Order respektiert den User-gewaehlten Sort-Modus.
           const baseCats = Array.from(new Set([...knownCategories, ...usedCats])).filter(Boolean)
           const allCats =
@@ -263,7 +263,7 @@ export const LocalEquipmentTab = ({
                       .sort((a, b) => a.localeCompare(b))
                     return [...head, ...tail]
                   })()
-          if (allCats.length === 0) allCats.push('Sonstiges')
+          if (allCats.length === 0) allCats.push('Other')
           const searchQuery = librarySearch.trim().toLowerCase()
           // v7.9.5 — Globaler Empty-State wenn Suche projektweit nichts trifft.
           if (searchQuery) {
@@ -276,7 +276,7 @@ export const LocalEquipmentTab = ({
                   <div className="mb-2 font-semibold text-cp-text-secondary">
                     {t('library.empty.title', 'No devices found')}
                   </div>
-                  <div className="mb-3 text-[11px] text-cp-text-muted">
+                  <div className="mb-3 text-cp-xs text-cp-text-muted">
                     {format(
                       t(
                         'library.empty.body',
@@ -288,7 +288,7 @@ export const LocalEquipmentTab = ({
                   <button
                     type="button"
                     onClick={() => setLibrarySearch('')}
-                    className="rounded bg-cp-surface-4 px-3 py-1 text-[11px] text-cp-text hover:bg-cp-surface-5"
+                    className="rounded bg-cp-surface-4 px-3 py-1 text-cp-xs text-cp-text hover:bg-cp-surface-5"
                   >
                     {t('library.empty.clearSearch', 'Clear search')}
                   </button>
@@ -298,7 +298,7 @@ export const LocalEquipmentTab = ({
           }
           const sectionsList = allCats.map((cat) => {
             const items = customLibrary.filter(
-              (t) => (t.category || 'Sonstiges') === cat,
+              (t) => (t.category || 'Other') === cat,
             )
             const visibleItems = items
               .filter((t) => showHidden || !t.hidden)
@@ -334,7 +334,7 @@ export const LocalEquipmentTab = ({
                   } catch { /* ignore */ }
                 }}
               >
-                <div className="group/cat flex items-center gap-1.5 rounded-t bg-cp-surface-1/60 px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wide text-cp-text-secondary hover:bg-cp-surface-2/80 hover:text-cp-text">
+                <div className="group/cat flex items-center gap-1.5 rounded-t bg-cp-surface-1/60 px-2 py-1.5 text-left text-cp-xs font-semibold uppercase tracking-wide text-cp-text-secondary hover:bg-cp-surface-2/80 hover:text-cp-text">
                   <button
                     type="button"
                     onClick={() =>
@@ -375,13 +375,13 @@ export const LocalEquipmentTab = ({
                         setCategoryTranslation(cat, { de: result.de, en: result.en })
                       }
                     }}
-                    className="hidden rounded bg-cp-surface-4/80 px-1.5 py-0.5 text-[10px] font-normal normal-case text-cp-text-bright hover:bg-cp-surface-5 group-hover/cat:block"
+                    className="hidden rounded bg-cp-surface-4/80 px-1.5 py-0.5 text-cp-xs font-normal normal-case text-cp-text-bright hover:bg-cp-surface-5 group-hover/cat:block"
                     title={t('library.renameCategory', 'Rename category')}
                     aria-label={t('library.renameCategory', 'Rename category')}
                   >
                     <Icon icon={Pencil} size="xs" />
                   </button>
-                  <span className="rounded bg-cp-surface-2 px-1.5 py-0.5 text-[10px] font-normal text-cp-text-muted">
+                  <span className="rounded bg-cp-surface-2 px-1.5 py-0.5 text-cp-xs font-normal text-cp-text-muted">
                     {items.length}
                   </span>
                 </div>
@@ -390,7 +390,7 @@ export const LocalEquipmentTab = ({
                 {!collapsed && (
                   <div className="space-y-1 px-1 pb-1">
                     {visibleItems.length === 0 ? (
-                      <div className="px-1 py-1 text-[11px] italic text-cp-text-muted">
+                      <div className="px-1 py-1 text-cp-xs italic text-cp-text-muted">
                         {searchQuery
                           ? format(t('library.empty.search', 'No matches for "{query}"'), { query: librarySearch })
                           : t('library.empty.dragHere', 'Drag a device here to move it')}
@@ -418,7 +418,7 @@ export const LocalEquipmentTab = ({
                           <button
                             type="button"
                             onClick={() => setSelectedTemplateName(item.name)}
-                            className="absolute right-7 top-1 hidden rounded bg-cp-surface-5 px-1 py-0.5 text-[10px] hover:bg-slate-500 group-hover/item:block"
+                            className="absolute right-7 top-1 hidden rounded bg-cp-surface-5 px-1 py-0.5 text-cp-xs hover:bg-slate-500 group-hover/item:block"
                             title={t('library.template.editTitle', 'Edit template (name, category)')}
                             aria-label={t('library.template.editTitle', 'Edit template (name, category)')}
                           >

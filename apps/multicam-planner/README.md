@@ -1,11 +1,28 @@
 # 🎥 MultiCam Planner
 
-A fast, focused broadcast camera & lens planning tool for multicam setups. Calculate FOV/DoF, plan camera positions in 2D & 3D, and preview live camera views. Available as a web app and Windows desktop application._
+A fast, focused broadcast camera & lens planning tool for multicam setups. Calculate FOV/DoF, plan camera positions in 2D & 3D, and preview live camera views. Available as a web app and Windows desktop application.
 
 [![Lizenz: proprietär](https://img.shields.io/badge/Lizenz-proprietär-critical.svg)](LICENSE)
 
+![MultiCam Planner – 2D-Grundriss mit Bühne, Kamera- und Objektpanel](docs/screenshot.png)
+
 ---
 
+## The web page
+
+Every push to the default branch builds this repo's page from
+`.github/workflows/pages.yml` and publishes it:
+
+**https://larszu.github.io/multicam-planner/**
+
+The workflow **asks the Pages API before it configures anything.** With no
+Pages site it still builds — that is a real check — and skips only the
+publishing step, with a warning and the one missing step in the run summary.
+A run that must stay red for a click nobody made teaches people to ignore red.
+
+Measured 2026-09-09: **published** — the `deploy` job ran and succeeded.
+
+---
 ## ✨ Philosophy
 
 MultiCam Planner is designed for quick, intuitive camera planning with essential features for real-world broadcast productions. Its streamlined workflow and simple interface make it perfect for fast setups and clear projects—without the complexity and feature overload of traditional CAD or architecture applications.
@@ -138,11 +155,14 @@ page. It can also be triggered manually via the Actions tab for testing.
 
 ## 📚 Documentation
 
-- [`docs/MERGE_INTO_CABLE_PLANNER.md`](docs/MERGE_INTO_CABLE_PLANNER.md) — what
-  would have to change to integrate MulticamPlanner (or part of it) into
-  `cable-planner`.
+- [`docs/MERGE_INTO_CABLE_PLANNER.md`](docs/MERGE_INTO_CABLE_PLANNER.md) —
+  **superseded, kept as analysis.** It describes folding MulticamPlanner into
+  `cable-planner`; the suite went the other way (ADR-006: crowded areas move
+  *out* into their own repos and the shell integrates them). Its list of
+  dependency-free modules and its risk section still hold.
 - [`docs/venue-suite-architecture.md`](docs/venue-suite-architecture.md) —
-  extends that guide with `light-planner` and a shared venue data model.
+  extends that guide with `light-planner` and a shared venue data model. The
+  shared-model part is built (`@avplan/*`); the merge part is superseded too.
 
 `npm run docs:reachable` fails the build if a document under `docs/` is not
 reachable by links from an entry page. Both were orphaned until 2026-09-04.

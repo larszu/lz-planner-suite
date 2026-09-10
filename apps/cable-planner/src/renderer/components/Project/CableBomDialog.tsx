@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Package, AlertTriangle, Check } from 'lucide-react'
+import { Package, AlertTriangle, ArrowRight, Check } from 'lucide-react'
 import { Icon } from '../shared/Icon'
 import { ModalShell } from '../shared/ModalShell'
 import jsPDF from 'jspdf'
@@ -305,7 +305,7 @@ export const CableBomDialog = ({ open, onClose }: CableBomDialogProps) => {
       draggableKey="cable-planner:modal-pos:cable-bom"
       scrollBody={false}
       footer={
-        <div className="flex items-center justify-between text-[11px]">
+        <div className="flex items-center justify-between text-cp-xs">
           <span className="text-cp-text-muted">
             {draftPlan
               ? t('bom.cable.draftPending', 'Unsaved changes to the Rentman plan.')
@@ -343,14 +343,15 @@ export const CableBomDialog = ({ open, onClose }: CableBomDialogProps) => {
               className="inline-flex items-center gap-1.5 rounded bg-orange-700 px-3 py-1 text-cp-xs font-semibold hover:bg-orange-600"
             >
               <Icon icon={Package} size="xs" />
-              {t('bom.cable.syncRentman', 'Sync with Rentman →')}
+              {t('bom.cable.syncRentman', 'Sync with Rentman')}
+              <Icon icon={ArrowRight} size="xs" />
             </button>
           </div>
         </div>
       }
     >
       <div className="flex h-full min-h-0 flex-col -mx-4 -my-3">
-        <div className="flex items-center gap-2 border-b border-cp-border-muted px-4 py-2 text-[11px] text-cp-text-muted">
+        <div className="flex items-center gap-2 border-b border-cp-border-muted px-4 py-2 text-cp-xs text-cp-text-muted">
           <span>{t('bom.cable.groupedNote', 'Grouped by type & length.')}</span>
           <span>
             {t('bom.cable.builtCables', 'Built cables:')} <b className="text-cp-text-bright">{project.cables.length}</b>
@@ -413,7 +414,7 @@ export const CableBomDialog = ({ open, onClose }: CableBomDialogProps) => {
                     <div className="font-medium text-cp-text">
                       {r.type}
                       {r.sample && (
-                        <span className="ml-1 text-[10px] text-cp-text-muted">
+                        <span className="ml-1 text-cp-xs text-cp-text-muted">
                           ({r.sample.name})
                         </span>
                       )}
@@ -422,9 +423,9 @@ export const CableBomDialog = ({ open, onClose }: CableBomDialogProps) => {
                         Abgleich klar wenn Rentman das gleiche Kabel
                         unter anderem Namen fuehrt. */}
                     {r.rentmanName && (
-                      <div className="mt-0.5 text-[10px] text-orange-300/80">
+                      <div className="mt-0.5 text-cp-xs text-orange-300/80">
                         <span
-                          className="rounded bg-orange-700/30 px-1 py-0 font-mono text-[11px] text-orange-200"
+                          className="rounded bg-orange-700/30 px-1 py-0 font-mono text-cp-xs text-orange-200"
                           title={t('bom.cable.rentmanLinkedTitle', 'Linked Rentman equipment name')}
                         >
                           R
@@ -434,7 +435,7 @@ export const CableBomDialog = ({ open, onClose }: CableBomDialogProps) => {
                     )}
                     {!r.rentmanName && r.rentmanId && (
                       <div
-                        className="mt-0.5 text-[10px] text-cp-text-muted"
+                        className="mt-0.5 text-cp-xs text-cp-text-muted"
                         title={t('bom.cable.rentmanMissingTitle', 'Linked, but Rentman template not found locally')}
                       >
                         R #{r.rentmanId}
@@ -477,19 +478,19 @@ export const CableBomDialog = ({ open, onClose }: CableBomDialogProps) => {
                   </td>
                   {/* #292 — Wege-Spalte: max 3 Pfade sichtbar, alle weiteren
                       als Tooltip ("+N weitere"). */}
-                  <td className="px-3 py-1 align-top text-[11px] text-cp-text-secondary">
+                  <td className="px-3 py-1 align-top text-cp-xs text-cp-text-secondary">
                     {r.paths.length === 0 ? (
                       <span className="text-cp-text-dim">—</span>
                     ) : (
                       <div className="flex flex-col gap-0.5">
                         {r.paths.slice(0, 3).map((p, i) => (
-                          <div key={i} className="font-mono text-[10px]">
+                          <div key={i} className="font-mono text-cp-xs">
                             {p}
                           </div>
                         ))}
                         {r.paths.length > 3 && (
                           <div
-                            className="cursor-help text-[10px] text-cp-text-muted"
+                            className="cursor-help text-cp-xs text-cp-text-muted"
                             title={r.paths.slice(3).join('\n')}
                           >
                             {format(t('bom.cable.morePaths', '+{count} more'), { count: r.paths.length - 3 })}

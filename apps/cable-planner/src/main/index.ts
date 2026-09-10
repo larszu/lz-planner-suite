@@ -5,7 +5,6 @@ import fs from 'node:fs'
 import { registerCredentialsIpc } from './ipc/credentialsIpc.js'
 import { appendLogCapped } from './util/appendLogCapped.js'
 import { registerRentmanIpc } from './ipc/rentmanIpc.js'
-import { registerLexwareIpc } from './ipc/lexwareIpc.js'
 import { registerNetboxIpc } from './ipc/netboxIpc.js'
 import { openExternalProject, registerProjectIpc } from './ipc/projectIpc.js'
 import { findProjectPathInArgv, setPendingLaunchPath } from './services/fileOpenService.js'
@@ -24,6 +23,7 @@ import { registerCollabDiscoveryIpc } from './ipc/collabDiscoveryIpc.js'
 import { registerPrintIpc } from './ipc/printIpc.js'
 import { registerLibraryIpc } from './ipc/libraryIpc.js'
 import { registerSignalingIpc } from './ipc/signalingIpc.js'
+import { registerLexwareIpc } from './ipc/lexwareIpc.js'
 import { stopSignalingServer } from './signalingServer.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -324,7 +324,22 @@ app.whenReady().then(async () => {
           ...details.responseHeaders,
           'Content-Security-Policy': [
             "default-src 'self'; " +
-              "script-src 'self'; " +
+              // `wasm-unsafe-eval` ist NICHT `unsafe-eval`: es erlaubt genau
+              // das Uebersetzen von WebAssembly und weiterhin kein `eval()`
+              // und keinen `new Function()` fuer JavaScript.
+              //
+              // Ohne diese Angabe schlaegt der Barcode-Decoder
+              // (`lib/barcodeScanner.ts`, zxing-wasm) beim ersten Scan fehl —
+              // gemessen im gepackten Fenster am 2026-09-10:
+              //
+              //   WebAssembly.instantiateStreaming(): Compiling or
+              //   instantiating WebAssembly module violates the following
+              //   Content Security policy directive …
+              //
+              // Und zwar erst beim SCAN, nicht beim Start: der Fehler haette
+              // die App durchlaufen und waere jemandem im Lager vor die Fuesse
+              // gefallen, nicht hier.
+              "script-src 'self' 'wasm-unsafe-eval'; " +
               "style-src 'self' 'unsafe-inline'; " +
               "img-src 'self' data: blob:; " +
               "font-src 'self' data:; " +
@@ -342,7 +357,6 @@ app.whenReady().then(async () => {
 
   registerCredentialsIpc()
   registerRentmanIpc()
-  registerLexwareIpc()
   registerNetboxIpc()
   registerProjectIpc()
   registerAtemIpc()
@@ -360,6 +374,7 @@ app.whenReady().then(async () => {
   registerPrintIpc()
   registerLibraryIpc()
   registerSignalingIpc()
+  registerLexwareIpc()
 
   const mainWindow = await createWindow()
 

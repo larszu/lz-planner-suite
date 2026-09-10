@@ -45,7 +45,7 @@ import { CableLibraryPanel } from './CableLibraryPanel'
 
 const connectorOptions = ALL_CONNECTOR_TYPES
 
-import { defaultGroup, buildPorts } from './libraryPanelHelpers'
+import { defaultGroup, buildPorts, richtungWechseln } from './libraryPanelHelpers'
 import type { PortGroupDraft } from './libraryPanelHelpers'
 import { PanelHint } from '../shared/PanelHint'
 import { useDialogA11y } from '../../hooks/useDialogA11y'
@@ -116,7 +116,7 @@ export const LibraryPanel = () => {
   // Hochgezogen über die Drop-/Seed-Effekte, damit der React-Compiler die
   // Setter vor ihrem Gebrauch im useEffect sieht (react-hooks/immutability).
   const [name, setName] = useState('Custom Device')
-  const [category, setCategory] = useState('Kameras')
+  const [category, setCategory] = useState('Cameras')
   const [tab, setTab] = useState<'equipment' | 'cables' | 'groups' | 'racks'>('equipment')
   // v7.9.105 / Issue #224 — Wenn der RackBuilder aus dem Canvas-Toolbar-
   // 'Rack bearbeiten'-Button geoeffnet wurde, merken wir uns die
@@ -448,7 +448,7 @@ export const LibraryPanel = () => {
 
   const resetDialog = () => {
     setName('Custom Device')
-    setCategory('Kameras')
+    setCategory('Cameras')
     setIsRackDeviceDraft(false)
     setRackUnitsDraft('')
     setGroups([defaultGroup('in'), defaultGroup('out')])
@@ -461,7 +461,7 @@ export const LibraryPanel = () => {
     const maxPorts = Math.max(inputs.length, outputs.length, 3)
     return {
       name: name.trim() || 'Custom Device',
-      category: category.trim() || 'Sonstiges',
+      category: category.trim() || 'Other',
       inputs,
       outputs,
       isRackDevice: isRackDeviceDraft,
@@ -720,7 +720,7 @@ export const LibraryPanel = () => {
           type="button"
           onClick={toggleCollapsed}
           aria-label={t('library.show', 'Show library')}
-          className="mt-3 flex-1 self-stretch text-[10px] font-semibold uppercase tracking-[0.18em] text-cp-text-muted transition-colors hover:text-cp-text-secondary focus-visible:outline-none focus-visible:text-sky-300"
+          className="mt-3 flex-1 self-stretch text-cp-xs font-semibold uppercase tracking-[0.18em] text-cp-text-muted transition-colors hover:text-cp-text-secondary focus-visible:outline-none focus-visible:text-sky-300"
           style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
         >
           {t('library.title', 'Library')}
@@ -855,9 +855,9 @@ export const LibraryPanel = () => {
               }`}
               title={t('library.section.localTitle', 'Custom and imported templates, local to this installation')}
             >
-              <span className="mr-1 rounded bg-sky-900/80 px-1 text-[11px] font-bold text-sky-100">L</span>
+              <span className="mr-1 rounded bg-sky-900/80 px-1 text-cp-xs font-bold text-sky-100">L</span>
               {t('library.section.local', 'Local')}
-              <span className="ml-1 text-[10px] text-cp-text-muted">
+              <span className="ml-1 text-cp-xs text-cp-text-muted">
                 ({customLibrary.filter((t) => !t.rentmanSource).length})
               </span>
             </button>
@@ -871,9 +871,9 @@ export const LibraryPanel = () => {
               }`}
               title={t('library.section.rentmanTitle', 'Rentman-imported devices and account catalog')}
             >
-              <span className="mr-1 rounded bg-orange-900/80 px-1 text-[11px] font-bold text-orange-100">R</span>
+              <span className="mr-1 rounded bg-orange-900/80 px-1 text-cp-xs font-bold text-orange-100">R</span>
               Rentman
-              <span className="ml-1 text-[10px] text-cp-text-muted">
+              <span className="ml-1 text-cp-xs text-cp-text-muted">
                 ({customLibrary.filter((t) => t.rentmanSource).length})
               </span>
             </button>
@@ -977,7 +977,7 @@ export const LibraryPanel = () => {
               </div>
             )}
 
-            <div className="mb-2 text-[11px] uppercase tracking-wide text-cp-text-muted">
+            <div className="mb-2 text-cp-xs uppercase tracking-wide text-cp-text-muted">
               {t('library.netbox.hits', 'Hits')} {netBoxResults.length > 0 ? `(${netBoxResults.length})` : ''}
             </div>
             <div className="space-y-2">
@@ -997,9 +997,9 @@ export const LibraryPanel = () => {
                         <div className="truncate font-medium text-cp-text">
                           {item.manufacturer} {item.model}
                         </div>
-                        <div className="truncate text-[11px] text-cp-text-muted">{item.path}</div>
+                        <div className="truncate text-cp-xs text-cp-text-muted">{item.path}</div>
                         <div className="mt-2 flex max-w-[340px] items-center gap-2">
-                          <span className="text-[11px] text-cp-text-muted">{t('library.netbox.categoryLabel', 'Category:')}</span>
+                          <span className="text-cp-xs text-cp-text-muted">{t('library.netbox.categoryLabel', 'Category:')}</span>
                           <select
                             value={netBoxCategoryByPath[item.path] ?? ''}
                             onChange={(event) =>
@@ -1102,7 +1102,7 @@ export const LibraryPanel = () => {
                     setAiKeyDraft(getGeminiApiKey())
                     setAiSettingsOpen(true)
                   }}
-                  className="text-[10px] text-violet-300 hover:underline"
+                  className="text-cp-xs text-violet-300 hover:underline"
                   title={t('library.create.aiSettings', 'AI settings')}
                 >
                   <Icon icon={Settings} size="xs" className="mr-1 inline-block align-text-bottom" />{t('library.create.aiSettingsLabel', 'AI settings')}
@@ -1174,7 +1174,7 @@ export const LibraryPanel = () => {
                     {t('common.cancel', 'Cancel')}
                   </button>
                 </div>
-                <div className="mt-1 text-[10px] text-cp-text-muted">
+                <div className="mt-1 text-cp-xs text-cp-text-muted">
                   {t('library.create.aiKey.hintPrefix', 'Stored locally in localStorage only. Create a key at')}{' '}
                   <a
                     href="https://aistudio.google.com/app/apikey"
@@ -1220,7 +1220,10 @@ export const LibraryPanel = () => {
                   <select
                     value={group.direction}
                     onChange={(event) =>
-                      updateGroup(group.id, { direction: event.target.value as 'in' | 'out' })
+                      // #832 — die Vorgabe-Beschriftung folgt der Richtung; eine
+                      // selbst vergebene bleibt stehen. Ohne das hiessen Ausgaenge
+                      // weiter „Input 1", „Input 2".
+                      updateGroup(group.id, richtungWechseln(group, event.target.value as 'in' | 'out'))
                     }
                     className="rounded border border-cp-border bg-cp-surface-1 p-1"
                   >
@@ -1231,9 +1234,20 @@ export const LibraryPanel = () => {
                     type="number"
                     min={1}
                     value={group.count}
-                    onChange={(event) =>
-                      updateGroup(group.id, { count: Number(event.target.value) })
-                    }
+                    onChange={(event) => {
+                      // #832 — Ein leeres Feld BLEIBT leer. `Number('')` ist 0,
+                      // und die 0 kam vorher sofort ins Feld zurueck: wer die 1
+                      // loeschte, um eine 12 zu tippen, sah eine 0 und danach
+                      // „012".
+                      const roh = event.target.value
+                      if (roh === '') {
+                        updateGroup(group.id, { count: '' })
+                        return
+                      }
+                      const n = Math.floor(Number(roh))
+                      if (!Number.isFinite(n)) return
+                      updateGroup(group.id, { count: Math.max(0, n) })
+                    }}
                     className="rounded border border-cp-border bg-cp-surface-1 p-1"
                   />
                   <select
@@ -1269,6 +1283,20 @@ export const LibraryPanel = () => {
               ))}
               {groups.length === 0 && (
                 <div className="text-cp-xs text-cp-text-muted">{t('library.create.noPortGroups', 'No port groups yet. Add one above.')}</div>
+              )}
+              {/*
+                #832 — Eine Gruppe ohne Anzahl verschwindet beim Speichern
+                lautlos: `buildPorts` baut null Ports daraus. Lautlos ist die
+                teure Eigenschaft — das Geraet landet ohne die Ports in der
+                Bibliothek, und man sucht sie in der Vorlage statt hier.
+              */}
+              {groups.some((g) => g.count === '' || g.count === 0) && (
+                <div className="rounded border border-amber-700 bg-amber-950/40 px-2 py-1 text-cp-xs text-amber-200">
+                  {t(
+                    'library.create.emptyCount',
+                    'A group has no count — it will produce no ports.',
+                  )}
+                </div>
               )}
             </div>
 

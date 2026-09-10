@@ -942,4 +942,19 @@ export const de: Record<string, string> = {
   'dlg.sch.cbl.basis': 'Die Längen sind die geraden Strecken zwischen den Aufhängepunkten — eine Untergrenze. Durchhang, der Weg um die Traverse und die Schleife am Haken kommen dazu. Wege von der Quelle zur ersten Leuchte stehen leer: der Plan stellt weder Verteiler noch Nodes auf, und eine Zahl wäre hier erfunden.',
   'app.inventoryTitle': 'Lager / Bestand',
   'app.inventory': 'Lager',
+
+  // 2026-09-10 — mit der Vendorierung von light#113 gekommen: die Ebenen-Namen
+  // standen als deutsche Literale in einem Modul-Objekt (`LayersPanel.tsx`),
+  // wo kein Sprach-Waechter sie je findet. Jetzt sind sie gewickelt, und die
+  // deutsche Fassung steht hier.
+  'panel.layers.ceilings': 'Decken',
+  'panel.layers.fixtures': 'Leuchten',
+  'panel.layers.floorPlan': 'Grundriss',
+  'panel.layers.persons': 'Personen',
+  'panel.layers.shapes': 'Formen & Maße',
+  'panel.layers.stage': 'Bühne / Podeste',
+  'panel.layers.title': 'Ebenen',
+  'panel.layers.trusses': 'Traversen',
+  'panel.layers.walls': 'Wände',
+  'panel.scene.showAllHidden': '{n} ausgeblendet – alle einblenden',
 };

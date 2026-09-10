@@ -6,6 +6,8 @@
 // collabStore + lib/crdt/*; diese Komponente ist Anzeige + Steuerung.
 
 import { useMemo, useState } from 'react'
+import { Check } from 'lucide-react'
+import { Icon } from '../shared/Icon'
 import {
   useCollabStore,
   type CollabMode,
@@ -300,7 +302,7 @@ export const CollabPanel = () => {
             </button>
           </div>
 
-          <p className="text-[11px] text-[var(--cp-text-muted)]">
+          <p className="text-cp-xs text-[var(--cp-text-muted)]">
             {t(
               'collab.discover.adoptHint',
               'Joining adopts the host’s plan (replaces your current plan).',
@@ -356,7 +358,7 @@ export const CollabPanel = () => {
                 <span
                   key={p.id}
                   title={p.self ? `${p.name} (${t('collab.peers.you', 'you')})` : p.name}
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--cp-surface-3)] text-[11px] font-bold text-white"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[var(--cp-surface-3)] text-cp-xs font-bold text-white"
                   style={{ backgroundColor: p.color }}
                 >
                   {initials(p.name)}
@@ -365,7 +367,7 @@ export const CollabPanel = () => {
             </div>
           </div>
           {peers.length === 1 && (
-            <p className="text-[11px] text-[var(--cp-text-muted)]">
+            <p className="text-cp-xs text-[var(--cp-text-muted)]">
               {t(
                 'collab.peers.aloneHint',
                 'Others join by using the same room name:',
@@ -376,9 +378,10 @@ export const CollabPanel = () => {
           <button
             type="button"
             onClick={copyInvite}
-            className="rounded border border-[var(--cp-border)] bg-[var(--cp-surface-1)] px-2 py-1 text-cp-xs text-[var(--cp-text-secondary)] hover:border-sky-500 hover:text-sky-300"
+            className="inline-flex items-center gap-1 rounded border border-[var(--cp-border)] bg-[var(--cp-surface-1)] px-2 py-1 text-cp-xs text-[var(--cp-text-secondary)] hover:border-sky-500 hover:text-sky-300"
           >
-            {copied ? t('collab.invite.copied', 'Copied ✓') : t('collab.invite.copy', 'Copy invite')}
+            {copied && <Icon icon={Check} size="xs" />}
+            {copied ? t('collab.invite.copied', 'Copied') : t('collab.invite.copy', 'Copy invite')}
           </button>
         </div>
       )}

@@ -42,8 +42,19 @@ wöchentliche KI-Auditor `docs-sync.yml`.
 
 Es gibt **fünf tsconfigs** — pro Prozess eine: `tsconfig.main.json` (main, ESM
 node16), `tsconfig.preload.json` (preload, **CommonJS**), `tsconfig.app.json`
-(renderer, der für `--noEmit`-Check), `tsconfig.node.json` (vite/build-Tools),
+(alles, was im Browser läuft — `src/renderer`, `src/viewer`, `src/mobile`; der
+für den `--noEmit`-Check), `tsconfig.node.json` (vite/build-Tools),
 `tsconfig.json` (Solution-Root).
+
+**Jeder Ordner unter `src/` gehört in genau eines davon.** `src/mobile` stand
+bis 2026-09-10 in keinem — und weil `build:renderer` schlicht `vite build` ist
+und Vite TypeScript nur transpiliert, war der oben verlangte `--noEmit`-Lauf
+gruen, obwohl er den Ordner gar nicht ansah. Darin überlebte monatelang ein
+freier Bezeichner (`writeMode` in `ProjectView`), der die Mobile-Ansicht beim
+Laden eines Projekts mit einem `ReferenceError` weiss machte.
+`tests/typpruefungDecktSrc.test.ts` fragt jetzt `tsc --listFilesOnly` für jedes
+tsconfig, ob noch eine Quelldatei durchfällt. Wer einen neuen Ordner anlegt,
+wird dort rot — nicht erst, wenn jemand den weissen Bildschirm meldet.
 
 ## Architektur (Big Picture)
 
@@ -153,6 +164,18 @@ Pfad-Validierung passiert **immer in main**, nie im Renderer.
   Sätze NIE aus mehreren `t()`-Aufrufen zusammensetzen: die Wortstellung
   gehört zur Sprache. Ein Schlüssel, ein ganzer Satz, Platzhalter über
   `format()`.
+  **`src/mobile` und `src/viewer` haben ein EIGENES, kleines Wörterbuch**
+  (`src/mobile/i18n.ts`, `src/viewer/i18n.ts`) über dem gemeinsamen Werk in
+  `src/renderer/lib/i18nLite.ts`. Grund ist die Größe: `lib/i18n.ts`
+  importiert `de.ts` statisch (316 KB), der Mobile-Chunk ist 72 kB und wird
+  über das Hallen-WLAN auf ein Telefon geladen. Wer dort `lib/i18n`
+  importiert — auch mittelbar über ein Hilfsmodul — vervierfacht die Seite;
+  `tests/i18nEintrittspunkte.test.ts` folgt dem Importgraphen und sagt es.
+  Die Sprache kommt dort aus `navigator.language`, nicht aus dem
+  `uiStore` des Desktops.
+  **`npm run lang:check` deckt alle drei Browser-Ordner ab.** Der Umfang ist
+  keine Liste: derselbe Test liest die Ordner aus `tsconfig.app.json` und
+  besteht darauf, dass jeder im Skript vorkommt.
 - **Theming (#449):** neue Komponenten nutzen die semantischen Farb-Utilities
   (`bg-cp-surface-1/2/3`, `bg-cp-bg`, `border-cp-border(-muted)`,
   `text-cp-text/-secondary/-muted/-faint`, `(bg|text|border)-cp-accent/-warn/-danger`),

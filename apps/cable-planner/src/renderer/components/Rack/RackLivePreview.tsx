@@ -183,7 +183,7 @@ export const RackLivePreview = ({
 
   if (placements.length === 0) {
     return (
-      <div className="rounded border border-dashed border-slate-700 bg-slate-950/40 p-3 text-center text-[10px] text-slate-400">
+      <div className="rounded border border-dashed border-cp-border bg-cp-surface-3/40 p-3 text-center text-cp-xs text-cp-text-muted">
         {t(
           'rackPreview.empty',
           'No devices in rack — preview appears once the first device is assigned.',
@@ -202,24 +202,32 @@ export const RackLivePreview = ({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        <div className="text-cp-xs font-semibold uppercase tracking-wide text-slate-400">
           {t('rackPreview.headerLabel', 'Black box on canvas')}
         </div>
-        <div className="text-[10px] text-slate-400">
+        <div className="text-cp-xs text-slate-400">
           {format(t('rackPreview.counts', '{devices} devices · {cables} internal cables'), {
             devices: placements.length,
             cables: cables.length,
           })}
         </div>
       </div>
-      <div className="flex items-start justify-center rounded border border-slate-700 bg-slate-950/60 p-3">
+      <div className="flex items-start justify-center rounded border border-cp-border bg-cp-surface-3/60 p-3">
         <div
           className="relative rounded border-2 border-slate-500 bg-slate-900 shadow-lg"
           style={{ width: BLACK_BOX_WIDTH, height: blackBoxHeight }}
         >
-          {/* Header — gleicher Look wie EquipmentNode-Card-Header */}
+          {/*
+            Header — angenaehert an den EquipmentNode-Card-Header.
+            ANGENAEHERT UND NICHT GLEICH, und das war schon vor der
+            Token-Umstellung so: der echte Karten-Header liest
+            `equipmentColors[theme].header` aus den Einstellungen (#307),
+            hier stand eine feste Farbe. Wer die Vorschau wirklich
+            angleichen will, liest dieselbe Quelle — die Palette zu
+            wechseln macht aus einer Naeherung keine Uebereinstimmung.
+          */}
           <div
-            className="border-b border-slate-700 bg-slate-800/90 px-2 text-[11px] font-semibold text-slate-100"
+            className="border-b border-cp-border bg-cp-surface-2/90 px-2 text-cp-xs font-semibold text-cp-text"
             style={{
               lineHeight: `${HEADER_HEIGHT - 6}px`,
               height: HEADER_HEIGHT,

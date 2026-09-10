@@ -6,7 +6,7 @@
 // klickbar → selektiert das betroffene Gerät/Kabel auf dem Canvas.
 
 import { useMemo } from 'react'
-import { AlertTriangle, AlertCircle, Info, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, AlertCircle, Info, CheckCircle2, Stethoscope } from 'lucide-react'
 import { useUiStore } from '../../store/uiStore'
 import { useProjectStore } from '../../store/projectStore'
 import { ModalShell } from '../shared/ModalShell'
@@ -14,6 +14,7 @@ import { Icon } from '../shared/Icon'
 import { useTranslation, format } from '../../lib/i18n'
 import { runDrawingChecks, type CheckFinding, type CheckSeverity } from '../../lib/drawingChecks'
 import { triggerCanvasCenterOn } from '../../lib/canvasViewport'
+import { checkCategoryLabel } from '../../lib/checkCategoryLabel'
 
 const SEVERITY_META: Record<
   CheckSeverity,
@@ -79,7 +80,7 @@ export const PlanCheckPanel = () => {
       open={open}
       onClose={close}
       title={t('planCheck.title', 'Plan check')}
-      titleIcon="🩺"
+      titleIcon={<Icon icon={Stethoscope} size="sm" />}
       maxWidth="2xl"
       draggableKey="cable-planner:modal-pos:plancheck"
       scrollBody={false}
@@ -122,7 +123,7 @@ export const PlanCheckPanel = () => {
                     >
                       <Icon icon={meta.icon} size="xs" className={`mt-0.5 shrink-0 ${meta.tone}`} />
                       <span className="min-w-0">
-                        <span className={`mr-1 font-semibold ${meta.tone}`}>{f.category}:</span>
+                        <span className={`mr-1 font-semibold ${meta.tone}`}>{checkCategoryLabel(f.category, t)}:</span>
                         <span className="text-cp-text-secondary">{f.message}</span>
                       </span>
                     </button>
@@ -132,7 +133,7 @@ export const PlanCheckPanel = () => {
             </ul>
           )}
         </div>
-        <p className="border-t border-cp-border-muted py-1.5 text-[10px] text-cp-text-muted">
+        <p className="border-t border-cp-border-muted py-1.5 text-cp-xs text-cp-text-muted">
           {t(
             'planCheck.footerHint',
             'Live plan validation. Click a finding to select the affected element.',

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ProvenanceBadge } from '../shared/ProvenanceBadge'
-import { X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { Icon } from '../shared/Icon'
 import { ModalShell } from '../shared/ModalShell'
 import { Spinner } from '../shared/Spinner'
@@ -67,7 +67,19 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
-  const [statusByKey, setStatusByKey] = useState<Record<string, string>>({})
+  /**
+   * Zeilen-Status: Text UND Ton — und der Ton als eigenes Feld.
+   *
+   * Er wurde bis 2026-09-10 aus dem TEXT gelesen (`status.startsWith('Fehler')`).
+   * Das ging, solange die Quellsprache Deutsch war; seit E-28 steht dort
+   * `Error: …`, und die Fehlerzeile rendete fuer jeden, der die Oberflaeche
+   * nicht auf Deutsch stellt, in der ruhigen Textfarbe statt in Rot. Eine
+   * Verzweigung auf uebersetzten Text ist immer eine Sprachannahme im Code;
+   * die haelt bis zur ersten Uebersetzung.
+   */
+  const [statusByKey, setStatusByKey] = useState<
+    Record<string, { text: string; ton: 'lauf' | 'ok' | 'fehler' }>
+  >({})
   const [pickerKey, setPickerKey] = useState<string | null>(null)
   const [pickerQuery, setPickerQuery] = useState('')
 
@@ -221,7 +233,10 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
     if (!bucket.mappedId) return baseMap
     if (bucket.delta <= 0) return baseMap
     setBusyKey(bucket.key)
-    setStatusByKey((prev) => ({ ...prev, [bucket.key]: t('rentman.cableExport.sending', 'Sending to Rentman…') }))
+    setStatusByKey((prev) => ({
+      ...prev,
+      [bucket.key]: { text: t('rentman.cableExport.sending', 'Sending to Rentman…'), ton: 'lauf' },
+    }))
     // Bei Fehler bleibt die Karte, wie sie war — die schon gebuchten Eimer
     // der vorigen Runden duerfen dabei nicht verlorengehen.
     let carried: RentmanCableMap | undefined = baseMap
@@ -236,7 +251,13 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
       ])
       if (result.failed.length > 0) {
         const msg = result.failed[0]?.error ?? t('rentman.cableExport.unknownError', 'Unknown error')
-        setStatusByKey((prev) => ({ ...prev, [bucket.key]: format(t('rentman.cableExport.errorFormat', 'Error: {msg}'), { msg }) }))
+        setStatusByKey((prev) => ({
+        ...prev,
+        [bucket.key]: {
+          text: format(t('rentman.cableExport.errorFormat', 'Error: {msg}'), { msg }),
+          ton: 'fehler',
+        },
+      }))
         return carried
       }
       const current = baseMap ?? useProjectStore.getState().project.metadata.rentmanCableMap
@@ -252,11 +273,20 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
           : t('rentman.cableExport.groupRestricted', ' (no group — plan restriction)')
       setStatusByKey((prev) => ({
         ...prev,
-        [bucket.key]: format(t('rentman.cableExport.sentSuccess', '✓ {count} sent to Rentman{note}.'), { count: bucket.delta, note: groupNote }),
+        [bucket.key]: {
+          text: format(t('rentman.cableExport.sentSuccess', '{count} sent to Rentman{note}.'), { count: bucket.delta, note: groupNote }),
+          ton: 'ok',
+        },
       }))
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      setStatusByKey((prev) => ({ ...prev, [bucket.key]: format(t('rentman.cableExport.errorFormat', 'Error: {msg}'), { msg }) }))
+      setStatusByKey((prev) => ({
+        ...prev,
+        [bucket.key]: {
+          text: format(t('rentman.cableExport.errorFormat', 'Error: {msg}'), { msg }),
+          ton: 'fehler',
+        },
+      }))
     } finally {
       setBusyKey(null)
     }
@@ -312,12 +342,12 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
       scrollBody={false}
     >
       <div className="flex h-full min-h-0 flex-col -mx-4 -my-3">
-        <div className="border-b border-cp-border-muted px-4 py-1.5 text-[10px] text-cp-text-muted">
+        <div className="border-b border-cp-border-muted px-4 py-1.5 text-cp-xs text-cp-text-muted">
           {linkedProjectName
             ? format(t('rentman.cableExport.target', 'Target: {name}'), { name: linkedProjectName })
             : t('rentman.cableExport.noLink', 'No Rentman project linked.')}
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-b border-cp-border-muted px-4 py-2 text-[11px] text-cp-text-muted">
+        <div className="flex flex-wrap items-center gap-2 border-b border-cp-border-muted px-4 py-2 text-cp-xs text-cp-text-muted">
           {(() => {
             const totalBuilt = buckets.reduce((sum, b) => sum + b.built, 0)
             const totalSent = buckets.reduce((sum, b) => sum + b.sentQty, 0)
@@ -346,7 +376,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                   type="button"
                   onClick={() => void sendAll()}
                   disabled={!linkedProjectId || sendableCount === 0 || busyKey !== null}
-                  className="ml-auto rounded bg-emerald-700 px-3 py-1 text-[11px] font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="ml-auto rounded bg-emerald-700 px-3 py-1 text-cp-xs font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
                   title={
                     !linkedProjectId
                       ? t('rentman.cableExport.noLink', 'No Rentman project linked.')
@@ -361,7 +391,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                   type="button"
                   onClick={() => void fetchCatalog()}
                   disabled={catalogLoading}
-                  className="rounded bg-orange-700 px-2 py-1 text-[11px] font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+                  className="rounded bg-orange-700 px-2 py-1 text-cp-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
                 >
                   {catalogLoading
                     ? t('rentman.cableExport.loading', 'Loading…')
@@ -375,7 +405,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
         </div>
 
         {catalogError && (
-          <div className="border-b border-red-700/60 bg-red-900/30 px-4 py-1.5 text-[11px] text-red-200">
+          <div className="border-b border-red-700/60 bg-red-900/30 px-4 py-1.5 text-cp-xs text-red-200">
             {catalogError}
           </div>
         )}
@@ -422,7 +452,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                   <tr key={bucket.key} className="border-t border-cp-border-muted align-top">
                     <td className="px-3 py-1.5">
                       <div className="font-medium text-cp-text">{bucket.type}</div>
-                      <div className="text-[10px] text-cp-text-muted">
+                      <div className="text-cp-xs text-cp-text-muted">
                         {bucket.length} m
                         {bucket.sample ? ` · ${bucket.sample.name}` : ''}
                       </div>
@@ -455,7 +485,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                             <div className="truncate text-cp-text-bright">
                               {bucket.mappedName ?? format(t('rentman.cableExport.rentmanId', 'Rentman ID {id}'), { id: bucket.mappedId })}
                             </div>
-                            <div className="text-[10px] text-cp-text-muted">
+                            <div className="text-cp-xs text-cp-text-muted">
                               ID {bucket.mappedId}
                             </div>
                             {/* ADR-005 — Der Import hat mehrere Rentman-
@@ -465,7 +495,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                                 fuer den ganzen Bestand. */}
                             {(bucket.mergedCount ?? 0) > 1 && (
                               <div
-                                className="text-[10px] text-cp-warn"
+                                className="text-cp-xs text-cp-warn"
                                 title={t(
                                   'rentman.cableExport.mergedTitle',
                                   'Import and export group cables by type and length. The quantity is booked onto the item mapped above; splitting it across several items is only possible in Rentman.',
@@ -484,7 +514,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                           <button
                             type="button"
                             onClick={() => clearMapping(bucket.key)}
-                            className="rounded bg-cp-surface-4 px-1.5 py-0.5 text-[10px] hover:bg-cp-surface-5"
+                            className="rounded bg-cp-surface-4 px-1.5 py-0.5 text-cp-xs hover:bg-cp-surface-5"
                             title={t('rentman.cableExport.removeMapping', 'Remove mapping')}
                             aria-label={t('rentman.cableExport.removeMapping', 'Remove mapping')}
                           >
@@ -499,7 +529,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                             setPickerKey(bucket.key)
                             setPickerQuery(`${bucket.type}`)
                           }}
-                          className="rounded bg-cp-surface-4 px-2 py-0.5 text-[10px] hover:bg-cp-surface-5"
+                          className="rounded bg-cp-surface-4 px-2 py-0.5 text-cp-xs hover:bg-cp-surface-5"
                         >
                           {t('rentman.cableExport.pickEquipment', 'Pick Rentman equipment…')}
                         </button>
@@ -512,16 +542,16 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                             onChange={(event) => setPickerQuery(event.target.value)}
                             placeholder={t('rentman.cableExport.searchPlaceholder', 'Search…')}
                             aria-label={t('rentman.cableExport.searchPlaceholder', 'Search…')}
-                            className="mb-1 w-full rounded border border-cp-border bg-cp-surface-1 px-2 py-0.5 text-[11px]"
+                            className="mb-1 w-full rounded border border-cp-border bg-cp-surface-1 px-2 py-0.5 text-cp-xs"
                           />
                           <div className="max-h-40 space-y-0.5 overflow-auto">
                             {!catalogLoaded && !catalogLoading && (
-                              <div className="px-1 py-0.5 text-[10px] italic text-cp-text-muted">
+                              <div className="px-1 py-0.5 text-cp-xs italic text-cp-text-muted">
                                 {t('rentman.cableExport.loadCatalogFirst', 'Please load the catalog first.')}
                               </div>
                             )}
                             {catalogLoading && (
-                              <div className="px-1 py-0.5 text-[10px] italic text-cp-text-muted">
+                              <div className="px-1 py-0.5 text-cp-xs italic text-cp-text-muted">
                                 {t('rentman.cableExport.loading', 'Loading…')}
                               </div>
                             )}
@@ -533,12 +563,12 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                                   setMapping(bucket.key, item.id, { resetSync: true })
                                   setPickerKey(null)
                                 }}
-                                className="flex w-full items-start justify-between gap-2 rounded px-1 py-0.5 text-left text-[11px] hover:bg-cp-surface-2"
+                                className="flex w-full items-start justify-between gap-2 rounded px-1 py-0.5 text-left text-cp-xs hover:bg-cp-surface-2"
                               >
                                 <span className="min-w-0 flex-1 truncate text-cp-text-bright">
                                   {item.name}
                                 </span>
-                                <span className="shrink-0 text-[10px] text-cp-text-muted">
+                                <span className="shrink-0 text-cp-xs text-cp-text-muted">
                                   {item.category}
                                 </span>
                               </button>
@@ -548,7 +578,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                             <button
                               type="button"
                               onClick={() => setPickerKey(null)}
-                              className="rounded bg-cp-surface-4 px-2 py-0.5 text-[10px] hover:bg-cp-surface-5"
+                              className="rounded bg-cp-surface-4 px-2 py-0.5 text-cp-xs hover:bg-cp-surface-5"
                             >
                               {t('common.cancel', 'Cancel')}
                             </button>
@@ -557,11 +587,12 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                       )}
                       {status && (
                         <div
-                          className={`mt-1 text-[10px] ${
-                            status.startsWith('Fehler') ? 'text-red-400' : 'text-cp-text-muted'
+                          className={`mt-1 flex items-center gap-1 text-cp-xs ${
+                            status.ton === 'fehler' ? 'text-red-400' : 'text-cp-text-muted'
                           }`}
                         >
-                          {status}
+                          {status.ton === 'ok' && <Icon icon={Check} size="xs" />}
+                          {status.text}
                         </div>
                       )}
                     </td>
@@ -570,7 +601,7 @@ export const RentmanCableExportDialog = ({ open, onClose }: RentmanCableExportDi
                         type="button"
                         onClick={() => void sendBucket(bucket)}
                         disabled={!canSend}
-                        className="rounded bg-orange-700 px-2 py-1 text-[11px] font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded bg-orange-700 px-2 py-1 text-cp-xs font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
                         title={
                           !linkedProjectId
                             ? t('rentman.cableExport.noLink', 'No Rentman project linked.')

@@ -1,6 +1,8 @@
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { useGreenGoBeltpack } from '../../../lib/greengoSync'
 import { format, useTranslation } from '../../../lib/i18n'
+import { Icon } from '../../shared/Icon'
 
 /**
  * #306 — GreenGo-Beltpack-Konfiguration pro Equipment. Aus
@@ -19,7 +21,7 @@ export const GreenGoBeltpackSection = ({ equipmentId }: { equipmentId: string })
   const [open, setOpen] = useState(!!info)
   if (!config || config.users.length === 0) {
     return (
-      <div className="mb-2 text-[10px] text-emerald-300/60">
+      <div className="mb-2 text-cp-xs text-emerald-300/60">
         {t(
           'props.greengo.noConfig',
           'No GreenGo configuration in the project. Open the Intercom planner or load a preset to define beltpacks.',
@@ -36,8 +38,8 @@ export const GreenGoBeltpackSection = ({ equipmentId }: { equipmentId: string })
       onToggle={(e) => setOpen(e.currentTarget.open)}
       className="mb-2 rounded bg-emerald-950/40 [&_summary]:cursor-pointer"
     >
-      <summary className="flex items-center gap-1 px-2 py-1.5 text-[10px] uppercase tracking-wide text-emerald-300 hover:text-emerald-200 [&::-webkit-details-marker]:hidden">
-        <span className="text-emerald-400/70">{open ? '▾' : '▸'}</span>
+      <summary className="flex items-center gap-1 px-2 py-1.5 text-cp-xs uppercase tracking-wide text-emerald-300 hover:text-emerald-200 [&::-webkit-details-marker]:hidden">
+        <Icon icon={open ? ChevronDown : ChevronRight} size="xs" className="text-emerald-400/70" />
         <span className="flex-1">{t('props.greengo.beltpack', 'Beltpack')}</span>
         {info?.channelNames && info.channelNames.length > 0 && (
           <span
@@ -62,7 +64,7 @@ export const GreenGoBeltpackSection = ({ equipmentId }: { equipmentId: string })
           type="text"
           value={info?.station.name ?? ''}
           disabled={!info}
-          placeholder={info ? '' : t('props.greengo.assignFirst', 'Assign first ↓')}
+          placeholder={info ? '' : t('props.greengo.assignFirst', 'Assign first')}
           onChange={(event) => rename(event.target.value)}
           className="w-full rounded border border-emerald-700 bg-emerald-950 p-1 text-cp-xs text-emerald-50 disabled:opacity-50"
           title={t(
@@ -96,7 +98,7 @@ export const GreenGoBeltpackSection = ({ equipmentId }: { equipmentId: string })
         </select>
       </label>
       {info?.channelNames && info.channelNames.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
+        <div className="mt-2 flex flex-wrap gap-1 text-cp-xs">
           {info.channelNames.map((g) => (
             <span
               key={g}

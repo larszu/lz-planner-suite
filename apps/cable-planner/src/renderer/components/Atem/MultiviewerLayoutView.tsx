@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { RotateCcw, X } from 'lucide-react'
+import { Icon } from '../shared/Icon'
 import { cablePlannerApi, type AtemStateSummary, type AtemMultiviewer } from '../../lib/bridge'
 import { useTranslation } from '../../lib/i18n'
 import { useDialogA11y } from '../../hooks/useDialogA11y'
@@ -170,13 +172,13 @@ const SourceTile = ({ long, short, category, highlight }: TileProps) => {
       className="flex h-full w-full flex-col items-center justify-center overflow-hidden px-1 text-center"
     >
       {highlight && (
-        <div className="text-[11px] font-semibold uppercase tracking-widest opacity-70">
+        <div className="text-cp-xs font-semibold uppercase tracking-widest opacity-70">
           {highlight === 'pgm' ? 'PGM' : 'PRV'}
         </div>
       )}
-      <div className="truncate text-[11px] font-medium leading-tight">{long}</div>
+      <div className="truncate text-cp-xs font-medium leading-tight">{long}</div>
       {short && long !== short && (
-        <div className="truncate text-[11px] opacity-60">{short}</div>
+        <div className="truncate text-cp-xs opacity-60">{short}</div>
       )}
     </div>
   )
@@ -188,7 +190,7 @@ const MultiviewerPanel = ({ mv }: { mv: AtemMultiviewer }) => {
   const prvIndex = mv.programPreviewSwapped ? 1 : 0
   return (
     <div className="rounded border border-cp-surface-5 bg-cp-surface-3 p-2">
-      <div className="mb-1 text-center text-[11px] font-semibold uppercase tracking-wider text-cp-text-secondary">
+      <div className="mb-1 text-center text-cp-xs font-semibold uppercase tracking-wider text-cp-text-secondary">
         MV {mv.index + 1}
       </div>
       <div
@@ -305,7 +307,7 @@ export const MultiviewerLayoutView = ({ onClose }: MultiviewerLayoutViewProps) =
               {t('atem.mvLayout.title', 'Multiviewer layout (live)')}
             </h2>
             {state && (
-              <p className="text-[11px] text-cp-text-muted">
+              <p className="text-cp-xs text-cp-text-muted">
                 {state.productIdentifier} · {mvs.length} MV
                 {mvs.length === 1 ? '' : 's'}
               </p>
@@ -315,16 +317,18 @@ export const MultiviewerLayoutView = ({ onClose }: MultiviewerLayoutViewProps) =
             <button
               type="button"
               onClick={() => void refresh()}
-              className="rounded bg-cp-surface-4 px-2 py-1 text-cp-xs hover:bg-cp-surface-5"
+              className="inline-flex items-center gap-1 rounded bg-cp-surface-4 px-2 py-1 text-cp-xs hover:bg-cp-surface-5"
             >
-              {t('atem.mvLayout.refresh', '↻ Refresh')}
+              <Icon icon={RotateCcw} size="xs" />
+              {t('atem.mvLayout.refresh', 'Refresh')}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="rounded bg-cp-surface-4 px-2 py-1 text-cp-xs hover:bg-cp-surface-5"
+              className="inline-flex items-center gap-1 rounded bg-cp-surface-4 px-2 py-1 text-cp-xs hover:bg-cp-surface-5"
             >
-              {t('atem.mvLayout.close', '✕ Close')}
+              <Icon icon={X} size="xs" />
+              {t('atem.mvLayout.close', 'Close')}
             </button>
           </div>
         </header>
@@ -362,7 +366,7 @@ export const MultiviewerLayoutView = ({ onClose }: MultiviewerLayoutViewProps) =
           )}
         </div>
 
-        <footer className="flex flex-wrap items-center gap-4 border-t border-cp-border px-4 py-2 text-[11px] text-cp-text-secondary">
+        <footer className="flex flex-wrap items-center gap-4 border-t border-cp-border px-4 py-2 text-cp-xs text-cp-text-secondary">
           <span className="font-semibold uppercase tracking-wider text-cp-text-muted">
             {t('atem.mvLayout.legend', 'Legend')}
           </span>

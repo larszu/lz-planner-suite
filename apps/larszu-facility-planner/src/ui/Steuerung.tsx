@@ -15,7 +15,8 @@
 import { useState } from 'react'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { steuerklinken } from '../domain/vertrag'
-import type { Steuersystem } from '../domain/modell'
+import { adresseMehrdeutig } from '../domain/gebaeudeAuskunft'
+import type { Adressart, Steuersystem } from '../domain/modell'
 
 const SYSTEME: Steuersystem[] = ['knx', 'dali', 'crestron', 'vissonic', 'sonstige']
 
@@ -26,6 +27,14 @@ export function Steuerung() {
   const [adresse, setAdresse] = useState('')
   const [bedeutung, setBedeutung] = useState('')
   const [richtung, setRichtung] = useState<'lesen' | 'schalten'>('schalten')
+  // Issue #2 — bei DALI heisst „3" je nach Adressart etwas voellig
+  // anderes: ein Vorschaltgeraet, eine Gruppe von dreissig Leuchten, oder
+  // ueber Broadcast der ganze Bus samt Notlicht. Deshalb PFLICHT bei DALI
+  // und nur dort: eine KNX-Gruppenadresse ist immer eine Gruppenadresse,
+  // und ein Feld mit nur einer moeglichen Antwort wird ausgefuellt statt
+  // gelesen.
+  const [adressart, setAdressart] = useState<Adressart>('kurz')
+  const brauchtAdressart = system === 'dali'
 
   const klinken = steuerklinken(gebaeude)
 
@@ -49,6 +58,17 @@ export function Steuerung() {
           placeholder="Adresse"
           aria-label="Adresse"
         />
+        {brauchtAdressart && (
+          <select
+            value={adressart}
+            onChange={(e) => setAdressart(e.target.value as Adressart)}
+            aria-label="Adressart"
+          >
+            <option value="kurz">Kurzadresse — ein Vorschaltgerät</option>
+            <option value="gruppe">Gruppe — alles in dieser Gruppe</option>
+            <option value="broadcast">Broadcast — ALLES am Bus</option>
+          </select>
+        )}
         <select
           value={richtung}
           onChange={(e) => setRichtung(e.target.value as 'lesen' | 'schalten')}
@@ -71,7 +91,13 @@ export function Steuerung() {
             // Beides verlangt: eine Adresse ohne Bedeutung ist eine Nummer,
             // die jemand schaltet, ohne zu wissen, was passiert.
             if (!a || !b) return
-            klinkeAnlegen({ system, adresse: a, richtung, bedeutung: b })
+            klinkeAnlegen({
+              system,
+              adresse: a,
+              richtung,
+              bedeutung: b,
+              ...(brauchtAdressart ? { adressart } : {}),
+            })
             setAdresse('')
             setBedeutung('')
           }}
@@ -89,19 +115,32 @@ export function Steuerung() {
       ) : (
         <div className="tabelle-rahmen">
           <table>
+            <caption>
+              Hervorgehoben: eine DALI-Adresse ohne Art. „3" ist dort ein Vorschaltgerät, eine
+              Gruppe von dreissig Leuchten oder alles am Bus — die Adresse allein sagt das nicht.
+            </caption>
             <thead>
               <tr>
                 <th>System</th>
                 <th>Adresse</th>
+                <th>Art</th>
                 <th>Richtung</th>
                 <th>Bedeutung</th>
               </tr>
             </thead>
             <tbody>
               {klinken.map((k) => (
-                <tr key={k.id}>
+                /* Eine DALI-Klinke ohne Adressart faellt AUF und wird nicht
+                   still als Kurzadresse gelesen. Das trifft Dokumente, die vor
+                   dem Feld entstanden sind — und die kleinstmoegliche Reichweite
+                   anzunehmen ist dort die gefaehrliche Annahme. */
+                <tr key={k.id} className={adresseMehrdeutig(k) ? 'warnung' : undefined}>
                   <td>{k.system.toUpperCase()}</td>
                   <td>{k.adresse}</td>
+                  {/* Bei DALI ist die Art die halbe Auskunft: „Gruppe 3"
+                      und „Kurzadresse 3" schalten Verschiedenes. Wo sie
+                      fehlt, steht ein Strich und keine Vermutung. */}
+                  <td>{k.adressart ?? '—'}</td>
                   <td>{k.richtung}</td>
                   <td>{k.bedeutung}</td>
                 </tr>

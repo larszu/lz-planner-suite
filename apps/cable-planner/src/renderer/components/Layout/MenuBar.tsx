@@ -411,8 +411,20 @@ export const MenuBar = ({
         <div className="flex flex-col gap-2 text-cp-xs text-cp-text-secondary">
           <div>
             {t('app.menu.file.viewForeignRoom', 'Room')}:{' '}
-            <b className="text-cp-text">{sum.venueName || '—'}</b> · {sum.counts.walls} Wände ·{' '}
-            {sum.counts.persons} Personen · {sum.counts.stage} Bühne
+            <b className="text-cp-text">{sum.venueName || '—'}</b>
+          </div>
+          <div>
+            {/* EIN Schluessel fuer den ganzen Satz, nicht drei aneinander-
+                gehaengte: die Wortstellung gehoert zur Sprache, und im
+                Deutschen steht die Zahl vor einem anderen Wort als hier. */}
+            {format(
+              t('app.menu.file.viewForeignCounts', '{walls} walls · {persons} persons · {stage} stage'),
+              {
+                walls: sum.counts.walls,
+                persons: sum.counts.persons,
+                stage: sum.counts.stage,
+              },
+            )}
           </div>
           <div>
             <div className="font-semibold text-cp-text">Kameras ({sum.cameras.length})</div>
@@ -1295,7 +1307,7 @@ const Menu = ({ label, children }: MenuProps) => {
         className={`rounded px-2 py-1 text-cp-text-bright hover:bg-cp-surface-2 ${open ? 'bg-cp-surface-2' : ''}`}
       >
         {label}
-        <span className="ml-1 text-[11px] text-cp-text-muted" aria-hidden="true">▾</span>
+        <span className="ml-1 text-cp-xs text-cp-text-muted" aria-hidden="true">▾</span>
       </button>
       {open && (
         <div
@@ -1354,7 +1366,7 @@ const MenuItem = ({ onClick, icon, shortcut, disabled, note, children }: MenuIte
       <span className="min-w-0 flex-1">
         <span className="block truncate">{children}</span>
         {note && (
-          <span className="block truncate text-[11px] text-[var(--cp-text-faint)]">{note}</span>
+          <span className="block truncate text-cp-xs text-[var(--cp-text-faint)]">{note}</span>
         )}
       </span>
       {shortcut && (
@@ -1371,7 +1383,7 @@ const MenuSep = () => <div className="my-1 border-t border-cp-border" />
 /** Kleiner, nicht-interaktiver Gruppen-Titel innerhalb eines Menüs. Gliedert
  *  lange Menüs (z. B. Werkzeuge) optisch, ohne echte Flyout-Submenüs. */
 const MenuSectionHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--cp-text-faint)] select-none">
+  <div className="px-3 pb-0.5 pt-1.5 text-cp-xs font-semibold uppercase tracking-[0.14em] text-[var(--cp-text-faint)] select-none">
     {children}
   </div>
 )

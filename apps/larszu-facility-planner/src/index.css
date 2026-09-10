@@ -153,3 +153,50 @@ th {
   color: var(--warn);
   max-width: 46rem;
 }
+
+/* Der Grundriss-Hintergrund (Issue #1). Das Feld behaelt seine Breite auch
+   ohne Bild: die Lagen stehen in Metern und bleiben setzbar, wenn der Scan auf
+   diesem Rechner fehlt. */
+.grundriss-feld {
+  position: relative;
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  background: var(--flaeche);
+  min-height: 18rem;
+  margin-bottom: 1rem;
+  padding: 0;
+  overflow: hidden;
+}
+
+.grundriss-feld.setzbar {
+  cursor: crosshair;
+  border-color: var(--leise);
+}
+
+.grundriss-feld img {
+  display: block;
+  width: 100%;
+}
+
+.grundriss-feld > .leer {
+  padding: 1rem;
+}
+
+/* Die Marke sitzt MIT IHRER MITTE auf der Lage — ohne die Verschiebung zeigte
+   ihre linke obere Ecke auf den Punkt, und der Punkt laege daneben. */
+.marke {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: var(--bg);
+  border: 1px solid var(--leise);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.85em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.marke.gewaehlt {
+  border-color: var(--warn);
+  color: var(--warn);
+}

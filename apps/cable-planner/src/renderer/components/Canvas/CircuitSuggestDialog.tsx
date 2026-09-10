@@ -40,7 +40,7 @@ const Tafel = ({ zeilen }: { zeilen: readonly TafelZeile[] }) => {
   if (schalter.length === 0) return null
   return (
     <div className="mt-1 overflow-x-auto">
-      <table className="text-[11px] tabular-nums">
+      <table className="text-cp-xs tabular-nums">
         <thead>
           <tr className="text-cp-text-muted">
             {schalter.map((id) => (
@@ -153,7 +153,7 @@ export function CircuitSuggestDialog({ open, onClose }: Props) {
           />
 
           {annahmen.length > 0 && (
-            <ul className="mb-3 list-disc pl-5 text-[12px] text-cp-text-muted">
+            <ul className="mb-3 list-disc pl-5 text-cp-xs text-cp-text-muted">
               {annahmen.map((a) => (
                 <li key={a}>{a}</li>
               ))}
@@ -178,7 +178,7 @@ export function CircuitSuggestDialog({ open, onClose }: Props) {
           )}
 
           {!vollstaendig && grund && (
-            <p className="mb-4 rounded border border-cp-border bg-cp-surface-2 px-3 py-2 text-[12px] text-cp-text-secondary">
+            <p className="mb-4 rounded border border-cp-border bg-cp-surface-2 px-3 py-2 text-cp-xs text-cp-text-secondary">
               {t('canvas.circuit.suggest.capped', 'The search was limited: ')}
               {grund}
             </p>
@@ -197,18 +197,18 @@ export function CircuitSuggestDialog({ open, onClose }: Props) {
                     {t('canvas.circuit.suggest.apply', 'Add wire')}
                   </button>
                 ) : (
-                  <span className="text-[11px] text-cp-warn">
+                  <span className="text-cp-xs text-cp-warn">
                     {t('canvas.circuit.suggest.blocked', 'cannot be added')}
                   </span>
                 )}
               </div>
               {v.hindernis && (
-                <p className="mt-1 text-[12px] text-cp-text-secondary">{v.hindernis}</p>
+                <p className="mt-1 text-cp-xs text-cp-text-secondary">{v.hindernis}</p>
               )}
               <button
                 type="button"
                 onClick={() => setOffen(offen === i ? null : i)}
-                className="av-focus mt-1 text-[11px] text-cp-text-muted underline"
+                className="av-focus mt-1 text-cp-xs text-cp-text-muted underline"
               >
                 {offen === i
                   ? t('canvas.circuit.suggest.hideTable', 'Hide truth table')
@@ -218,7 +218,7 @@ export function CircuitSuggestDialog({ open, onClose }: Props) {
             </div>
           ))}
 
-          {meldung && <p className="mt-3 text-[12px] text-cp-accent">{meldung}</p>}
+          {meldung && <p className="mt-3 text-cp-xs text-cp-accent">{meldung}</p>}
         </div>
       </div>
     </div>

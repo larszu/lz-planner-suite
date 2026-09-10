@@ -7,9 +7,18 @@
 // Fallback-Texte, ordnet jeden einer Sprache zu und faellt bei jedem, der in
 // der anderen steht. Drei Repos fuehren dafuer denselben Klassifizierer:
 //
-//   cable-planner      scripts/quellsprache.mjs        (deutsch-quellig)
-//   light-planner      scripts/quellsprache-check.ts   (deutsch-quellig)
-//   multicam-planner   scripts/quellsprache-check.mjs  (englisch-quellig)
+//   cable-planner      scripts/quellsprache.mjs
+//   light-planner      scripts/quellsprache-check.ts
+//   multicam-planner   scripts/quellsprache-check.mjs
+//
+// Die Klammern hinter den drei Zeilen sind am 2026-09-10 weggefallen, und das
+// ist kein Aufraeumen: dort stand „(deutsch-quellig)" fuer die ersten beiden
+// und „(englisch-quellig)" fuer den dritten. Seit E-28 (2026-09-09) ist die
+// Quellsprache KEINE Eigenschaft des einzelnen Repos mehr — alle drei sind
+// englisch-quellig. Eine Zeile, die das Gegenteil sagt, ist schlimmer als
+// keine: sie liest sich wie eine Zusicherung und bringt den naechsten dazu,
+// deutsche Fallbacks fuer richtig zu halten. Wo die Sprache wirklich steht:
+// `package.json` -> `avplan.sourceLanguage`, je Repo gemessen.
 //
 // Sie teilen keinen Quellbaum. Die Suite ist der einzige Ort, an dem alle drei
 // Kopien im selben Baum liegen — genau dafuer ist sie da, und genau so haelt
@@ -33,9 +42,10 @@
 //   1. Die beiden Wortlisten und die Entscheidungslogik von `klassifiziere`.
 //   2. Den SPRACHMIX-Teil (B-61/B-63): `fallbackMuster` (der Ausdruck, an dem
 //      die Fallbacks ueberhaupt haengen), die vier Muster `SICHTBARE_ATTRIBUTE`,
-//      `JSX_TEXT`, `NACH_CODE`, `RUFE`, den Rumpf von `sichtbareTexte` und den
-//      Kommentarfilter `ohneKommentare` — dazu die feste Probe (`PROBE` und
-//      die erwartete Ausbeute), an der jede Kopie ihr Muster prueft.
+//      `JSX_TEXT`, `NACH_CODE`, `RUFE`, den Rumpf von `sichtbareTexte`, den
+//      Kommentarfilter `ohneKommentare` und den Textknoten-Filter
+//      `ohneAusdruecke` — dazu die feste Probe (`PROBE` und die erwartete
+//      Ausbeute), an der jede Kopie ihr Muster prueft.
 // Alles Zeichen fuer Zeichen, nach dem Entfernen von Kommentaren,
 // Typannotationen und Leerraum.
 //
@@ -176,7 +186,14 @@ const gelesen = KOPIEN.map(({ app, datei }) => {
     mix[name] = muster(quelle, name)
     if (!mix[name]) fehler.push(`${app}: das Muster ${name} wurde nicht gefunden.`)
   }
-  for (const name of ['ohneKommentare', 'sichtbareTexte']) {
+  // `ohneAusdruecke` kam am 2026-09-10 dazu, und das Fehlen war eine Luecke
+  // derselben Bauform, gegen die dieser Lauf ueberhaupt gebaut ist: die
+  // Funktion entscheidet, WAS von einem Textknoten uebrigbleibt — die
+  // Einsetzung heraus, die HTML-Entitaet heraus, ab der ersten offenen
+  // Klammer abgeschnitten. Sie steht im Rumpf von `sichtbareTexte` nur als
+  // AUFRUF, und ein Aufruf sieht in allen drei Kopien gleich aus, auch wenn
+  // die gerufene Funktion in einer davon etwas anderes tut.
+  for (const name of ['ohneKommentare', 'sichtbareTexte', 'ohneAusdruecke']) {
     mix[name] = pfeilRumpf(quelle, name)
     if (!mix[name]) fehler.push(`${app}: die Funktion ${name} wurde nicht gefunden.`)
   }
@@ -297,5 +314,5 @@ if (fehler.length) {
 console.log(
   `lang:parity ok — ${gelesen.length} Kopien des Quellsprachen-Klassifizierers sind ` +
     `wortgleich (${gelesen[0].de.length} deutsche, ${gelesen[0].en.length} englische Marker), ` +
-    `und der Sprachmix-Teil ebenfalls (4 Muster, 3 Funktionen, ${gelesen[0].mix.PROBE.length} Probe-Zeilen).`,
+    `und der Sprachmix-Teil ebenfalls (4 Muster, 4 Funktionen, ${gelesen[0].mix.PROBE.length} Probe-Zeilen).`,
 )

@@ -111,11 +111,17 @@ Downloads.
 
 ## Stand
 
-Erste Fassung: das Modell (Raum, Anschlusspunkt, Stromkreis, Verteilung,
-Steuerklinke, Hausstrecke, Mangel), der Vertrag als reine Funktionen, ein
-Speicher und vier Sichten darüber.
+Das Modell (Raum, Anschlusspunkt, Stromkreis, Verteilung, Steuerklinke,
+Hausstrecke, Mangel, dazu Trasse, Schaltstelle und Grundriss aus Issue #1),
+der Vertrag als reine Funktionen, ein Speicher und sieben Sichten darüber.
 
-**Noch nicht hier:** der Grundriss, Prüfprotokolle nach Norm, die
-Wartungshistorie, und die Verbindung zum Show-Plan (der Planer fragt den
-Vertrag noch nicht ab). Der Abgleich der sechs Fragen gegen den ADR-Text lebt
+**Der Grundriss liegt als Verweis vor, nicht als Bild.** Das Dokument trägt
+die Adresse und den Massstab (`meterProBild`), und die Lage eines Punktes
+steht in METERN. Fehlt der Scan auf einem Rechner, zeigt die Sicht ein leeres
+Feld und die Lagen bleiben gültig — an Bildpixel gehängt wären sie beim
+nächsten Scan falsch, ohne dass es jemand merkt. Ohne Massstab wird gar nichts
+gesetzt: eine geratene Länge sähe im Plan aus wie eine Auskunft des Hauses.
+
+**Noch nicht hier:** Prüfprotokolle nach Norm, die Wartungshistorie, und die
+Verbindung zum Show-Plan (der Planer fragt den Vertrag noch nicht ab). Der Abgleich der sechs Fragen gegen den ADR-Text lebt
 in der Suite — dort liegen ADR und Code im selben Baum.

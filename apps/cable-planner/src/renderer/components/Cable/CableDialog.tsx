@@ -172,7 +172,10 @@ export const CableDialog = ({ fromPort, toPort, fromDev, toDev, defaultVideoForm
     setColor(spec.color)
     // Catalog entries use notesKey (language-aware via i18n). User-supplied
     // custom CableSpecs use the legacy `notes` literal which stays as-is.
-    setNotes(spec.notesKey ? t(spec.notesKey, '') : (spec.notes ?? ''))
+    // Der Fallback ist `spec.notesSource` und NICHT der leere String: der
+    // Text landet unten in `Cable.notes`, also in der Projektdatei. Mit
+    // leerem Fallback bekam jede Sprache ausser Deutsch dort nichts.
+    setNotes(spec.notesKey ? t(spec.notesKey, spec.notesSource ?? '') : (spec.notes ?? ''))
     setStandard(pickHighestSdiStandard(spec.standards))
   }
 
@@ -333,7 +336,7 @@ export const CableDialog = ({ fromPort, toPort, fromDev, toDev, defaultVideoForm
 
           {specId === CUSTOM_CABLE_SPEC_ID && (
             <div className="rounded border border-cp-border bg-cp-surface-3/60 p-2">
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-cp-text-muted">
+              <div className="mb-2 text-cp-xs font-semibold uppercase tracking-wide text-cp-text-muted">
                 {t('cable.customDefinition', 'Custom Cable Definition')}
               </div>
               <div className="grid grid-cols-2 gap-2">

@@ -15,7 +15,7 @@
 //      Then click "Importieren" to commit.
 
 import { useMemo, useState } from 'react'
-import { AlertTriangle, X, Ruler, Map, Library } from 'lucide-react'
+import { AlertTriangle, X, Ruler, Map, Library, RotateCcw } from 'lucide-react'
 import { Icon } from '../shared/Icon'
 import { cablePlannerApi } from '../../lib/bridge'
 import { parseGraphmlText } from '../../lib/graphml/parser'
@@ -65,7 +65,7 @@ const confidenceBadge = (conf: ResolvedDevice['confidence']) => {
   const c = colors[conf]
   return (
     <span
-      className="rounded px-1 text-[10px] font-bold"
+      className="rounded px-1 text-cp-xs font-bold"
       style={{ background: c.bg, color: c.fg }}
     >
       {c.label}
@@ -366,10 +366,11 @@ export const GraphmlImportDialog = ({ open, onClose }: GraphmlImportDialogProps)
             <button
               type="button"
               onClick={reset}
-              className="rounded bg-cp-surface-4 px-2 py-1 text-cp-xs hover:bg-cp-surface-5"
+              className="inline-flex items-center gap-1 rounded bg-cp-surface-4 px-2 py-1 text-cp-xs hover:bg-cp-surface-5"
               title={t('graphml.dialog.pickOther', 'Pick another file')}
             >
-              {t('graphml.dialog.otherFile', '↻ Another file')}
+              <Icon icon={RotateCcw} size="xs" />
+              {t('graphml.dialog.otherFile', 'Another file')}
             </button>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-cp-xs text-cp-text-secondary">
@@ -449,7 +450,7 @@ export const GraphmlImportDialog = ({ open, onClose }: GraphmlImportDialogProps)
 
         {/* Library-mode hint: cables are dropped (templates carry no cabling). */}
         {destination === 'library' && (
-          <div className="border-b border-violet-800/60 bg-violet-950/40 px-4 py-2 text-[11px] text-violet-200">
+          <div className="border-b border-violet-800/60 bg-violet-950/40 px-4 py-2 text-cp-xs text-violet-200">
             {t('graphml.dialog.libraryHint', 'Library mode: devices are saved as reusable templates into the local library. Cables are not adopted (templates carry no cabling).')}
           </div>
         )}
@@ -532,7 +533,7 @@ export const GraphmlImportDialog = ({ open, onClose }: GraphmlImportDialogProps)
                           className="w-full rounded border border-cp-border bg-cp-surface-3 px-1.5 py-0.5 text-cp-text"
                         />
                         {dev.subtitle && (
-                          <div className="px-1.5 text-[10px] text-cp-text-muted">{dev.subtitle}</div>
+                          <div className="px-1.5 text-cp-xs text-cp-text-muted">{dev.subtitle}</div>
                         )}
                       </td>
                       <td className="px-3 py-1">
@@ -552,7 +553,7 @@ export const GraphmlImportDialog = ({ open, onClose }: GraphmlImportDialogProps)
                       <td className="px-3 py-1">
                         {confidenceBadge(dev.confidence)}
                         {dev.notes[0] && (
-                          <span className="ml-1 text-[10px] text-cp-text-muted" title={dev.notes.join('\n')}>
+                          <span className="ml-1 text-cp-xs text-cp-text-muted" title={dev.notes.join('\n')}>
                             {dev.notes[0].length > 50 ? `${dev.notes[0].slice(0, 47)}…` : dev.notes[0]}
                           </span>
                         )}

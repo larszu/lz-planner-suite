@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { ExternalLink, PictureInPicture2 } from 'lucide-react'
+import { ExternalLink, PictureInPicture2, ChevronUp, ChevronDown} from 'lucide-react'
 import { useTranslation } from '../../lib/i18n'
 import { Icon } from './Icon'
 
@@ -86,7 +86,7 @@ export const PanelWindowMenu = ({
       >
         <Icon icon={PictureInPicture2} size="xs" />
         <span>{t('panel.window.button', 'Window')}</span>
-        <span className="text-[9px] leading-none">{offen ? '▴' : '▾'}</span>
+        <Icon icon={offen ? ChevronUp : ChevronDown} size={9} />
       </button>
       {offen && (
         <div
@@ -120,7 +120,7 @@ export const PanelWindowMenu = ({
           {/* Der dritte Weg steht nur da, weil er sonst unauffindbar waere:
               den Knopf selbst kann man ziehen. Das ist keine Wiederholung des
               ersten Eintrags — es ist die Bedienung, die niemand raet. */}
-          <p className="mt-1 border-t border-cp-border-muted px-2 pt-1.5 text-[10px] text-cp-text-muted">
+          <p className="mt-1 border-t border-cp-border-muted px-2 pt-1.5 text-cp-xs text-cp-text-muted">
             {t('panel.window.dragHint', 'The button can also be dragged.')}
           </p>
         </div>

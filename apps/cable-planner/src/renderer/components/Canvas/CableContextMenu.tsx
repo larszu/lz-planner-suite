@@ -22,7 +22,7 @@
 //   • Kabel löschen
 
 import { useEffect, useRef, useState } from 'react'
-import { Pencil, Pin, X, Plus, Minus, RotateCcw, Navigation, CornerDownRight, Check, Milestone } from 'lucide-react'
+import { Pencil, Pin, X, Plus, Minus, RotateCcw, Navigation, CornerDownRight, Check, Milestone, ChevronDown, ChevronRight} from 'lucide-react'
 import { Icon } from '../shared/Icon'
 import { useUiStore } from '../../store/uiStore'
 import { useCanvasProjectStore as useProjectStore } from '../../store/projectStoreContext'
@@ -96,9 +96,15 @@ export const CableContextMenu = () => {
   const t = useTranslation()
   const menu = useUiStore((s) => s.cableContextMenu)
   const close = useUiStore((s) => s.closeCableContextMenu)
-  // v7.9.81 — Theme-Awareness: Menu folgt jetzt canvasTheme.
-  const canvasTheme = useUiStore((s) => s.canvasTheme)
-  const isLight = canvasTheme === 'light'
+  // v7.9.81 — Theme-Awareness: Menu folgt dem canvasTheme.
+  //
+  // SEIT 2026-09-10 OHNE EIGENEN ZWEIG (Phase 2 der UI-Pruefung). Vorher
+  // waehlte diese Datei an vier Stellen selbst einen Schiefer-Ton je Theme;
+  // jetzt tragen die semantischen Utilities (`bg-cp-surface-*`,
+  // `text-cp-*`, `border-cp-border`) den Wechsel, und sie tragen ihn auf
+  // der Marken-Palette statt auf Tailwind-Schiefer. Ein Menue, das seine
+  // eigene Farbtabelle fuehrt, faellt beim naechsten Palettenwechsel als
+  // Erstes auf.
   const globalCableBumps = useUiStore((s) => s.cableBumps)
   const updateCable = useProjectStore((s) => s.updateCable)
   const deleteCable = useProjectStore((s) => s.deleteCable)
@@ -263,19 +269,15 @@ export const CableContextMenu = () => {
         zIndex: 9999,
       }}
       className={`rounded border shadow-2xl backdrop-blur-sm ${
-        isLight
-          ? 'border-slate-300 bg-white/98 text-slate-900'
-          : 'border-slate-700 bg-slate-900/98 text-slate-100'
+        'border-cp-border bg-cp-surface-1/98 text-cp-text'
       }`}
       onContextMenu={(e) => e.preventDefault()}
     >
       <div
-        className={`border-b px-3 py-1.5 text-[10px] uppercase tracking-wide ${
-          isLight ? 'border-slate-200 text-slate-500' : 'border-slate-800 text-slate-400'
-        }`}
+        className="border-b border-cp-border px-3 py-1.5 text-cp-xs uppercase tracking-wide text-cp-text-muted"
       >
         {t('canvas.cableMenu.headerLabel', 'Cable:')}{' '}
-        <span className={`font-semibold ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>{cable.name}</span>
+        <span className="font-semibold text-cp-text">{cable.name}</span>
       </div>
       <Item onClick={renameLabel} icon={<Icon icon={Pencil} size="xs" />}>
         {t('canvas.cableMenu.rename', 'Change label…')}
@@ -335,10 +337,14 @@ export const CableContextMenu = () => {
       >
         {t('canvas.cableMenu.routing', 'Routing:')}{' '}
         <strong className="ml-1">{routingLabel(routing, t)}</strong>
-        <span className="ml-auto text-slate-500">{submenu === 'routing' ? '▾' : '▸'}</span>
+        <Icon
+          icon={submenu === 'routing' ? ChevronDown : ChevronRight}
+          size="xs"
+          className="ml-auto text-slate-500"
+        />
       </Item>
       {submenu === 'routing' && (
-        <div className={`border-l-2 border-sky-700 ${isLight ? 'bg-slate-100' : 'bg-slate-950/50'}`}>
+        <div className="border-l-2 border-sky-700 bg-cp-surface-3/50">
           {(['orthogonal', 'straight', 'curved'] as const).map((r) => (
             <Item
               key={r}
@@ -356,7 +362,7 @@ export const CableContextMenu = () => {
       <Item onClick={toggleBumpForThisCable} icon={effectiveBumps ? <Icon icon={Check} size="xs" /> : null}>
         {t('canvas.cableMenu.bumps', 'Cable jumps for this cable')}
         {bumpStyle == null && (
-          <span className="ml-auto text-[10px] text-slate-400">
+          <span className="ml-auto text-cp-xs text-slate-400">
             {t('canvas.cableMenu.global', 'global')}
           </span>
         )}
@@ -366,7 +372,7 @@ export const CableContextMenu = () => {
           onClick={() => doUpdate({ bumpStyle: undefined })}
           icon=" "
         >
-          <span className="text-[11px] text-slate-400">
+          <span className="text-cp-xs text-slate-400">
             {t('canvas.cableMenu.removeOverride', 'Remove override (follow global)')}
           </span>
         </Item>

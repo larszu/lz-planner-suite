@@ -27,8 +27,7 @@ import {
 } from '../../lib/atemLiveCompare'
 import {
   AlertTriangle, FolderOpen, Save, Plug, Upload, SlidersHorizontal,
-  Square, SquareCheck, SquareMinus,
-} from 'lucide-react'
+  Square, SquareCheck, SquareMinus, Dot} from 'lucide-react'
 import { format, useTranslation } from '../../lib/i18n'
 import { Icon } from '../shared/Icon'
 import { getEquipmentById } from '../../lib/equipmentSelectors'
@@ -451,7 +450,7 @@ export const AtemAudioRouterDialog = () => {
             <h2 id={titleId} className="text-cp-xl font-semibold">
               {t('atem.audio.title', 'ATEM audio configuration')} — {equipment.name}
             </h2>
-            <div className="text-[11px] text-slate-400">
+            <div className="text-cp-xs text-slate-400">
               {summarise(draft, t)}
             </div>
           </div>
@@ -464,7 +463,7 @@ export const AtemAudioRouterDialog = () => {
           </button>
         </header>
 
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-700 bg-slate-950/40 px-4 py-2 text-cp-xs">
+        <div className="flex flex-wrap items-center gap-2 border-b border-cp-border bg-cp-surface-3/40 px-4 py-2 text-cp-xs">
           <button
             type="button"
             onClick={handleLoadXml}
@@ -532,7 +531,7 @@ export const AtemAudioRouterDialog = () => {
               </span>
               {draft.classicMixer && (
                 <span
-                  className="text-[10px] text-slate-400"
+                  className="text-cp-xs text-slate-400"
                   title={t('atem.audio.classicReadOnly', 'The loaded XML also contains a classic AudioMixer section. It is round-tripped on save but is not editable here.')}
                 >
                   {t('atem.audio.classicSectionBadge', '+ AudioMixer section (read-only, round-trip)')}
@@ -601,7 +600,7 @@ export const AtemAudioRouterDialog = () => {
               </button>
             </div>
             {hasDifference(comparison) && (
-              <ul className="mt-1.5 max-h-24 space-y-0.5 overflow-y-auto font-mono text-[10px] text-slate-300">
+              <ul className="mt-1.5 max-h-24 space-y-0.5 overflow-y-auto font-mono text-cp-xs text-slate-300">
                 {allDeltas(comparison).map((d) => (
                   <li key={d.key}>
                     <span className="text-slate-400">{d.label}:</span>{' '}
@@ -770,7 +769,7 @@ const EmptyState = ({
         <Icon icon={SlidersHorizontal} size="xs" className="mr-1 inline-block align-text-bottom" />{t('atem.audio.matrixManual', 'Matrix manual')}
       </button>
     </div>
-    <p className="mt-3 text-[10px] text-slate-400">
+    <p className="mt-3 text-cp-xs text-slate-400">
       {format(
         t(
           'atem.audio.welcomeFooter',
@@ -831,7 +830,7 @@ const ChannelPicker = ({
 
   const allExcluded = items.length > 0 && items.every((it) => excluded.has(it.id))
   return (
-    <div className="border-b border-slate-800 bg-slate-950/60 px-4 py-2 text-cp-xs">
+    <div className="border-b border-cp-border bg-cp-surface-3/60 px-4 py-2 text-cp-xs">
       <div className="mb-1 flex items-center justify-between">
         <span className="text-slate-300">
           {format(
@@ -846,14 +845,14 @@ const ChannelPicker = ({
           <button
             type="button"
             onClick={() => onSetAll([])}
-            className="rounded bg-slate-800 px-2 py-0.5 text-[11px] hover:bg-slate-700"
+            className="rounded bg-slate-800 px-2 py-0.5 text-cp-xs hover:bg-slate-700"
           >
             {t('atem.audio.picker.showAll', 'Show all')}
           </button>
           <button
             type="button"
             onClick={() => onSetAll(items.map((i) => i.id))}
-            className="rounded bg-slate-800 px-2 py-0.5 text-[11px] hover:bg-slate-700"
+            className="rounded bg-slate-800 px-2 py-0.5 text-cp-xs hover:bg-slate-700"
             disabled={allExcluded}
           >
             {t('atem.audio.picker.hideAll', 'Hide all')}
@@ -861,7 +860,7 @@ const ChannelPicker = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded bg-slate-800 px-2 py-0.5 text-[11px] hover:bg-slate-700"
+            className="rounded bg-slate-800 px-2 py-0.5 text-cp-xs hover:bg-slate-700"
           >
             {t('common.close', 'Close')}
           </button>
@@ -884,7 +883,7 @@ const ChannelPicker = ({
                   }
                   onSetAll(Array.from(next))
                 }}
-                className={`mb-0.5 rounded px-2 py-0.5 text-left text-[11px] font-semibold ${
+                className={`mb-0.5 rounded px-2 py-0.5 text-left text-cp-xs font-semibold ${
                   allHidden
                     ? 'bg-slate-800 text-slate-500'
                     : someHidden
@@ -898,7 +897,7 @@ const ChannelPicker = ({
               {members.map((m) => (
                 <label
                   key={m.id}
-                  className="flex items-center gap-1 pl-2 text-[10px] text-slate-300"
+                  className="flex items-center gap-1 pl-2 text-cp-xs text-slate-300"
                 >
                   <input
                     type="checkbox"
@@ -1032,7 +1031,7 @@ const MatrixView = ({ config, setConfig }: ViewProps) => {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 bg-slate-950/30 px-4 py-2 text-cp-xs">
+      <div className="flex flex-wrap items-center gap-2 border-b border-cp-border bg-cp-surface-3/30 px-4 py-2 text-cp-xs">
         <input
           type="text"
           value={filterSources}
@@ -1063,7 +1062,7 @@ const MatrixView = ({ config, setConfig }: ViewProps) => {
         >
           {t('atem.audio.sourcePicker', 'Source picker')}
           {excludedSourceIds.size > 0 && (
-            <span className="ml-1 text-[10px] text-sky-300">
+            <span className="ml-1 text-cp-xs text-sky-300">
               ({excludedSourceIds.size} {t('atem.audio.hidden', 'hidden')})
             </span>
           )}
@@ -1080,7 +1079,7 @@ const MatrixView = ({ config, setConfig }: ViewProps) => {
         >
           {t('atem.audio.outputPicker', 'Output picker')}
           {excludedOutputIds.size > 0 && (
-            <span className="ml-1 text-[10px] text-sky-300">
+            <span className="ml-1 text-cp-xs text-sky-300">
               ({excludedOutputIds.size} {t('atem.audio.hidden', 'hidden')})
             </span>
           )}
@@ -1292,7 +1291,7 @@ const MatrixView = ({ config, setConfig }: ViewProps) => {
                                 fontSize: 11,
                               }}
                             >
-                              ●
+                              <Icon icon={Dot} size="sm" />
                             </span>
                           ) : outputHasOtherSource ? (
                             // #456 — Marker "Output anderweitig belegt": vorher

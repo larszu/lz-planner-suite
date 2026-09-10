@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import {
@@ -20,13 +21,15 @@ import { CSS } from '@dnd-kit/utilities'
 import { Tooltip } from '../shared/Tooltip'
 import { useUiStore } from '../../store/uiStore'
 import { ALL_CONNECTOR_TYPES } from '../../types/equipment'
-import type { ConnectorType, Port } from '../../types/equipment'
+import type { ConnectorType, Port, PortGroupKind } from '../../types/equipment'
 import { ALL_SIGNAL_STANDARDS, type SignalStandard } from '../../types/cableSpec'
 import { confirmDialog } from '../../lib/confirmDialog'
 import { infoDialog } from '../../lib/infoDialog'
 import { promptDialog } from '../../lib/promptDialog'
 import { effectivePortNumber, findDuplicatePortNumbers } from '../../lib/portNumbering'
 import { format, useTranslation } from '../../lib/i18n'
+import { Icon } from '../shared/Icon'
+import { PORT_GROUP_INFO, gruppenBefunde, naechsteGruppenId, portGruppen } from '../../lib/portGroups'
 
 /**
  * #306 — PortList + SortablePortItem + makePort aus EquipmentProperties
@@ -90,7 +93,7 @@ const SortablePortItem = ({ port, children }: SortablePortItemProps) => {
       <div className="flex items-start gap-2">
         <button
           type="button"
-          className="mt-1 cursor-grab rounded border border-cp-border bg-cp-surface-3 px-1.5 py-1 text-[11px] text-cp-text-muted hover:bg-cp-surface-1 active:cursor-grabbing"
+          className="mt-1 cursor-grab rounded border border-cp-border bg-cp-surface-3 px-1.5 py-1 text-cp-xs text-cp-text-muted hover:bg-cp-surface-1 active:cursor-grabbing"
           title={t('ports.dragHandle', 'Reorder port')}
           aria-label={format(t('ports.reorderAria', 'Reorder: {name}'), { name: port.name })}
           {...attributes}
@@ -137,11 +140,11 @@ const CollapsibleSdiCaps = ({
       onToggle={(e) => setOpen(e.currentTarget.open)}
       className="mt-1 rounded border border-amber-900/60 bg-amber-950/20 [&_summary]:cursor-pointer"
     >
-      <summary className="flex items-center gap-1 p-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300 hover:text-amber-200 [&::-webkit-details-marker]:hidden">
-        <span className="text-amber-400/70">{open ? '▾' : '▸'}</span>
+      <summary className="flex items-center gap-1 p-1.5 text-cp-xs font-semibold uppercase tracking-wide text-amber-300 hover:text-amber-200 [&::-webkit-details-marker]:hidden">
+        <Icon icon={open ? ChevronDown : ChevronRight} size="xs" className="text-amber-400/70" />
         <span className="flex-1">{t('ports.sdi.caps', 'SDI capabilities (port-specific)')}</span>
         {!open && badge && (
-          <span className="rounded bg-amber-900/50 px-1 text-[11px] normal-case text-amber-200">
+          <span className="rounded bg-amber-900/50 px-1 text-cp-xs normal-case text-amber-200">
             {badge}
           </span>
         )}
@@ -459,6 +462,12 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
     updatePort(portId, { dualLinkGroup: raw || undefined })
   }
 
+  // #832 — Die vorhandenen Gruppen DIESER Seite. Eine Gruppe ueber Ein- und
+  // Ausgaenge hinweg waere kein Anschluss, sondern eine Durchschleife; die
+  // Liste bietet deshalb nur an, was hier schon steht.
+  const vorhandeneGruppen = portGruppen(ports).map((g) => g.id)
+  const gruppenFehler = gruppenBefunde(ports)
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -491,19 +500,59 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
         <button
           type="button"
           onClick={addPort}
-          className="rounded bg-cp-surface-4 px-2 py-0.5 text-[11px] hover:bg-cp-surface-5"
+          className="rounded bg-cp-surface-4 px-2 py-0.5 text-cp-xs hover:bg-cp-surface-5"
         >
           {t('ports.add', '+ Port')}
         </button>
       </div>
-      {ports.length === 0 && <div className="text-[11px] text-cp-text-muted">{t('ports.none', 'None')}</div>}
+      {ports.length === 0 && <div className="text-cp-xs text-cp-text-muted">{t('ports.none', 'None')}</div>}
       {duplicatePortNumbers.length > 0 && (
-        <div className="mb-2 rounded border border-amber-700 bg-amber-950/40 px-2 py-1 text-[11px] text-amber-200">
+        <div className="mb-2 rounded border border-amber-700 bg-amber-950/40 px-2 py-1 text-cp-xs text-amber-200">
           {format(t('ports.duplicateNumbers', 'Duplicate port numbers: {nums} — ambiguous for labels / patch list.'), {
             nums: duplicatePortNumbers.join(', '),
           })}
         </div>
       )}
+      {/*
+        #832 — Der Widerspruch steht DORT, wo er entsteht, und wartet nicht auf
+        den Plan-Check. Eine halb markierte Stereo-Gruppe faellt beim Eintragen
+        auf; wer sie erst auf dem Blatt bemerkt, steht schon im Saal.
+
+        Gemeldet wird nur, was sich WIDERSPRICHT — nicht, was fehlt. Eine
+        Gruppe ohne Art ist vollstaendig („die gehoeren zusammen"), und wer
+        dafuer eine Warnung bekaeme, schaltete sie nach der dritten ab.
+      */}
+      {gruppenFehler.map((f, i) => (
+        <div
+          key={`${f.art}:${f.gruppe}:${i}`}
+          className="mb-2 rounded border border-amber-700 bg-amber-950/40 px-2 py-1 text-cp-xs text-amber-200"
+        >
+          {f.art === 'groesse' &&
+            format(
+              t(
+                'ports.group.sizeMismatch',
+                'Group "{group}": {is} of {expected} ports — the group says one connector, the plan shows another number.',
+              ),
+              { group: f.gruppe, is: String(f.ist), expected: String(f.erwartet) },
+            )}
+          {f.art === 'artenmix' &&
+            format(
+              t(
+                'ports.group.kindMismatch',
+                'Group "{group}" is declared as {kinds} at the same time — only one of them can be true.',
+              ),
+              { group: f.gruppe, kinds: f.arten.join(' / ') },
+            )}
+          {f.art === 'rolle-doppelt' &&
+            format(
+              t(
+                'ports.group.roleTwice',
+                'Group "{group}" has "{role}" twice — two left channels are not a stereo pair.',
+              ),
+              { group: f.gruppe, role: f.rolle },
+            )}
+        </div>
+      ))}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={ports.map((port) => port.id)} strategy={verticalListSortingStrategy}>
           <ul className="space-y-2">
@@ -536,7 +585,7 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                   type="button"
                   onClick={() => removePort(port.id)}
                   aria-label={t('ports.remove', 'Remove port')}
-                  className="rounded bg-red-900/60 px-2 py-1 text-[11px] hover:bg-red-800"
+                  className="rounded bg-red-900/60 px-2 py-1 text-cp-xs hover:bg-red-800"
                 >
                   ×
                 </button>
@@ -679,7 +728,7 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
             </div>
             {showAtemSourceId && (
               <div className="mt-1 flex items-center gap-1.5 rounded border border-emerald-900/60 bg-emerald-950/30 px-1.5 py-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                <span className="text-cp-xs font-semibold uppercase tracking-wide text-emerald-300">
                   ATEM Source-ID
                 </span>
                 <input
@@ -697,14 +746,14 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                   title={t('ports.atemSourceIdTitle', 'Source ID addressed in the MV-Config dialog. AUX = 8001+, PGM = 10010, PVW = 10011, ME 2 PGM = 10020 …. Leave empty on inputs for idx+1 default.')}
                   className="w-32 rounded border border-cp-border bg-cp-surface-3 p-1 text-cp-xs"
                 />
-                <span className="text-[10px] text-cp-text-muted">
+                <span className="text-cp-xs text-cp-text-muted">
                   AUX 8001+ · PGM 10010 · PVW 10011
                 </span>
               </div>
             )}
             {(port.connectorType === 'Fiber' || port.connectorType === 'SFP' || port.connectorType === 'SFP+') && (
               <div className="mt-1 rounded border border-sky-900/60 bg-sky-950/30 p-1.5">
-                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-sky-400">SFP-Modul</div>
+                <div className="mb-1 text-cp-xs font-semibold uppercase tracking-wide text-sky-400">SFP-Modul</div>
                 <div className="grid grid-cols-2 gap-1">
                   <input
                     value={port.sfpType ?? ''}
@@ -760,6 +809,93 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                 </div>
               </div>
             )}
+            {/*
+              #832 — „Inputs und Outputs gruppieren. Z.b 2 Mono Klinken als ein
+              Stereo kennzeichnen."
+
+              Die Zeile steht bei JEDEM Port und nicht nur bei Audio: die
+              Gruppe sagt nichts ueber ein Signal, sondern „diese Buchsen
+              gehoeren zusammen". Das gilt fuer zwei Klinken genauso wie fuer
+              zwei Adern einer Steuerleitung.
+
+              Sie liegt AUSSERHALB von `CollapsibleSdiCaps` — der Kasten
+              erscheint nur bei BNC, und eine Klinken-Gruppe waere darin nicht
+              erreichbar.
+            */}
+            <div className="mt-1 flex flex-wrap items-center gap-1 text-cp-xs">
+              <span className="text-cp-text-muted">{t('ports.group.label', 'Group:')}</span>
+              <select
+                aria-label={t('ports.group.aria', 'Port group')}
+                value={port.portGroup ?? ''}
+                onChange={(event) => {
+                  const v = event.target.value
+                  if (v === '__new__') {
+                    updatePort(port.id, {
+                      portGroup: naechsteGruppenId(ports),
+                      portGroupKind: port.portGroupKind ?? 'stereo',
+                    })
+                    return
+                  }
+                  // Die Gruppe zu loeschen nimmt Art und Rolle MIT. Sie
+                  // beschreiben die Zugehoerigkeit; ohne sie stuenden sie am
+                  // Port und meinten nichts.
+                  updatePort(
+                    port.id,
+                    v
+                      ? { portGroup: v }
+                      : { portGroup: undefined, portGroupKind: undefined, portGroupRole: undefined },
+                  )
+                }}
+                className="rounded border border-cp-border bg-cp-surface-3 px-1 py-0.5 text-cp-xs"
+              >
+                <option value="">{t('ports.set.none', '— None —')}</option>
+                {vorhandeneGruppen.map((gid) => (
+                  <option key={gid} value={gid}>{gid}</option>
+                ))}
+                <option value="__new__">{t('ports.group.new', '+ New group…')}</option>
+              </select>
+              {port.portGroup && (
+                <>
+                  <select
+                    aria-label={t('ports.group.kindAria', 'Group kind')}
+                    value={port.portGroupKind ?? ''}
+                    onChange={(event) =>
+                      updatePort(port.id, {
+                        portGroupKind: (event.target.value || undefined) as
+                          | PortGroupKind
+                          | undefined,
+                      })
+                    }
+                    className="rounded border border-cp-border bg-cp-surface-3 px-1 py-0.5 text-cp-xs"
+                  >
+                    {/* Leer ist erlaubt und heisst „gehoeren zusammen, ohne
+                        zu sagen wie" — eine vollstaendige Aussage. */}
+                    <option value="">{t('ports.group.kindNone', '— not stated —')}</option>
+                    <option value="stereo">{t('ports.group.stereo', 'Stereo (L/R)')}</option>
+                    <option value="ms">{t('ports.group.ms', 'M/S')}</option>
+                    <option value="sum">{t('ports.group.sum', 'Sum (A/B)')}</option>
+                    <option value="bridge">{t('ports.group.bridge', 'Bridged (+/-)')}</option>
+                    <option value="powerlock">{t('ports.group.powerlock', 'Powerlock set (L1/L2/L3/N/PE)')}</option>
+                    <option value="sonstige">{t('ports.group.other', 'Other')}</option>
+                  </select>
+                  <select
+                    aria-label={t('ports.group.roleAria', 'Role in the group')}
+                    value={port.portGroupRole ?? ''}
+                    onChange={(event) =>
+                      updatePort(port.id, { portGroupRole: event.target.value || undefined })
+                    }
+                    className="rounded border border-cp-border bg-cp-surface-3 px-1 py-0.5 text-cp-xs"
+                  >
+                    <option value="">{t('ports.group.roleNone', '— role? —')}</option>
+                    {(port.portGroupKind ? PORT_GROUP_INFO[port.portGroupKind].rollen : []).map(
+                      (r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ),
+                    )}
+                  </select>
+                </>
+              )}
+            </div>
             {port.connectorType === 'BNC' && (
               <CollapsibleSdiCaps
                 defaultOpen={
@@ -775,7 +911,7 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                   .filter(Boolean)
                   .join(' · ')}
               >
-                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <div className="grid grid-cols-2 gap-1 text-cp-xs">
                   {/* v7.9.63 / #176 — 3G Level A/B nur anzeigen wenn das
                       Port-Max tatsächlich SDI-3G ist. Für 6G/12G/HD sind die
                       Level-Optionen bedeutungslos und nur visueller Lärm. */}
@@ -837,7 +973,7 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                     </select>
                   </label>
                 </div>
-                <div className="mt-1 text-[11px] text-cp-text-muted">
+                <div className="mt-1 text-cp-xs text-cp-text-muted">
                   {t(
                     'ports.sdi.overrideHint',
                     'Overrides the device SDI capabilities for this port. Empty = device default.',
@@ -848,12 +984,12 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                   const count = g ? quadGroupCount(g) : 0
                   const ok = count === 4
                   return (
-                    <div className="mt-1.5 flex items-center gap-1 text-[10px]">
+                    <div className="mt-1.5 flex items-center gap-1 text-cp-xs">
                       <span className="text-cp-text-muted">{t('ports.sdi.quadSet', 'Quad-link set:')}</span>
                       <select
                         value={g ?? ''}
                         onChange={(e) => void assignQuadGroup(port.id, e.target.value)}
-                        className="rounded border border-cp-border bg-cp-surface-3 px-1 py-0.5 text-[10px]"
+                        className="rounded border border-cp-border bg-cp-surface-3 px-1 py-0.5 text-cp-xs"
                       >
                         <option value="">{t('ports.set.none', '— None —')}</option>
                         {existingQuadGroups.map((gid) => (
@@ -864,7 +1000,7 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                       {g && (
                         <>
                           <span
-                            className={`rounded px-1 py-0.5 text-[11px] font-bold ${
+                            className={`rounded px-1 py-0.5 text-cp-xs font-bold ${
                               ok
                                 ? 'bg-emerald-900/60 text-emerald-300'
                                 : 'bg-amber-900/60 text-amber-300'
@@ -879,7 +1015,7 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                             <button
                               type="button"
                               onClick={() => void autoFillQuadGroup(g, port.id)}
-                              className="rounded bg-sky-800 px-1 py-0.5 text-[11px] text-sky-100 hover:bg-sky-700"
+                              className="rounded bg-sky-800 px-1 py-0.5 text-cp-xs text-sky-100 hover:bg-sky-700"
                               title={t('ports.quadAuto', 'Auto-assign free BNC ports to this set')}
                             >
                               auto-fill
@@ -895,12 +1031,12 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                   const count = g ? dualGroupCount(g) : 0
                   const ok = count === 2
                   return (
-                    <div className="mt-1 flex items-center gap-1 text-[10px]">
+                    <div className="mt-1 flex items-center gap-1 text-cp-xs">
                       <span className="text-cp-text-muted">{t('ports.sdi.dualSet', 'Dual-link set:')}</span>
                       <select
                         value={g ?? ''}
                         onChange={(e) => void assignDualGroup(port.id, e.target.value)}
-                        className="rounded border border-cp-border bg-cp-surface-3 px-1 py-0.5 text-[10px]"
+                        className="rounded border border-cp-border bg-cp-surface-3 px-1 py-0.5 text-cp-xs"
                       >
                         <option value="">{t('ports.set.none', '— None —')}</option>
                         {existingDualGroups.map((gid) => (
@@ -911,7 +1047,7 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                       {g && (
                         <>
                           <span
-                            className={`rounded px-1 py-0.5 text-[11px] font-bold ${
+                            className={`rounded px-1 py-0.5 text-cp-xs font-bold ${
                               ok
                                 ? 'bg-emerald-900/60 text-emerald-300'
                                 : 'bg-amber-900/60 text-amber-300'
@@ -926,7 +1062,7 @@ export const PortList = ({ title, ports, onChange, hideTitle, showAtemSourceId }
                             <button
                               type="button"
                               onClick={() => void autoFillDualGroup(g, port.id)}
-                              className="rounded bg-sky-800 px-1 py-0.5 text-[11px] text-sky-100 hover:bg-sky-700"
+                              className="rounded bg-sky-800 px-1 py-0.5 text-cp-xs text-sky-100 hover:bg-sky-700"
                               title={t('ports.dualAuto', 'Auto-assign free BNC ports to this set')}
                             >
                               auto-fill

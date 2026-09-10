@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { passiveTemplates } from '../src/renderer/lib/passiveCatalog'
 import { isPatchPanelDevice, patchPanelCounterpart } from '../src/renderer/lib/patchPanel'
 import { ALL_CONNECTOR_TYPES } from '../src/renderer/types/equipment'
+import { gruppenBefunde } from '../src/renderer/lib/portGroups'
 
 /**
  * B-52 Teil 1 — passive Port-Traeger aus der Bibliothek.
@@ -42,15 +43,15 @@ describe('Formen, keine Produkte', () => {
 
   it('deckt alle vier gefragten Bauformen ab', () => {
     const namen = passiveTemplates.map((t) => t.name).join(' | ')
-    expect(namen).toMatch(/Patchblende/)
-    expect(namen).toMatch(/Durchgangsbuchse/)
+    expect(namen).toMatch(/Patch panel/)
+    expect(namen).toMatch(/Feed-through/)
     expect(namen).toMatch(/Steckdosenleiste/)
-    expect(namen).toMatch(/Verteiler/)
+    expect(namen).toMatch(/Distro/)
   })
 })
 
 describe('Die Patchblende ist dieselbe wie im Rack-Builder', () => {
-  const blenden = passiveTemplates.filter((t) => t.name.startsWith('Patchblende'))
+  const blenden = passiveTemplates.filter((t) => t.name.startsWith('Patch panel'))
 
   it('laeuft durch dieselbe Erkennung', () => {
     // `isPatchPanelDevice` ist die EINE Stelle, die „ist das eine Blende?"
@@ -77,7 +78,7 @@ describe('Die Patchblende ist dieselbe wie im Rack-Builder', () => {
   })
 
   it('macht aus der Durchgangsbuchse eine Blende der Groesse 1', () => {
-    const d = passiveTemplates.filter((t) => t.name.startsWith('Durchgangsbuchse'))
+    const d = passiveTemplates.filter((t) => t.name.startsWith('Feed-through'))
     expect(d.length).toBeGreaterThan(0)
     for (const t of d) {
       expect(isPatchPanelDevice(t)).toBe(true)
@@ -89,7 +90,7 @@ describe('Die Patchblende ist dieselbe wie im Rack-Builder', () => {
 
 describe('Die Absicherung steht am Abgang und wird nicht geraten', () => {
   it('gibt jedem Verteiler-Abgang seine Ampere', () => {
-    const v = passiveTemplates.filter((t) => t.name.startsWith('Verteiler'))
+    const v = passiveTemplates.filter((t) => t.name.startsWith('Distro'))
     expect(v.length).toBeGreaterThan(0)
     for (const t of v) {
       for (const p of t.outputs) expect(p.absicherungA).toBeGreaterThan(0)
@@ -132,5 +133,40 @@ describe('Sie sind aus der Bibliothek erreichbar', () => {
     // Und die alte Version bleibt geschuetzt, damit niemandem die eigene
     // Bibliothek geloescht wird.
     expect(store).toContain("'2026-04-greengo-catalog-v2'")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #665 letzte Zeile — „Powerlock-Satz" bleibt Show-Material und war als
+// einziger Eintrag der Tabelle noch nicht gebaut.
+// ---------------------------------------------------------------------------
+
+describe('Der Powerlock-Satz', () => {
+  const satz = passiveTemplates.find((t) => t.name.startsWith('Powerlock set'))
+
+  it('liegt im Katalog', () => {
+    expect(satz, 'Powerlock-Satz fehlt in `passiveTemplates`').toBeDefined()
+  })
+
+  it('führt fünf Adern je Seite, einzeln', () => {
+    // Fünf Ports und nicht einer: sonst stünde auf dem Blatt ein Kabel, wo
+    // fünf liegen, und die Stückliste zählte vier zu wenig.
+    expect(satz?.inputs).toHaveLength(5)
+    expect(satz?.outputs).toHaveLength(5)
+  })
+
+  it('hält sie über eine Port-Gruppe zusammen, mit Rollen', () => {
+    // Die Rolle steht am Port und nicht in der Reihenfolge — sonst geht PE
+    // beim Umsortieren unter.
+    expect(satz?.inputs?.map((p) => p.portGroupRole)).toEqual(['L1', 'L2', 'L3', 'N', 'PE'])
+    expect(new Set(satz?.inputs?.map((p) => p.portGroup)).size).toBe(1)
+    // Ein- und Ausgangsseite sind ZWEI Gruppen: eine Gruppe über beide Seiten
+    // hinweg wäre kein Anschluss, sondern eine Durchschleife.
+    expect(satz?.inputs?.[0].portGroup).not.toBe(satz?.outputs?.[0].portGroup)
+  })
+
+  it('meldet einen vollständigen Satz als in Ordnung', () => {
+    expect(gruppenBefunde(satz?.inputs ?? [])).toEqual([])
+    expect(gruppenBefunde(satz?.outputs ?? [])).toEqual([])
   })
 })

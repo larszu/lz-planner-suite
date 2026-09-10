@@ -211,7 +211,11 @@ export function seedToCable(seed: SuiteSeed, vorhandene: EquipmentItem[] = []): 
         offen: true,
         item: {
           ...basis,
-          category: 'Sonstiges',
+          // #822/#835 — der kanonische Wert ist englisch. `Sonstiges` stand
+          // hier noch, weil diese Datei nur in der Suite liegt und die
+          // Umbenennung upstream vorbeilief. Der Waechter fuer ausgelieferte
+          // Kategorien hat sie beim Vendorieren gefunden.
+          category: 'Other',
           inputs: [],
           outputs: [],
           width: 240,

@@ -57,9 +57,13 @@ Liste, `undefined` statt `false`.
 - `src/domain/store/` — die einzige Stelle, die schreibt. Ein Mangel geht
   **durch** `mangelMelden` und nicht daran vorbei: der Vertrag darf ihn
   ablehnen.
-- `src/ui/` — vier Sichten. Eine Sicht ruft den Vertrag AUF, statt sich die
+- `src/domain/gebaeudeAuskunft.ts` — Auskünfte, die das Werkzeug über seine
+  EIGENEN Daten gibt (Schaltherkunft, Trassen, Lagen). Bewusst neben dem
+  Vertrag und nicht in ihm: der Plan stellt diese Fragen nicht, und
+  `VERTRAG_FRAGEN` bleibt bei sechs.
+- `src/ui/` — sieben Sichten. Eine Sicht ruft den Vertrag AUF, statt sich die
   Felder selbst zusammenzusuchen; sonst gäbe es die Auskunft zweimal.
-- `src/lib/` — generische Helfer (Speicher-Schlüssel).
+- `src/lib/` — generische Helfer (Speicher-Schlüssel, Grundriss-Massstab).
 
 ## Konventionen
 
