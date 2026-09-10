@@ -88,8 +88,11 @@ import {
   alterMonate,
   terminVon,
   FRIST_ART_LABEL,
+  fristArtLabel,
+  istUnbekannteArt,
 } from '../domain/lib/fristen'
 import type { Frist, FristArt } from '../domain/types/inventory'
+import { EINGEBAUTE_FRIST_ARTEN } from '../domain/types/inventory'
 import { toCsv, type CsvTable } from '../lib/csv'
 
 /** Eine Tabelle als CSV herunterladen. Vier Knöpfe brauchen dasselbe. */
@@ -108,6 +111,9 @@ export function WerteUndSchaeden() {
   const items = useInventoryStore((s) => s.items)
   const units = useInventoryStore((s) => s.units)
   const updateUnit = useInventoryStore((s) => s.updateUnit)
+  const fristArten = useInventoryStore((s) => s.fristArten)
+  const fristArtAnlegen = useInventoryStore((s) => s.fristArtAnlegen)
+  const fristArtEntfernen = useInventoryStore((s) => s.fristArtEntfernen)
   const records = useCheckoutStore((s) => s.records)
 
   const [nach, setNach] = useState<'person' | 'container' | 'job'>('person')
@@ -115,6 +121,7 @@ export function WerteUndSchaeden() {
   // Sie steht als Eingabe da und nicht als Konstante im Code, weil sie eine
   // Entscheidung des Hauses ist und nicht dieser Datei.
   const [vorwarn, setVorwarn] = useState(30)
+  const [neueArt, setNeueArt] = useState({ name: '', intervall: '', grundlage: '' })
   const [neueFrist, setNeueFrist] = useState<{ unitId: string; art: FristArt; zuletzt: string; intervall: string }>({
     unitId: '',
     art: 'dguv-v3',
@@ -271,7 +278,17 @@ export function WerteUndSchaeden() {
                         <td>{z.einheit}</td>
                         <td>{z.model}</td>
                         <td>
-                          {FRIST_ART_LABEL[z.art]}
+                          {/*
+                            Eine Art, die weder eingebaut ist noch in der
+                            Liste des Hauses steht, wird BENANNT und nicht
+                            umbenannt: die Datei kam aus einem anderen Haus
+                            und hat ihre Arten-Liste nicht mitgeschickt. Sie
+                            hier zu „Sonstige" zu machen gäbe dem Termin
+                            einen Namen, den niemand vergeben hat.
+                          */}
+                          <span className={istUnbekannteArt(z.art, fristArten) ? 'warnung' : undefined}>
+                            {fristArtLabel(z.art, fristArten)}
+                          </span>
                           {z.bezeichnung ? <span className="leise"> · {z.bezeichnung}</span> : null}
                         </td>
                         <td>{z.faellig}</td>
@@ -328,9 +345,14 @@ export function WerteUndSchaeden() {
                   onChange={(e) => setNeueFrist((n) => ({ ...n, art: e.target.value as FristArt }))}
                   aria-label="Art der Frist"
                 >
-                  {(Object.keys(FRIST_ART_LABEL) as FristArt[]).map((a) => (
+                  {EINGEBAUTE_FRIST_ARTEN.map((a) => (
                     <option key={a} value={a}>
                       {FRIST_ART_LABEL[a]}
+                    </option>
+                  ))}
+                  {fristArten.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
                     </option>
                   ))}
                 </select>
@@ -375,6 +397,91 @@ export function WerteUndSchaeden() {
               Angabe, kein Urteil: ab wann ein Akku zu alt ist, entscheidet das
               Haus — als Frist der Art „Akku".
             </p>
+
+            {/* ── Eigene Fristarten ───────────────────────────────────────
+                Was ein Haus turnusmäßig prüft, weiß nur das Haus:
+                Anschlagmittel, Leitern, Feuerlöscher, Nebelfluid-Chargen,
+                TÜV am Anhänger. Bis 2026-09-10 landete jede davon unter
+                „Sonstige", und die Ampel war für alles außer den
+                eingebauten Arten eine Sammelmeldung ohne Sortierung. */}
+            <details className="unterblock">
+              <summary>Eigene Fristarten ({fristArten.length})</summary>
+              <p className="hinweis">
+                Eingebaut sind {EINGEBAUTE_FRIST_ARTEN.length} Arten. Alles, was
+                dieses Haus zusätzlich prüft oder ablaufen lässt, steht hier —
+                und reist in der Lager-Datei mit, damit ein Termin drüben nicht
+                ohne seinen Grund ankommt.
+              </p>
+              {fristArten.length > 0 && (
+                <ul className="artenliste">
+                  {fristArten.map((a) => (
+                    <li key={a.id}>
+                      <strong>{a.name}</strong>
+                      <span className="leise"> · {a.id}</span>
+                      {a.standardIntervallMonate ? (
+                        <span className="leise"> · alle {a.standardIntervallMonate} Mon.</span>
+                      ) : null}
+                      {a.grundlage ? <span className="leise"> · {a.grundlage}</span> : null}
+                      <button
+                        type="button"
+                        className="still"
+                        onClick={() => fristArtEntfernen(a.id)}
+                        title="Eingetragene Termine dieser Art bleiben bestehen und werden danach als unbekannte Art angezeigt."
+                      >
+                        Entfernen
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="zeile">
+                <label>
+                  Name
+                  <input
+                    type="text"
+                    value={neueArt.name}
+                    placeholder="z. B. Anschlagmittel"
+                    onChange={(e) => setNeueArt((n) => ({ ...n, name: e.target.value }))}
+                    aria-label="Name der neuen Fristart"
+                  />
+                </label>
+                <label>
+                  Intervall (Monate)
+                  <input
+                    type="number"
+                    min="1"
+                    value={neueArt.intervall}
+                    onChange={(e) => setNeueArt((n) => ({ ...n, intervall: e.target.value }))}
+                    aria-label="Vorschlag für das Intervall"
+                    className="schmal"
+                  />
+                </label>
+                <label>
+                  Grundlage
+                  <input
+                    type="text"
+                    value={neueArt.grundlage}
+                    placeholder="z. B. DGUV Regel 100-500"
+                    onChange={(e) => setNeueArt((n) => ({ ...n, grundlage: e.target.value }))}
+                    aria-label="Grundlage der Frist"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={!neueArt.name.trim()}
+                  onClick={() => {
+                    fristArtAnlegen({
+                      name: neueArt.name,
+                      standardIntervallMonate: Number(neueArt.intervall) || undefined,
+                      grundlage: neueArt.grundlage,
+                    })
+                    setNeueArt({ name: '', intervall: '', grundlage: '' })
+                  }}
+                >
+                  Art anlegen
+                </button>
+              </div>
+            </details>
           </>
         )}
       </div>

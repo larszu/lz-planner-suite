@@ -146,24 +146,65 @@ describe('einLesen — die Schleife', () => {
 })
 
 describe('umgebungLesen — die Messung liest wirklich das Fenster', () => {
-  it('1. sie liest wirklich das Fenster — und findet hier keinen Decoder', async () => {
-    // Gegenprobe zur Messung selbst: eine Prüfung, die immer `true` sagt,
-    // wäre genau der tote Knopf, gegen den diese Datei geschrieben ist.
+  it('1. sie liest wirklich das Fenster — und jsdom ist kein sicherer Kontext', async () => {
+    // ─── DIESER TEST HAT SICH AM 2026-09-10 VERSCHOBEN ──────────────────
     //
-    // Der Prüfstand ist jsdom, und der bringt WEDER einen BarcodeDetector
-    // MIT NOCH einen sicheren Kontext — deshalb steht hier nicht
-    // `grund: 'kein-decoder'`. Das wäre die bequeme Erwartung und die
-    // falsche: sie hiesse, jsdom sei https, und der Test bewiese am Ende
-    // die Reihenfolge der Prüfungen statt die Messung.
+    // Er verlangte, dass `hatDecoder` hier `false` ist, denn jsdom bringt
+    // keinen `BarcodeDetector` mit — und das war richtig, solange der
+    // native Leser der einzige war. Seit das WASM mitgeliefert wird, ist
+    // ein Decoder IMMER da; er muss nur geladen werden. `hatDecoder` ist
+    // damit keine Eigenschaft des Browsers mehr, sondern eine der
+    // Lieferung, und sie steht auf `true`.
+    //
+    // Die Gegenprobe, um die es dem Test ging, bleibt: die Messung darf
+    // nicht einfach `moeglich: true` sagen. jsdom ist kein sicherer
+    // Kontext, und genau daran fällt sie hier — nicht am Decoder.
     vi.resetModules()
     const mod = await import('../../lib/codeLeser')
     const echt = mod.umgebungLesen()
-    expect(echt.hatDecoder, 'jsdom hat keinen BarcodeDetector').toBe(false)
-    expect(mod.scanFaehigkeit(echt).moeglich).toBe(false)
-    // Und dieselbe Messung mit sicherem Kontext benennt den Decoder:
-    expect(mod.scanFaehigkeit({ ...echt, sichererKontext: true, hatKameraApi: true })).toEqual({
+    expect(echt.hatDecoder, 'das WASM wird mitgeliefert — ein Decoder ist da').toBe(true)
+    expect(echt.sichererKontext, 'jsdom ist kein sicherer Kontext').toBe(false)
+    expect(mod.scanFaehigkeit(echt)).toEqual({
       moeglich: false,
-      grund: 'kein-decoder',
+      grund: 'unsicherer-kontext',
     })
+  })
+
+  it('2. faellt der Decoder aus, ist der Grund weiterhin benannt', async () => {
+    // Der Fall gibt es noch: das WASM laedt nicht (kaputtes Buendel,
+    // blockiertes WASM). Dann sagt die Oberflaeche, woran es liegt, statt
+    // eine Kamera zu oeffnen, die nie etwas erkennt.
+    vi.resetModules()
+    const mod = await import('../../lib/codeLeser')
+    expect(
+      mod.scanFaehigkeit({ sichererKontext: true, hatKameraApi: true, hatDecoder: false }),
+    ).toEqual({ moeglich: false, grund: 'kein-decoder' })
+  })
+
+  it('3. `waehleLeser` nimmt den nativen, wenn es ihn gibt', async () => {
+    // Er ist schon da und kostet keinen Ladevorgang — das WASM erst dann.
+    //
+    // Der Pruefstand hat KEIN `window` (dieser Lauf ist node, nicht jsdom),
+    // also wird eines untergeschoben. Genau deshalb steht der Zugriff im
+    // Modul hinter `typeof window`: ohne Fenster gibt es keinen nativen
+    // Leser, und das ist eine Auskunft und kein Absturz.
+    vi.resetModules()
+    const mod = await import('../../lib/codeLeser')
+    const g = globalThis as unknown as { window?: unknown }
+    expect(mod.nativerLeser(), 'ohne Fenster kein nativer Leser').toBeUndefined()
+    g.window = {
+      BarcodeDetector: class {
+        async detect() {
+          return [{ rawValue: 'NATIV-1' }]
+        }
+      },
+    }
+    try {
+      const leser = await mod.waehleLeser()
+      expect(leser).toBeDefined()
+      expect(await leser!.lies(BILD)).toEqual(['NATIV-1'])
+    } finally {
+      delete g.window
+    }
   })
 })

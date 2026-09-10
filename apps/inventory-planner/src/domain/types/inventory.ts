@@ -124,9 +124,80 @@ export interface Versicherungswert {
  * Was die Antwort noch entscheidet, ist die BEDIENUNG (führt man Chargen?
  * bucht man Verbrauch ab?), und die steht weiterhin offen.
  */
-export type FristArt = 'dguv-v3' | 'kalibrierung' | 'wartung' | 'akku' | 'sonstige'
+/**
+ * Die Fristarten, die das Werkzeug mitbringt.
+ *
+ * `haltbarkeit` ist seit 2026-09-10 dabei (Eigentümer-Entscheidung):
+ * Verbrauchsmaterial mit Ablaufdatum — Batterien, Gaffa, Filter,
+ * Nebelfluid — ist KEIN zweites Modell, sondern eine weitere Art von
+ * Termin. Ein Ablaufdatum und ein Prüftermin sind dieselbe Sache: ein
+ * Datum, ab dem etwas nicht mehr gilt. Zwei Mechaniken dafür hätten
+ * geheißen, dass jede künftige Auswertung beide fragen muss — und die
+ * nächste fragt dann eine.
+ */
+export const EINGEBAUTE_FRIST_ARTEN = [
+  'dguv-v3',
+  'kalibrierung',
+  'wartung',
+  'akku',
+  'haltbarkeit',
+  'sonstige',
+] as const
+
+export type EingebauteFristArt = (typeof EINGEBAUTE_FRIST_ARTEN)[number]
+
+/**
+ * Die Art einer Frist: eine eingebaute Id oder eine, die das Haus selbst
+ * angelegt hat.
+ *
+ * ─── WARUM DAS KEINE FESTE AUFZÄHLUNG MEHR IST ──────────────────────────
+ *
+ * Sie war eine, und die Liste war die Kenntnis ihres Autors. Was ein Haus
+ * turnusmäßig prüft, weiß aber nur das Haus: Leiter- und
+ * Traversenprüfung, Anschlagmittel, Feuerlöscher, Erste-Hilfe-Kasten,
+ * Nebelfluid-Charge, TÜV am Anhänger. Jede dieser Fristen landete unter
+ * `sonstige`, und damit war die Ampel für alles außer den vier eingebauten
+ * Arten eine Sammelmeldung ohne Sortierung.
+ *
+ * `(string & {})` statt `string`: der Typ bleibt offen, aber die
+ * eingebauten Ids stehen weiter in der Vervollständigung. Ein blankes
+ * `string` hätte beides gekostet.
+ */
+export type FristArt = EingebauteFristArt | (string & {})
+
+/**
+ * Eine Fristart, wie das Haus sie führt.
+ *
+ * Reist im Datei-Format mit (`fristArten`), und zwar NUR die selbst
+ * angelegten: die eingebauten kennt jede App ohnehin, und sie mitzuschicken
+ * hieße, ihre Übersetzung in die Datei zu schreiben.
+ */
+export interface FristArtDef {
+  /** Stabile Id. Unter ihr steht sie in `Frist.art`. */
+  id: string
+  /** Anzeigename, so wie das Haus sie nennt. */
+  name: string
+  /** Vorschlag für das Intervall in Monaten, wenn eine neue angelegt wird. */
+  standardIntervallMonate?: number
+  /**
+   * Woran die Frist hängt — nur zur Anzeige, nicht zur Rechnung.
+   * Freitext: „DGUV V3", „Herstellerangabe", „Hausregel".
+   */
+  grundlage?: string
+}
 
 export interface Frist {
+  /**
+   * Eingebaute Id oder eine aus `fristArten`.
+   *
+   * Eine Id, die WEDER eingebaut ist NOCH in der Liste steht, bleibt
+   * trotzdem stehen. Sie auf `sonstige` zu ziehen war bis 2026-09-10 die
+   * Regel und ist jetzt genau der Verlust, den es zu vermeiden gilt: die
+   * Datei sagt „Anschlagmittel", der Leser macht daraus „Sonstige", und der
+   * Termin steht auf der Liste ohne den Grund, aus dem ihn jemand
+   * eingetragen hat. Die Anzeige sagt stattdessen, dass sie die Art nicht
+   * kennt.
+   */
   art: FristArt
   /**
    * Freitext, wenn `art` es nicht sagt.

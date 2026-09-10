@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
 import { mergeById } from '../lib/inventoryMerge'
+import { EINGEBAUTE_FRIST_ARTEN } from '../types/inventory'
 import { STORAGE_KEYS } from '../../lib/storageKeys'
 import { moveRefusal } from '../lib/storageMoves'
 import { nodePathLabel } from '../lib/storageTree'
@@ -24,6 +25,7 @@ import type {
   Versicherungswert,
   Frist,
   FristArt,
+  FristArtDef,
 } from '../types/inventory'
 import { normaliseFaultEvent } from '../lib/faultHistory'
 import type { BedarfsZeile } from '../types/bedarf'
@@ -296,7 +298,16 @@ const healVersicherungswert = (raw: unknown): Versicherungswert | undefined => {
   return { betrag, ...(typeof r.stand === 'string' && r.stand.trim() ? { stand: r.stand.trim() } : {}) }
 }
 
-const FRIST_ARTEN: FristArt[] = ['dguv-v3', 'kalibrierung', 'wartung', 'akku', 'sonstige']
+/**
+ * Eine Art ohne Inhalt ist keine.
+ *
+ * Bis 2026-09-10 stand hier eine feste Liste, und alles ausserhalb wurde
+ * `sonstige`. Seit die Haeuser eigene Arten anlegen duerfen (Anschlagmittel,
+ * Leiterpruefung, Nebelfluid-Charge), macht dieselbe Zeile aus JEDER davon
+ * „Sonstige" -- der Termin bleibt auf der Liste, sein Grund nicht. Geprueft
+ * wird deshalb nur noch, ob ueberhaupt etwas dasteht.
+ */
+const istArt = (v: unknown): v is FristArt => typeof v === 'string' && v.trim().length > 0
 
 /**
  * Fristen heilen (B-65).
@@ -324,10 +335,10 @@ const healFristen = (raw: unknown): Frist[] | undefined => {
         ? Math.round(f.intervallMonate)
         : undefined
     if (!faellig && !(zuletzt && intervallMonate)) continue
-    const art: FristArt =
-      typeof f.art === 'string' && (FRIST_ARTEN as string[]).includes(f.art)
-        ? (f.art as FristArt)
-        : 'sonstige'
+    // Unbekannte Arten bleiben stehen, wie sie sind (Format-Version 7).
+    // Was die Anzeige nicht kennt, sagt sie -- „Sonstige" waere eine
+    // Behauptung an einer Stelle, an der eine Auskunft hingehoert.
+    const art: FristArt = istArt(f.art) ? f.art.trim() : 'sonstige'
     out.push({
       art,
       ...(typeof f.bezeichnung === 'string' && f.bezeichnung.trim()
@@ -447,6 +458,97 @@ const persist = (
     /* ignore */
   }
 }
+
+// ── Die Fristarten des Hauses ─────────────────────────────────────────────
+//
+// EIGENER SCHLUESSEL, mit Absicht. Sie sind Stammdaten und kein Bestand:
+// wer alle Artikel loescht, hat immer noch dieselben Pruefarten. Sie in den
+// Bestands-Blob zu legen haette ausserdem jeden vorhandenen Eintrag beim
+// naechsten Schreiben angefasst -- fuer ein Feld, das mit dem Bestand nichts
+// zu tun hat.
+//
+// Nur die SELBST ANGELEGTEN stehen hier. Die eingebauten kennt die App;
+// sie mitzuschreiben hiesse, ihre Uebersetzung in den Speicher zu legen und
+// beim naechsten Umbenennen zwei Wahrheiten zu haben.
+const ARTEN_KEY = STORAGE_KEYS.fristArten
+
+const ladeFristArten = (): FristArtDef[] => {
+  try {
+    const roh = localStorage.getItem(ARTEN_KEY)
+    if (!roh) return []
+    const daten = JSON.parse(roh)
+    if (!Array.isArray(daten)) return []
+    const gesehen = new Set<string>()
+    const aus: FristArtDef[] = []
+    for (const e of daten) {
+      if (!e || typeof e !== 'object') continue
+      const d = e as Partial<FristArtDef>
+      const id = typeof d.id === 'string' ? d.id.trim() : ''
+      const name = typeof d.name === 'string' ? d.name.trim() : ''
+      if (!id || !name || gesehen.has(id)) continue
+      gesehen.add(id)
+      aus.push({
+        id,
+        name,
+        ...(typeof d.standardIntervallMonate === 'number' && d.standardIntervallMonate > 0
+          ? { standardIntervallMonate: Math.round(d.standardIntervallMonate) }
+          : {}),
+        ...(typeof d.grundlage === 'string' && d.grundlage.trim() ? { grundlage: d.grundlage.trim() } : {}),
+      })
+    }
+    return aus
+  } catch {
+    return []
+  }
+}
+
+/** Eingehende Arten heilen — dieselbe Regel wie beim Laden. */
+const heileImportArten = (raw: unknown): FristArtDef[] => {
+  if (!Array.isArray(raw)) return []
+  const gesehen = new Set<string>()
+  const aus: FristArtDef[] = []
+  for (const e of raw) {
+    if (!e || typeof e !== 'object') continue
+    const d = e as Partial<FristArtDef>
+    const id = typeof d.id === 'string' ? d.id.trim() : ''
+    const name = typeof d.name === 'string' ? d.name.trim() : ''
+    if (!id || !name || gesehen.has(id)) continue
+    gesehen.add(id)
+    aus.push({
+      id,
+      name,
+      ...(typeof d.standardIntervallMonate === 'number' && d.standardIntervallMonate > 0
+        ? { standardIntervallMonate: Math.round(d.standardIntervallMonate) }
+        : {}),
+      ...(typeof d.grundlage === 'string' && d.grundlage.trim() ? { grundlage: d.grundlage.trim() } : {}),
+    })
+  }
+  return aus
+}
+
+const persistFristArten = (arten: FristArtDef[]) => {
+  try {
+    localStorage.setItem(ARTEN_KEY, JSON.stringify(arten))
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Aus einem Namen eine Id machen.
+ *
+ * Kleinschreibung, Umlaute ausgeschrieben, alles Uebrige zu Bindestrichen.
+ * Die Id steht spaeter in jeder Datei, die das Haus exportiert -- sie soll
+ * lesbar sein, damit ein fremder Leser wenigstens raten kann, worum es ging,
+ * wenn ihm die Arten-Liste fehlt.
+ */
+export const fristArtId = (name: string): string =>
+  name
+    .toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
 
 /** Felder, die ein neues Item übergeben darf (alles außer den vom Store
  *  verwalteten id/createdAt/updatedAt). */
@@ -574,8 +676,37 @@ interface InventoryState {
   reportUnitFault: (id: string, detail: string, services: FaultService[]) => void
   /** Bedarf 52 — den n-ten Fehlereintrag einer Einheit als erledigt markieren. */
   resolveUnitFault: (id: string, at: string) => void
+  /**
+   * Die selbst angelegten Fristarten (Format-Version 7).
+   *
+   * Die eingebauten stehen NICHT drin — `EINGEBAUTE_FRIST_ARTEN` in
+   * `domain/types/inventory.ts` führt sie, und `fristArtLabel()` setzt beide
+   * Quellen zur Anzeige zusammen.
+   */
+  fristArten: FristArtDef[]
+  /**
+   * Eine Art anlegen. Die Id kommt aus dem Namen; kollidiert sie mit einer
+   * vorhandenen oder einer eingebauten, wird angehängt statt überschrieben —
+   * zwei Arten mit derselben Id wären für jede Datei danach dieselbe Art.
+   */
+  fristArtAnlegen: (def: { name: string; standardIntervallMonate?: number; grundlage?: string }) => void
+  fristArtAendern: (id: string, teil: Partial<Omit<FristArtDef, 'id'>>) => void
+  /**
+   * Eine Art entfernen.
+   *
+   * Die eingetragenen Fristen bleiben, wie sie sind: ihre `art` zeigt danach
+   * ins Leere, und die Anzeige sagt genau das. Sie mitzulöschen hieße,
+   * Termine zu vernichten, weil jemand eine Beschriftung aufgeräumt hat.
+   */
+  fristArtEntfernen: (id: string) => void
   /** Aktueller Bestand als portabler Snapshot (für App-übergreifenden Export). */
-  exportSnapshot: () => { items: InventoryItem[]; nodes: StorageNode[]; sets: InventorySet[]; units: InventoryUnit[] }
+  exportSnapshot: () => {
+    items: InventoryItem[]
+    nodes: StorageNode[]
+    sets: InventorySet[]
+    units: InventoryUnit[]
+    fristArten?: FristArtDef[]
+  }
   /**
    * Importiert einen Snapshot. `replace` ersetzt den gesamten Bestand,
    * `merge` fügt per id zusammen (Import gewinnt bei Kollision). Alle Felder
@@ -588,7 +719,13 @@ interface InventoryState {
    * sagt es an der Stelle, an der es passiert.
    */
   importSnapshot: (
-    snap: { items?: unknown[]; nodes?: unknown[]; sets?: unknown[]; units?: unknown[] },
+    snap: {
+      items?: unknown[]
+      nodes?: unknown[]
+      sets?: unknown[]
+      units?: unknown[]
+      fristArten?: unknown[]
+    },
     mode: 'replace' | 'merge',
   ) => ImportReport
 }
@@ -933,9 +1070,77 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       persist(state.items, state.nodes, state.sets, units)
       return { units }
     }),
+  fristArten: ladeFristArten(),
+  fristArtAnlegen: (def) =>
+    set((state) => {
+      const name = def.name.trim()
+      if (!name) return state
+      const basis = fristArtId(name) || 'art'
+      const belegt = new Set<string>([
+        ...state.fristArten.map((a) => a.id),
+        ...(EINGEBAUTE_FRIST_ARTEN as readonly string[]),
+      ])
+      let id = basis
+      let n = 2
+      while (belegt.has(id)) {
+        id = `${basis}-${n}`
+        n += 1
+      }
+      const fristArten = [
+        ...state.fristArten,
+        {
+          id,
+          name,
+          ...(def.standardIntervallMonate && def.standardIntervallMonate > 0
+            ? { standardIntervallMonate: Math.round(def.standardIntervallMonate) }
+            : {}),
+          ...(def.grundlage?.trim() ? { grundlage: def.grundlage.trim() } : {}),
+        },
+      ]
+      persistFristArten(fristArten)
+      return { fristArten }
+    }),
+  fristArtAendern: (id, teil) =>
+    set((state) => {
+      const fristArten = state.fristArten.map((a) =>
+        a.id === id
+          ? {
+              ...a,
+              ...(teil.name !== undefined && teil.name.trim() ? { name: teil.name.trim() } : {}),
+              ...(teil.standardIntervallMonate !== undefined
+                ? teil.standardIntervallMonate > 0
+                  ? { standardIntervallMonate: Math.round(teil.standardIntervallMonate) }
+                  : { standardIntervallMonate: undefined }
+                : {}),
+              ...(teil.grundlage !== undefined
+                ? teil.grundlage.trim()
+                  ? { grundlage: teil.grundlage.trim() }
+                  : { grundlage: undefined }
+                : {}),
+            }
+          : a,
+      )
+      persistFristArten(fristArten)
+      return { fristArten }
+    }),
+  fristArtEntfernen: (id) =>
+    set((state) => {
+      const fristArten = state.fristArten.filter((a) => a.id !== id)
+      persistFristArten(fristArten)
+      return { fristArten }
+    }),
   exportSnapshot: () => {
     const s = get()
-    return { items: s.items, nodes: s.nodes, sets: s.sets, units: s.units }
+    return {
+      items: s.items,
+      nodes: s.nodes,
+      sets: s.sets,
+      units: s.units,
+      // Ohne die Liste kaeme drueben ein Termin an, dessen Art niemand mehr
+      // benennen kann. Leer heisst „keine eigenen" und wird weggelassen,
+      // statt als leere Liste zu behaupten, jemand haette alle geloescht.
+      ...(s.fristArten.length > 0 ? { fristArten: s.fristArten } : {}),
+    }
   },
   importSnapshot: (snap, mode) => {
     // ADR-005 — die Abweisungen werden mitgeschrieben, statt weggefiltert zu
@@ -971,7 +1176,19 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       const sets = mode === 'replace' ? inSets : mergeById(state.sets, inSets)
       const units = mode === 'replace' ? inUnits : mergeById(state.units, inUnits)
       persist(items, nodes, sets, units)
-      return { items, nodes, sets, units }
+      // Die Arten-Liste der Datei kommt mit. `replace` ersetzt sie, `merge`
+      // legt nur dazu, was es hier noch nicht gibt: eine Art, die das Haus
+      // umbenannt hat, darf eine fremde Datei nicht zurueckbenennen.
+      const eingehendeArten = heileImportArten(snap.fristArten)
+      const fristArten =
+        mode === 'replace'
+          ? eingehendeArten
+          : [
+              ...state.fristArten,
+              ...eingehendeArten.filter((a) => !state.fristArten.some((b) => b.id === a.id)),
+            ]
+      persistFristArten(fristArten)
+      return { items, nodes, sets, units, fristArten }
     })
     return { imported: total, rejected }
   },

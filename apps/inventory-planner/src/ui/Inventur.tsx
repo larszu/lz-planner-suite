@@ -62,12 +62,13 @@
 // „Ohne Scan wählen" bleiben unverändert die Wege, die überall gehen — die
 // Kamera kommt DANEBEN und ersetzt nichts.
 //
-//   Der Weg zum Desktop führte über ein mitgeliefertes WASM (zxing-wasm,
-//   MIT, ~1 MB gegen 260 kB heutigen Bundle). Ob dieses Megabyte hier
-//   hineingehört, ist eine Eigentümer-Frage und steht im Backlog — sie ist
-//   hier NICHT still entschieden, sondern offen gelassen: `CodeLeser` ist
-//   eine Schnittstelle mit einer Methode, ein zweiter Leser ist ein Modul
-//   und keine Umbaustelle.
+//   Der Weg zum Desktop führt über ein mitgeliefertes WASM (zxing-wasm,
+//   MIT). Der Eigentümer hat es am 2026-09-10 gewählt, und seitdem ist der
+//   Scan überall derselbe — auf dem Telefon in der Halle wie auf dem
+//   Rechner im Lagerbüro. Das Megabyte liegt hinter einem `import()` und
+//   wird erst geladen, wenn jemand die Kamera aufmacht; das Haupt-Bündel
+//   bleibt, wie es war. Welcher Leser antwortet, entscheidet
+//   `waehleLeser()`: der native, wenn es ihn gibt, sonst das WASM.
 //
 //   Sie SCHREIBT WEITERHIN NICHTS in den Bestand — auch nicht über die
 //   Kamera. Ein Kamera-Treffer geht durch dieselbe `auditScan`-Zeile wie ein
@@ -78,7 +79,7 @@ import { useInventoryStore } from '../domain/store/inventoryStore'
 import { nodePathLabel } from '../domain/lib/storageTree'
 import {
   scanFaehigkeit,
-  nativerLeser,
+  waehleLeser,
   einLesen,
   HINDERNIS_TEXT,
 } from '../lib/codeLeser'
@@ -270,20 +271,29 @@ export function Inventur() {
   // genau einen Versuch und ist deshalb ohne Kamera getestet.
   useEffect(() => {
     if (!kameraAn || !ortId) return
-    const leser = nativerLeser()
-    if (!leser) return
     let laeuft = true
-    const takt = window.setInterval(() => {
-      const v = video.current
-      if (!laeuft || !v || v.readyState < 2) return
-      void einLesen(leser, v, zuletztGesehen.current, Date.now(), {
-        aufCode: (c) => setTreffer((t) => [auditScan(c, ortId, quellen), ...t]),
-        aufFehler: (m) => setKameraFehler(m),
-      })
-    }, 250)
+    let takt = 0
+    // Der Leser kommt jetzt ASYNCHRON: der native ist sofort da, das WASM
+    // wird geladen. Bis es da ist, laeuft kein Takt — ein Takt ohne Leser
+    // waere eine Kamera, die zusieht und nichts tut.
+    void waehleLeser().then((leser) => {
+      if (!laeuft) return
+      if (!leser) {
+        setKameraFehler(HINDERNIS_TEXT['kein-decoder'])
+        return
+      }
+      takt = window.setInterval(() => {
+        const v = video.current
+        if (!laeuft || !v || v.readyState < 2) return
+        void einLesen(leser, v, zuletztGesehen.current, Date.now(), {
+          aufCode: (c) => setTreffer((t) => [auditScan(c, ortId, quellen), ...t]),
+          aufFehler: (m) => setKameraFehler(m),
+        })
+      }, 250)
+    })
     return () => {
       laeuft = false
-      window.clearInterval(takt)
+      if (takt) window.clearInterval(takt)
     }
   }, [kameraAn, ortId, quellen])
 

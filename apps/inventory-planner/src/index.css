@@ -305,6 +305,22 @@ th {
   margin: 0 0 0.6rem;
 }
 
+/* Ein Datei-Feld sieht nirgends aus wie ein Knopf. Das Label IST der
+   Knopf, das Feld darin ist unsichtbar — sonst steht im Wareneingang ein
+   "Durchsuchen…" neben einem Text, der nicht dazu passt. */
+.eingang .datei-knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--rand, #2a3444);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.eingang .datei-knopf input[type='file'] {
+  display: none;
+}
+
 .eingang .zeile {
   display: flex;
   flex-wrap: wrap;
@@ -560,6 +576,34 @@ th {
 .werte .kachel span {
   color: var(--leise);
   font-size: 0.85rem;
+}
+
+/* ── Eigene Fristarten ──────────────────────────────────────────────────
+   Ein aufklappbarer Unterblock: die Liste ist Stammdatenpflege und steht
+   nicht jedem im Weg, der nur einen Termin eintragen will. */
+.werte .unterblock {
+  margin-top: 12px;
+  border: 1px solid var(--rand, #2a3444);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.werte .unterblock > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.werte .artenliste {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.werte .artenliste li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .werte .zeile {

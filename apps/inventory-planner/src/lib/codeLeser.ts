@@ -30,18 +30,33 @@
 //   kein-decoder         `BarcodeDetector` fehlt (der häufigste Fall)
 //   keine-erlaubnis      der Mensch hat die Kamera abgelehnt
 //
-// ─── WARUM DER LESER AUSTAUSCHBAR IST ──────────────────────────────────────
+// ─── ZWEI LESER, UND DIE ENTSCHEIDUNG DAHINTER ─────────────────────────────
 //
-// `CodeLeser` ist eine Schnittstelle mit einer Methode. Der native Leser ist
-// heute die einzige Umsetzung; ein mitgeliefertes WASM (zxing-wasm, MIT,
-// ~1 MB) wäre die zweite und würde den Desktop mitnehmen. Ob dieses Megabyte
-// in eine App gehört, die heute 260 kB baut, ist eine Eigentümer-Frage und
-// steht so im Backlog — NICHT hier still entschieden.
+// `CodeLeser` ist eine Schnittstelle mit einer Methode. Sie hat zwei
+// Umsetzungen:
 //
-// Die Schnittstelle kostet nichts und macht den Unterschied zwischen einer
-// Entscheidung, die man später trifft, und einer, die man später ausbaut.
-// Sie ist ausserdem der Grund, warum die Schleife unten getestet ist: der
-// Test schiebt einen eigenen Leser hinein und braucht keine Kamera.
+//   nativerLeser   `window.BarcodeDetector` — da, wo es ihn gibt (Android,
+//                  ChromeOS). Nichts nachzuladen, nichts zu bezahlen.
+//   wasmLeser      `zxing-wasm` (MIT), mitgeliefert und NACHGELADEN, erst
+//                  wenn jemand den Scan öffnet. Damit dekodiert der
+//                  Desktop-Rechner im Lagerbüro genauso wie das Telefon.
+//
+// Der Eigentümer hat das WASM am 2026-09-10 ausdrücklich gewählt: „Ohne es
+// dekodiert der Scan nur dort, wo der Browser die native API hat — auf dem
+// Desktop meist nicht." Der Preis steht in derselben Entscheidung: rund ein
+// Megabyte, und deshalb liegt es hinter einem `import()` und nicht im
+// Haupt-Bündel. Wer den Scan nie öffnet, lädt es nie.
+//
+// ─── DIE WASM-DATEI KOMMT AUS DEM BÜNDEL, NICHT AUS DEM NETZ ───────────────
+//
+// `zxing-wasm` holt seine `.wasm` in der Voreinstellung von einem CDN. Das
+// wäre hier ein Rückschritt in genau der Eigenschaft, die diese App
+// ausmacht: ein Lager im Keller ohne Netz hätte einen Scan-Knopf, der beim
+// ersten Griff ins Leere läuft. Die Datei wird deshalb über Vite (`?url`)
+// mitgebaut und dem Modul als `overrides.locateFile` untergeschoben.
+//
+// Der Test schiebt weiterhin einen eigenen Leser hinein und braucht weder
+// Kamera noch WASM.
 // ───────────────────────────────────────────────────────────────────────────
 
 export type ScanHindernis =
@@ -56,7 +71,7 @@ export const HINDERNIS_TEXT: Record<ScanHindernis, string> = {
   'keine-kamera-api':
     'Dieser Browser stellt keine Kamera bereit (`navigator.mediaDevices` fehlt).',
   'kein-decoder':
-    'Dieser Browser bringt keinen Barcode-Leser mit. Chrome hat ihn auf Android und ChromeOS, auf Linux- und Windows-Rechnern nicht — dort bleibt der Handscanner (er tippt in das Feld) oder „Ohne Scan wählen".',
+    'Der mitgelieferte Barcode-Leser liess sich nicht laden. Solange das so ist, bleibt der Handscanner (er tippt in das Feld) oder „Ohne Scan wählen".',
   'keine-erlaubnis':
     'Die Kamera wurde abgelehnt. Im Browser über das Schloss-Symbol in der Adresszeile wieder freigeben.',
 }
@@ -77,7 +92,12 @@ export const umgebungLesen = (): ScanUmgebung => ({
     typeof navigator !== 'undefined' &&
     !!navigator.mediaDevices &&
     typeof navigator.mediaDevices.getUserMedia === 'function',
-  hatDecoder: typeof window !== 'undefined' && 'BarcodeDetector' in window,
+  // Seit dem mitgelieferten WASM ist ein Decoder IMMER da — er muss nur
+  // geladen werden. Die Angabe bleibt trotzdem im Modell: laedt das Modul
+  // nicht (kaputtes Buendel, blockiertes WASM), ist der Grund benannt und
+  // nicht geraten. Sie ist deshalb keine Eigenschaft des Browsers mehr,
+  // sondern eine der Lieferung.
+  hatDecoder: true,
 })
 
 /**
@@ -121,6 +141,80 @@ export const nativerLeser = (): CodeLeser | undefined => {
     },
   }
 }
+
+/**
+ * Der mitgelieferte Leser (`zxing-wasm`).
+ *
+ * Das Modul wird ERST HIER geladen. Die Schleife unten fragt einmal danach,
+ * wenn der Scan aufgeht; wer ihn nie öffnet, lädt kein Megabyte.
+ *
+ * Die `.wasm` kommt aus dem eigenen Bündel: `?url` lässt Vite sie mitbauen
+ * und liefert ihren Pfad, `locateFile` schiebt ihn dem Modul unter. Ohne
+ * diese zwei Zeilen holte `zxing-wasm` sie von einem CDN — und der Scan
+ * fiele im Lager ohne Netz aus, also genau dort, wo er gebraucht wird.
+ *
+ * `undefined`, wenn das Laden scheitert: dann steht in der Oberfläche der
+ * Grund `kein-decoder` und kein toter Knopf.
+ */
+export const wasmLeser = async (): Promise<CodeLeser | undefined> => {
+  try {
+    const [{ prepareZXingModule, readBarcodes }, wasmPfad] = await Promise.all([
+      import('zxing-wasm/reader'),
+      import('zxing-wasm/reader/zxing_reader.wasm?url').then((m) => m.default as string),
+    ])
+    prepareZXingModule({ overrides: { locateFile: () => wasmPfad }, fireImmediately: false })
+    return {
+      async lies(quelle) {
+        // Der Leser will Bilddaten, die Schleife hat ein Canvas-fähiges
+        // Bild. Die Umwandlung steht hier und nicht in der Schleife: sie
+        // gehört zu DIESEM Leser, der native braucht sie nicht.
+        const bild = await bildDatenVon(quelle)
+        if (!bild) return []
+        const treffer = await readBarcodes(bild)
+        return treffer
+          .map((t) => t.text)
+          .filter((v): v is string => typeof v === 'string' && v.length > 0)
+      },
+    }
+  } catch {
+    return undefined
+  }
+}
+
+/** Aus einer Bildquelle die Pixel holen — über ein Offscreen-Canvas. */
+const bildDatenVon = async (quelle: CanvasImageSource): Promise<ImageData | undefined> => {
+  const breite =
+    'videoWidth' in quelle
+      ? (quelle as HTMLVideoElement).videoWidth
+      : 'width' in quelle
+        ? Number((quelle as { width: number }).width)
+        : 0
+  const hoehe =
+    'videoHeight' in quelle
+      ? (quelle as HTMLVideoElement).videoHeight
+      : 'height' in quelle
+        ? Number((quelle as { height: number }).height)
+        : 0
+  if (!breite || !hoehe) return undefined
+  const flaeche = document.createElement('canvas')
+  flaeche.width = breite
+  flaeche.height = hoehe
+  const stift = flaeche.getContext('2d', { willReadFrequently: true })
+  if (!stift) return undefined
+  stift.drawImage(quelle, 0, 0, breite, hoehe)
+  return stift.getImageData(0, 0, breite, hoehe)
+}
+
+/**
+ * Der Leser, der auf diesem Gerät zu haben ist.
+ *
+ * Der native zuerst: er ist schon da und kostet keinen Ladevorgang. Erst
+ * wenn es ihn nicht gibt, kommt das WASM — und wenn auch das nicht lädt,
+ * `undefined`, damit die Oberfläche einen Grund nennen kann statt einer
+ * Kamera, die nie etwas erkennt.
+ */
+export const waehleLeser = async (): Promise<CodeLeser | undefined> =>
+  nativerLeser() ?? (await wasmLeser())
 
 export interface SchleifenOptionen {
   /** Was bei einem neuen Code passieren soll. */

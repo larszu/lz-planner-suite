@@ -47,20 +47,56 @@
 // REIN: keine Uhr, kein Store, kein IO. `heute` kommt von aussen herein —
 // dieselbe Regel wie überall unter `domain/`.
 // ───────────────────────────────────────────────────────────────────────────
-import type { Frist, FristArt, InventoryItem, InventoryUnit } from '../types/inventory'
+import type {
+  EingebauteFristArt,
+  Frist,
+  FristArt,
+  FristArtDef,
+  InventoryItem,
+  InventoryUnit,
+} from '../types/inventory'
 
 export type FristLage = 'ueberfaellig' | 'faellig' | 'ok'
 
 /** Wie der Termin zustande kam. Steht in der Zeile, nicht in einer Fussnote. */
 export type FristQuelle = 'eingetragen' | 'hergeleitet'
 
-export const FRIST_ART_LABEL: Record<FristArt, string> = {
+export const FRIST_ART_LABEL: Record<EingebauteFristArt, string> = {
   'dguv-v3': 'DGUV V3',
   kalibrierung: 'Kalibrierung',
   wartung: 'Wartung',
   akku: 'Akku',
+  haltbarkeit: 'Haltbarkeit',
   sonstige: 'Sonstige',
 }
+
+/**
+ * Wie eine Art auf dem Blatt heißt.
+ *
+ * Drei Fälle, und der dritte ist der Grund, warum diese Funktion existiert:
+ *
+ *   eingebaut   die Übersetzung von oben
+ *   angelegt    der Name, den das Haus vergeben hat
+ *   unbekannt   die Id, ausdrücklich als unbekannt gekennzeichnet
+ *
+ * Der dritte Fall tritt ein, wenn eine Datei aus einem anderen Haus kommt
+ * und ihre Arten-Liste nicht mitgeschickt hat. Ihn auf „Sonstige" zu ziehen
+ * wäre bequem und falsch: der Termin bekäme einen Namen, den niemand
+ * vergeben hat, und niemand wüsste mehr, wonach er zu suchen hat. Die Id
+ * dazuzuschreiben ist eine Auskunft — sie ist das Einzige, was der Datei
+ * noch zu entnehmen ist.
+ */
+export const fristArtLabel = (art: FristArt, eigene: readonly FristArtDef[] = []): string => {
+  const eingebaut = (FRIST_ART_LABEL as Record<string, string | undefined>)[art]
+  if (eingebaut) return eingebaut
+  const treffer = eigene.find((d) => d.id === art)
+  if (treffer) return treffer.name
+  return `${art} (unbekannte Art)`
+}
+
+/** `true`, wenn weder eingebaut noch in der Liste des Hauses. */
+export const istUnbekannteArt = (art: FristArt, eigene: readonly FristArtDef[] = []): boolean =>
+  !(FRIST_ART_LABEL as Record<string, string | undefined>)[art] && !eigene.some((d) => d.id === art)
 
 export interface FristZeile {
   unitId: string

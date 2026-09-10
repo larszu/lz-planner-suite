@@ -83,17 +83,39 @@ describe('Die Fristen überleben Laden und Austausch (B-65)', () => {
     expect(units[0].fristen).toBeUndefined()
   })
 
-  it('4. eine unbekannte Art wird `sonstige` — der Termin geht NICHT verloren', async () => {
-    // Dass ein neuerer Stand eine Sorte kennt, die dieser nicht kennt, ist
-    // kein Grund, einen eingetragenen Prüftermin zu löschen.
+  it('4. eine unbekannte Art bleibt stehen — sie wird NICHT zu `sonstige`', async () => {
+    // ─── DIESER TEST STAND FRÜHER ANDERSHERUM (bis 2026-09-10) ───────────
+    //
+    // Er verlangte, dass `tuev-anhaenger` zu `sonstige` wird, und die
+    // Begründung war gut: dass ein neuerer Stand eine Sorte kennt, die
+    // dieser nicht kennt, ist kein Grund, einen Prüftermin zu löschen.
+    //
+    // Nur löschte die Regel nichts und benannte um. Solange die Arten eine
+    // feste Liste von fünf waren, fiel das kaum auf. Seit das Haus eigene
+    // anlegen darf (Eigentümer-Entscheidung 2026-09-10), macht dieselbe
+    // Zeile aus JEDER eigenen Art „Sonstige": der Termin steht noch auf der
+    // Liste, aber ohne den Grund, aus dem ihn jemand eingetragen hat. Wer
+    // die Liste abarbeitet, weiß nicht mehr, was zu tun ist — und die
+    // `bezeichnung` rettet nur den Fall, in dem jemand sie gesetzt hat.
+    //
+    // Die Art bleibt deshalb stehen, wie sie ist. Kennt die Anzeige sie
+    // nicht, sagt sie das (`istUnbekannteArt`) — eine Auskunft statt einer
+    // Behauptung.
     localStorage.setItem(
       KEY,
       JSON.stringify(bestand([{ art: 'tuev-anhaenger', bezeichnung: 'TÜV Anhänger', faellig: '2027-04-01' }])),
     )
     const units = await frischLaden()
     expect(units[0].fristen).toEqual([
-      { art: 'sonstige', bezeichnung: 'TÜV Anhänger', faellig: '2027-04-01' },
+      { art: 'tuev-anhaenger', bezeichnung: 'TÜV Anhänger', faellig: '2027-04-01' },
     ])
+  })
+
+  it('4b. eine Art ohne jeden Inhalt wird `sonstige` — mehr ist nicht zu holen', async () => {
+    // Die Gegenprobe zu 4: was NICHT dasteht, kann auch nicht stehenbleiben.
+    localStorage.setItem(KEY, JSON.stringify(bestand([{ art: '   ', faellig: '2027-04-01' }])))
+    const units = await frischLaden()
+    expect(units[0].fristen).toEqual([{ art: 'sonstige', faellig: '2027-04-01' }])
   })
 
   it('5. keine Fristen heisst UNBEWERTET, nicht „geprüft"', async () => {
@@ -110,8 +132,8 @@ describe('Die Fristen überleben Laden und Austausch (B-65)', () => {
     expect(zurueck?.units[0].fristen).toEqual([{ art: 'dguv-v3', faellig: '2026-12-01' }])
   })
 
-  it('7. das Format ist auf 6 gegangen, und ein neuerer Stand wird abgelehnt', () => {
-    expect(INVENTORY_FORMAT_VERSION).toBe(6)
+  it('7. das Format ist auf 7 gegangen, und ein neuerer Stand wird abgelehnt', () => {
+    expect(INVENTORY_FORMAT_VERSION).toBe(7)
     expect(
       parseInventory(
         JSON.stringify({ format: INVENTORY_FORMAT, version: INVENTORY_FORMAT_VERSION + 1 }),
@@ -124,5 +146,75 @@ describe('Die Fristen überleben Laden und Austausch (B-65)', () => {
     const zurueck = parseInventory(alt)
     expect(zurueck?.units).toHaveLength(1)
     expect(zurueck?.units[0].fristen).toBeUndefined()
+  })
+
+  it('8. eine eigene Art überlebt das Laden — mit eigenem Schlüssel', async () => {
+    // Eigener Schlüssel mit Absicht: die Arten sind Stammdaten und kein
+    // Bestand. Wer alle Artikel löscht, hat immer noch dieselben Prüfarten.
+    localStorage.setItem(KEY, JSON.stringify(bestand(undefined)))
+    localStorage.setItem(
+      'inventory-planner:fristArten',
+      JSON.stringify([{ id: 'anschlagmittel', name: 'Anschlagmittel', standardIntervallMonate: 12 }]),
+    )
+    vi.resetModules()
+    const mod = await import('../store/inventoryStore')
+    expect(mod.useInventoryStore.getState().fristArten).toEqual([
+      { id: 'anschlagmittel', name: 'Anschlagmittel', standardIntervallMonate: 12 },
+    ])
+  })
+
+  it('9. eine Art ohne Namen ist keine und wird beim Laden verworfen', async () => {
+    // Unter ihr stünde in der Liste nichts, und ein Termin, dessen Art
+    // nichts sagt, ist ein Termin ohne Grund.
+    localStorage.setItem(KEY, JSON.stringify(bestand(undefined)))
+    localStorage.setItem(
+      'inventory-planner:fristArten',
+      JSON.stringify([{ id: 'x', name: '  ' }, { id: '', name: 'Ohne Id' }, { id: 'ok', name: 'Leiterprüfung' }]),
+    )
+    vi.resetModules()
+    const mod = await import('../store/inventoryStore')
+    expect(mod.useInventoryStore.getState().fristArten).toEqual([{ id: 'ok', name: 'Leiterprüfung' }])
+  })
+
+  it('10. eine neue Art kollidiert nicht mit einer eingebauten', async () => {
+    // Zwei Arten mit derselben Id wären für jede Datei danach dieselbe Art.
+    localStorage.setItem(KEY, JSON.stringify(bestand(undefined)))
+    localStorage.removeItem('inventory-planner:fristArten')
+    vi.resetModules()
+    const mod = await import('../store/inventoryStore')
+    mod.useInventoryStore.getState().fristArtAnlegen({ name: 'Wartung' })
+    const arten = mod.useInventoryStore.getState().fristArten
+    expect(arten).toHaveLength(1)
+    expect(arten[0].id).not.toBe('wartung')
+    expect(arten[0].name).toBe('Wartung')
+  })
+
+  it('11. eine gelöschte Art nimmt die eingetragenen Termine NICHT mit', async () => {
+    // Termine zu vernichten, weil jemand eine Beschriftung aufgeräumt hat,
+    // wäre der teuerste Aufräum-Nebeneffekt, den dieses Modul haben könnte.
+    localStorage.setItem(
+      KEY,
+      JSON.stringify(bestand([{ art: 'leiterpruefung', faellig: '2027-04-01' }])),
+    )
+    localStorage.setItem(
+      'inventory-planner:fristArten',
+      JSON.stringify([{ id: 'leiterpruefung', name: 'Leiterprüfung' }]),
+    )
+    vi.resetModules()
+    const mod = await import('../store/inventoryStore')
+    mod.useInventoryStore.getState().fristArtEntfernen('leiterpruefung')
+    const units = mod.useInventoryStore.getState().units
+    expect(units[0].fristen).toEqual([{ art: 'leiterpruefung', faellig: '2027-04-01' }])
+  })
+
+  it('12. die Arten-Liste reist in der Datei mit', () => {
+    const snap = {
+      ...bestand([{ art: 'leiterpruefung', faellig: '2027-04-01' }]),
+      fristArten: [{ id: 'leiterpruefung', name: 'Leiterprüfung', standardIntervallMonate: 12 }],
+    } as Parameters<typeof serializeInventory>[0]
+    const zurueck = parseInventory(serializeInventory(snap))
+    expect(zurueck?.fristArten).toEqual([
+      { id: 'leiterpruefung', name: 'Leiterprüfung', standardIntervallMonate: 12 },
+    ])
   })
 })

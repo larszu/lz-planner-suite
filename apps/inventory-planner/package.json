@@ -22,8 +22,10 @@
   "dependencies": {
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "tesseract.js": "^7.0.0",
     "uuid": "^13.0.0",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "zxing-wasm": "^2.2.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

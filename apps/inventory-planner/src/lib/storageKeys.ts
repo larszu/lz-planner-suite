@@ -23,4 +23,13 @@ export const STORAGE_KEYS = {
   checkouts: 'inventory-planner:checkouts',
   /** Umlagerungen im Lagerbaum. */
   storageMoves: 'inventory-planner:storageMoves',
+  /**
+   * Die selbst angelegten Fristarten des Hauses (Format-Version 7).
+   *
+   * Eigener Schlüssel, weil sie Stammdaten sind und kein Bestand: wer alle
+   * Artikel löscht, hat immer noch dieselben Prüfarten. Im Bestands-Blob
+   * hätte jedes Schreiben sie mit angefasst — für ein Feld, das mit dem
+   * Bestand nichts zu tun hat.
+   */
+  fristArten: 'inventory-planner:fristArten',
 } as const

@@ -24,13 +24,15 @@ import {
   type StorageNode,
   type InventorySet,
   type InventoryUnit,
+  type FristArtDef,
+  EINGEBAUTE_FRIST_ARTEN,
 } from '../src/index'
 
 // Eingefrorener Contract — Aenderung nur mit Versionssprung.
 const CONTRACT = {
   format: 'avplan-inventory',
-  version: 6,
-  envelopeKeys: ['app', 'exportedAt', 'format', 'items', 'nodes', 'sets', 'units', 'version'],
+  version: 7,
+  envelopeKeys: ['app', 'exportedAt', 'format', 'fristArten', 'items', 'nodes', 'sets', 'units', 'version'],
   itemKeys: ['category', 'code', 'codeType', 'createdAt', 'deviceTypeId', 'dimensions', 'id', 'locationId', 'manufacturer', 'materialKinds', 'mindestmenge', 'model', 'notes', 'ownership', 'quantity', 'rentPricePerDay', 'returnDue', 'stockLocation', 'supplier', 'updatedAt', 'ursprungsland'],
   nodeKeys: ['code', 'codeType', 'createdAt', 'dimensions', 'id', 'kind', 'name', 'notes', 'parentId', 'updatedAt'],
   setKeys: ['components', 'createdAt', 'id', 'name', 'notes', 'updatedAt'],
@@ -76,7 +78,25 @@ const unit: InventoryUnit = {
   fristen: [{ art: 'dguv-v3', zuletzt: '2026-03-09', intervallMonate: 12 }],
   createdAt: 't', updatedAt: 't',
 }
-const snapshot: InventorySnapshot = { items: [item], nodes: [node], sets: [set], units: [unit] }
+/**
+ * Eine selbst angelegte Fristart (Version 7). Sie MUSS den Round-Trip
+ * ueberleben: ohne sie steht drueben ein Termin, dessen Art niemand mehr
+ * benennen kann.
+ */
+const eigeneArt: FristArtDef = {
+  id: 'anschlagmittel',
+  name: 'Anschlagmittel',
+  standardIntervallMonate: 12,
+  grundlage: 'DGUV Regel 100-500',
+}
+
+const snapshot: InventorySnapshot = {
+  items: [item],
+  nodes: [node],
+  sets: [set],
+  units: [unit],
+  fristArten: [eigeneArt],
+}
 
 const sortedKeys = (o: object) => Object.keys(o).sort()
 
@@ -121,6 +141,47 @@ describe('avplan-inventory Wire-Contract (Drift-Guard)', () => {
     const nackt = { ...unit, id: 'f47ac10b-58cc', houseRef: undefined, serial: undefined, code: undefined }
     expect(unitLabel(nackt)).toBe('ohne Nummer')
     expect(unitLabel(nackt)).not.toContain('f47ac1')
+  })
+
+  it('eine selbst angelegte Fristart ueberlebt den Round-Trip', () => {
+    const back = parseInventory(serializeInventory(snapshot))
+    expect(back?.fristArten).toEqual([eigeneArt])
+  })
+
+  it('eine unbekannte Art wird NICHT zu `sonstige` gemacht', () => {
+    // Der Kern der Version 7. Bis 2026-09-10 zog jeder Leser eine unbekannte
+    // Art auf `sonstige` -- gut gemeint, damit ein Termin nicht verschwindet,
+    // aber sobald ein Haus eigene Arten fuehrt, macht dieselbe Zeile aus
+    // JEDER davon „Sonstige". Der Termin steht dann noch auf der Liste, ohne
+    // den Grund, aus dem ihn jemand eingetragen hat.
+    const fremd: InventorySnapshot = {
+      ...snapshot,
+      fristArten: undefined,
+      units: [{ ...unit, fristen: [{ art: 'nebelfluid-charge', faellig: '2027-01-31' }] }],
+    }
+    const back = parseInventory(serializeInventory(fremd))
+    expect(back?.units[0]?.fristen?.[0]?.art).toBe('nebelfluid-charge')
+  })
+
+  it('`haltbarkeit` ist eingebaut — Verbrauchsgut braucht kein zweites Modell', () => {
+    expect(EINGEBAUTE_FRIST_ARTEN).toContain('haltbarkeit')
+    // Und die vier alten sind noch da: eine Datei von gestern nennt sie.
+    for (const alt of ['dguv-v3', 'kalibrierung', 'wartung', 'akku', 'sonstige']) {
+      expect(EINGEBAUTE_FRIST_ARTEN).toContain(alt)
+    }
+  })
+
+  it('eine Datei der Version 6 bleibt lesbar — ohne Arten-Liste', () => {
+    const v6 = JSON.stringify({
+      format: CONTRACT.format,
+      version: 6,
+      items: [item], nodes: [node], sets: [set], units: [unit],
+    })
+    const back = parseInventory(v6)
+    expect(back?.units).toHaveLength(1)
+    // Keine Liste heisst KEINE eigenen Arten -- nicht eine leere Liste, die
+    // aussaehe, als haette jemand alle geloescht.
+    expect(back?.fristArten).toBeUndefined()
   })
 
   it('parse lehnt fremdes Format und hoehere Version ab', () => {

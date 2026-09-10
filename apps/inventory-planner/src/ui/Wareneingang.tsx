@@ -40,6 +40,7 @@
 //   Ansicht, und dagegen ist sie gebaut.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react'
+import { OCR_HINDERNIS_TEXT, sprachdatenDa, tesseractErkenner } from '../lib/belegOcr'
 import { useInventoryStore } from '../domain/store/inventoryStore'
 import { lesen, buchbar, type EingangsEigentum } from '../domain/lib/wareneingang'
 import { OWNERSHIP_LABEL } from '../domain/lib/ownership'
@@ -59,6 +60,40 @@ export function Wareneingang() {
   const [eigentum, setEigentum] = useState<EingangsEigentum>('owned')
   const [lieferant, setLieferant] = useState('')
   const [gebucht, setGebucht] = useState<string | null>(null)
+  // ── Beleg-Foto ──────────────────────────────────────────────────────────
+  // Der erkannte Text landet IM FELD oben und nicht in der Buchung. Damit
+  // ist das Foto eine Abkürzung beim Tippen und keine zweite Wahrheit: der
+  // Weg über `lesen()` und die Vorschau bleibt der einzige, der schreibt.
+  const [ocrLaeuft, setOcrLaeuft] = useState(false)
+  const [ocrFehler, setOcrFehler] = useState<string | null>(null)
+  const [ocrSicherheit, setOcrSicherheit] = useState<number | null>(null)
+
+  const fotoLesen = async (datei: File) => {
+    setOcrFehler(null)
+    setOcrSicherheit(null)
+    setOcrLaeuft(true)
+    try {
+      if (!(await sprachdatenDa())) {
+        setOcrFehler(OCR_HINDERNIS_TEXT['sprachdaten-fehlen'])
+        return
+      }
+      const erkenner = await tesseractErkenner()
+      if (!erkenner) {
+        setOcrFehler(OCR_HINDERNIS_TEXT['kein-worker'])
+        return
+      }
+      const ergebnis = await erkenner.lies(datei)
+      // ANGEHÄNGT, nicht ersetzt: wer schon die Hälfte getippt hat, verliert
+      // sie nicht, weil er danach noch ein Foto hinzunimmt.
+      setText((vorher) => (vorher.trim() ? `${vorher.trimEnd()}\n${ergebnis.text.trim()}` : ergebnis.text.trim()))
+      setOcrSicherheit(ergebnis.sicherheit)
+      setGebucht(null)
+    } catch (e) {
+      setOcrFehler(e instanceof Error ? e.message : String(e))
+    } finally {
+      setOcrLaeuft(false)
+    }
+  }
 
   const bericht = useMemo(() => lesen(text, items), [text, items])
   const zuBuchen = useMemo(() => buchbar(bericht), [bericht])
@@ -120,6 +155,39 @@ export function Wareneingang() {
           placeholder={'4 x Shure ULXD2\nXLR 3m; 10; 3,50\n2 Manfrotto Stativ'}
           aria-label="Positionen des Lieferscheins"
         />
+
+        {/* ── Foto statt tippen ─────────────────────────────────────────
+            Die Erkennung läuft LOKAL (tesseract.js). Kein Beleg verlässt
+            den Rechner — auf einem Lieferschein stehen Kunden- und
+            Lieferantennamen. Der Preis dafür ist eine schwächere Erkennung
+            bei schlechten Fotos, und genau deshalb landet das Ergebnis im
+            Feld darüber: der Mensch liest es, bevor irgendetwas gebucht
+            wird. */}
+        <div className="zeile">
+          <label className="datei-knopf">
+            {ocrLaeuft ? 'Beleg wird gelesen…' : 'Beleg-Foto einlesen'}
+            <input
+              type="file"
+              accept="image/*"
+              disabled={ocrLaeuft}
+              onChange={(e) => {
+                const datei = e.target.files?.[0]
+                e.target.value = ''
+                if (datei) void fotoLesen(datei)
+              }}
+              aria-label="Foto oder Scan des Lieferscheins"
+            />
+          </label>
+          {ocrSicherheit !== null && (
+            <span className="leise">
+              {/* Die Zahl steht da und ist KEINE Schwelle im Code: eine
+                  Grenze, ab der ein Ergebnis „gut" ist, wäre eine
+                  Behauptung über fremde Fotos. */}
+              Erkennung {ocrSicherheit} % sicher — Zeilen bitte durchsehen.
+            </span>
+          )}
+        </div>
+        {ocrFehler && <p className="warnung">{ocrFehler}</p>}
       </div>
 
       {bericht.zeilen.length > 0 && (
