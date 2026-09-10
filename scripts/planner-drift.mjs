@@ -192,6 +192,57 @@ const SUITE_OVERLAY = {
 }
 
 /**
+ * B-5 — die suite-ahead-Liste, DURCHGEGANGEN, mit dem Stand ihrer Sichtung.
+ *
+ * ─── WOZU DIE ZAHL DANEBEN ─────────────────────────────────────────────────
+ *
+ * Der Bericht nennt die Dateien seit `suite#64`. Die Frage, die er stellt, ist
+ * „hat jemand draufgeschaut?" — und eine reine Namensliste beantwortet sie
+ * genau einmal. Wer eine Datei ansieht und abhakt, hat sie in DEM Zustand
+ * angesehen, in dem sie damals war; die naechste Suite-eigene Zeile faellt
+ * danach unter denselben Haken.
+ *
+ * Deshalb steht hier die Anzahl der suite-eigenen Zeilen zum Zeitpunkt der
+ * Sichtung. Weicht sie ab, sagt der Bericht „gewachsen" statt „gesichtet", und
+ * die Frage ist wieder offen. Dieselbe Bauform wie der eingefrorene Bestand in
+ * `cable-planner/tests/pruefMeldungenGewickelt.test.ts`.
+ *
+ * ─── DER STAND AM 2026-09-10 ───────────────────────────────────────────────
+ *
+ * Alle acht Dateien durchgegangen, Ergebnis: acht bewusste Ueberlagerungen,
+ * NULL Rueckportierungen. Was sie tragen, ist Lexware (upstream gibt es die
+ * Domaene nicht) und die Shell-Einbettung (Theme, Seed, Cross-Link, Tally,
+ * Undo/Redo). Beides gehoert in die Suite und nicht nach upstream.
+ *
+ * Das ist kein Freibrief fuer die naechste Datei: die Trefferquote roher
+ * Kandidaten lag bei 3 von 9 (B-5), es kann also jederzeit eine echte kommen.
+ */
+const GESICHTET = {
+  'cable-planner': {
+    // Shell-Einbettung: Theme, Settings, Undo/Redo, Seed, Tally, Cross-Link.
+    'renderer/main.tsx': 55,
+    // Lexware-Schluessel im OS-Credential-Store — eigene Domaene der Suite.
+    'main/services/credentialsService.ts': 15,
+    // Zaehlt die Lexware-Domaene als Nicht-Geraete-Weg mit; upstream kennt sie nicht.
+    'tests/deviceReadSites.test.ts': 12,
+    // contextBridge fuer `lexware:*`.
+    'main/preload.cts': 9,
+    // Typen zu ebendiesem contextBridge-Zweig.
+    'vite-env.d.ts': 6,
+    // `registerLexwareIpc()`.
+    'main/index.ts': 2,
+  },
+  'multicam-planner': {
+    // Shell-Einbettung: Theme-Mapping, declareNoHistory, Seed, Reveal, Settings.
+    'main.tsx': 37,
+  },
+  'light-planner': {
+    // Drei Kommentarzeilen, die den `dlg.`-Praefix der vendorten Fassung erklaeren.
+    'scripts/work-notes-check.ts': 3,
+  },
+}
+
+/**
  * Wie REPLACED_BY_PACKAGE, aber mit Wurzel-Praefix -- fuer Wurzeln ausserhalb
  * von `src`. `scripts/inventory-contract-check.ts` friert upstream den
  * Wire-Contract des portablen Lagers ein; in der Suite tut das
@@ -755,6 +806,16 @@ lines.push('Ueberlagerung: `@avplan/*`-Importe, Shell-Einbettung, Theme, Web sta
 lines.push('Electron. Gemessen waren das 41 von 50 untersuchten Dateien. Die Frage,')
 lines.push('die hier gestellt wird, ist nur: *hat jemand draufgeschaut?*')
 lines.push('')
+lines.push('**Die Spalte `gesichtet` beantwortet sie jetzt (B-5, 2026-09-10).** Alle')
+lines.push('acht Dateien wurden durchgegangen: acht bewusste Ueberlagerungen, NULL')
+lines.push('Rueckportierungen -- Lexware (upstream gibt es die Domaene nicht) und die')
+lines.push('Shell-Einbettung (Theme, Seed, Cross-Link, Tally, Undo/Redo).')
+lines.push('')
+lines.push('Der Haken haelt aber nur den Stand, in dem die Datei angesehen wurde:')
+lines.push('`GESICHTET` in `scripts/planner-drift.mjs` traegt die Zeilenzahl von')
+lines.push('damals. Kommt eine suite-eigene Zeile dazu, steht hier **gewachsen**')
+lines.push('statt **ja**, und die Frage ist wieder offen.')
+lines.push('')
 lines.push('Warum es zaehlt: in Suite-PR #1 wurde ein nativer Dialog in `CollabPanel`')
 lines.push('ersetzt, upstream bekam den Fix nie -- und der abgehakte Punkt 41 in')
 lines.push('`docs/ux-audit.md` war damit fuer den Suite-Code richtig und fuer den')
@@ -767,8 +828,25 @@ for (const r of results) {
     .sort((a, b) => b.suiteOnly - a.suiteOnly)
   if (!sa.length) continue
   anySuiteAhead = true
-  lines.push(`### ${r.app}`, '', '| File | lines only in suite |', '| --- | --- |')
-  for (const f of sa) lines.push(`| \`${f.file}\` | ${f.suiteOnly} |`)
+  lines.push(
+    `### ${r.app}`,
+    '',
+    '| File | lines only in suite | gesichtet (B-5) |',
+    '| --- | --- | --- |',
+  )
+  const gesichtet = GESICHTET[r.app] ?? {}
+  for (const f of sa) {
+    const stand = gesichtet[f.file]
+    // Drei Zustaende, und der mittlere ist der Punkt: eine Datei, die schon
+    // einmal angesehen wurde und seither gewachsen ist, ist NICHT gesichtet.
+    const marke =
+      stand === undefined
+        ? '**offen**'
+        : stand === f.suiteOnly
+          ? 'ja'
+          : `**gewachsen** (${f.suiteOnly} statt ${stand})`
+    lines.push(`| \`${f.file}\` | ${f.suiteOnly} | ${marke} |`)
+  }
   lines.push('')
 }
 if (!anySuiteAhead) lines.push('None.', '')

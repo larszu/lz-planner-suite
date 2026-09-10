@@ -125,6 +125,30 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
 * **Lehre daraus:** die Trefferquote roher Kandidaten lag bei **3 von 9**. Ein
   Guard, der automatisch urteilt, wäre also zu zwei Dritteln falsch gewesen.
   Die Liste vorzulegen ist richtig, sie zu bewerten bleibt Handarbeit.
+* **Die Liste ist durchgegangen, und der Bericht sagt jetzt, ob sie es noch
+  ist (2026-09-10).** Alle **acht** heutigen `suite-ahead`-Dateien einzeln
+  gegen die Upstream-Fassung gelesen. Ergebnis: **acht bewusste Überlagerungen,
+  null Rückportierungen.**
+  * `cable-planner` (6): `renderer/main.tsx` (Shell-Einbettung — Theme, Seed,
+    Cross-Link, Tally, Undo/Redo), `main/services/credentialsService.ts`,
+    `main/preload.cts`, `vite-env.d.ts`, `main/index.ts` und
+    `tests/deviceReadSites.test.ts` — die vier Letzteren tragen ausschliesslich
+    **Lexware**, und diese Domäne gibt es upstream nicht (E-12: sie gehört in
+    die Shell).
+  * `multicam-planner` (1): `main.tsx` — Theme-Mapping, `declareNoHistory()`,
+    Seed, Reveal, Settings.
+  * `light-planner` (1): `scripts/work-notes-check.ts` — drei Kommentarzeilen,
+    die den `dlg.`-Präfix der vendorten Fassung erklären.
+* **Ein Haken allein hätte die Frage genau einmal beantwortet.** Wer eine Datei
+  ansieht und abhakt, hat sie in DEM Zustand angesehen; die nächste
+  suite-eigene Zeile fiele danach unter denselben Haken. `GESICHTET` in
+  `scripts/planner-drift.mjs` trägt deshalb die **Zeilenzahl zum Zeitpunkt der
+  Sichtung**, und die Spalte im Bericht schreibt `ja`, `**gewachsen** (N statt
+  M)` oder `**offen**`. Dieselbe Bauform wie der eingefrorene Bestand in
+  `cable-planner/tests/pruefMeldungenGewickelt.test.ts`.
+* **Was das NICHT heisst:** dass die nächste Datei auch eine Überlagerung ist.
+  Die Trefferquote von 3 von 9 steht weiter — der Haken sagt „angesehen", nicht
+  „unbedenklich".
 * **Befund:** `scripts/planner-drift.mjs` **zählt** `suite-ahead` (heute: cable
   8, multicam 1), **listet die Dateien aber in keinem Abschnitt auf.** Nur die
   `two-way`-Dateien werden namentlich genannt. Genau deshalb läuft diese Liste
