@@ -3612,6 +3612,90 @@ belegbar, dort sind sie erprobt.
   Griff auf dem Strich"** — die Frage, die der Nutzer gestellt hat.
 * **Aufwand:** mittel — erledigt.
 
+### B-66 · „Man kann das gesamte Fenster aus Versehen verschieben" — die Kneif-Geste gehörte dem Browser, nicht dem Plan
+
+* **Status:** **erledigt 2026-09-10** — `cable#850`. **Nutzer-Meldung,
+  2026-09-10, mit einem Schirmbild der GitHub-Seite auf einem iPhone:**
+  „Verbessere die mobile Ansicht. Der Screenshot ist von der GitHub Page.
+  Man kann das gesamte Fenster aus Versehen verschieben." Auf dem Bild war
+  der Inhalt nach links geschoben, rechts stand ein schwarzer Streifen, die
+  Reihe der Ebenen-Chips endete mitten im Wort „Control", und die
+  Statuszeile war unten abgeschnitten.
+
+* **Vier Ursachen, und drei davon sahen im Quelltext richtig aus.** Gemessen
+  wurde in einem echten Browser, 390×844, Fingerbedienung, gegen den
+  gebauten Renderer (`dist/renderer`) — genau die Seite, die GitHub Pages
+  ausliefert:
+
+  | Befund | vorher | nachher |
+  |---|---|---|
+  | Elemente über den rechten Rand hinaus | **18** (Chip-Streifen bis Pixel 726) | **0** |
+  | Breite des Plans im Haupt-Raster | **125 px** (zwischen 129 px Bibliothek und 129 px Eigenschaften) | **318 px** |
+  | `overflow` an `html`/`body` | `visible` | `hidden` (nur für die Vollbild-Anwendung) |
+  | `overscroll-behavior` | `auto` | `none` |
+  | `touch-action` am Plan-Renderer | `auto` | `none` |
+  | `visualViewport.scale` nach einem Kneifen auf dem Plan | **1 → 2**, Versatz 98/250 px | siehe „nicht gemessen" |
+
+* **Die eigentliche Antwort auf die Meldung ist die Kneif-Geste.** Eine
+  einmal vergrößerte Seite lässt sich danach mit einem Finger beliebig
+  herumschieben — das ist das „Fenster verschieben". ReactFlow bringt für
+  `zoomOnPinch` seinen eigenen Handler mit, aber sein Stilblatt setzt **kein
+  `touch-action`**; ohne das nimmt der Browser die Zwei-Finger-Geste vorweg,
+  und der Handler kommt gar nicht erst dran. Dieselbe Lehre steht seit
+  `light#108` im `light-planner` an `.plan-canvas` — sie war nur nie
+  hierher übertragen worden. Die Regel sitzt an `.react-flow__renderer` und
+  **nicht** an `.react-flow`: `touch-action` schneidet sich über die
+  Vorfahren, ein Nachfahre kann nicht wieder aufmachen, was ein Vorfahre
+  zugemacht hat — an `.react-flow` lägen Minimap und Steuerkreuz mit
+  darunter.
+
+* **Die Einklappung für schmale Fenster gab es längst — sie sprang nur nie
+  an.** `App.tsx` klappt die Seiten-Panels unter 1024 px ein (#444). Der
+  Wächter dagegen stand im selben Effekt: `useRef(isNarrow)` plus
+  `if (isNarrow === prevNarrowRef.current) return`. Gemeint war „nur beim
+  Überschreiten der Schwelle, damit der Ausklapp-Knopf im schmalen Modus
+  weiter funktioniert". Getan hat es zusätzlich etwas anderes: **beim ersten
+  Rendern gibt es kein Überschreiten.** Wer das Fenster am Schreibtisch
+  schmal zog, sah die Panels zusammenklappen; wer die Seite auf einem Telefon
+  **öffnete**, sah sie nicht. Der Startwert steht jetzt auf `false` („zuletzt
+  war es breit"), damit ein schmaler Erststart ein Übergang ist.
+
+* **Der Chip-Streifen konnte nicht umbrechen, obwohl die Leiste es kann.**
+  Die Werkzeugleiste hat `flexWrap` — aber ein einzelnes Flex-Kind bricht
+  nicht von allein, und `LayerVisibilityChips` war eines. Mit `flex-wrap`
+  und `min-w-0` faltet sich der Streifen jetzt in drei Reihen.
+
+* **Der erste Anlauf hat die Mobil-Ansicht kaputtgemacht, und der Wächter
+  hält jetzt genau das fest.** `html, body { overflow: hidden }` stand
+  zunächst global — `mobile.html` und `viewer.html` laden aber **dasselbe**
+  Stilblatt und sind scrollende Seiten. Gemessen: die Mobil-Liste blieb bei
+  3000 px Inhalt auf `scrollY = 0` stehen, die Seite war nach dem ersten
+  Bild zu Ende, und zwar lautlos. Die Sperre hängt deshalb an der Marke
+  `data-cp-shell="app"` in `index.html`, und Regel 8 des Wächters misst die
+  Kehrseite derselben Entscheidung.
+
+* **Was der Wächter kann und was nicht** (`npm run mobil:check`,
+  `scripts/mobil-grenze-check.mjs`, in CI im `ui-smoke`-Job): er misst im
+  echten Browser Überhang, Dokumentgröße, die berechneten `overflow`- und
+  `overscroll-behavior`-Werte, `touch-action` am Plan-Renderer, die Lage der
+  Statuszeile, die Breite des Plans und das Scrollen der beiden anderen
+  Einstiege. Er misst **nicht**, ob eine echte Kneif-Geste am Ende die Seite
+  in Ruhe lässt: der Kneif-Ersatz der Fernsteuerung (CDP
+  `Input.synthesizePinchGesture` wie auch `Input.dispatchTouchEvent`)
+  vergrößert die Seite unter headless-Chromium **auch mit**
+  `touch-action: none` — die Gegenprobe mit und ohne die Regel lieferte
+  denselben Wert. Eine Messung, die den Unterschied nicht sieht, wäre ein
+  Wächter, der immer grün ist; geprüft wird deshalb die Voraussetzung, ohne
+  die es sicher falsch ist, und der Lauf sagt das in seiner Ausgabe. Safaris
+  `gesture*`-Ereignisse werden im Quelltext nachgesehen, nicht gemessen —
+  Safari läuft in CI nicht.
+* **Gegengeprobt:** gegen den Stand vor der Änderung meldet der Lauf alle
+  acht Befunde (18 Überhänge, `overflow` fehlt, `overscroll-behavior` auto,
+  `touch-action` auto, 125 px Plan, drei fehlende `gesture*`-Hörer); mit
+  global gesetzter Sperre meldet er die beiden nicht mehr scrollenden
+  Einstiege.
+* **Aufwand:** klein — erledigt.
+
 ### B-49 · Bedarfs-Audit: die siebzehn, die nirgends stehen
 
 * **Status:** Audit **erledigt 2026-09-08**; die daraus folgende Arbeit steht
@@ -4095,6 +4179,13 @@ und die Zeilen E-4, E-5 und E-14 zeigen, dass hier auch schon Entscheidungen
 korrigiert worden sind. Wer eine davon umdreht, findet hier, wogegen er
 argumentiert.
 
+**Eine Zeile ist am 2026-09-10 dazugekommen** — E-29, und sie ist die
+einzige der Tabelle, die einen Fund festhält statt einer Bauentscheidung: die
+unverpixelten Kunden-Bildschirmfotos in der Git-Historie. Sie steht hier und
+nicht im Fundteil oben, weil das Ergebnis eine Eigentümer-Entscheidung ist
+(„so lassen") und weil ein Fund ohne Entscheidung beim nächsten Durchgang
+wieder als neue Meldung aufschlägt. Genau das soll diese Zeile verhindern.
+
 **Drei Zeilen sind am 2026-09-09 dazugekommen** — E-25, E-26 und E-27, alle
 drei vom Eigentümer selbst entschieden (Schreibschutz des Tally-Pi, das Werkzeug
 für Festinstallationen, das Lager als eigenes Werkzeug mit eigener Oberfläche).
@@ -4143,6 +4234,7 @@ Anzeige-Regel — sie steht in E-23 und ist dort schärfer formuliert als vorher
 | ~~E-25~~ | ~~Bekommt der **Tally-Pi** einen Schreibschutz an seinen HTTP-Wegen?~~ | **entschieden 2026-09-09 vom Eigentümer: NEIN — der Status quo bleibt, aber er wird GESAGT.** Siehe B-58 für den vollständigen Befund. Die Kurzfassung des Grundes: der Pi liefert seine eigene Bedienseite aus und schreibt darüber ohne Kopf, also sperrt ein Token entweder die eigene Seite aus oder liegt für jeden im Netz bereit. Ein Schutz, der genau das nicht verhindert, wogegen er antritt, ist eine Beschriftung. Der Eigentümer hat deshalb **nicht die Sicherheit gesenkt, sondern die Lage benannt**: die Einstellungs-Karte im Cable-Planner schreibt beim Eintragen der Adresse hin, dass der Pi keinen Nachweis verlangt (`settings.integrations.tallyPi.noToken`), und `tests/tallyDirektweg.test.ts` hält fest, dass der Dienst auch keinen mitschickt. **Die Entscheidung trägt ihre eigene Verfallsbedingung:** sobald der Pi in einem Netz steht, das nicht dem Betreiber gehört (Haus-WLAN, geteilte Produktionsleitung, Gast-Netz), gilt sie nicht mehr |
 | ~~E-26~~ | ~~Was passiert mit **Festinstallation, Elektroplanung und Haussteuerung** (`cable#665/#666/#667`)?~~ | **entschieden 2026-09-09 vom Eigentümer: eigenes Repo, Gerüst bauen** — `larszu/larszu-facility-planner` (so heisst es wirklich — beim Anlegen ist der Eigentuemer-Name mit in den Repo-Namen geraten), eingebunden wie die anderen Planer, erste Modelle Schaltschrank / UP-AP-Dose / Stromkreis. Der Vertrag dazu (Schritt 1 nach ADR-006) steht seit demselben Tag im ADR: sechs Fragen, ein Rückweg, und die ausdrückliche Liste dessen, was **nicht** mitzieht. **Zwei Dinge korrigiert die Entscheidung an der Fassung vom 2026-09-07:** `#666` (Wechselschaltungen mit Logikprüfung) **bleibt Kern** — der Eigentümer hat es am 2026-09-08 ausdrücklich verlangt und `cable#771/#782/#788` haben es gebaut; und `#665` teilt sich, weil Mehrfachsteckdose und Verteiler Show-Material sind (B-52) und nur Schaltschrank und UP-/AP-Dose dem Haus gehören. **Blockiert am Anlegen des Repos:** `POST /user/repos` → `403 Resource not accessible by integration` |
 | ~~E-27~~ | ~~Wird das **Lager** ein eigenes Werkzeug — und mit welcher Oberfläche?~~ | **entschieden 2026-09-09 vom Eigentümer: eigenes Repo MIT eigener Oberfläche** — nicht nur ein Paket, das der Planer benutzt. Bestand, Ausgabeschein und Sub-Hire bekommen ihre eigene Bedienung für den Lageristen, die Suite bindet sie ein wie die Planer. Damit ist die offene Hälfte von ADR-006 geschlossen: Schritt 1 (der Vertrag) steht seit 2026-09-07 im ADR, Schritt 2 (Paket vor Repo) ist gebaut — `src/renderer/lager/` hinter vier Haken und einem Schreibweg, gehalten von `tests/lagerVertrag.test.ts` —, offen ist Schritt 3. **Blockiert am selben 403** wie E-26 |
+| ~~E-29~~ | ~~Was passiert mit den **Kunden-Rohbildern in der Git-Historie** der beiden öffentlichen Repos?~~ | **entschieden 2026-09-10 vom Eigentümer: so lassen, aber eintragen.** Der Fund: `cable-planner` trägt in seiner Historie **21 unverpixelte Bildschirmfotos** derselben Anlage — `docs/screenshots/Screenshot (562).png` bis `(583).png`, dazu derselbe Blob unter `Screenshot (561).png` und `hero.png.png` (`f8c6ac51d20d98234f33f29dae92a8b3a22d307f`, 1.463.284 Byte). Sichtbar darauf: Projektname in Titel- und Statuszeile, die Rentman-Zeile mit dem Kundennamen, 146 Geräte / 227 Kabel, Windows-Taskleiste mit Datum. Keines liegt im Arbeitsbaum; alle sind über ihre alten Commits abrufbar. Die Suite trägt davon nur `hero.png.png`. **Ein erster Durchlauf ist gelaufen** (`git filter-repo --path docs/screenshots/hero.png.png --invert-paths`, force-push, `main` steht seither auf `92afee1d`) — er traf den Pfad und nicht den Inhalt, und derselbe Blob blieb unter dem zweiten Namen erreichbar. Der Durchlauf, der alle 21 trifft (`--strip-blobs-with-ids`), wird von der Sandbox als *Git Destructive* abgelehnt. **Was die Entscheidung mitträgt:** selbst ein sauberer Durchlauf räumt es nicht ganz weg — GitHub hält die alten Commits über die `refs/pull/*` und über direkte SHA-URLs weiter vor, das entfernt nur der Support auf Anfrage. Repo löschen war ausdrücklich ausgeschlossen, privat schalten hätte Pages und Web-Viewer gekostet. **Wer das umdreht, braucht: eine Bash-Freigabe für `git filter-repo`, die 21 Blob-Ids (stehen in der Historie unter dem Ordner `docs/screenshots/`), und ein Support-Ticket.** |
 
 ---
 
