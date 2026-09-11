@@ -646,6 +646,8 @@ export const de: Dict = {
   'app.menu.tools.wirelessRig.note': 'Frequenzen, Sender, Empfänger im Spektrum',
   'app.menu.view': 'Ansicht',
   'app.menu.view.annotations': 'Anmerkungen-Panel',
+  'app.menu.view.canvasSearch': 'Gerät suchen',
+  'app.menu.view.canvasToolbar': 'Werkzeugleiste',
   'app.menu.view.colorByLayer': 'Kabelfarbe nach Gewerk',
   'app.menu.view.colorByLength': 'Kabelfarbe nach Länge',
   'app.menu.view.fit': 'Einpassen',
@@ -1448,6 +1450,8 @@ export const de: Dict = {
   'canvas.pattern.switchTitle':
     'Die Kreuzpunkte setzen, die der Plan für einen Weg vorsieht — ein Eingriff in die laufende Anlage. Es werden nur die Ausgänge dieses Wegs geschaltet, der Plan bleibt unverändert.',
   'canvas.pattern.unchecked': '· {n} ungeprüft',
+  'canvas.search.close': 'Suche schliessen (Ansicht-Menü oder Strg+F holt sie zurück)',
+  'canvas.search.collapse': 'Zur Pille einklappen',
   'canvas.search.depends': '{n} daran: {liste}',
   'canvas.search.f.assetTag': 'Inventar-Nr.',
   'canvas.search.f.category': 'Kategorie',
@@ -4984,6 +4988,7 @@ export const de: Dict = {
   'settings.title': 'Einstellungen',
   'shortcut.ctrlA': 'Strg+A',
   'shortcut.ctrlD': 'Strg+D',
+  'shortcut.ctrlF': 'Strg+F',
   'shortcut.ctrlK': 'Strg+K',
   'shortcut.ctrlN': 'Strg+N',
   'shortcut.ctrlO': 'Strg+O',
@@ -5262,6 +5267,7 @@ export const de: Dict = {
   'toolbar.bulkConnect.label': 'Kabel verbinden',
   'toolbar.bulkConnect.title':
     'Mehrere Kabel zwischen den zwei markierten Geräten auf einmal anlegen',
+  'toolbar.close': 'Werkzeugleiste schliessen (Ansicht-Menü holt sie zurück)',
   'toolbar.defaults.arrowEnd': 'Pfeil am Kabel-Ende',
   'toolbar.defaults.arrowEndHint': 'Frisch gezogene Kabel bekommen einen Pfeil',
   'toolbar.defaults.bumps': 'Kabelbrücken bei Kreuzungen',

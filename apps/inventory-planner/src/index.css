@@ -1,14 +1,37 @@
-/* Schlichte Grundgestalt. Die Marken-Palette der Suite (ADR-007) zieht mit dem
-   Einbetten nach; bis dahin ist eine lesbare Tabelle mehr wert als ein Thema,
-   das gleich wieder ersetzt wird. */
+/* ADR-007 (av-planner-suite) — die Marken-Palette der Suite, Stufe 6.
+ *
+ * HIER STAND: „Die Marken-Palette der Suite (ADR-007) zieht mit dem Einbetten
+ * nach; bis dahin ist eine lesbare Tabelle mehr wert als ein Thema, das gleich
+ * wieder ersetzt wird." Das war 2026-09-09 richtig — dieses Repo war einen Tag
+ * alt. Eingebettet ist es seit dem Vendoring, und damit ist „bis dahin"
+ * vorbei: gemessen am 2026-09-11 trugen die acht Repos aus dem
+ * ADR-Geltungsbereich alle `#1D324F`, dieses hier keines davon. Ein Planer,
+ * der neben den anderen in derselben Schale steht und anders aussieht, ist
+ * genau das, wogegen die Regeln geschrieben wurden.
+ *
+ * DIE REGELNAMEN BLEIBEN UNVERAENDERT. Umgestellt sind die Werte, nicht die
+ * Struktur — dieselbe Form wie bei `pi-media-station` und `tally-pi`. Werte und
+ * Rollen: `@avplan/ui`, `src/brand.ts` (aus dem Brand Guide 2.0).
+ *
+ * `--signal` ist Tally-Rot und steht hier bewusst allein: es ist das
+ * Aufnahmelicht, nie Flaeche, nie Text, nie zweimal in einem Sichtfeld. Die
+ * Status-Toene daneben (`--warn`, `--gefahr`, `--ok`) sind die Meldefarben des
+ * Handbuchs und ausdruecklich NICHT dasselbe — wer eine Warnung in Tally-Rot
+ * setzt, nimmt dem Signal seine Bedeutung.
+ *
+ * Keine Rundungen, keine Schatten, keine Verlaeufe (Guide S. 10). */
 :root {
   color-scheme: dark;
-  --bg: #0f172a;
-  --flaeche: #1e293b;
-  --rand: #334155;
-  --text: #e2e8f0;
-  --leise: #94a3b8;
-  --warn: #f59e0b;
+  --bg: #132040;                        /* Deep Navy — Grund */
+  --flaeche: #1D324F;                   /* Zumpe Navy — Karten, Tabellenkopf */
+  --erhoben: #24405F;                   /* ueber der Flaeche: Chip, Knopf, Hover */
+  --rand: rgba(246, 245, 240, 0.14);    /* Linie auf Dunkel (Guide S. 17) */
+  --text: #E1ECEF;                      /* Eisblau — Fliesstext auf Dunkel */
+  --leise: #8C9CB3;                     /* Stahlblau — Meta, nie Fliesstext */
+  --warn: #C8892B;                      /* Status: Warnung */
+  --gefahr: #B04A3F;                    /* Status: Fehler */
+  --ok: #2F7D5C;                        /* Status: Erfolg */
+  --signal: #D6402E;                    /* Tally-Rot — Fokusring, laufender Vorgang */
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 14px;
 }
@@ -43,12 +66,14 @@ body {
   border: 1px solid transparent;
   color: var(--leise);
   padding: 0.25rem 0.75rem;
-  border-radius: 999px;
   cursor: pointer;
 }
 
 .reiter.aktiv {
-  background: var(--flaeche);
+  /* Der gewaehlte Reiter ist die erhobene Flaeche, nicht dieselbe wie die
+     Karten darunter — sonst haette „hier bin ich" keine eigene Stufe und
+     `--erhoben` waere ein Token, das niemand benutzt. */
+  background: var(--erhoben);
   border-color: var(--rand);
   color: var(--text);
 }
@@ -73,7 +98,6 @@ button {
   border: 1px solid var(--rand);
   color: var(--text);
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
   font: inherit;
 }
 
@@ -95,7 +119,6 @@ button.still {
 .tabelle-rahmen {
   overflow-x: auto;
   border: 1px solid var(--rand);
-  border-radius: 6px;
   margin-bottom: 1rem;
 }
 
@@ -313,8 +336,7 @@ th {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border: 1px solid var(--rand, #2a3444);
-  border-radius: 6px;
+  border: 1px solid var(--rand);
   cursor: pointer;
 }
 .eingang .datei-knopf input[type='file'] {
@@ -583,8 +605,7 @@ th {
    nicht jedem im Weg, der nur einen Termin eintragen will. */
 .werte .unterblock {
   margin-top: 12px;
-  border: 1px solid var(--rand, #2a3444);
-  border-radius: 6px;
+  border: 1px solid var(--rand);
   padding: 8px 10px;
 }
 .werte .unterblock > summary {
