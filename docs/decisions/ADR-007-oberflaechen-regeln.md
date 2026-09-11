@@ -220,7 +220,53 @@ Von aussen nach innen:
 - **Modul-Rail links**, 56 px, senkrecht, mit Beschriftung unter dem Zeichen.
   Der aktive Eintrag ist Off-White auf versenkter Flaeche — kein Farbton.
 - **Inspektor rechts.** Eigenschaften des Ausgewaehlten, nie links.
+
+- **Die Seitenleisten klappen ueberall gleich ein** (ergaenzt am 2026-09-11).
+  Der Rahmen stand hier von Anfang an; der GRIFF nicht — und genau der ist,
+  was ein Nutzer als Erstes anfasst. Verglichen ueber die fuenf vendorierten
+  Apps hatte jede eine andere Antwort:
+
+  | App | Griff | eingeklappt |
+  |---|---|---|
+  | `cable-planner` | in der Leiste | 32 px, Name senkrecht |
+  | `multicam-planner` | eigener 20-px-Streifen daneben | `w-0` — nichts sagt, was dort zugeklappt ist |
+  | `light-planner` | — | gar nicht einklappbar |
+
+  Der `cable-planner` ist der Massstab (Eigentuemer-Weisung vom 2026-09-11:
+  „Passe an den Cable planner stand an"), also gilt seine Form:
+
+  - **Der Griff sitzt IN der Spalte**, in ihrer Kopf- oder Registerzeile — er
+    gehoert zum Rahmen der Spalte, nicht zu ihrem Inhalt und nicht daneben.
+  - **Eingeklappt bleiben 32 px stehen**, mit dem Namen der Spalte senkrecht
+    darin. Nicht null: eine Spalte, die spurlos verschwindet, laesst den
+    Nutzer raten, ob es sie noch gibt. Nicht 20: die Zahl liegt nicht auf dem
+    8-px-Raster aus Abschnitt 3, und eine Trefferflaeche unter 24 px
+    unterschreitet die Norm, die fuer Regler schon gilt.
+  - **Die Wahl ueberlebt den Neustart.** Wer zuklappt, tut das fuer seine
+    Arbeitsweise, nicht fuer eine Sitzung.
+  - **Jedes Panel traegt die Kopflinie** aus Abschnitt 3. Sie stand dort als
+    „die Kopfzeile jedes Panels und jedes Dialogs" — bis zum 2026-09-11
+    trugen sie in allen drei grossen Apps nur die Dialoge und die
+    Kommandopalette.
+
+  **Spaltenbreiten:** Inspektor 280–360 px (siehe oben), linke Spalte
+  260–320 px, eingeklappt je 32 px. Wo eine App ihre Spalte mit dem Fenster
+  wachsen laesst, ist das eine begruendete Abweichung und gehoert
+  kommentiert — nicht jede Spalte traegt dasselbe.
+
+  **Was diese Regel NICHT verlangt:** dass jede App Seitenleisten HAT. Der
+  `inventory-planner` und der `larszu-facility-planner` fuehren Reiter statt
+  Spalten, weil sie keinen Zeichenbereich und nichts zu inspizieren haben.
+  Eine leere Spalte dort waere ein PLACEHOLDER — dieselbe Begruendung, aus
+  der `Edit`/`Tools`/`View` abwesend statt leer sind.
+
 - **Statusleiste unten**, 24 px. Sie meldet; sie bedient nicht.
+
+  > **Gemessen am 2026-09-11:** nur `cable-planner` und `light-planner`
+  > fuehren eine. `multicam-planner` hat keine. Das steht hier als BEFUND und
+  > nicht als erledigte Zeile — eine Statusleiste ohne etwas zu melden waere
+  > wieder ein PLACEHOLDER, und was MultiCam dort melden soll, ist eine
+  > Entscheidung und keine Ableitung.
 - **Kommandopalette** auf `Strg/Cmd + K` in jeder App — derselbe Griff
   ueberall.
 - **Dialoge** sind Flaechen, keine Karten: kein Radius, kein Schatten,
@@ -232,7 +278,11 @@ Von aussen nach innen:
 **Gemessen wird dieser Abschnitt von `scripts/chrome-parity.mjs`** (Lauf:
 `npm run chrome:parity`), und zwar in allen sechs vendorierten Apps im selben
 Baum: Klasse und 40 px, die Menue-Folge, der Grundstock je Menue, die
-Einstellungen als letzter Bedienpunkt, kein Hamburger auf dem Desktop.
+Einstellungen als letzter Bedienpunkt, kein Hamburger auf dem Desktop — und
+seit dem 2026-09-11 der Griff der Seitenleisten: 32 px eingeklappt, der Name
+senkrecht darin, der Griff in der Spalte. Geprueft wird das nur in den Apps,
+die ueberhaupt Spalten fuehren; die beiden Reiter-Apps sind ausgenommen, mit
+Grund im Lauf.
 
 Was er NICHT sieht: die Reihenfolge auf dem SCHIRM (nur die im Markup — ein
 `order`-Wert im Stilblatt wuerde ihn taeuschen) und die vier nicht

@@ -93,11 +93,17 @@ const APPS = [
  * Die fuenf Menues, in der Reihenfolge des cable-planners — je Rolle mit dem
  * Wort in BEIDEN Quellsprachen der Suite.
  *
- * WARUM NICHT EIN WORT. Die Repos sind nicht alle englisch-quellig. E-28 hat
- * `cable`, `light`, `multicam` und `sony` auf Englisch gedreht; das Lager und
- * das Gebaeude sind deutsch (`package.json` -> `avplan.sourceLanguage`), und
- * ihr eigener `lang:check` FAELLT bei englischen Beschriftungen. Ein Waechter,
- * der hier „File" verlangt, verlangt von zwei Repos einen Regelbruch.
+ * WARUM NICHT EIN WORT — und warum die Begruendung dafuer heute eine andere
+ * ist als bei der Niederschrift. Hier stand: „das Lager und das Gebaeude sind
+ * deutsch, und ihr eigener `lang:check` FAELLT bei englischen
+ * Beschriftungen". Das galt bis zum 2026-09-11; seither steht in beiden
+ * `package.json` `avplan.sourceLanguage: "en"`, und ihr `lang:check` faellt
+ * bei DEUTSCHEN Beschriftungen. Nachgesehen statt geglaubt.
+ *
+ * Die Liste bleibt trotzdem zweisprachig, aus einem anderen Grund: die
+ * deutschen Woerter sind die UEBERSETZUNG, und ein Waechter, der nur die
+ * Quelle kennt, faellt, sobald jemand die Oberflaeche auf Deutsch
+ * durchsieht. Vereinheitlicht wird der BAU der Leiste, nicht die Sprache.
  *
  * Vereinheitlicht wird der BAU der Leiste: welche Menues, in welcher Folge, wo
  * die Einstellungen sitzen. Nicht die Sprache — gegen Sprachmix steht in
@@ -339,11 +345,99 @@ for (const { app, kopf, stil, klasse, modell } of APPS) {
   }
 }
 
+// ── 5. Der Griff der Seitenleisten ────────────────────────────────────────
+//
+// ADR-007 Abschnitt 6 legt seit dem 2026-09-11 auch den GRIFF fest, nicht nur
+// den Rahmen. Vorher hatte jede App eine eigene Antwort:
+//
+//   cable-planner     Griff in der Leiste, eingeklappt 32 px, Name senkrecht
+//   multicam-planner  eigener 20-px-Streifen daneben, eingeklappt `w-0`
+//   light-planner     gar nicht einklappbar
+//
+// GEPRUEFT WIRD NUR, WER SPALTEN FUEHRT. Der `inventory-planner` und der
+// `larszu-facility-planner` fuehren Reiter — sie haben keinen Zeichenbereich
+// und nichts zu inspizieren. Eine leere Spalte dort waere ein PLACEHOLDER,
+// dieselbe Begruendung, aus der `Edit`/`Tools`/`View` abwesend statt leer
+// sind. Die `shell` ist der Rahmen selbst und hat keine Planer-Spalten.
+const SPALTEN_APPS = [
+  {
+    app: 'cable-planner',
+    dateien: ['src/renderer/components/Library/LibraryPanel.tsx', 'src/renderer/components/Properties/PropertiesPanel.tsx'],
+  },
+  { app: 'multicam-planner', dateien: ['src/App.tsx'] },
+  // Drei Dateien, weil die Antwort hier auf drei liegt: die Komponente traegt
+  // den Rahmen, `App.tsx` die Spaltenbreiten (sie aendern sich mit dem
+  // Zustand und koennen deshalb nicht im Stilblatt stehen), `App.css` die
+  // senkrechte Schrift. Der erste Anlauf nannte nur die Komponente — und der
+  // Lauf meldete prompt beide Punkte als fehlend, obwohl sie da sind. Ein
+  // Waechter, der an der falschen Stelle sucht, beschuldigt richtigen Code.
+  { app: 'light-planner', dateien: ['src/components/SeitenPanel.tsx', 'src/App.tsx', 'src/App.css'] },
+]
+
+for (const { app, dateien } of SPALTEN_APPS) {
+  if ((AUSNAHMEN[app] ?? []).includes('spalten')) continue
+  const text = dateien
+    .map((rel) => {
+      const p = join(WURZEL, 'apps', app, rel)
+      return existsSync(p) ? readFileSync(p, 'utf8') : ''
+    })
+    .join('\n')
+  if (!text.trim()) {
+    melde(app, 'keine Seitenleisten-Datei gefunden — der Griff ist nicht pruefbar')
+    continue
+  }
+  // 32 px eingeklappt. ZWEI ZULAESSIGE BAUFORMEN, und die App sagt selbst,
+  // welche sie hat:
+  //
+  //   Raster   Die Spaltenbreiten stehen in einem `gridTemplateColumns`, weil
+  //            sie sich mit dem Zustand aendern (`light-planner`). Dann muss
+  //            JEDE einklappbare Spalte dort auf 32 px gehen — eine von zwei
+  //            genuegt nicht.
+  //   Panel    Jede Spalte bringt ihre eingeklappte Leiste selbst mit, als
+  //            `<aside className="… w-8 …">` (`cable-planner`,
+  //            `multicam-planner`). Dann muss JEDE Datei, die eine Spalte
+  //            besitzt, so eine Leiste haben.
+  //
+  // Drei Anlaeufe, zwei davon gescheitert, und die Fehler sind lehrreich:
+  //
+  //   1. „`w-8` ODER `32px` irgendwo im Text" blieb gruen, als die Leiste im
+  //      `multicam-planner` auf `w-5` gedreht wurde — `w-8` steht in diesen
+  //      Dateien an einem Dutzend anderer Stellen.
+  //   2. „jede `<aside>`-Zeile mit `h-full` und Rand traegt `w-8`"
+  //      beschuldigte richtigen Code: die AUFGEKLAPPTE Leiste ist auch ein
+  //      `<aside>` mit `h-full` und Rand, und sie soll gerade nicht 32 px
+  //      breit sein.
+  const rasterZeile = text.split('\n').find((z) => /gridTemplateColumns/.test(z))
+  if (rasterZeile) {
+    const treffer = (rasterZeile.match(/'32px'/g) ?? []).length
+    const spalten = (rasterZeile.match(/\?\s*'/g) ?? []).length
+    if (treffer < spalten) {
+      melde(app, `nur ${treffer} von ${spalten} Spalten sind eingeklappt 32 px breit`)
+    }
+  } else {
+    const hatLeiste = (q) => q.split('\n').some((z) => /<aside/.test(z) && /\bw-8\b/.test(z))
+    let gepruefte = 0
+    for (const rel of dateien) {
+      const pfad = join(WURZEL, 'apps', app, rel)
+      if (!existsSync(pfad)) continue
+      const q = readFileSync(pfad, 'utf8')
+      if (!/<aside/.test(q)) continue
+      gepruefte += 1
+      if (!hatLeiste(q)) melde(app, `${rel}: keine eingeklappte Leiste mit 32 px`)
+    }
+    if (!gepruefte) melde(app, 'keine Spalten-Datei gefunden — der Griff ist nicht pruefbar')
+  }
+
+  if (!/vertical-rl/.test(text)) {
+    melde(app, 'eingeklappt steht kein Spaltenname senkrecht in der Leiste')
+  }
+}
+
 const proApp = new Map()
 for (const b of befunde) proApp.set(b.app, [...(proApp.get(b.app) ?? []), b.was])
 
 if (befunde.length === 0) {
-  console.log(`OK: ${APPS.length} Kopfzeilen gleich gebaut — Klasse + 40 px, ${ROLLEN.join(' · ')}, Grundstock je Menue, Einstellungen rechts aussen, kein Desktop-Hamburger.`)
+  console.log(`OK: ${APPS.length} Kopfzeilen gleich gebaut — Klasse + 40 px, ${ROLLEN.join(' · ')}, Grundstock je Menue, Einstellungen rechts aussen, kein Desktop-Hamburger. Dazu ${SPALTEN_APPS.length} Apps mit gleichem Seitenleisten-Griff (32 px eingeklappt, Name senkrecht).`)
   const n = Object.keys(AUSNAHMEN).length
   console.log(n ? `${n} App(s) mit begruendeter Ausnahme.` : 'Keine Ausnahmen.')
 } else {
@@ -353,5 +447,5 @@ if (befunde.length === 0) {
   }
   console.error(`\n${befunde.length} Befund(e) in ${proApp.size} App(s).`)
 }
-console.log('\nNICHT gemessen: die Reihenfolge auf dem SCHIRM (nur die im Markup) und die vier nicht vendorierten Repos (Broadcast-intercom, tally-pi, sony-camera-bridge, pi-media-station).')
+console.log('\nNICHT gemessen: die Reihenfolge auf dem SCHIRM (nur die im Markup), die vier nicht vendorierten Repos (Broadcast-intercom, tally-pi, sony-camera-bridge, pi-media-station) — und ob der Griff wirklich KLAPPT. Gemessen sind die Zahl und die senkrechte Schrift im Quelltext, nicht das Verhalten im Fenster.')
 process.exit(befunde.length ? 1 : 0)

@@ -298,9 +298,9 @@ html[data-cp-shell='app'] #root {
 
 /* Red flash on nodes whose drag was rejected due to overlap */
 @keyframes overlap-flash {
-  0%   { box-shadow: 0 0 0 2px #ef4444, 0 2px 6px rgba(0,0,0,0.4); }
-  50%  { box-shadow: 0 0 0 4px #ef4444, 0 0 16px #ef444488; }
-  100% { box-shadow: 0 0 0 2px #ef4444, 0 2px 6px rgba(0,0,0,0.4); }
+  0%   { box-shadow: 0 0 0 2px var(--cp-signal); }
+  50%  { box-shadow: 0 0 0 4px var(--cp-signal); }
+  100% { box-shadow: 0 0 0 2px var(--cp-signal); }
 }
 .react-flow__node.overlap-flash {
   animation: overlap-flash 0.5s ease-in-out;
@@ -848,7 +848,7 @@ input[type="range"]:disabled {
 }
 ::-webkit-scrollbar-thumb {
   background-color: var(--cp-border);
-  border-radius: 8px;
+  border-radius: 0;
   border: 2px solid transparent;
   background-clip: content-box;
 }

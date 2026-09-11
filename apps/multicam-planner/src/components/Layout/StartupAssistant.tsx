@@ -86,7 +86,7 @@ export default function StartupAssistant() {
     const step = WIZARD_STEPS[stepIndex];
     const isLast = stepIndex === WIZARD_STEPS.length - 1;
     return (
-      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] w-[420px] max-w-[92vw] rounded-xl border border-bc-border bg-bc-panel shadow-2xl px-4 py-3">
+      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] w-[420px] max-w-[92vw] border border-bc-border bg-bc-panel px-4 py-3">
         <div className="flex items-start gap-3">
           <div className="flex-1">
             <div className="text-bc-yellow text-xs font-semibold">{step.title}</div>
@@ -99,12 +99,12 @@ export default function StartupAssistant() {
         <div className="flex items-center justify-between mt-3">
           <div className="flex gap-1">
             {WIZARD_STEPS.map((s, i) => (
-              <span key={s.mode} className={`h-1.5 w-6 rounded-full ${i <= stepIndex ? 'bg-bc-yellow' : 'bg-bc-border'}`} />
+              <span key={s.mode} className={`h-1.5 w-6 ${i <= stepIndex ? 'bg-bc-yellow' : 'bg-bc-border'}`} />
             ))}
           </div>
           <button
             onClick={isLast ? finishWizard : nextStep}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-bc-accent text-bc-accent-text text-xs font-medium hover:bg-bc-accent/80"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-bc-accent text-bc-accent-text text-xs font-medium hover:bg-bc-accent/80"
           >
             {isLast ? <><FiCheck size={13} /> {t('header.wizard.finish', 'Finish')}</> : <>{t('header.wizard.next', 'Next')} <FiArrowRight size={13} /></>}
           </button>

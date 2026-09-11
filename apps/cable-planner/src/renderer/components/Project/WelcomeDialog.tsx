@@ -94,7 +94,7 @@ export const WelcomeDialog = ({ open, onNew, onOpen, onClose }: WelcomeDialogPro
             {recents.slice(0, 6).map((path) => (
               <div
                 key={path}
-                className="flex items-center gap-2 rounded border border-cp-border-muted bg-cp-surface-3/40 px-2 py-1 text-cp-xs text-cp-text-muted"
+                className="flex items-center gap-2 border border-cp-border-muted bg-cp-surface-3/40 px-2 py-1 text-cp-xs text-cp-text-muted"
                 title={path}
               >
                 <Icon icon={Clock} size="sm" />

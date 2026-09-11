@@ -4574,6 +4574,106 @@ eine Antwort:**
   einmal rot gesehen, zurückgedreht, grün. Fünf von fünf.
 
 
+### B-73 · Die Oberflächen waren nicht dieselbe Oberfläche — Form und Griff
+
+* **Status:** **erledigt 2026-09-11** in `cable#…`, `multicam#…`, `light#…`
+  und diesem PR. Anlass: Nutzer-Auftrag „Vergleiche die linke und rechte
+  Seitenleiste von cableplanner mit den anderen repos und teilen der ab
+  suite. Vergleiche auch die sonstige UI. Alles muss stimmig und einheitlich
+  zu bedienen sein."
+
+* **DIE FORM — gemessen, nur in Klassenlisten, ohne Kommentare:**
+
+  | App | rohe Rundungen | Schatten |
+  |---|---|---|
+  | `cable-planner` | **1854** | **74** |
+  | `multicam-planner` | **237** | **10** |
+  | `light-planner` | 0 | 0 |
+  | `inventory-planner` | 0 | 0 |
+  | `larszu-facility-planner` | 0 | 0 |
+
+  ADR-007 Abschnitt 3 sagt „keine Rundungen, keine Schatten". Drei von fünf
+  hielten das genau ein. Wer zwischen den Apps wechselte, sah nicht zwei
+  Fassungen derselben Oberfläche, sondern zwei Oberflächen.
+
+  **Wie es so weit kam, ist der lehrreiche Teil:** die Arbeit war zur Hälfte
+  getan. `--radius-cp-control/-card/-modal` stehen seit ADR-007 auf null, mit
+  Begründung daneben. Nur hat sie kaum jemand gerufen — daneben lebten 1854
+  rohe `rounded`-Utilities weiter, die Tailwind mit 4 px auflöst. **Ein Token
+  auf null, das niemand ruft, ändert nichts.**
+
+  Und der schlimmste Fall war der Massstab selbst: `cable-planner` war das
+  einzige der fünf Repos **ohne** Form-Wächter. `multicam` hatte einen —
+  `brand:check` — aber der las nur `src/index.css`, und die Rundungen standen
+  im JSX. Ein Wächter, der die eine Hälfte prüft und die andere nicht
+  erwähnt, liest sich wie eine Zusage für beide.
+
+* **DER GRIFF — jede App klappte anders ein, zwei gar nicht:**
+
+  | App | Griff | eingeklappt |
+  |---|---|---|
+  | `cable-planner` | in der Leiste | 32 px, Name senkrecht, beide Spalten ziehbar |
+  | `multicam-planner` | eigener 20-px-Streifen **daneben** | `w-0` — nichts sagt, was dort zugeklappt ist |
+  | `light-planner` | — | gar nicht einklappbar |
+
+  Der Rahmen stand in ADR-007 Abschnitt 6 von Anfang an; der **Griff** nicht —
+  und genau den fasst ein Nutzer als Erstes an. Er steht dort jetzt, mit der
+  Form des Massstabs, und `chrome:parity` misst ihn.
+
+  **Was die Regel NICHT verlangt:** dass jede App Seitenleisten hat. Lager und
+  Gebäude führen Reiter, weil sie keinen Zeichenbereich und nichts zu
+  inspizieren haben. Eine leere Spalte dort wäre ein PLACEHOLDER.
+
+* **Die Kopflinie trugen nur die Dialoge.** `.cp-panel-head` / `.bc-panel-head`
+  / `.panel-head` gibt es in allen drei grossen Apps mit identischer Regel —
+  benutzt haben sie der Einstellungen-Dialog und die Kommandopalette. ADR-007
+  nennt sie „die Kopfzeile jedes Panels und jedes Dialogs"; die Seitenleisten
+  trugen sie als einzige nicht.
+
+* **Fünf Wächter-Defekte, alle beim Bauen gefunden** — und jeder von der Sorte,
+  die grün bleibt, während die Zusage nicht gilt:
+
+  1. `brand:check` (multicam) las nur das Stilblatt, nicht das JSX.
+  2. Der Form-Wächter, erster Anlauf, zählte `light.shadow.mapSize` einer
+     3D-Szene als Schatten der Oberfläche — 15 Fehltreffer im `light-planner`.
+     Ein Wächter, der den Inhalt beschuldigt, wird abgeschaltet.
+  3. Derselbe, zweiter Anlauf, machte aus `border-radius: 0 !important` einen
+     Verstoss: drei von vier Meldungen in den FlexLayout-Regeln waren
+     Fehltreffer.
+  4. `i18n:check` (light) las **Kommentare** mit: der Kopf von `Dock.tsx`
+     erklärt die Bauform und zitiert dabei das Muster — für den Ausdruck sah
+     das aus wie eine Fundstelle.
+  5. `chrome:parity` behauptete in einem Kommentar, Lager und Gebäude seien
+     deutsch-quellig. Seit E-28 sind sie es nicht; die Zeile sagte das
+     Gegenteil der geltenden Regel.
+
+* **Und ein i18n-Fund in der Seitenleiste selbst:** die drei Register der
+  linken Spalte im `light-planner` waren **deutsch und roh gerendert** —
+  `label: 'Bibliothek'`, ohne `t()`. In einer App, deren Quellsprache seit
+  E-28 Englisch ist. `lang:check` sah sie nicht, und das mit System: die eine
+  Hälfte liest die Rückfallebene eines `t()`-Aufrufs wörtlich (hier stand gar
+  kein `t`), die andere zählt sichtbaren JSX-Text (ein Eintrag in einer
+  Konstante ist keiner). Der Eintrag fiel in die Lücke zwischen beiden
+  Messungen.
+
+* **Was NICHT angefasst wurde, und warum es hier steht statt still zu
+  bleiben:** über die fünf Apps liegen **82 weitere deutsche Zeichenketten in
+  Konstanten-Tabellen**, die an beiden Hälften des Quellsprachen-Wächters
+  vorbeikommen. Sie sind gemischt: ein Teil ist Oberfläche (Dialog-Register,
+  Meldungen aus `circuitSuggest`, die Titel der nativen Datei-Dialoge), der
+  grössere Teil ist **Daten** — Kabelfarben („3 m – grün"), Gerätenamen
+  („Jünger Audio DAP8"), Feldnamen im Versions-Vergleich. Die zu übersetzen
+  wäre falsch; sie auseinanderzusortieren ist Handarbeit je Zeile und gehört
+  nicht in einen Form-Sweep. **Offen, mit Zahl.**
+
+* **Ebenfalls offen, benannt:** `multicam-planner` führt **keine
+  Statusleiste**, obwohl ADR-007 sie im Rahmen nennt. Sie nachzurüsten ist
+  keine Ableitung — was dort zu melden wäre, ist eine Entscheidung. Und die
+  vendorierte Kopie des `light-planner` trägt ein eigenes
+  `.github/workflows/ci.yml`, das die Suite gar nicht fährt; ihr
+  `ci:complete` vergleicht deshalb gegen einen Workflow, den niemand
+  ausführt. Beides stand schon vor dieser Arbeit so.
+
 ### B-72 · Die MITGELIEFERTEN Presets haben keine Herkunft — und der Wächter misst die andere
 
 * **Status:** offen, und der offene Teil ist eine EIGENTÜMER-FRAGE, keine
