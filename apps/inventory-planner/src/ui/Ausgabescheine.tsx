@@ -13,19 +13,22 @@
 // ausdrücklich.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo } from 'react'
+import { useT, locale } from '../i18n'
 import { useCheckoutStore } from '../domain/store/checkoutStore'
 import { openCheckouts, overdueCheckouts } from '../domain/lib/containerCheckout'
 
 /** Heute als ISO-Datum. Einmal je Zeichenlauf gelesen, nie pro Zeile. */
 const heute = () => new Date().toISOString().slice(0, 10)
 
-const datum = (iso?: string): string => {
+const datum = (iso: string | undefined, ort: string): string => {
   if (!iso) return '—'
   const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('de-DE')
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(ort)
 }
 
 export function Ausgabescheine() {
+  const { t, format, sprache } = useT()
+  const ort = locale(sprache)
   const records = useCheckoutStore((s) => s.records)
   const tag = heute()
 
@@ -43,9 +46,10 @@ export function Ausgabescheine() {
   if (records.length === 0) {
     return (
       <p className="leer">
-        Noch kein Ausgabeschein. Ein Schein entsteht, wenn ein Container das
-        Lager verlässt — und er hält fest, was wirklich drin war, nicht was
-        drin sein sollte.
+        {t(
+          'checkouts.empty',
+          'No checkout note yet. A note comes into being when a case leaves the store — and it records what was really inside, not what should have been.',
+        )}
       </p>
     )
   }
@@ -53,18 +57,22 @@ export function Ausgabescheine() {
   return (
     <section>
       <p className="zaehler">
-        {offen.length} offen, davon {ueberfaellig.size} überfällig · {records.length} insgesamt
+        {format(t('checkouts.count', '{open} open, {late} of them overdue · {all} in total'), {
+          open: offen.length,
+          late: ueberfaellig.size,
+          all: records.length,
+        })}
       </p>
       <div className="tabelle-rahmen">
         <table>
           <thead>
             <tr>
-              <th>Container</th>
-              <th>An</th>
-              <th>Projekt</th>
-              <th>Ausgegeben</th>
-              <th>Zurück bis</th>
-              <th className="rechts">Positionen</th>
+              <th>{t('checkouts.col.case', 'Case')}</th>
+              <th>{t('checkouts.col.to', 'To')}</th>
+              <th>{t('checkouts.col.project', 'Project')}</th>
+              <th>{t('checkouts.col.out', 'Checked out')}</th>
+              <th>{t('checkouts.col.due', 'Back by')}</th>
+              <th className="rechts">{t('checkouts.col.lines', 'Lines')}</th>
             </tr>
           </thead>
           <tbody>
@@ -73,12 +81,12 @@ export function Ausgabescheine() {
                 <td>{r.nodeLabel}</td>
                 <td>{r.out.to}</td>
                 <td>{r.out.projectName ?? ''}</td>
-                <td>{datum(r.out.at)}</td>
+                <td>{datum(r.out.at, ort)}</td>
                 <td>
                   {r.out.dueBack ? (
-                    datum(r.out.dueBack)
+                    datum(r.out.dueBack, ort)
                   ) : (
-                    <span className="leise">kein Termin vereinbart</span>
+                    <span className="leise">{t('checkouts.noDue', 'no date agreed')}</span>
                   )}
                 </td>
                 <td className="rechts">{r.contents.length}</td>

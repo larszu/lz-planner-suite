@@ -230,7 +230,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
   return (
     <div className="bg-bc-dark rounded p-2 border border-bc-border space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-gray-300 font-medium text-[11px]">{resolvedTitle}</span>
+        <span className="text-bc-text font-medium text-[11px]">{resolvedTitle}</span>
         <div className="flex items-center gap-1">
           {apiKey && (
             <button
@@ -246,12 +246,12 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
           <button
             type="button"
             onClick={() => { setPendingKey(apiKey); setShowKeyInput(!showKeyInput); }}
-            className="p-1 rounded text-gray-500 hover:text-bc-accent"
+            className="p-1 rounded text-bc-dim hover:text-bc-accent"
             title={apiKey ? t('sidebar.form.manageKey', 'Manage Gemini API key') : t('sidebar.form.setKey', 'Set Gemini API key for AI auto-fill')}
           >
             <FiKey size={11} />
           </button>
-          <button onClick={onCancel} className="text-gray-500 hover:text-white text-xs">
+          <button onClick={onCancel} className="text-bc-dim hover:text-bc-text-bright text-xs">
             <FiX size={11} />
           </button>
         </div>
@@ -259,13 +259,13 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
 
       {showKeyInput && (
         <div className="bg-bc-panel rounded p-1.5 border border-bc-border space-y-1">
-          <div className="text-[10px] text-gray-500 leading-tight">
+          <div className="text-[10px] text-bc-dim leading-tight">
             {t('sidebar.form.keyHintPre', 'Paste a free Gemini API key from')} <span className="text-bc-accent">aistudio.google.com</span>.
             {' '}{t('sidebar.form.keyHintPost', 'Stored locally only.')}
           </div>
           <input
             type="password"
-            className="w-full bg-bc-dark border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+            className="w-full bg-bc-dark border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
             placeholder="AIza…"
             value={pendingKey}
             onChange={(e) => setPendingKey(e.target.value)}
@@ -275,7 +275,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
             {apiKey && (
               <button onClick={clearKey} className="flex-1 py-0.5 rounded bg-bc-red/20 text-bc-red text-[10px] hover:bg-bc-red/30">{t('sidebar.form.clear', 'Clear')}</button>
             )}
-            <button onClick={() => setShowKeyInput(false)} className="flex-1 py-0.5 rounded bg-bc-dark border border-bc-border text-gray-400 text-[10px] hover:text-gray-200">{t('sidebar.form.cancel', 'Cancel')}</button>
+            <button onClick={() => setShowKeyInput(false)} className="flex-1 py-0.5 rounded bg-bc-dark border border-bc-border text-bc-muted text-[10px] hover:text-bc-text">{t('sidebar.form.cancel', 'Cancel')}</button>
           </div>
         </div>
       )}
@@ -311,22 +311,22 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
       <div className="grid grid-cols-2 gap-1">
         <input
           placeholder={t('sidebar.form.manufacturer', 'Manufacturer')}
-          className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+          className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
           value={manufacturer}
           onChange={(e) => setManufacturer(e.target.value)}
         />
         <input
           placeholder={t('sidebar.form.model', 'Model')}
-          className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+          className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
           value={model}
           onChange={(e) => setModel(e.target.value)}
         />
       </div>
 
       <label className="block">
-        <span className="text-gray-500 text-[10px]">{t('sidebar.form.sensor', 'Sensor')}</span>
+        <span className="text-bc-dim text-[10px]">{t('sidebar.form.sensor', 'Sensor')}</span>
         <select
-          className="block w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+          className="block w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
           value={sensorKey}
           onChange={(e) => setSensorKey(e.target.value)}
         >
@@ -340,7 +340,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
         <div className="grid grid-cols-3 gap-1">
           <input
             placeholder={t('sidebar.form.name', 'Name')}
-            className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+            className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
             value={sensorName}
             onChange={(e) => setSensorName(e.target.value)}
           />
@@ -348,7 +348,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
             type="number"
             step="0.01"
             placeholder={t('sidebar.form.widthMm', 'Width mm')}
-            className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+            className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
             value={sensorW}
             onChange={(e) => setSensorW(e.target.value)}
           />
@@ -356,7 +356,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
             type="number"
             step="0.01"
             placeholder={t('sidebar.form.heightMm', 'Height mm')}
-            className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+            className="bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
             value={sensorH}
             onChange={(e) => setSensorH(e.target.value)}
           />
@@ -365,9 +365,9 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
 
       <div className="grid grid-cols-2 gap-1">
         <label>
-          <span className="text-gray-500 text-[10px]">{t('sidebar.form.nativeMount', 'Native Mount')}</span>
+          <span className="text-bc-dim text-[10px]">{t('sidebar.form.nativeMount', 'Native Mount')}</span>
           <select
-            className="block w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+            className="block w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
             value={mountIsCustom ? '__custom__' : mount}
             onChange={(e) => {
               const v = e.target.value;
@@ -388,9 +388,9 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
           </select>
         </label>
         <label>
-          <span className="text-gray-500 text-[10px]">{t('sidebar.form.type', 'Type')}</span>
+          <span className="text-bc-dim text-[10px]">{t('sidebar.form.type', 'Type')}</span>
           <select
-            className="block w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+            className="block w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
             value={type}
             onChange={(e) => setType(e.target.value as Camera['type'])}
           >
@@ -403,7 +403,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
       {mountIsCustom && (
         <input
           placeholder={t('sidebar.form.customMountPlaceholder', 'Custom mount name (e.g. Z, PV, M4/3 Studio…)')}
-          className="w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-xs"
+          className="w-full bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-xs"
           value={mount}
           onChange={(e) => {
             const v = e.target.value;
@@ -414,7 +414,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
       )}
 
       <div>
-        <span className="text-gray-500 text-[10px]">{t('sidebar.form.availableAdapters', 'Available adapters / mount plates')}</span>
+        <span className="text-bc-dim text-[10px]">{t('sidebar.form.availableAdapters', 'Available adapters / mount plates')}</span>
         <div className="grid grid-cols-4 gap-1 mt-0.5">
           {/* Known mounts (excluding the native one) + any custom adapter mounts
               the user has already added in this session. Custom adapter mounts
@@ -427,7 +427,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
             const checked = adaptedMounts.includes(m);
             const isCustomAdapter = !(MOUNTS as readonly string[]).includes(m);
             return (
-              <label key={m} className="flex items-center gap-1 text-[10px] text-gray-300 cursor-pointer">
+              <label key={m} className="flex items-center gap-1 text-[10px] text-bc-text cursor-pointer">
                 <input
                   type="checkbox"
                   className="accent-bc-accent"
@@ -446,7 +446,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
         <div className="flex items-center gap-1 mt-1">
           <input
             placeholder={t('sidebar.form.addAdapterPlaceholder', 'Add custom adapter mount (e.g. Z, PV)')}
-            className="flex-1 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-[11px]"
+            className="flex-1 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-[11px]"
             value={customAdapterDraft}
             onChange={(e) => setCustomAdapterDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -483,7 +483,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
 
       <div>
         <div className="flex items-center justify-between">
-          <span className="text-gray-500 text-[10px]">{t('sidebar.form.sensorModes', 'Sensor modes (hardware crops, optional)')}</span>
+          <span className="text-bc-dim text-[10px]">{t('sidebar.form.sensorModes', 'Sensor modes (hardware crops, optional)')}</span>
           <button
             type="button"
             onClick={addMode}
@@ -500,7 +500,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
             <div key={i} className="grid grid-cols-12 gap-1 mt-0.5 items-center">
               <input
                 placeholder={t('sidebar.form.name', 'Name')}
-                className="col-span-5 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-[11px]"
+                className="col-span-5 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-[11px]"
                 value={m.name}
                 onChange={(e) => patchMode(i, { name: e.target.value })}
               />
@@ -508,7 +508,7 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
                 type="number"
                 step="0.01"
                 placeholder={t('sidebar.form.wMm', 'W mm')}
-                className="col-span-3 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-[11px]"
+                className="col-span-3 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-[11px]"
                 value={m.widthMm}
                 onChange={(e) => patchMode(i, { widthMm: e.target.value })}
               />
@@ -516,20 +516,20 @@ export function CustomCameraForm({ initial, onSubmit, onCancel, submitLabel, tit
                 type="number"
                 step="0.01"
                 placeholder={t('sidebar.form.hMm', 'H mm')}
-                className="col-span-3 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-white text-[11px]"
+                className="col-span-3 bg-bc-panel border border-bc-border rounded px-1 py-0.5 text-bc-text-bright text-[11px]"
                 value={m.heightMm}
                 onChange={(e) => patchMode(i, { heightMm: e.target.value })}
               />
               <button
                 type="button"
                 onClick={() => removeMode(i)}
-                className="col-span-1 p-0.5 text-gray-500 hover:text-bc-red"
+                className="col-span-1 p-0.5 text-bc-dim hover:text-bc-red"
                 title={t('sidebar.form.removeMode', 'Remove mode')}
               >
                 <FiTrash2 size={11} />
               </button>
               {cf > 0 && (
-                <span className="col-span-12 text-[9px] text-gray-500 -mt-0.5">
+                <span className="col-span-12 text-[9px] text-bc-dim -mt-0.5">
                   → {t('sidebar.form.cropFactor', 'crop factor')} ×{cf.toFixed(2)}
                 </span>
               )}

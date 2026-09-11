@@ -7,22 +7,42 @@
 // untergebracht hatte (B-13: davor lag sie in einer Datei, die niemand
 // rendert), nicht die Stelle, an der jemand sie sucht.
 //
-// DAS THEMA FEHLT, UND ZWAR GEMESSEN. Der gemeinsame Grundstock der Suite
-// ist Sprache, Thema und Ueber. Ein Hell-Thema ist in dieser App kein
-// Token-Tausch: `App.css` ist ein einziges dunkles Stilblatt mit
-// festgeschriebenen Flaechen, dazu kommt der 2D-Canvas, der seine Farben
-// selbst malt, und die 3D-Szene. Ein Umschalter, der eine halb umgefaerbte
-// App liefert, ist schlimmer als keiner — er sieht aus wie eine Faehigkeit.
-// Die Umstellung steht als B-70 im Backlog der Suite und NICHT als
-// ausgegrauter Punkt in diesem Dialog.
+// DAS THEMA IST SEIT DEM 2026-09-11 DA (B-70). Hier stand bis dahin, warum
+// es FEHLT: `App.css` sei ein einziges dunkles Stilblatt mit
+// festgeschriebenen Flaechen. Die Haelfte davon stimmte — die Flaechen
+// hingen laengst an den Variablen, die ADR-007 Stufe 5 eingezogen hat; was
+// wirklich fehlte, waren ein zweiter Satz WERTE und ein paar Stellen, die
+// noch rohes Hex trugen.
+//
+// Die andere Haelfte stimmt weiter und steht deshalb als Entscheidung in
+// `App.css`: der 2D-Plan und die 3D-Szene drehen sich NICHT mit. Ein
+// Lichtplan zeigt eine beleuchtete Buehne — sie hell zu machen hiesse,
+// anderes Licht zu behaupten, und genau darueber gibt dieses Werkzeug
+// Auskunft. Der Plan ist der Inhalt, nicht die Verpackung.
+//
+// IN DER SUITE STEHT DER SCHALTER NICHT HIER. Eingebettet setzt die Shell
+// `data-theme` und schreibt ihre Palette als INLINE-Variablen an das
+// Wurzelelement (`connectShellTheme` in `@avplan/ui/embed`). Inline schlaegt
+// jede Regel aus dem Stilblatt — ein lokaler Schalter koennte die Farben also
+// gar nicht aendern, und die naechste Theme-Nachricht der Shell setzte ihn
+// ohnehin zurueck. Standalone (Web-Seite, Electron) gibt es keine Shell, dort
+// ist er da. Das ist die einzige Stelle, an der diese Kopie vom Upstream
+// abweicht.
+//
+// Beim Umbau fielen SIEBEN Zustaende auf, die weisse Schrift auf die
+// Off-White-Aktionsflaeche schrieben — darunter die Zahl am Reiter, die
+// sagt, wieviel dort offen ist. Sie waren seit ADR-007 Stufe 5 unlesbar,
+// in jedem Thema, und niemandem gemeldet worden.
 //
 // „Ueber" hat dieses Repo schon als eigenen Dialog (`AboutDialog`), und der
 // Hilfe-Eintrag fuehrt weiter dorthin. Hier steht nur die Version — sonst
 // gaebe es die Auskunft zweimal.
 // ───────────────────────────────────────────────────────────────────────────
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from '../i18n';
 import { APP_VERSION } from '../version';
+import { liesThema, setzeThema, type Thema } from '../lib/thema';
+import { isEmbedded } from '../hooks/useIsEmbedded';
 
 const LANGUAGES: { id: 'en' | 'de'; label: string }[] = [
   { id: 'en', label: 'English' },
@@ -31,6 +51,14 @@ const LANGUAGES: { id: 'en' | 'de'; label: string }[] = [
 
 const SettingsDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { t, language, setLanguage } = useTranslation();
+  const [thema, setThema] = useState<Thema>(liesThema);
+
+  /* Drei Zustaende, weil „System" keine Umschreibung fuer „dunkel" ist. */
+  const THEMEN: { id: Thema; label: string; hint: string }[] = [
+    { id: 'system', label: t('settings.theme.system', 'System'), hint: t('settings.theme.systemHint', 'Follows the operating system.') },
+    { id: 'dunkel', label: t('settings.theme.dark', 'Dark'), hint: t('settings.theme.darkHint', 'Always dark.') },
+    { id: 'hell', label: t('settings.theme.light', 'Light'), hint: t('settings.theme.lightHint', 'Always light.') },
+  ];
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => {
@@ -72,6 +100,34 @@ const SettingsDialog: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </button>
           ))}
         </div>
+
+        {!isEmbedded && (
+          <>
+          <h4 className="settings-h">{t('settings.theme', 'Theme')}</h4>
+          <p className="settings-hint">
+            {t(
+              'settings.themeHint',
+              'The plan view and the 3D scene stay as they are: a light plot shows a lit stage, and making it lighter would claim different light.',
+            )}
+          </p>
+          <div className="settings-chips">
+            {THEMEN.map((w) => (
+              <button
+                key={w.id}
+                type="button"
+                title={w.hint}
+                className={`tb-chip ${thema === w.id ? 'on' : ''}`}
+                onClick={() => {
+                  setThema(w.id);
+                  setzeThema(w.id);
+                }}
+              >
+                {w.label}
+              </button>
+            ))}
+          </div>
+          </>
+        )}
 
         <h4 className="settings-h">{t('settings.about', 'About')}</h4>
         <p className="settings-hint">LightPlanner v{APP_VERSION}</p>

@@ -156,7 +156,10 @@ describe('einspeisung + belastbarkeit', () => {
     expect(b.watt).toBeNull()
     // 32 A × 230 V = 7360 W — genau die Zahl, die hier nicht auftauchen darf.
     expect(JSON.stringify(b)).not.toContain('7360')
-    expect('grund' in b && b.grund).toContain('nicht die zulaessige Dauerlast')
+    // Ohne `t` geliefert: das ist die QUELLE (Englisch, E-28). Der Lauf misst
+    // damit den Satz, der erscheint, wenn keine Übersetzung greift — und
+    // genau der ist die Rückfallebene, die niemand pflegt.
+    expect('grund' in b && b.grund).toContain('not the permissible continuous load')
   })
 
   it('gibt die angegebene Dauerleistung unveraendert weiter', () => {
@@ -191,8 +194,8 @@ describe('ort', () => {
     const unbekannt = ort(haus(), 'gibt-es-nicht')
     expect(strecke.gefunden).toBe(false)
     expect(unbekannt.gefunden).toBe(false)
-    expect('grund' in strecke && strecke.grund).toContain('verbindet zwei Raeume')
-    expect('grund' in unbekannt && unbekannt.grund).toContain('Kein Gebaeude-Objekt')
+    expect('grund' in strecke && strecke.grund).toContain('connects two rooms')
+    expect('grund' in unbekannt && unbekannt.grund).toContain('No building object')
     expect(JSON.stringify(strecke)).not.toContain('r-saal')
   })
 
@@ -201,7 +204,7 @@ describe('ort', () => {
     g.punkte.push(punkt({ id: 'p-nirgends', raumId: 'r-weg' }))
     const o = ort(g, 'p-nirgends')
     expect(o.gefunden).toBe(false)
-    expect('grund' in o && o.grund).toContain('den es nicht gibt')
+    expect('grund' in o && o.grund).toContain('which does not exist')
   })
 })
 
@@ -223,7 +226,7 @@ describe('kreisGeschwister', () => {
     const g = kreisGeschwister(haus(), 'p-frei')
     expect(g.bekannt).toBe(false)
     expect('punkte' in g).toBe(false)
-    expect('grund' in g && g.grund).toContain('kein Stromkreis')
+    expect('grund' in g && g.grund).toContain('No circuit is stated')
   })
 
   it('unbekannte Id und toter Kreis-Verweis sind ebenfalls „nicht bekannt"', () => {
@@ -335,7 +338,7 @@ describe('mangelMelden', () => {
   it('lehnt eine Meldung ohne Empfaenger ab, statt sie abzulegen', () => {
     const e = mangelMelden(haus(), { ...meldung, hausObjektId: 'gibt-es-nicht' })
     expect(e.ok).toBe(false)
-    expect('grund' in e && e.grund).toContain('keinen Empfaenger')
+    expect('grund' in e && e.grund).toContain('no recipient')
   })
 
   it('lehnt einen leeren Befund und eine doppelte Id ab', () => {

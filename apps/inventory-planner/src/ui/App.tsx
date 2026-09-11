@@ -23,6 +23,7 @@
 // Lageristen ist so ein Modul kein Code.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { useT } from '../i18n'
 import { Kopfzeile } from './Kopfzeile'
 import { Bestand } from './Bestand'
 import { Ausgabescheine } from './Ausgabescheine'
@@ -34,18 +35,28 @@ import { Wareneingang } from './Wareneingang'
 
 type Reiter = 'bestand' | 'eingang' | 'inventur' | 'ausgabe' | 'subhire' | 'bericht' | 'werte'
 
-const REITER: { id: Reiter; titel: string; frage: string }[] = [
-  { id: 'bestand', titel: 'Bestand', frage: 'Was ist da, wieviel, und wo liegt es?' },
-  { id: 'eingang', titel: 'Wareneingang', frage: 'Was ist gekommen — und was macht das mit dem Bestand?' },
-  { id: 'inventur', titel: 'Inventur', frage: 'Liegt hier, was hier liegen soll?' },
-  { id: 'ausgabe', titel: 'Ausgabescheine', frage: 'Was ist draußen, bei wem, und seit wann?' },
-  { id: 'bericht', titel: 'Bericht', frage: 'Was steckt drin — und wie kommt es hier raus?' },
-  { id: 'werte', titel: 'Werte & Schäden', frage: 'Was ist es wert, was ist kaputt, und was ist gebunden?' },
-  { id: 'subhire', titel: 'Sub-Hire', frage: 'Was gehört uns nicht — und wann muss es zurück?' },
+type UebersetzFn = (key: string, en: string) => string
+
+/**
+ * Die Reiter werden IN der Komponente gebaut und nicht als Modul-Konstante:
+ * eine Liste, die beim Laden des Moduls einmal übersetzt wird, bleibt in der
+ * Sprache stehen, die beim Laden galt — der Umschalter änderte dann alles
+ * ausser ihr.
+ */
+const reiterListe = (t: UebersetzFn): { id: Reiter; titel: string; frage: string }[] => [
+  { id: 'bestand', titel: t('tab.stock', 'Stock'), frage: t('tab.stock.q', 'What is here, how much of it, and where does it sit?') },
+  { id: 'eingang', titel: t('tab.receiving', 'Receiving'), frage: t('tab.receiving.q', 'What arrived — and what does that do to the stock?') },
+  { id: 'inventur', titel: t('tab.audit', 'Stocktake'), frage: t('tab.audit.q', 'Is what should be here actually here?') },
+  { id: 'ausgabe', titel: t('tab.checkouts', 'Checkout notes'), frage: t('tab.checkouts.q', 'What is out, with whom, and since when?') },
+  { id: 'bericht', titel: t('tab.report', 'Report'), frage: t('tab.report.q', 'What is inside — and how does it get out of here?') },
+  { id: 'werte', titel: t('tab.values', 'Values & damage'), frage: t('tab.values.q', 'What is it worth, what is broken, and what is committed?') },
+  { id: 'subhire', titel: t('tab.subhire', 'Sub-hire'), frage: t('tab.subhire.q', 'What is not ours — and when must it go back?') },
 ]
 
 export function App() {
+  const { t } = useT()
   const [reiter, setReiter] = useState<Reiter>('bestand')
+  const REITER = reiterListe(t)
   const aktiv = REITER.find((r) => r.id === reiter)!
 
   return (

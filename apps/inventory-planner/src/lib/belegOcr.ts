@@ -47,13 +47,30 @@ export const OCR_SPRACHE = 'deu'
 
 export type OcrHindernis = 'sprachdaten-fehlen' | 'kein-worker' | 'abgebrochen'
 
-export const OCR_HINDERNIS_TEXT: Record<OcrHindernis, string> = {
-  'sprachdaten-fehlen':
-    'Die Sprachdaten für die Texterkennung sind nicht hinterlegt. Sie gehören als `deu.traineddata.gz` nach `public/tessdata/` — die Anleitung dazu liegt daneben. Bis dahin bleibt der Weg über eingefügten Text.',
-  'kein-worker':
-    'Die Texterkennung liess sich nicht starten. Bis das geklärt ist, bleibt der Weg über eingefügten Text.',
-  abgebrochen: 'Die Texterkennung wurde abgebrochen. Der Beleg ist unverändert.',
-}
+/**
+ * Der Text zu einem OCR-Hindernis — Funktion statt Tabelle, siehe
+ * `codeLeser.ts` für die Begründung.
+ *
+ * DIE SPRACHDATEN SIND WEITERHIN DEUTSCH (`deu.traineddata.gz`), und das ist
+ * kein Widerspruch zur englischen Oberfläche: sie sagen, in welcher Sprache
+ * der LIEFERSCHEIN gedruckt ist, nicht in welcher die App spricht. Wer
+ * englische Belege einliest, legt `eng.traineddata.gz` daneben.
+ */
+export type { Uebersetzen } from '../i18n/quelle'
+import { quelle, type Uebersetzen } from '../i18n/quelle'
+
+export const ocrHindernisText = (h: OcrHindernis, t: Uebersetzen = quelle): string =>
+  ({
+    'sprachdaten-fehlen': t(
+      'ocr.blocked.noLangData',
+      'The language data for text recognition is not in place. It belongs in `public/tessdata/` as `deu.traineddata.gz` — the instructions sit next to it. Until then the way in is pasted text.',
+    ),
+    'kein-worker': t(
+      'ocr.blocked.noWorker',
+      'Text recognition failed to start. Until that is sorted, the way in is pasted text.',
+    ),
+    abgebrochen: t('ocr.blocked.cancelled', 'Text recognition was cancelled. The receipt is unchanged.'),
+  })[h]
 
 /** Was aus einem Beleg-Foto herauskommt. */
 export interface OcrErgebnis {

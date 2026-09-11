@@ -29,6 +29,7 @@
 // den zwei Repos lesen.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { useT } from '../i18n'
 import { Kopfzeile } from './Kopfzeile'
 import { leeresGebaeude } from '../domain/modell'
 import { leseGebaeude, serialisiereGebaeude } from '../domain/gebaeudeDatei'
@@ -50,18 +51,28 @@ type Reiter =
   | 'steuerung'
   | 'maengel'
 
-const REITER: { id: Reiter; titel: string; frage: string }[] = [
-  { id: 'punkte', titel: 'Anschlusspunkte', frage: 'Was gibt dieser Punkt her, wo ist er, und ist er frei?' },
-  { id: 'grundriss', titel: 'Grundriss', frage: 'Wo im Raum sitzt dieser Punkt — nicht nur in welchem?' },
-  { id: 'verteilung', titel: 'Verteilung', frage: 'Welche Kreise hängen zusammen — und woran?' },
-  { id: 'trassen', titel: 'Trassen', frage: 'Welcher Weg zwischen zwei Räumen nimmt noch etwas auf?' },
-  { id: 'schaltstellen', titel: 'Schaltstellen', frage: 'Wer schaltet diese Dose ab — und wo sitzt er?' },
-  { id: 'steuerung', titel: 'Steuerung', frage: 'Welche Klinken der Haussteuerung stehen der Show offen?' },
-  { id: 'maengel', titel: 'Mängel', frage: 'Was hat jemand von aussen über dieses Gebäude gemeldet?' },
+type UebersetzFn = (key: string, en: string) => string
+
+/**
+ * Die Reiter werden IN der Komponente gebaut und nicht als Modul-Konstante:
+ * eine Liste, die beim Laden des Moduls einmal übersetzt wird, bleibt in der
+ * Sprache stehen, die beim Laden galt — der Umschalter änderte dann alles
+ * ausser ihr.
+ */
+const reiterListe = (t: UebersetzFn): { id: Reiter; titel: string; frage: string }[] => [
+  { id: 'punkte', titel: t('tab.points', 'Connection points'), frage: t('tab.points.q', 'What does this point provide, where is it, and is it free?') },
+  { id: 'grundriss', titel: t('tab.floorPlan', 'Floor plan'), frage: t('tab.floorPlan.q', 'Where in the room does this point sit — not just in which one?') },
+  { id: 'verteilung', titel: t('tab.distribution', 'Distribution'), frage: t('tab.distribution.q', 'Which circuits belong together — and to what?') },
+  { id: 'trassen', titel: t('tab.routes', 'Cable routes'), frage: t('tab.routes.q', 'Which route between two rooms still takes something?') },
+  { id: 'schaltstellen', titel: t('tab.switchPoints', 'Switch points'), frage: t('tab.switchPoints.q', 'Who switches this outlet off — and where do they sit?') },
+  { id: 'steuerung', titel: t('tab.control', 'Control'), frage: t('tab.control.q', 'Which hooks of the building control are open to the show?') },
+  { id: 'maengel', titel: t('tab.defects', 'Defects'), frage: t('tab.defects.q', 'What has somebody from outside reported about this building?') },
 ]
 
 export function App() {
+  const { t, format } = useT()
   const [reiter, setReiter] = useState<Reiter>('punkte')
+  const REITER = reiterListe(t)
   const name = useGebaeudeStore((s) => s.gebaeude.name)
   const schreibfehler = useGebaeudeStore((s) => s.schreibfehler)
   const aktiv = REITER.find((r) => r.id === reiter)!
@@ -100,7 +111,10 @@ export function App() {
       // Ein Leser, der eine fremde Datei „so gut es geht" liest, liefert ein
       // Gebäude, das niemand eingetragen hat.
       setDateiFehler(
-        'Das ist keine Gebäude-Datei dieses Werkzeugs, oder sie stammt aus einer neueren Fassung. Es wurde nichts übernommen.',
+        t(
+          'file.unreadable',
+          'That is not a building file of this tool, or it comes from a newer version. Nothing was taken over.',
+        ),
       )
       return
     }
@@ -116,7 +130,7 @@ export function App() {
           ordnen darunter die Module. */}
       <Kopfzeile
         name={name}
-        onNeu={() => gebaeudeSetzen(leeresGebaeude('haus-1', 'Gebäude'))}
+        onNeu={() => gebaeudeSetzen(leeresGebaeude('haus-1', t('building.default', 'Building')))}
         onSichern={(dateiname) => exportieren(dateiname)}
         onLaden={(datei) => void importieren(datei)}
       />
@@ -141,8 +155,15 @@ export function App() {
           nächsten Start. */}
       {schreibfehler && (
         <p className="fehler">
-          Der letzte Stand konnte nicht gespeichert werden: {schreibfehler}. Was seither
-          eingetragen wurde, steht nur im Fenster.
+          {/* EIN Schlüssel, ein ganzer Satz: der Grund steht mitten drin, und
+              wo er im Satz steht, gehört zur Sprache. */}
+          {format(
+            t(
+              'file.writeFailed',
+              'The last state could not be saved: {grund}. Whatever has been entered since exists only in this window.',
+            ),
+            { grund: schreibfehler },
+          )}
         </p>
       )}
 

@@ -61,6 +61,17 @@ const DEUTSCH = [
   'darf', 'soll', 'sollen', 'steht', 'gibt', 'sich', 'dieser', 'diese',
   'dieses', 'nach', 'bei', 'über', 'ueber', 'ohne', 'durch', 'gegen', 'sowie',
   'damit', 'wieder', 'immer', 'jede', 'jeder', 'jedes', 'alle', 'allen',
+  // Die folgenden 27 fehlten hier und standen in den drei grossen Kopien
+  // (cable, light, multicam) laengst — nachgezogen am 2026-09-11, als
+  // `lang:parity` erstmals alle FUENF Kopien ansah (B-71). Es sind die
+  // Woerter, an denen eine deutsche BESCHRIFTUNG haengt; ohne sie kannte
+  // dieser Lauf nur die Funktionswoerter und liess ein „Speichern" als
+  // merkmallos durch.
+  'neuer', 'neue', 'neues', 'neuen', 'bearbeiten', 'speichern', 'abbrechen',
+  'verbindung', 'stecker', 'kabel', 'notizen', 'anmerkung', 'anmerkungen',
+  'einstellungen', 'ansicht', 'auswahl', 'vorlage', 'vorlagen', 'datei',
+  'dateien', 'suche', 'suchen', 'farbe', 'nummer', 'zeile', 'spalte',
+  'ordner',
 ];
 
 /** Woerter, die es NUR im Englischen gibt. */
@@ -106,9 +117,24 @@ export function klassifiziere(roh: string): 'de' | 'en' | null {
  *
  * Als Funktion, weil ein `/g`-Ausdruck seinen Suchstand mitschleppt und ein
  * geteiltes Exemplar bei der zweiten Datei mitten im Text weitersuchen wuerde.
+ *
+ * ZWEI STELLEN SIND AM 2026-09-11 NACHGEZOGEN WORDEN, beide aus den drei
+ * grossen Kopien:
+ *
+ *   `tr|`   der Uebersetzer, den Module AUSSERHALB von React rufen. `\bt\(`
+ *           trifft `tr(` nicht — hinter dem `t` steht ein `r`. Im
+ *           `cable-planner` sind so sechs deutsche Fehlermeldungen durch die
+ *           Sprachdrehung E-28 gegangen, waehrend der Zaehler auf 0 blieb:
+ *           was der Ausdruck nicht sieht, kann er auch nicht falsch nennen.
+ *           Dieses Repo ruft heute kein `tr(` — die Luecke war also latent
+ *           und nicht wirksam. Sie hier stehenzulassen hiesse, auf den Tag
+ *           zu warten, an dem sie es wird.
+ *   `(?=\s*[,)])`  der Fallback endet an einem Komma oder der schliessenden
+ *           Klammer. Ohne die Absicherung geht auch etwas durch, das nur so
+ *           ANFAENGT wie ein Fallback.
  */
 export const fallbackMuster = () =>
-  /\b(?:t|translate)\(\s*(?:[A-Za-z]+\s*,\s*)?(['"])[^'"]+\1\s*,\s*(['"])((?:[^\\]|\\.)*?)\2/g;
+  /\b(?:t|tr|translate)\(\s*(?:[A-Za-z]+\s*,\s*)?(['"])[^'"]+\1\s*,\s*(['"])((?:[^\\]|\\.)*?)\2(?=\s*[,)])/g;
 
 /**
  * Sichtbarer Text zwischen JSX-Marken: `<p>Kein Termin vereinbart</p>`.
@@ -118,13 +144,57 @@ export const fallbackMuster = () =>
  * `unklar` heraus — ein zu weites Muster kostet hier nichts, ein zu enges
  * kostet die halbe Messung.
  *
+ * ZWEI FALLEN, BEIDE SCHON EINMAL ZUGESCHNAPPT.
+ *
+ * DIE ERSTE: der Pfeil. Eine `.tsx`-Datei enthaelt auch gewoehnlichen Code,
+ * und dort steht `=>`. Der Pfeil endete im Muster als Tag-Ende, und die
+ * Zeilen danach wurden als sichtbarer Text gelesen — der Waechter schlug auf
+ * richtigen Code an, weil darin das englische Wort „if" stand. Ausgenommen
+ * sind deshalb beide Faelle, in denen ein `>` sicher KEIN Tag-Ende ist: `=>`
+ * und `>=`. (Diese Datei hatte die Korrektur bis 2026-09-11 nicht — der
+ * `inventory-planner` schon. Zwei Kopien desselben Waechters, und nur eine
+ * wusste Bescheid; die Suite haelt sie ueber `lang:parity` zusammen, und
+ * genau das hat hier nicht gegriffen.)
+ *
+ * DIE ZWEITE: die spitzen Klammern von TypeScript. `useState<Belegung>(…)`
+ * und `Record<Bauform, string>` enden auf `>`, und was danach bis zum
+ * naechsten `<` steht, ist Code. Beim i18n-Umbau schlug der Waechter so auf
+ * drei einwandfreie Zeilen an. Sie fallen vorher weg: ein Bezeichner
+ * unmittelbar vor `<` ist in JSX unmoeglich — ein Tag beginnt nie hinter
+ * einem Wort — und in TypeScript ist es genau die Form einer
+ * Typ-Anwendung. Siehe `ohneGenerics`.
+ *
  * NUR AUF `.tsx`. In gewoehnlichem TypeScript sind `>` und `<` Vergleiche und
  * Generics, und dazwischen steht Code. Die erste Fassung las auch `.ts` und
  * meldete prompt eine Store-Zeile („for (const it of current) if …") als
  * englischen Fallback. Ein Waechter, der bei richtigem Code anschlaegt, wird
  * abgeschaltet und nicht gelesen.
  */
-export const jsxTextMuster = () => />([^<>{}]{4,300})</g;
+export const jsxTextMuster = () => /(?<!=)>(?!=)([^<>{}]{4,300})</g;
+
+/**
+ * Typ-Anwendungen entfernen: `Record<Bauform, string>`, `useState<Thema>`.
+ *
+ * DREI BEDINGUNGEN, UND JEDE HAT EINEN GRUND — die ersten beiden Fassungen
+ * dieser Zeile waren zu weit, und die Gegenprobe unten hat sie gefangen:
+ *
+ *   Bezeichner vor `<`   in TypeScript die Regelform; in JSX beginnt ein Tag
+ *                        nie hinter einem Wort.
+ *   kein `/` danach      `vereinbart</p>` sieht sonst aus wie eine
+ *                        Typ-Anwendung — ein Bezeichner, `<`, Inhalt, `>` —
+ *                        und der sichtbare Text davor fiele WEG. Das waere
+ *                        die andere Sorte Schaden: nicht eine falsche
+ *                        Anschuldigung, sondern ein Loch in der Messung.
+ *   Code danach          nach einer Typ-Anwendung steht `(`, `=`, `,`, `;`,
+ *                        `:`, `)`, `]` oder `{` — nie ein Buchstabe. Ohne
+ *                        diese Bedingung frisst das Muster `text<em>` und
+ *                        damit den Text davor.
+ *
+ * Ersetzt wird durch ein Leerzeichen und nicht durch nichts: sonst klebte
+ * `useState` an `('unbekannt')` und ergaebe ein neues Wort.
+ */
+export const ohneGenerics = (quelle: string): string =>
+  quelle.replace(/\b[A-Za-z_$][\w$]*<(?!\/)[^<>]*>(?=\s*(?:[([=,;:)\]{]|$))/gm, ' ');
 
 function alleDateien(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -168,7 +238,7 @@ for (const datei of alleDateien(SRC)) {
   const treffer: string[] = [
     ...[...quelle.matchAll(fallbackMuster())].map((m) => m[3]),
     ...(datei.endsWith('.tsx')
-      ? [...quelle.matchAll(jsxTextMuster())].map((m) => m[1])
+      ? [...ohneGenerics(quelle).matchAll(jsxTextMuster())].map((m) => m[1])
       : []),
   ];
   for (const roh of treffer) {
@@ -225,5 +295,21 @@ assert.equal(klassifiziere('Please select a fixture before continuing.'), 'en');
 assert.notEqual(klassifiziere('Was funkt'), 'en');
 assert.notEqual(klassifiziere('gepinnt an'), 'en');
 assert.equal(klassifiziere('{from} → {to}'), null);
+
+// Und die Gegenprobe zum Generics-Schritt, an genau den Zeilen, die am
+// 2026-09-11 falsch gemeldet wurden. Ohne ihn laese das Muster hinter
+// `Record<Bauform, string>` weiter und meldete den Code dahinter.
+assert.equal(ohneGenerics('const x: Record<Bauform, string> = {}'), 'const x:   = {}');
+assert.equal(ohneGenerics("useState<Belegung>('unbekannt')"), " ('unbekannt')");
+// Ein echtes JSX-Tag bleibt UNANGETASTET — sonst kostete die Korrektur genau
+// die Abdeckung, um die es geht. Diese beiden Zeilen haben die ersten zwei
+// Fassungen des Musters gefangen: die erste frass `vereinbart</p>`, die
+// zweite `Termin<em>`.
+assert.equal(ohneGenerics('<p>Kein Termin vereinbart</p>'), '<p>Kein Termin vereinbart</p>');
+assert.equal(ohneGenerics('<p>Kein Termin<em>heute</em></p>'), '<p>Kein Termin<em>heute</em></p>');
+assert.equal(
+  klassifiziere([...ohneGenerics('<p>Kein Termin vereinbart</p>').matchAll(jsxTextMuster())][0][1]),
+  'de',
+);
 
 console.log('Alle Quellsprachen-Checks bestanden.');

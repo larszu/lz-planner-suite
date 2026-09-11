@@ -65,16 +65,41 @@ export type ScanHindernis =
   | 'kein-decoder'
   | 'keine-erlaubnis'
 
-export const HINDERNIS_TEXT: Record<ScanHindernis, string> = {
-  'unsicherer-kontext':
-    'Die Seite läuft nicht über https oder localhost. Browser geben die Kamera nur in einem sicheren Kontext frei.',
-  'keine-kamera-api':
-    'Dieser Browser stellt keine Kamera bereit (`navigator.mediaDevices` fehlt).',
-  'kein-decoder':
-    'Der mitgelieferte Barcode-Leser liess sich nicht laden. Solange das so ist, bleibt der Handscanner (er tippt in das Feld) oder „Ohne Scan wählen".',
-  'keine-erlaubnis':
-    'Die Kamera wurde abgelehnt. Im Browser über das Schloss-Symbol in der Adresszeile wieder freigeben.',
-}
+/**
+ * Der Text zu einem Hindernis — als FUNKTION und nicht mehr als Tabelle.
+ *
+ * Seit dem 2026-09-11 ist Englisch die Quellsprache und Deutsch eine
+ * Übersetzung (E-28). Eine Konstante kann das nicht: sie kennt die gewählte
+ * Sprache nicht. `t` ist deshalb ein Parameter mit Vorgabe, und die Vorgabe
+ * liefert die QUELLE — die Tests rufen sie ohne Argument.
+ *
+ * DIE KENNUNGEN BLEIBEN DEUTSCH (`unsicherer-kontext` …). Sie sind
+ * Bezeichner und kein Text: sie stehen in Vergleichen und in Testdaten, und
+ * sie umzubenennen hiesse, an einer Stelle zu drehen, die niemand liest, mit
+ * dem Risiko, eine zu vergessen.
+ */
+export type { Uebersetzen } from '../i18n/quelle'
+import { quelle, type Uebersetzen } from '../i18n/quelle'
+
+export const hindernisText = (h: ScanHindernis, t: Uebersetzen = quelle): string =>
+  ({
+    'unsicherer-kontext': t(
+      'scan.blocked.insecure',
+      'The page is not served over https or localhost. Browsers only release the camera in a secure context.',
+    ),
+    'keine-kamera-api': t(
+      'scan.blocked.noApi',
+      'This browser provides no camera (`navigator.mediaDevices` is missing).',
+    ),
+    'kein-decoder': t(
+      'scan.blocked.noDecoder',
+      'The bundled barcode reader failed to load. Until that is sorted, use the handheld scanner (it types into the field) or "choose without scanning".',
+    ),
+    'keine-erlaubnis': t(
+      'scan.blocked.denied',
+      'The camera was denied. Release it again in the browser via the lock icon in the address bar.',
+    ),
+  })[h]
 
 export type ScanFaehigkeit = { moeglich: true } | { moeglich: false; grund: ScanHindernis }
 

@@ -57,7 +57,12 @@ describe('zeileLesen — drei Schreibweisen', () => {
     const z = zeileLesen('Shure ULXD2; vier Stueck')
     expect(z.lage).toBe('unlesbar')
     expect(z.roh).toBe('Shure ULXD2; vier Stueck')
-    expect(z.grund).toContain('vier Stueck')
+    // Der Grund ist seit dem 2026-09-11 STRUKTURIERT und kein Satz mehr:
+    // die Domäne nennt die Art, den Satz sucht die Sicht. Was bleibt, ist
+    // die Zusage, um die es hier geht — die abgewiesene Zeichenkette wird
+    // GENANNT und nicht weggelassen.
+    expect(z.grund?.art).toBe('keineMenge')
+    expect(z.grund?.wert).toBe('vier Stueck')
   })
 })
 

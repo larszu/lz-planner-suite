@@ -32,14 +32,16 @@
 // vergleicht nichts; sie nimmt die Zahl entgegen.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react'
+import { useT } from '../i18n'
 import { useInventoryStore } from '../domain/store/inventoryStore'
 import { nodePathLabel } from '../domain/lib/storageTree'
-import { OWNERSHIP_LABEL } from '../domain/lib/ownership'
+import { ownershipLabel } from '../domain/lib/ownership'
 import type { InventoryOwnership } from '../domain/types/inventory'
 
 const EIGENTUM: InventoryOwnership[] = ['owned', 'rented', 'subhire']
 
 export function Bestand() {
+  const { t, format } = useT()
   const items = useInventoryStore((s) => s.items)
   const nodes = useInventoryStore((s) => s.nodes)
   const addItem = useInventoryStore((s) => s.addItem)
@@ -75,11 +77,11 @@ export function Bestand() {
         <input
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
-          placeholder="Suchen — Modell, Hersteller, Lieferant, Ort"
-          aria-label="Bestand durchsuchen"
+          placeholder={t('stock.search', 'Search — model, manufacturer, supplier, location')}
+          aria-label={t('stock.search.aria', 'Search the stock')}
         />
         <span className="zaehler">
-          {gefiltert.length} von {items.length}
+          {format(t('stock.countOf', '{shown} of {all}'), { shown: gefiltert.length, all: items.length })}
         </span>
       </div>
 
@@ -87,45 +89,47 @@ export function Bestand() {
         <input
           value={modell}
           onChange={(e) => setModell(e.target.value)}
-          placeholder="Neues Modell"
-          aria-label="Modellbezeichnung"
+          placeholder={t('stock.newModel', 'New model')}
+          aria-label={t('stock.newModel.aria', 'Model designation')}
         />
         <input
           value={menge}
           onChange={(e) => setMenge(e.target.value)}
           type="number"
           min="1"
-          aria-label="Menge"
+          aria-label={t('stock.col.qty', 'Qty')}
           className="schmal"
         />
         <button type="button" onClick={anlegen}>
-          Anlegen
+          {t('stock.create', 'Create')}
         </button>
       </div>
 
       {items.length === 0 ? (
         <p className="leer">
-          Noch nichts im Bestand. Anlegen — oder eine vorhandene Lagerdatei
-          einlesen; das Format ist zwischen den Werkzeugen dasselbe.
+          {t(
+            'stock.empty',
+            'Nothing in stock yet. Create something — or read in an existing stock file; the format is the same across the tools.',
+          )}
         </p>
       ) : (
         <div className="tabelle-rahmen">
           <table>
             <thead>
               <tr>
-                <th>Modell</th>
-                <th>Kategorie</th>
-                <th className="rechts">Menge</th>
+                <th>{t('stock.col.model', 'Model')}</th>
+                <th>{t('stock.col.category', 'Category')}</th>
+                <th className="rechts">{t('stock.col.qty', 'Qty')}</th>
                 {/*
                   „Ziel" und nicht „Mindestmenge": die Spalte ist schmal, und
                   der Kopf muss neben der Zahl lesbar bleiben. Was gemeint
                   ist, sagt das `title` der Zelle und der Satz unter der
                   Tabelle — eine abgeschnittene Ueberschrift sagt gar nichts.
                 */}
-                <th className="rechts">Ziel</th>
-                <th>Eigentum</th>
-                <th>Lagerort</th>
-                <th>Lieferant</th>
+                <th className="rechts">{t('stock.col.target', 'Target')}</th>
+                <th>{t('stock.col.ownership', 'Ownership')}</th>
+                <th>{t('stock.col.location', 'Location')}</th>
+                <th>{t('stock.col.supplier', 'Supplier')}</th>
                 <th />
               </tr>
             </thead>
@@ -146,7 +150,7 @@ export function Bestand() {
                         const n = Number(e.target.value)
                         if (Number.isFinite(n) && n >= 0) updateItem(i.id, { quantity: n })
                       }}
-                      aria-label={`Menge von ${i.model}`}
+                      aria-label={format(t('stock.aria.qty', 'Quantity of {model}'), { model: i.model })}
                       className="schmal"
                     />
                   </td>
@@ -180,8 +184,8 @@ export function Bestand() {
                           updateItem(i.id, { mindestmenge: Math.round(n) })
                         }
                       }}
-                      aria-label={`Mindestmenge von ${i.model}`}
-                      title="Ab wann nachbestellt oder sub-hired wird. Leer heisst: nicht festgelegt."
+                      aria-label={format(t('stock.aria.target', 'Minimum quantity of {model}'), { model: i.model })}
+                      title={t('stock.target.title', 'When to reorder or sub-hire. Empty means: not decided.')}
                       className="schmal"
                     />
                   </td>
@@ -193,15 +197,15 @@ export function Bestand() {
                           ownership: (e.target.value || undefined) as InventoryOwnership | undefined,
                         })
                       }
-                      aria-label={`Eigentum von ${i.model}`}
+                      aria-label={format(t('stock.aria.ownership', 'Ownership of {model}'), { model: i.model })}
                     >
                       {/* Leer heisst „nicht angegeben" und nicht „uns gehörend".
                           Der Unterschied entscheidet, ob das Stück im Sub-Hire
                           auftaucht. */}
-                      <option value="">nicht angegeben</option>
+                      <option value="">{t('stock.ownership.unset', 'not stated')}</option>
                       {EIGENTUM.map((o) => (
                         <option key={o} value={o}>
-                          {OWNERSHIP_LABEL[o]}
+                          {ownershipLabel(o, t)}
                         </option>
                       ))}
                     </select>
@@ -210,7 +214,7 @@ export function Bestand() {
                   <td>{i.supplier ?? ''}</td>
                   <td>
                     <button type="button" onClick={() => removeItem(i.id)} className="still">
-                      Entfernen
+                      {t('stock.remove', 'Remove')}
                     </button>
                   </td>
                 </tr>
@@ -222,11 +226,10 @@ export function Bestand() {
 
       {items.length > 0 && (
         <p className="leer">
-          <strong>Ziel</strong> ist die Mindestmenge, ab der nachbestellt oder
-          sub-hired wird — eine Entscheidung des Hauses, keine Vorgabe aus einer
-          Show. Leer heisst nicht null, sondern nicht festgelegt; solche Artikel
-          führt der Bericht unter „unbewertet" statt unter „reicht". Wie es
-          aktuell steht, sagt dort der Block „Unter Ziel".
+          {t(
+            'stock.targetExplain',
+            'Target is the minimum quantity at which the house reorders or sub-hires — a decision of the house, not a demand from a show. Empty does not mean zero, it means not decided; the report lists such items under "not assessed" rather than under "enough". How it currently stands is in the report\'s "Below target" block.',
+          )}
         </p>
       )}
     </section>

@@ -73,13 +73,26 @@ export type AuditOutcome =
  */
 export type AuditVia = 'scan' | 'pick'
 
-export const AUDIT_VIA_LABEL: Record<AuditVia, string> = {
-  scan: 'gescannt',
-  pick: 'aus der Liste',
-}
+/**
+ * Beschriftungen — FUNKTIONEN statt Tabellen, seit dem 2026-09-11.
+ *
+ * Englisch ist die Quellsprache (E-28) und Deutsch eine Übersetzung; eine
+ * Konstante kennt die gewählte Sprache nicht. `t` ist ein Parameter mit
+ * Vorgabe, und die Vorgabe liefert die QUELLE — die Tests rufen ohne
+ * Argument und bekommen Englisch.
+ *
+ * DAS GILT AUCH FÜR DAS BLATT. `auditTable` nimmt dasselbe `t` entgegen: ein
+ * Blatt in einer anderen Sprache als der Bildschirm, von dem es gedruckt
+ * wurde, ist für den, der beides nebeneinander hält, ein Rätsel.
+ */
+export type { Uebersetzen } from '../../i18n/quelle'
+import { quelle, type Uebersetzen } from '../../i18n/quelle'
+
+export const auditViaLabel = (v: AuditVia, t: Uebersetzen = quelle): string =>
+  ({ scan: t('audit.via.scan', 'scanned'), pick: t('audit.via.pick', 'from the list') })[v]
 
 /** Was in der Code-Spalte steht, wo es keinen Code gab. */
-export const NO_CODE = 'ohne Code'
+export const noCode = (t: Uebersetzen = quelle): string => t('audit.noCode', 'no code')
 
 export interface AuditHit {
   outcome: AuditOutcome
@@ -313,7 +326,7 @@ export function missingAt(
 }
 
 /** Was auf dem Blatt steht, wo etwas erwartet, aber nicht erfasst wurde. */
-export const NOT_FOUND = 'Nicht gefunden'
+export const notFound = (t: Uebersetzen = quelle): string => t('audit.notFound', 'Not found')
 
 /**
  * Das Inventur-Blatt.
@@ -334,17 +347,26 @@ export function auditTable(
    * der ehrliche Zustand: nicht „nichts fehlt", sondern „nicht nachgesehen".
    */
   missing: readonly AuditCandidate[] = [],
+  t: Uebersetzen = quelle,
 ): CsvTable {
   const geprueft = nodePathLabel(nodes, atNodeId)
   return {
-    headers: ['Ergebnis', 'Wie erfasst', 'Code', 'Objekt', 'Modell', 'Erwartet in', 'Geprüft an'],
+    headers: [
+      t('audit.col.outcome', 'Result'),
+      t('audit.col.via', 'How recorded'),
+      t('audit.col.code', 'Code'),
+      t('audit.col.object', 'Object'),
+      t('audit.col.model', 'Model'),
+      t('audit.col.expected', 'Expected in'),
+      t('audit.col.checkedAt', 'Checked at'),
+    ],
     rows: [
       ...hits.map((h): CsvCell[] => [
-        AUDIT_LABEL[h.outcome],
-        AUDIT_VIA_LABEL[h.via],
+        auditLabel(h.outcome, t),
+        auditViaLabel(h.via, t),
         // Ein Listen-Haken hat keinen Code. Die Zelle bleibt nicht leer: eine
         // leere Zelle liest sich, als sei der Code vergessen worden.
-        h.via === 'pick' ? NO_CODE : h.code,
+        h.via === 'pick' ? noCode(t) : h.code,
         h.label,
         h.model ?? '',
         // Leer heisst hier „kein Lagerort im Datensatz" und ist selbst die
@@ -353,11 +375,11 @@ export function auditTable(
         geprueft,
       ]),
       ...missing.map((c): CsvCell[] => [
-        NOT_FOUND,
+        notFound(t),
         // Weder gescannt noch angehakt — deshalb steht hier keines von
         // beiden. Der Strich ist die Aussage.
         '—',
-        NO_CODE,
+        noCode(t),
         c.label,
         c.model ?? '',
         c.expected,
@@ -368,13 +390,14 @@ export function auditTable(
 }
 
 /** Kanonisches Deutsch fuer das Blatt — der Stand haengt am Inhalt. */
-export const AUDIT_LABEL: Record<AuditOutcome, string> = {
-  'expected-here': 'Am erwarteten Ort',
-  'wrong-place': 'Am falschen Ort',
-  'no-location': 'Ohne Lagerort im Datensatz',
-  'not-in-inventory': 'Nicht im Bestand',
-  'is-a-location': 'Das ist ein Lagerort, kein Objekt',
-}
+export const auditLabel = (o: AuditOutcome, t: Uebersetzen = quelle): string =>
+  ({
+    'expected-here': t('audit.outcome.here', 'At the expected place'),
+    'wrong-place': t('audit.outcome.wrong', 'At the wrong place'),
+    'no-location': t('audit.outcome.noLocation', 'No location in the record'),
+    'not-in-inventory': t('audit.outcome.unknown', 'Not in stock'),
+    'is-a-location': t('audit.outcome.isLocation', 'That is a location, not an object'),
+  })[o]
 
 /**
  * Was eine Uebernahme des tatsaechlichen Ortes aendern wuerde.

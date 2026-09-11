@@ -12,10 +12,12 @@
 // niemandem", und das hat das Gebäude nie gesagt.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { useT } from '../i18n'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { kreisGeschwister } from '../domain/vertrag'
 
 export function Verteilung() {
+  const { t } = useT()
   const gebaeude = useGebaeudeStore((s) => s.gebaeude)
   const verteilungAnlegen = useGebaeudeStore((s) => s.verteilungAnlegen)
   const kreisAnlegen = useGebaeudeStore((s) => s.kreisAnlegen)
@@ -31,8 +33,8 @@ export function Verteilung() {
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Neuer Schaltschrank / neue Unterverteilung"
-          aria-label="Bezeichnung der Verteilung"
+          placeholder={t('dist.new.placeholder', 'New switchgear cabinet / sub-distribution board')}
+          aria-label={t('dist.new.aria', 'Name of the distribution board')}
         />
         <button
           type="button"
@@ -44,7 +46,7 @@ export function Verteilung() {
             setName('')
           }}
         >
-          Anlegen
+          {t('common.add', 'Add')}
         </button>
       </div>
 
@@ -53,13 +55,13 @@ export function Verteilung() {
           <input
             value={kreisName}
             onChange={(e) => setKreisName(e.target.value)}
-            placeholder="Neuer Stromkreis"
-            aria-label="Bezeichnung des Stromkreises"
+            placeholder={t('dist.circuit.placeholder', 'New circuit')}
+            aria-label={t('dist.circuit.aria', 'Name of the circuit')}
           />
           <input
             value={rcd}
             onChange={(e) => setRcd(e.target.value)}
-            placeholder="RCD (leer = nicht angegeben)"
+            placeholder={t('dist.rcd.placeholder', 'RCD (empty = not stated)')}
             aria-label="RCD"
           />
           <button
@@ -78,34 +80,39 @@ export function Verteilung() {
               setRcd('')
             }}
           >
-            Kreis anlegen
+            {t('dist.circuit.add', 'Add circuit')}
           </button>
         </div>
       )}
 
       {gebaeude.verteilungen.length === 0 ? (
         <p className="leer">
-          Noch keine Verteilung. Ein Schaltschrank ist der Ort, an dem die Kreise des
-          Gebäudes anfangen — und der Grund, warum zwei Dosen in verschiedenen Räumen
-          gemeinsam abschalten können.
+          {t(
+            'dist.empty',
+            'No distribution board yet. A switchgear cabinet is where the building\'s circuits begin — and the reason why two outlets in different rooms can go dead together.',
+          )}
         </p>
       ) : (
         <>
           <div className="tabelle-rahmen">
             <table>
-              <caption>Verteilungen</caption>
+              <caption>{t('dist.table.boards', 'Distribution boards')}</caption>
               <thead>
                 <tr>
-                  <th>Bezeichnung</th>
-                  <th>Art</th>
-                  <th className="rechts">Kreise</th>
+                  <th>{t('common.name', 'Name')}</th>
+                  <th>{t('common.kind', 'Kind')}</th>
+                  <th className="rechts">{t('dist.col.circuits', 'Circuits')}</th>
                 </tr>
               </thead>
               <tbody>
                 {gebaeude.verteilungen.map((v) => (
                   <tr key={v.id}>
                     <td>{v.bezeichnung}</td>
-                    <td>{v.art === 'schaltschrank' ? 'Schaltschrank' : 'Unterverteilung'}</td>
+                    <td>
+                      {v.art === 'schaltschrank'
+                        ? t('dist.kind.cabinet', 'Switchgear cabinet')
+                        : t('dist.kind.sub', 'Sub-distribution board')}
+                    </td>
                     <td className="rechts">
                       {gebaeude.stromkreise.filter((k) => k.verteilungId === v.id).length}
                     </td>
@@ -117,31 +124,31 @@ export function Verteilung() {
 
           <div className="tabelle-rahmen">
             <table>
-              <caption>Was schaltet gemeinsam ab?</caption>
+              <caption>{t('dist.table.together', 'What goes dead together?')}</caption>
               <thead>
                 <tr>
-                  <th>Punkt</th>
-                  <th>Grundlage</th>
-                  <th>Hängt zusammen mit</th>
+                  <th>{t('dist.col.point', 'Point')}</th>
+                  <th>{t('dist.col.basis', 'Basis')}</th>
+                  <th>{t('dist.col.linkedWith', 'Linked with')}</th>
                 </tr>
               </thead>
               <tbody>
                 {gebaeude.punkte.map((p) => {
-                  const g = kreisGeschwister(gebaeude, p.id)
+                  const g = kreisGeschwister(gebaeude, p.id, t)
                   return (
                     <tr key={p.id}>
                       <td>{p.bezeichnung}</td>
                       <td className="leise">
                         {g.bekannt
                           ? g.grundlage === 'rcd'
-                            ? 'RCD — vollständig'
-                            : 'Stromkreis — Untergrenze, kein RCD angegeben'
-                          : 'nicht bekannt'}
+                            ? t('dist.basis.rcd', 'RCD — complete')
+                            : t('dist.basis.circuit', 'Circuit — lower bound, no RCD stated')
+                          : t('dist.basis.unknown', 'not known')}
                       </td>
                       <td>
                         {g.bekannt ? (
                           g.punkte.length === 0 ? (
-                            <span className="leise">mit nichts</span>
+                            <span className="leise">{t('dist.withNothing', 'with nothing')}</span>
                           ) : (
                             g.punkte.map((id) => nachId.get(id) ?? id).join(', ')
                           )

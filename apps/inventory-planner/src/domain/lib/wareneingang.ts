@@ -61,7 +61,19 @@ export interface EingangsZeile {
   /** Bei `bekannt`: was danach im Bestand stünde. */
   neueMenge?: number
   /** Bei `unlesbar`: woran es lag, in einem Satz. */
-  grund?: string
+  /**
+   * WARUM DER GRUND EIN OBJEKT IST UND KEIN SATZ (2026-09-11).
+   *
+   * Er stand hier als deutscher Text — die Domäne entschied damit über die
+   * Wortwahl der Oberfläche. Seit Englisch die Quellsprache ist und Deutsch
+   * eine Übersetzung, kann sie das nicht mehr: sie kennt die gewählte
+   * Sprache nicht, und sie soll sie auch nicht kennen.
+   *
+   * Jetzt nennt sie die ART des Hindernisses; den Satz dazu sucht die Sicht.
+   * `wert` trägt das, was im Satz vorkommt (die Zeichenkette, die keine
+   * Menge war) — damit die Meldung die Zeile benennt, um die es geht.
+   */
+  grund?: { art: 'leer' | 'keineBezeichnung' | 'keineMenge' | 'nichtTrennbar'; wert?: string }
 }
 
 export interface EingangsBericht {
@@ -96,17 +108,17 @@ const zahl = (s: string): number | undefined => {
  */
 export const zeileLesen = (roh: string): EingangsZeile => {
   const t = roh.trim()
-  if (!t) return { roh, lage: 'unlesbar', grund: 'leere Zeile' }
+  if (!t) return { roh, lage: 'unlesbar', grund: { art: 'leer' } }
 
   // CSV-artig: Semikolon oder Tabulator.
   if (/[;\t]/.test(t)) {
     const teile = t.split(/[;\t]/).map((x) => x.trim())
     const model = teile[0]
-    if (!model) return { roh, lage: 'unlesbar', grund: 'keine Bezeichnung in der ersten Spalte' }
+    if (!model) return { roh, lage: 'unlesbar', grund: { art: 'keineBezeichnung' } }
     const menge = teile[1] !== undefined ? zahl(teile[1]) : undefined
     const preis = teile[2] !== undefined ? zahl(teile[2]) : undefined
     if (teile[1] !== undefined && teile[1] !== '' && menge === undefined) {
-      return { roh, lage: 'unlesbar', grund: `„${teile[1]}" ist keine Menge` }
+      return { roh, lage: 'unlesbar', grund: { art: 'keineMenge', wert: teile[1] } }
     }
     return { roh, lage: 'neu', model, ...(menge !== undefined ? { menge } : {}), ...(preis !== undefined ? { preis } : {}) }
   }
@@ -117,7 +129,7 @@ export const zeileLesen = (roh: string): EingangsZeile => {
     const menge = zahl(m[1])
     const model = m[2].trim()
     if (menge === undefined || !model) {
-      return { roh, lage: 'unlesbar', grund: 'Menge und Bezeichnung nicht zu trennen' }
+      return { roh, lage: 'unlesbar', grund: { art: 'nichtTrennbar' } }
     }
     return { roh, lage: 'neu', model, menge }
   }

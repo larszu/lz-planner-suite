@@ -5,11 +5,40 @@
 // WORUM ES GEHT. Seit dem 2026-09-08 erklaert jedes Repo seine Quellsprache
 // (`package.json` -> `avplan.sourceLanguage`) und MISST sie: ein Lauf liest die
 // Fallback-Texte, ordnet jeden einer Sprache zu und faellt bei jedem, der in
-// der anderen steht. Drei Repos fuehren dafuer denselben Klassifizierer:
+// der anderen steht. FUENF Repos fuehren dafuer denselben Klassifizierer:
 //
-//   cable-planner      scripts/quellsprache.mjs
-//   light-planner      scripts/quellsprache-check.ts
-//   multicam-planner   scripts/quellsprache-check.mjs
+//   GROSS   cable-planner      scripts/quellsprache.mjs
+//           light-planner      scripts/quellsprache-check.ts
+//           multicam-planner   scripts/quellsprache-check.mjs
+//   KLEIN   inventory-planner        scripts/quellsprache-check.ts
+//           larszu-facility-planner  scripts/quellsprache-check.ts
+//
+// DIE BEIDEN KLEINEN KAMEN AM 2026-09-11 DAZU (B-71), und die Liste stand
+// bis dahin auf drei. Das war keine Vollstaendigkeitsluecke auf dem Papier:
+// die Wortliste DEUTSCH fuehrte in den beiden kleinen Kopien 63 Eintraege
+// und in den drei grossen 90. Die 27 fehlenden sind genau die, an denen
+// eine deutsche BESCHRIFTUNG haengt — `speichern`, `abbrechen`,
+// `einstellungen`, `datei`, `vorlage`. Ein „Speichern" ging dort nicht als
+// englisch durch, sondern als MERKMALLOS, und das ist die stillste Art, an
+// einem Waechter vorbeizukommen. Beide Repos haben nachgezogen; hier steht
+// von jetzt an, dass es so bleibt.
+//
+// WAS DIE GRUPPEN TRENNT — und das ist kein Versaeumnis, sondern ein
+// Unterschied im UMFANG. Die drei grossen Kopien tragen den vollen
+// Sprachmix-Teil (B-61/B-63): vier Muster, `sichtbareTexte`,
+// `ohneKommentare`, `ohneAusdruecke`, `PROBE`. Die beiden kleinen tragen
+// stattdessen ein einzelnes `jsxTextMuster` und `ohneGenerics`. Verglichen
+// wird deshalb in drei Runden:
+//
+//   ALLE FUENF   DEUTSCH, ENGLISCH, klassifiziere, fallbackMuster
+//   NUR GROSS    der Sprachmix-Teil
+//   NUR KLEIN    jsxTextMuster, ohneGenerics
+//
+// Ein Lauf, der stattdessen alles ueber alle fuenf vergliche, faende
+// ueberall `null` fuer die fehlenden Stuecke — und `null === null` ist
+// gruen. Der Waechter meldete Ruhe, weil er nichts gefunden hat. Genau
+// diese Form haelt der Block ganz unten fest: was nicht da ist, wird
+// GEMELDET und nicht verglichen.
 //
 // Die Klammern hinter den drei Zeilen sind am 2026-09-10 weggefallen, und das
 // ist kein Aufraeumen: dort stand „(deutsch-quellig)" fuer die ersten beiden
@@ -57,6 +86,10 @@
 // er verglich nur die Wortlisten. Genau die Bauform von Drift, gegen die er
 // gebaut ist, lief unter ihm hindurch.
 //
+// WAS DIESER LAUF NICHT SAGT: dass die fuenf Kopien gleich VIEL koennen.
+// Die beiden kleinen messen den Sprachmix schwaecher, und das steht so in
+// ihren eigenen Kopfzeilen. Hier wird gehalten, was sie TEILEN.
+//
 // NICHT verglichen wird alles Drumherum: die Repos lesen verschiedene
 // Wurzeln, nennen ihre zweite Deklarationsstelle anders (CLAUDE.md,
 // README.md), schliessen ihre Woerterbuecher unterschiedlich aus (`i18n/` vs.
@@ -72,10 +105,24 @@ import { fileURLToPath } from 'node:url'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const KOPIEN = [
-  { app: 'cable-planner', datei: 'apps/cable-planner/scripts/quellsprache.mjs' },
-  { app: 'light-planner', datei: 'apps/light-planner/scripts/quellsprache-check.ts' },
-  { app: 'multicam-planner', datei: 'apps/multicam-planner/scripts/quellsprache-check.mjs' },
+  { app: 'cable-planner', gruppe: 'gross', datei: 'apps/cable-planner/scripts/quellsprache.mjs' },
+  { app: 'light-planner', gruppe: 'gross', datei: 'apps/light-planner/scripts/quellsprache-check.ts' },
+  { app: 'multicam-planner', gruppe: 'gross', datei: 'apps/multicam-planner/scripts/quellsprache-check.mjs' },
+  { app: 'inventory-planner', gruppe: 'klein', datei: 'apps/inventory-planner/scripts/quellsprache-check.ts' },
+  {
+    app: 'larszu-facility-planner',
+    gruppe: 'klein',
+    datei: 'apps/larszu-facility-planner/scripts/quellsprache-check.ts',
+  },
 ]
+
+/** Was in welcher Runde verglichen wird. Siehe Kopf, Abschnitt „Gruppen". */
+const GEMEINSAM = ['fallbackMuster']
+const NUR_GROSS = [
+  'SICHTBARE_ATTRIBUTE', 'JSX_TEXT', 'NACH_CODE', 'RUFE',
+  'ohneKommentare', 'sichtbareTexte', 'ohneAusdruecke', 'PROBE',
+]
+const NUR_KLEIN = ['jsxTextMuster', 'ohneGenerics']
 
 const fehler = []
 
@@ -163,7 +210,7 @@ const zeilen = (quelle, name) => {
     .map((x) => x[1] ?? x[2])
 }
 
-const gelesen = KOPIEN.map(({ app, datei }) => {
+const gelesen = KOPIEN.map(({ app, gruppe, datei }) => {
   let quelle
   try {
     quelle = readFileSync(join(ROOT, datei), 'utf8')
@@ -182,8 +229,10 @@ const gelesen = KOPIEN.map(({ app, datei }) => {
   // auseinanderlaeuft — „die Kopien unterscheiden sich" waere eine Meldung,
   // nach der man erst suchen muss.
   const mix = {}
-  for (const name of ['SICHTBARE_ATTRIBUTE', 'JSX_TEXT', 'NACH_CODE', 'RUFE']) {
-    mix[name] = muster(quelle, name)
+  const musterNamen =
+    gruppe === 'gross' ? ['SICHTBARE_ATTRIBUTE', 'JSX_TEXT', 'NACH_CODE', 'RUFE'] : ['jsxTextMuster']
+  for (const name of musterNamen) {
+    mix[name] = name === 'jsxTextMuster' ? pfeilRumpf(quelle, name) : muster(quelle, name)
     if (!mix[name]) fehler.push(`${app}: das Muster ${name} wurde nicht gefunden.`)
   }
   // `ohneAusdruecke` kam am 2026-09-10 dazu, und das Fehlen war eine Luecke
@@ -193,12 +242,16 @@ const gelesen = KOPIEN.map(({ app, datei }) => {
   // Klammer abgeschnitten. Sie steht im Rumpf von `sichtbareTexte` nur als
   // AUFRUF, und ein Aufruf sieht in allen drei Kopien gleich aus, auch wenn
   // die gerufene Funktion in einer davon etwas anderes tut.
-  for (const name of ['ohneKommentare', 'sichtbareTexte', 'ohneAusdruecke']) {
+  const funktionen =
+    gruppe === 'gross' ? ['ohneKommentare', 'sichtbareTexte', 'ohneAusdruecke'] : ['ohneGenerics']
+  for (const name of funktionen) {
     mix[name] = pfeilRumpf(quelle, name)
     if (!mix[name]) fehler.push(`${app}: die Funktion ${name} wurde nicht gefunden.`)
   }
-  mix.PROBE = zeilen(quelle, 'PROBE')
-  if (!mix.PROBE) fehler.push(`${app}: die Probe PROBE wurde nicht gefunden.`)
+  if (gruppe === 'gross') {
+    mix.PROBE = zeilen(quelle, 'PROBE')
+    if (!mix.PROBE) fehler.push(`${app}: die Probe PROBE wurde nicht gefunden.`)
+  }
 
   // DAS MUSTER, AN DEM DIE FALLBACKS HAENGEN — und es fehlte hier bis zum
   // 2026-09-09, obwohl es die Messung traegt, gegen die alles andere
@@ -216,8 +269,36 @@ const gelesen = KOPIEN.map(({ app, datei }) => {
   mix.fallbackMuster = pfeilRumpf(quelle, 'fallbackMuster')
   if (!mix.fallbackMuster) fehler.push(`${app}: die Funktion fallbackMuster wurde nicht gefunden.`)
 
-  return { app, de, en, logik, mix }
+  return { app, gruppe, de, en, logik, mix }
 }).filter(Boolean)
+
+/**
+ * Eine Runde: alle Kopien aus `menge` in den Stuecken `namen` vergleichen.
+ *
+ * Verglichen wird jede gegen die ERSTE der Runde und nicht jede gegen jede.
+ * Das genuegt: Gleichheit ist transitiv, und die Meldung nennt so immer
+ * dieselbe Bezugskopie statt einer zufaelligen.
+ */
+const runde = (menge, namen, was) => {
+  if (menge.length < 2) return
+  const [erste, ...rest] = menge
+  for (const andere of rest) {
+    for (const name of namen) {
+      const a = erste.mix[name]
+      const b = andere.mix[name]
+      const gleich = Array.isArray(a)
+        ? Array.isArray(b) && a.length === b.length && a.every((x, i) => x === b[i])
+        : a === b
+      if (!gleich) {
+        fehler.push(
+          `${name} laeuft auseinander zwischen ${erste.app} und ${andere.app} (${was}):\n` +
+            `  ${erste.app}: ${JSON.stringify(a)}\n` +
+            `  ${andere.app}: ${JSON.stringify(b)}`,
+        )
+      }
+    }
+  }
+}
 
 if (gelesen.length > 1 && fehler.length === 0) {
   const [erste, ...rest] = gelesen
@@ -242,21 +323,12 @@ if (gelesen.length > 1 && fehler.length === 0) {
           `  ${andere.app}: ${andere.logik}`,
       )
     }
-    for (const name of Object.keys(erste.mix)) {
-      const a = erste.mix[name]
-      const b = andere.mix[name]
-      const gleich = Array.isArray(a)
-        ? Array.isArray(b) && a.length === b.length && a.every((x, i) => x === b[i])
-        : a === b
-      if (!gleich) {
-        fehler.push(
-          `${name} laeuft auseinander zwischen ${erste.app} und ${andere.app}:\n` +
-            `  ${erste.app}: ${JSON.stringify(a)}\n` +
-            `  ${andere.app}: ${JSON.stringify(b)}`,
-        )
-      }
-    }
   }
+
+  // Drei Runden statt einer — siehe Kopf, Abschnitt „Gruppen".
+  runde(gelesen, GEMEINSAM, 'alle fuenf')
+  runde(gelesen.filter((g) => g.gruppe === 'gross'), NUR_GROSS, 'Sprachmix-Teil, nur die grossen')
+  runde(gelesen.filter((g) => g.gruppe === 'klein'), NUR_KLEIN, 'nur die kleinen')
 }
 
 /**
@@ -304,15 +376,26 @@ if (fehler.length) {
   console.error('Quellsprachen-Klassifizierer laufen auseinander:\n')
   for (const f of fehler) console.error(`  ${f}`)
   console.error(
-    '\nDie drei Kopien halten dieselbe Zusicherung. Wer eine Wortliste aendert, ' +
-      'aendert sie in allen dreien — sonst meldet ein Repo Fehlalarme (und wird ' +
-      'abgeschaltet) oder uebersieht, was die anderen finden.',
+    '\nDie fuenf Kopien halten dieselbe Zusicherung. Wer eine Wortliste aendert, ' +
+      'aendert sie in allen fuenf — sonst meldet ein Repo Fehlalarme (und wird ' +
+      'abgeschaltet) oder uebersieht, was die anderen finden. Der Sprachmix-Teil ' +
+      'gilt nur fuer die drei grossen Kopien; welche Stuecke in welcher Runde ' +
+      'verglichen werden, steht im Kopf dieser Datei.',
   )
   process.exit(1)
 }
 
+const gross = gelesen.filter((g) => g.gruppe === 'gross')
+const klein = gelesen.filter((g) => g.gruppe === 'klein')
 console.log(
-  `lang:parity ok — ${gelesen.length} Kopien des Quellsprachen-Klassifizierers sind ` +
-    `wortgleich (${gelesen[0].de.length} deutsche, ${gelesen[0].en.length} englische Marker), ` +
-    `und der Sprachmix-Teil ebenfalls (4 Muster, 4 Funktionen, ${gelesen[0].mix.PROBE.length} Probe-Zeilen).`,
+  `lang:parity ok — ${gelesen.length} Kopien des Quellsprachen-Klassifizierers sind wortgleich ` +
+    `(${gelesen[0].de.length} deutsche, ${gelesen[0].en.length} englische Marker, dazu ` +
+    `klassifiziere und fallbackMuster). Der Sprachmix-Teil ist in den ${gross.length} grossen ` +
+    `Kopien gleich (4 Muster, 4 Funktionen, ${gross[0].mix.PROBE.length} Probe-Zeilen), ` +
+    `jsxTextMuster und ohneGenerics in den ${klein.length} kleinen.`,
+)
+console.log(
+  'NICHT gemessen: dass die fuenf gleich VIEL koennen. Die beiden kleinen tragen den ' +
+    'vollen Sprachmix-Teil nicht — das steht in ihren eigenen Kopfzeilen und ist ein ' +
+    'Unterschied im Umfang, keine Drift.',
 )

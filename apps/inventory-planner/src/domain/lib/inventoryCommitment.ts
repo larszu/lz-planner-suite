@@ -45,6 +45,7 @@
 
 import type { CheckoutRecord } from '../types/checkout'
 import type { InventoryUnit } from '../types/inventory'
+import { format, quelle, type Uebersetzen } from '../../i18n/quelle'
 
 export interface Commitment {
   /** Stueckzahl dieses Artikels auf offenen Ausgaben. */
@@ -106,16 +107,22 @@ export const committedByItem = (
 }
 
 /**
- * Die Zusatz-Angabe fuer eine Zeile, in kanonischem Deutsch.
+ * Die Zusatz-Angabe fuer eine Zeile.
  *
  * Der Bedarf will die Qualifizierung „in the same glyph run" — nicht in einer
  * Fussnote, nicht in einem Tooltip. Deshalb ist das ein Textstueck und keine
  * eigene Spalte: es steht da, wo die Zahl steht.
+ *
+ * EIN SCHLUESSEL, EIN GANZER SATZ. Die Aufzaehlung dahinter wird gebaut und
+ * nicht uebersetzt — `3× Stadthalle` ist in jeder Sprache dasselbe —, der
+ * Satz drumherum aber schon: „{n} on open checkout ({wohin})" hat im
+ * Deutschen eine andere Wortstellung, und zwei `t()`-Aufrufe koennten sie
+ * nicht abbilden.
  */
-export const commitmentNote = (c: Commitment | undefined): string => {
+export const commitmentNote = (c: Commitment | undefined, t: Uebersetzen = quelle): string => {
   if (!c || c.quantity === 0) return ''
   const wohin = c.on
     .map((o) => `${o.quantity}× ${o.projectName ?? o.nodeLabel}`)
     .join(', ')
-  return `${c.quantity} auf offener Ausgabe (${wohin})`
+  return format(t('committed.note', '{n} on open checkout ({where})'), { n: c.quantity, where: wohin })
 }

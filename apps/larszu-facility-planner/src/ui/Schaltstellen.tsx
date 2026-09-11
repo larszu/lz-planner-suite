@@ -24,6 +24,7 @@
 // Blatt, mit dem jemand ein Netzteil an eine Dose hängt, die um 22:00 abfällt.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { useT } from '../i18n'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { geschaltetVon } from '../domain/gebaeudeAuskunft'
 import type { Schalterbauart } from '../domain/modell'
@@ -39,14 +40,40 @@ const BAUARTEN: Schalterbauart[] = [
   'schluesselschalter',
 ]
 
-const HERKUNFT_TEXT: Record<string, string> = {
-  stelle: 'benannte Stelle',
-  angabe: 'Angabe des Betreibers, ohne Stelle',
-  nein: 'nicht geschaltet',
-  unbekannt: 'unbekannt — niemand hat es gesagt',
-}
+type UebersetzFn = (key: string, en: string) => string
+
+/** Als FUNKTIONEN und nicht als Modul-Konstanten: eine Konstante wird beim
+ *  Laden einmal gebaut und bliebe in der Sprache stehen, die damals galt. */
+const herkunftText = (t: UebersetzFn): Record<string, string> => ({
+  stelle: t('switches.origin.point', 'named switch point'),
+  angabe: t('switches.origin.stated', 'stated by the operator, without a point'),
+  nein: t('switches.origin.no', 'not switched'),
+  unbekannt: t('switches.origin.unknown', 'unknown — nobody has said'),
+})
+
+/**
+ * Die Bauart in Worten.
+ *
+ * Bis 2026-09-11 stand die KENNUNG in der Zelle und in der Auswahl:
+ * `schluesselschalter`, klein und ohne Leerzeichen. Sie ist ein Name für den
+ * Code; was der Mensch liest, muss ein Wort seiner Sprache sein — und in
+ * einer englischen Oberfläche wäre sie nicht einmal mehr zu erraten.
+ */
+const bauartText = (t: UebersetzFn): Record<Schalterbauart, string> => ({
+  ausschalter: t('switches.type.single', 'One-way switch'),
+  serienschalter: t('switches.type.double', 'Double switch'),
+  wechselschalter: t('switches.type.twoWay', 'Two-way switch'),
+  kreuzschalter: t('switches.type.intermediate', 'Intermediate switch'),
+  taster: t('switches.type.push', 'Push button'),
+  zeitschaltuhr: t('switches.type.timer', 'Time switch'),
+  dimmer: t('switches.type.dimmer', 'Dimmer'),
+  schluesselschalter: t('switches.type.key', 'Key switch'),
+})
 
 export function Schaltstellen() {
+  const { t, format } = useT()
+  const HERKUNFT_TEXT = herkunftText(t)
+  const BAUART_TEXT = bauartText(t)
   const gebaeude = useGebaeudeStore((s) => s.gebaeude)
   const schaltstelleAnlegen = useGebaeudeStore((s) => s.schaltstelleAnlegen)
   const schaltstelleAendern = useGebaeudeStore((s) => s.schaltstelleAendern)
@@ -68,11 +95,11 @@ export function Schaltstellen() {
         <input
           value={bezeichnung}
           onChange={(e) => setBezeichnung(e.target.value)}
-          placeholder="Bezeichnung (z. B. Schalter Bühne links)"
-          aria-label="Bezeichnung"
+          placeholder={t('switches.name.placeholder', 'Name (e.g. switch stage left)')}
+          aria-label={t('common.name', 'Name')}
         />
-        <select value={raumId} onChange={(e) => setRaumId(e.target.value)} aria-label="Raum">
-          <option value="">Raum …</option>
+        <select value={raumId} onChange={(e) => setRaumId(e.target.value)} aria-label={t('common.room', 'Room')}>
+          <option value="">{t('switches.room.none', 'Room …')}</option>
           {gebaeude.raeume.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
@@ -82,19 +109,19 @@ export function Schaltstellen() {
         <select
           value={bauart}
           onChange={(e) => setBauart(e.target.value as Schalterbauart)}
-          aria-label="Bauart"
+          aria-label={t('switches.type', 'Type')}
         >
           {BAUARTEN.map((b) => (
             <option key={b} value={b}>
-              {b}
+              {BAUART_TEXT[b]}
             </option>
           ))}
         </select>
         <input
           value={hinweis}
           onChange={(e) => setHinweis(e.target.value)}
-          placeholder="Hinweis (z. B. schaltet ab 22:00)"
-          aria-label="Hinweis"
+          placeholder={t('switches.note.placeholder', 'Note (e.g. switches off from 22:00)')}
+          aria-label={t('common.note', 'Note')}
         />
         <button
           type="button"
@@ -111,23 +138,23 @@ export function Schaltstellen() {
             setHinweis('')
           }}
         >
-          Schaltstelle anlegen
+          {t('switches.add', 'Add switch point')}
         </button>
       </div>
 
       {stellen.length === 0 ? (
-        <p className="leer">Noch keine Schaltstelle erfasst.</p>
+        <p className="leer">{t('switches.empty', 'No switch point recorded yet.')}</p>
       ) : (
         <div className="tabelle-rahmen">
         <table>
           <thead>
             <tr>
-              <th>Bezeichnung</th>
-              <th>Raum</th>
-              <th>Bauart</th>
-              <th>Schaltet</th>
-              <th>Punkt zuordnen</th>
-              <th>Hinweis</th>
+              <th>{t('common.name', 'Name')}</th>
+              <th>{t('common.room', 'Room')}</th>
+              <th>{t('switches.type', 'Type')}</th>
+              <th>{t('switches.col.switches', 'Switches')}</th>
+              <th>{t('switches.col.assign', 'Assign point')}</th>
+              <th>{t('common.note', 'Note')}</th>
               <th />
             </tr>
           </thead>
@@ -136,7 +163,7 @@ export function Schaltstellen() {
               <tr key={s.id}>
                 <td>{s.bezeichnung}</td>
                 <td>{raumName(s.raumId)}</td>
-                <td>{s.bauart}</td>
+                <td>{BAUART_TEXT[s.bauart]}</td>
                 <td>
                   {s.schaltetPunkte.length === 0
                     ? '—'
@@ -145,7 +172,9 @@ export function Schaltstellen() {
                 <td>
                   <select
                     value=""
-                    aria-label={`Punkt zu ${s.bezeichnung} zuordnen`}
+                    aria-label={format(t('switches.assign.aria', 'Assign a point to {name}'), {
+                      name: s.bezeichnung,
+                    })}
                     onChange={(e) => {
                       const id = e.target.value
                       if (!id || s.schaltetPunkte.includes(id)) return
@@ -154,7 +183,7 @@ export function Schaltstellen() {
                       })
                     }}
                   >
-                    <option value="">hinzufügen …</option>
+                    <option value="">{t('switches.assign.none', 'add …')}</option>
                     {gebaeude.punkte
                       .filter((p) => !s.schaltetPunkte.includes(p.id))
                       .map((p) => (
@@ -167,7 +196,7 @@ export function Schaltstellen() {
                 <td>{s.hinweis ?? '—'}</td>
                 <td>
                   <button type="button" onClick={() => entfernen(s.id)}>
-                    Entfernen
+                    {t('common.remove', 'Remove')}
                   </button>
                 </td>
               </tr>
@@ -177,18 +206,20 @@ export function Schaltstellen() {
         </div>
       )}
 
-      <h3>Je Anschlusspunkt: woher wissen wir das?</h3>
+      <h3>{t('switches.origin.title', 'Per connection point: how do we know?')}</h3>
       <p className="leer">
-        Vier Antworten und nicht zwei. „Unbekannt" heisst nicht „nein" — der Unterschied ist der,
-        der im Aufbau zählt.
+        {t(
+          'switches.origin.hint',
+          'Four answers, not two. "Unknown" does not mean "no" — that is the difference that counts on site.',
+        )}
       </p>
       <div className="tabelle-rahmen">
       <table>
         <thead>
           <tr>
-            <th>Punkt</th>
-            <th>Geschaltet?</th>
-            <th>Quelle</th>
+            <th>{t('dist.col.point', 'Point')}</th>
+            <th>{t('switches.col.switched', 'Switched?')}</th>
+            <th>{t('switches.col.source', 'Source')}</th>
           </tr>
         </thead>
         <tbody>
@@ -197,7 +228,13 @@ export function Schaltstellen() {
             return (
               <tr key={p.id}>
                 <td>{p.bezeichnung}</td>
-                <td>{h.art === 'stelle' || h.art === 'angabe' ? 'ja' : h.art === 'nein' ? 'nein' : '?'}</td>
+                <td>
+                  {h.art === 'stelle' || h.art === 'angabe'
+                    ? t('common.yes', 'yes')
+                    : h.art === 'nein'
+                      ? t('common.no', 'no')
+                      : '?'}
+                </td>
                 <td>
                   {HERKUNFT_TEXT[h.art]}
                   {h.art === 'stelle' ? ` — ${h.stelle.bezeichnung}` : ''}

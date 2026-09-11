@@ -55,20 +55,34 @@ import type {
   InventoryItem,
   InventoryUnit,
 } from '../types/inventory'
+import { EINGEBAUTE_FRIST_ARTEN } from '../types/inventory'
+import { format, quelle, type Uebersetzen } from '../../i18n/quelle'
 
 export type FristLage = 'ueberfaellig' | 'faellig' | 'ok'
 
 /** Wie der Termin zustande kam. Steht in der Zeile, nicht in einer Fussnote. */
 export type FristQuelle = 'eingetragen' | 'hergeleitet'
 
-export const FRIST_ART_LABEL: Record<EingebauteFristArt, string> = {
+/**
+ * Wie die eingebauten Arten heissen.
+ *
+ * Als FUNKTION und nicht als Konstante (seit 2026-09-11, E-28): eine
+ * Modul-Konstante wird beim Laden EINMAL gebaut und bliebe in der Sprache
+ * stehen, die damals galt — der Umschalter in den Einstellungen änderte dann
+ * alles ausser ihr. Dieselbe Falle wie bei der Reiter-Liste in `App.tsx`.
+ *
+ * `DGUV V3` ist kein deutscher Text, sondern der Name einer Vorschrift, und
+ * bleibt in jeder Sprache stehen. Ihn zu „Electrical safety test" zu machen
+ * hiesse, den Prüfbericht nicht mehr wiederzufinden.
+ */
+export const fristArtLabels = (t: Uebersetzen = quelle): Record<EingebauteFristArt, string> => ({
   'dguv-v3': 'DGUV V3',
-  kalibrierung: 'Kalibrierung',
-  wartung: 'Wartung',
-  akku: 'Akku',
-  haltbarkeit: 'Haltbarkeit',
-  sonstige: 'Sonstige',
-}
+  kalibrierung: t('deadline.kind.calibration', 'Calibration'),
+  wartung: t('deadline.kind.service', 'Service'),
+  akku: t('deadline.kind.battery', 'Battery'),
+  haltbarkeit: t('deadline.kind.shelfLife', 'Shelf life'),
+  sonstige: t('deadline.kind.other', 'Other'),
+})
 
 /**
  * Wie eine Art auf dem Blatt heißt.
@@ -86,17 +100,23 @@ export const FRIST_ART_LABEL: Record<EingebauteFristArt, string> = {
  * dazuzuschreiben ist eine Auskunft — sie ist das Einzige, was der Datei
  * noch zu entnehmen ist.
  */
-export const fristArtLabel = (art: FristArt, eigene: readonly FristArtDef[] = []): string => {
-  const eingebaut = (FRIST_ART_LABEL as Record<string, string | undefined>)[art]
+export const fristArtLabel = (
+  art: FristArt,
+  eigene: readonly FristArtDef[] = [],
+  t: Uebersetzen = quelle,
+): string => {
+  const eingebaut = (fristArtLabels(t) as Record<string, string | undefined>)[art]
   if (eingebaut) return eingebaut
+  // Der Name des Hauses wird NICHT übersetzt: er ist eine Eingabe und keine
+  // Beschriftung. Wer „Anschlagmittel" eingetragen hat, sucht danach.
   const treffer = eigene.find((d) => d.id === art)
   if (treffer) return treffer.name
-  return `${art} (unbekannte Art)`
+  return format(t('deadline.kind.unknown', '{id} (unknown kind)'), { id: art })
 }
 
 /** `true`, wenn weder eingebaut noch in der Liste des Hauses. */
 export const istUnbekannteArt = (art: FristArt, eigene: readonly FristArtDef[] = []): boolean =>
-  !(FRIST_ART_LABEL as Record<string, string | undefined>)[art] && !eigene.some((d) => d.id === art)
+  !(EINGEBAUTE_FRIST_ARTEN as readonly string[]).includes(art) && !eigene.some((d) => d.id === art)
 
 export interface FristZeile {
   unitId: string
@@ -194,6 +214,7 @@ export function fristenLage(
   items: readonly InventoryItem[],
   heute: string,
   vorwarnTage = 30,
+  t: Uebersetzen = quelle,
 ): FristenBericht {
   const modellVon = new Map(items.map((i) => [i.id, i.model]))
   const heuteZahl = tagesZahl(heute)
@@ -201,26 +222,30 @@ export function fristenLage(
   let ohneFrist = 0
 
   for (const u of units) {
+    // Das Feld heisst `termin` und nicht `t`: seit `fristenLage` einen
+    // Uebersetzer entgegennimmt, verdeckte die kurze Fassung ihn — und der
+    // Compiler sagte es nur, weil hier danach ein Feld gelesen wird. Bei
+    // einer Funktion, die beides verträgt, hätte er geschwiegen.
     const termine = (u.fristen ?? [])
-      .map((f) => ({ f, t: terminVon(f) }))
-      .filter((x): x is { f: Frist; t: { faellig: string; quelle: FristQuelle } } => !!x.t)
+      .map((f) => ({ f, termin: terminVon(f) }))
+      .filter((x): x is { f: Frist; termin: { faellig: string; quelle: FristQuelle } } => !!x.termin)
     if (termine.length === 0) {
       ohneFrist += 1
       continue
     }
-    for (const { f, t } of termine) {
-      const tage = tagesZahl(t.faellig) - heuteZahl
+    for (const { f, termin } of termine) {
+      const tage = tagesZahl(termin.faellig) - heuteZahl
       if (Number.isNaN(tage)) continue
       zeilen.push({
         unitId: u.id,
-        model: modellVon.get(u.itemId) ?? 'nicht angegeben',
+        model: modellVon.get(u.itemId) ?? t('common.notStated', 'not stated'),
         // Die Hausnummer zuerst: unter ihr spricht das Haus das Geraet an.
         // Die Seriennummer ist die Auskunft nach draussen.
         einheit: u.houseRef ?? u.serial ?? u.code ?? u.id,
         art: f.art,
         ...(f.bezeichnung ? { bezeichnung: f.bezeichnung } : {}),
-        faellig: t.faellig,
-        quelle: t.quelle,
+        faellig: termin.faellig,
+        quelle: termin.quelle,
         tage,
         lage: tage < 0 ? 'ueberfaellig' : tage <= vorwarnTage ? 'faellig' : 'ok',
       })
@@ -229,6 +254,13 @@ export function fristenLage(
 
   // Feste Reihenfolge: das Dringendste zuerst, bei gleichem Tag nach Name.
   // Derselbe Bestand ergibt zweimal dieselbe Liste (ADR-004).
+  //
+  // DIE KENNUNG `'de'` BLEIBT STEHEN, auch seit die Oberflaeche uebersetzbar
+  // ist. Sie mit der gewaehlten Sprache wandern zu lassen waere naheliegend
+  // und falsch: `localeCompare` OHNE Kennung nimmt die des Rechners, und
+  // damit ergaebe derselbe Bestand auf zwei Rechnern zwei verschiedene
+  // Listen — genau das, was ADR-004 ausschliesst. Eine FESTE Kennung ist
+  // hier die Anforderung; welche es ist, ist zweitrangig.
   zeilen.sort(
     (a, b) =>
       a.tage - b.tage ||

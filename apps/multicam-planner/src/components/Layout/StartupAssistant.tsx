@@ -90,9 +90,9 @@ export default function StartupAssistant() {
         <div className="flex items-start gap-3">
           <div className="flex-1">
             <div className="text-bc-yellow text-xs font-semibold">{step.title}</div>
-            <div className="text-gray-300 text-xs mt-1 leading-relaxed">{step.hint}</div>
+            <div className="text-bc-text text-xs mt-1 leading-relaxed">{step.hint}</div>
           </div>
-          <button onClick={finishWizard} className="p-1 text-gray-500 hover:text-white" title={t('header.wizard.exit', 'Exit assistant (unlock everything)')}>
+          <button onClick={finishWizard} className="p-1 text-bc-dim hover:text-bc-text-bright" title={t('header.wizard.exit', 'Exit assistant (unlock everything)')}>
             <FiX size={14} />
           </button>
         </div>

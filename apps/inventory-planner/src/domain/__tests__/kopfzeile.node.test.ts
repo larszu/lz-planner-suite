@@ -23,14 +23,15 @@ import { resolve } from 'node:path'
 // Dieser Lauf hier ist die Hälfte, die MITWANDERT: er liegt im Repo, das die
 // Datei besitzt, und fällt schon vor dem Vendorieren.
 //
-// ─── WARUM DIE BESCHRIFTUNGEN DEUTSCH SIND ────────────────────────────────
+// ─── SEIT DEM 2026-09-11 IST DIE QUELLE ENGLISCH ──────────────────────────
 //
-// Dieses Repo ist deutsch-quellig (`package.json` → `avplan.sourceLanguage`,
-// von `lang:check` gemessen); der Cable Planner ist seit E-28 englisch.
-// Vereinheitlicht wird der BAU der Leiste — welche Menüs, in welcher Folge,
-// wo die Einstellungen sitzen —, nicht die Sprache. „File" in einer
-// deutschen Oberfläche wäre Sprachmix, und gegen den steht in dieser Suite
-// ein eigener Zähler.
+// Hier stand, warum die Beschriftungen deutsch sein MÜSSEN. Der Eigentümer
+// hat entschieden: „Die Standard Sprache muss immer Englisch sein und über
+// i18n muss man auf deutsch übersetzen können." Also misst dieser Lauf jetzt
+// die SCHLÜSSEL und die englische Quelle — und zusätzlich, dass es zu jedem
+// Schlüssel eine deutsche Fassung gibt. Ein Menü, dessen Übersetzung fehlt,
+// steht auf Deutsch plötzlich englisch da, und das fällt sonst erst dem
+// Nutzer auf.
 //
 // ─── WAS ER NICHT KANN ────────────────────────────────────────────────────
 //
@@ -41,6 +42,7 @@ import { resolve } from 'node:path'
 const lies = (...p: string[]): string => readFileSync(resolve(__dirname, '..', '..', ...p), 'utf8')
 
 const kopf = lies('ui', 'Kopfzeile.tsx')
+const woerterbuch = lies('i18n', 'de.ts')
 const css = lies('index.css')
 const app = lies('ui', 'App.tsx')
 
@@ -60,7 +62,7 @@ describe('die Kopfzeile hat das Mass der Suite', () => {
     expect(rechts).toContain('margin-left: auto')
     // Und im Markup: der Knopf liegt IN der rechten Gruppe.
     const i = kopf.indexOf('kopf-rechts')
-    const j = kopf.indexOf('title="Einstellungen"')
+    const j = kopf.indexOf("title={t('settings.title'")
     expect(i, 'keine rechte Gruppe im Markup').toBeGreaterThan(0)
     expect(j, 'kein Einstellungen-Knopf').toBeGreaterThan(i)
   })
@@ -68,17 +70,34 @@ describe('die Kopfzeile hat das Mass der Suite', () => {
 
 describe('die Menues sind die der Suite, in ihrer Reihenfolge', () => {
   it('Datei und Hilfe sind da — und Datei zuerst', () => {
-    const datei = kopf.indexOf('label="Datei"')
-    const hilfe = kopf.indexOf('label="Hilfe"')
+    const datei = kopf.indexOf("t('menu.file'")
+    const hilfe = kopf.indexOf("t('menu.help'")
     expect(datei, 'kein Datei-Menue').toBeGreaterThan(0)
     expect(hilfe, 'kein Hilfe-Menue').toBeGreaterThan(0)
     expect(datei).toBeLessThan(hilfe)
   })
 
   it('Datei fuehrt den gemeinsamen Grundstock', () => {
-    for (const punkt of ['Neues Lager', 'Öffnen…', 'Speichern', 'Speichern unter…']) {
-      expect(kopf, `Datei-Menue ohne „${punkt}"`).toContain(punkt)
+    // An den SCHLUESSELN gemessen und nicht an den Woertern: die Beschriftung
+    // ist uebersetzbar, der Schluessel nicht.
+    for (const key of ['menu.new', 'menu.open', 'menu.save', 'menu.saveAs']) {
+      expect(kopf, `Datei-Menue ohne '${key}'`).toContain(`t('${key}'`)
     }
+  })
+
+  it('zu jedem Schluessel der Leiste gibt es eine deutsche Fassung', () => {
+    // DIE ANDERE HAELFTE DER UMSTELLUNG. Englisch erscheint von selbst — es
+    // ist der Fallback. Deutsch erscheint nur, wenn jemand den Eintrag
+    // geschrieben hat, und ein vergessener faellt niemandem auf, der die App
+    // auf Englisch benutzt.
+    // Das zweite Argument gehoert ins Muster. Ohne es traf die Suche auch
+    // `…nicht('a'…` in einem Kommentar und meldete einen Schluessel `a`, den
+    // es nie gab — eine falsche Anschuldigung, und die ist fuer einen
+    // Waechter so schaedlich wie ein uebersehener Verstoss.
+    const schluessel = [...kopf.matchAll(/\bt\('([\w.]+)',\s*'/g)].map((m) => m[1])
+    expect(schluessel.length, 'die Kopfzeile wickelt gar nichts').toBeGreaterThan(8)
+    const fehlend = schluessel.filter((k) => !woerterbuch.includes(`'${k}':`))
+    expect(fehlend, `ohne deutsche Fassung: ${fehlend.join(', ')}`).toEqual([])
   })
 
   it('es gibt KEIN Ansicht- und kein Bearbeiten-Menue, und das ist Absicht', () => {
@@ -87,8 +106,8 @@ describe('die Menues sind die der Suite, in ihrer Reihenfolge', () => {
     // Punkten waere ein PLACEHOLDER — es saehe aus wie eine Funktion und
     // waere keine. Faellt dieser Test, weil jemand Undo gebaut hat: dann
     // gehoert das Menue dazu, und diese Zeile wird geaendert statt geloescht.
-    expect(kopf).not.toContain('label="Ansicht"')
-    expect(kopf).not.toContain('label="Bearbeiten"')
+    expect(kopf).not.toContain("t('menu.view'")
+    expect(kopf).not.toContain("t('menu.edit'")
   })
 })
 
@@ -142,12 +161,12 @@ describe('die Datei-Eintraege tun, was auf ihnen steht', () => {
 
 describe('Gegenprobe zum Lauf selbst', () => {
   it('die gelesenen Dateien sind wirklich da', () => {
-    for (const [name, inhalt] of Object.entries({ kopf, css, app })) {
+    for (const [name, inhalt] of Object.entries({ kopf, css, app, woerterbuch })) {
       expect(inhalt.length, `${name} ist leer`).toBeGreaterThan(400)
     }
   })
 
   it('ein Menue, das es nicht gibt, wird auch nicht gefunden', () => {
-    expect(kopf).not.toContain('label="GibtEsNicht"')
+    expect(kopf).not.toContain("t('menu.gibtEsNicht'")
   })
 })

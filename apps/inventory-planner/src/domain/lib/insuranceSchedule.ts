@@ -51,9 +51,20 @@
 
 import type { Geldbetrag, InventoryItem, InventoryUnit } from '../types/inventory'
 import type { CsvTable } from '../../lib/csv'
+import { format, quelle, type Uebersetzen } from '../../i18n/quelle'
 
-/** Was in einer Zelle steht, wenn niemand etwas angegeben hat. */
-export const NICHT_ANGEGEBEN = 'nicht angegeben'
+/**
+ * Was in einer Zelle steht, wenn niemand etwas angegeben hat.
+ *
+ * Als FUNKTION seit 2026-09-11 (E-28): eine Modul-Konstante wird beim Laden
+ * einmal gebaut und stünde für immer in der Sprache, die damals galt.
+ *
+ * Der Text ist eine AUSSAGE und kein leeres Feld — auf einem Blatt, das beim
+ * Versicherer oder beim Zoll landet, liest sich eine leere Zelle als „nichts
+ * zu melden", und das ist etwas anderes als „niemand hat es eingetragen".
+ */
+export const nichtAngegeben = (t: Uebersetzen = quelle): string =>
+  t('common.notStated', 'not stated')
 
 /**
  * Eine Zeile der Versicherungsliste.
@@ -195,24 +206,34 @@ export const versicherungsListe = (
  * gelesen — eine Summe, deren Lücken nur in der Anwendung stehen, ist dort
  * eine Zahl ohne Vorbehalt.
  */
-export const versicherungsTabelle = (liste: VersicherungsListe): CsvTable => {
+export const versicherungsTabelle = (liste: VersicherungsListe, t: Uebersetzen = quelle): CsvTable => {
+  const leer = nichtAngegeben(t)
   const rows: CsvTable['rows'] = liste.zeilen.map((z) => [
     z.modell,
-    z.serial ?? NICHT_ANGEGEBEN,
-    z.houseRef ?? NICHT_ANGEGEBEN,
-    istBetrag(z.wert) ? geldZahl(z.wert) : NICHT_ANGEGEBEN,
+    z.serial ?? leer,
+    z.houseRef ?? leer,
+    istBetrag(z.wert) ? geldZahl(z.wert) : leer,
     istBetrag(z.wert) ? z.wert.waehrung : '',
-    z.stand ?? NICHT_ANGEGEBEN,
+    z.stand ?? leer,
   ])
 
   for (const s of liste.summen) {
-    rows.push([`Summe (${s.einheiten} Einheiten)`, '', '', geldZahl(s), s.waehrung, ''])
+    rows.push([
+      format(t('values.csv.sum', 'Total ({n} units)'), { n: s.einheiten }),
+      '',
+      '',
+      geldZahl(s),
+      s.waehrung,
+      '',
+    ])
   }
   // Die Zeile, die den Vorbehalt trägt. Sie steht auch dann da, wenn nichts
   // fehlt — „0 Einheiten ohne angegebenen Wert" ist eine Aussage, ihr Fehlen
   // wäre keine.
   rows.push([
-    `${liste.ohneWert.length} Einheiten ohne angegebenen Versicherungswert`,
+    format(t('values.csv.withoutValue', '{n} units without a stated insured value'), {
+      n: liste.ohneWert.length,
+    }),
     '',
     '',
     '',
@@ -220,11 +241,18 @@ export const versicherungsTabelle = (liste: VersicherungsListe): CsvTable => {
     '',
   ])
   for (const z of liste.ohneWert) {
-    rows.push([z.modell, z.serial ?? NICHT_ANGEGEBEN, z.houseRef ?? NICHT_ANGEGEBEN, NICHT_ANGEGEBEN, '', ''])
+    rows.push([z.modell, z.serial ?? leer, z.houseRef ?? leer, leer, '', ''])
   }
 
   return {
-    headers: ['Modell', 'Herstellernummer', 'Hausreferenz', 'Versicherungswert', 'Währung', 'Stand'],
+    headers: [
+      t('values.csv.model', 'Model'),
+      t('values.csv.serial', 'Manufacturer number'),
+      t('values.csv.houseRef', 'House reference'),
+      t('values.csv.insuredValue', 'Insured value'),
+      t('values.csv.currency', 'Currency'),
+      t('values.csv.asOf', 'As of'),
+    ],
     rows,
   }
 }
@@ -245,27 +273,29 @@ export const versicherungsTabelle = (liste: VersicherungsListe): CsvTable => {
 export const carnetDatenblatt = (
   units: readonly InventoryUnit[],
   artikelVon: (unit: InventoryUnit) => InventoryItem | undefined,
+  t: Uebersetzen = quelle,
 ): CsvTable => ({
   headers: [
-    'Beschreibung',
-    'Herstellernummer',
-    'Gewicht (kg)',
-    'Anschaffungspreis',
-    'Währung',
-    'Ursprungsland',
+    t('values.carnet.description', 'Description'),
+    t('values.csv.serial', 'Manufacturer number'),
+    t('values.carnet.weight', 'Weight (kg)'),
+    t('values.carnet.purchasePrice', 'Purchase price'),
+    t('values.csv.currency', 'Currency'),
+    t('values.carnet.origin', 'Country of origin'),
   ],
   rows: units.map((u) => {
+    const leer = nichtAngegeben(t)
     const artikel = artikelVon(u)
     const gewicht = artikel?.dimensions?.weightKg
     const kauf = u.anschaffung?.betrag
     const name = [artikel?.manufacturer, artikel?.model].filter(Boolean).join(' ').trim()
     return [
-      name || NICHT_ANGEGEBEN,
-      u.serial?.trim() || NICHT_ANGEGEBEN,
-      typeof gewicht === 'number' && Number.isFinite(gewicht) ? gewicht : NICHT_ANGEGEBEN,
-      istBetrag(kauf) ? geldZahl(kauf) : NICHT_ANGEGEBEN,
+      name || leer,
+      u.serial?.trim() || leer,
+      typeof gewicht === 'number' && Number.isFinite(gewicht) ? gewicht : leer,
+      istBetrag(kauf) ? geldZahl(kauf) : leer,
       istBetrag(kauf) ? kauf.waehrung : '',
-      artikel?.ursprungsland?.trim() || NICHT_ANGEGEBEN,
+      artikel?.ursprungsland?.trim() || leer,
     ]
   }),
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  OCR_HINDERNIS_TEXT,
+  ocrHindernisText,
   OCR_SPRACHE,
   TESSDATA_PFAD,
   sprachdatenDa,
@@ -47,7 +47,10 @@ describe('Beleg-Foto: lokal, oder gar nicht', () => {
   it('3. jeder Grund hat einen Satz, den man vorlesen kann', () => {
     // Dieselbe Regel wie beim Kamera-Scan: ein Grund ohne Text wäre ein
     // Fehlercode im Gesicht des Lageristen.
-    for (const [grund, text] of Object.entries(OCR_HINDERNIS_TEXT)) {
+    // Ohne `t` geliefert: das ist die QUELLE (Englisch, E-28).
+    const gruende = ['sprachdaten-fehlen', 'kein-worker', 'abgebrochen'] as const
+    for (const grund of gruende) {
+      const text = ocrHindernisText(grund)
       expect(text.length, `${grund} ohne Text`).toBeGreaterThan(30)
       expect(text.trim().endsWith('.'), `${grund} ohne Satzende`).toBe(true)
     }
@@ -56,7 +59,7 @@ describe('Beleg-Foto: lokal, oder gar nicht', () => {
   it('4. der Hinweis auf fehlende Daten nennt den Weg, nicht nur den Mangel', () => {
     // „Fehlt" allein hilft niemandem weiter; der Satz muss sagen, wohin die
     // Datei gehört.
-    expect(OCR_HINDERNIS_TEXT['sprachdaten-fehlen']).toContain('tessdata')
-    expect(OCR_HINDERNIS_TEXT['sprachdaten-fehlen']).toContain('traineddata')
+    expect(ocrHindernisText('sprachdaten-fehlen')).toContain('tessdata')
+    expect(ocrHindernisText('sprachdaten-fehlen')).toContain('traineddata')
   })
 })

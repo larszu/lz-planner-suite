@@ -81,7 +81,7 @@ import {
   scanFaehigkeit,
   waehleLeser,
   einLesen,
-  HINDERNIS_TEXT,
+  hindernisText,
 } from '../lib/codeLeser'
 import {
   auditPick,
@@ -89,13 +89,14 @@ import {
   auditTable,
   expectedAt,
   missingAt,
-  AUDIT_LABEL,
-  AUDIT_VIA_LABEL,
-  NO_CODE,
+  auditLabel,
+  auditViaLabel,
+  noCode,
   type AuditCandidate,
   type AuditHit,
 } from '../domain/lib/inventoryAudit'
 import { toCsv } from '../lib/csv'
+import { useT } from '../i18n'
 
 /**
  * Die Hausregel für Lagerplatz-Codes.
@@ -115,6 +116,7 @@ const ladePrefix = (): string => {
 }
 
 export function Inventur() {
+  const { t, format } = useT()
   const items = useInventoryStore((s) => s.items)
   const nodes = useInventoryStore((s) => s.nodes)
   const units = useInventoryStore((s) => s.units)
@@ -161,9 +163,13 @@ export function Inventur() {
     if (prefix && !c.toLowerCase().startsWith(prefix.toLowerCase())) {
       setOrtId(null)
       setMeldung(
-        `„${c}" fängt nicht mit „${prefix}" an. Das ist die Kennung eines ` +
-          'Lagerplatzes im Haus — steht sie am Case statt am Regal, wird ' +
-          'gleich am falschen Ort inventiert.',
+        format(
+          t(
+            'audit.prefixMismatch',
+            '"{code}" does not start with "{prefix}". That is the code of a storage place in the house — if it sits on a case instead of a shelf, the stocktake starts at the wrong place.',
+          ),
+          { code: c, prefix },
+        ),
       )
       return
     }
@@ -172,7 +178,7 @@ export function Inventur() {
     )
     if (!knoten) {
       setOrtId(null)
-      setMeldung(`Kein Lagerplatz mit der Kennung „${c}".`)
+      setMeldung(format(t('audit.noSuchPlace', 'No storage place with the code "{code}".'), { code: c }))
       return
     }
     setOrtId(knoten.id)
@@ -237,7 +243,7 @@ export function Inventur() {
       // Stoerung, sondern eine Antwort — und sie bekommt ihren eigenen Satz.
       const abgelehnt = e instanceof DOMException && e.name === 'NotAllowedError'
       setKameraFehler(
-        abgelehnt ? HINDERNIS_TEXT['keine-erlaubnis'] : e instanceof Error ? e.message : String(e),
+        abgelehnt ? hindernisText('keine-erlaubnis', t) : e instanceof Error ? e.message : String(e),
       )
       kameraAus()
     }
@@ -269,6 +275,25 @@ export function Inventur() {
   //
   // Der Takt gehoert der Ansicht, das Lesen dem Modul: `einLesen` macht
   // genau einen Versuch und ist deshalb ohne Kamera getestet.
+  //
+  // DER UEBERSETZER LIEGT IN EINEM REF und steht nicht in den
+  // Abhaengigkeiten. Er gehoert dort hin — der Effekt benutzt ihn —, aber
+  // eine neue `t`-Fassung entsteht bei JEDEM Rendern, und der Effekt wuerde
+  // dann die Kamera-Schleife abbauen und neu aufsetzen (samt Nachladen des
+  // WASM-Lesers), mitten in einer laufenden Inventur. Der Ref haelt die
+  // aktuelle Fassung bereit, ohne den Effekt anzufassen; die Meldung ist
+  // damit in der Sprache, die beim Scheitern gilt, und nicht in der von vor
+  // dem Umschalten.
+  //
+  // Nachgefuehrt wird er in einem EIGENEN Effekt und nicht beim Rendern: ein
+  // Ref waehrend des Renderns zu beschreiben ist ein Seiteneffekt in einer
+  // Funktion, die keinen haben darf — React darf sie verwerfen und noch
+  // einmal aufrufen.
+  const uebersetzer = useRef(t)
+  useEffect(() => {
+    uebersetzer.current = t
+  }, [t])
+
   useEffect(() => {
     if (!kameraAn || !ortId) return
     let laeuft = true
@@ -279,14 +304,14 @@ export function Inventur() {
     void waehleLeser().then((leser) => {
       if (!laeuft) return
       if (!leser) {
-        setKameraFehler(HINDERNIS_TEXT['kein-decoder'])
+        setKameraFehler(hindernisText('kein-decoder', uebersetzer.current))
         return
       }
       takt = window.setInterval(() => {
         const v = video.current
         if (!laeuft || !v || v.readyState < 2) return
         void einLesen(leser, v, zuletztGesehen.current, Date.now(), {
-          aufCode: (c) => setTreffer((t) => [auditScan(c, ortId, quellen), ...t]),
+          aufCode: (c) => setTreffer((bisher) => [auditScan(c, ortId, quellen), ...bisher]),
           aufFehler: (m) => setKameraFehler(m),
         })
       }, 250)
@@ -313,7 +338,7 @@ export function Inventur() {
 
   const blattLaden = () => {
     if (!ortId) return
-    const tabelle = auditTable(treffer, nodes, ortId, fehlend)
+    const tabelle = auditTable(treffer, nodes, ortId, fehlend, t)
     // `toCsv` nimmt Kopfzeile und Zeilen getrennt — `auditTable` liefert
     // beides als `CsvTable`. Die BOM bleibt eingeschaltet (Vorgabe): das
     // Blatt landet in Excel, und ohne sie stehen dort „Geprüft an" und
@@ -336,25 +361,25 @@ export function Inventur() {
     <section className="inventur">
       {/* ── Schritt 1 ────────────────────────────────────────────────── */}
       <div className="schritt">
-        <h2>Schritt 1: Lagerplatz</h2>
+        <h2>{t('audit.step1', 'Step 1: storage place')}</h2>
         <div className="zeile">
           <label>
-            Kennung
+            {t('audit.code', 'Code')}
             <input
               value={ortCode}
               onChange={(e) => ortSetzen(e.target.value)}
-              placeholder={prefix ? `${prefix}…` : 'Kennung des Regals / Raums'}
-              aria-label="Kennung des Lagerplatzes"
+              placeholder={prefix ? `${prefix}…` : t('audit.code.placeholder', 'Code of the shelf / room')}
+              aria-label={t('audit.code.aria', 'Code of the storage place')}
               autoFocus
             />
           </label>
           <label>
-            Erwarteter Prefix
+            {t('audit.prefix', 'Expected prefix')}
             <input
               value={prefix}
               onChange={(e) => prefixSichern(e.target.value)}
-              placeholder="z. B. L#"
-              aria-label="Erwarteter Prefix für Lagerplätze"
+              placeholder={t('audit.prefix.placeholder', 'e.g. L#')}
+              aria-label={t('audit.prefix.aria', 'Expected prefix for storage places')}
               size={8}
             />
           </label>
@@ -364,7 +389,7 @@ export function Inventur() {
           zweiten Knopf: ein unlesbares Etikett ist kein Sonderfall.
         */}
         <label className="ohne-scan">
-          Ohne Scan wählen
+          {t('audit.pickWithoutScan', 'Choose without scanning')}
           <select
             value={ortId ?? ''}
             onChange={(e) => {
@@ -374,9 +399,9 @@ export function Inventur() {
               setMeldung(null)
               setTreffer([])
             }}
-            aria-label="Lagerplatz aus der Liste wählen"
+            aria-label={t('audit.pick.aria', 'Choose a storage place from the list')}
           >
-            <option value="">— Lagerplatz —</option>
+            <option value="">— {t('audit.place', 'Storage place')} —</option>
             {nodes.map((n) => (
               <option key={n.id} value={n.id}>
                 {nodePathLabel(nodes, n.id)}
@@ -391,8 +416,10 @@ export function Inventur() {
         )}
         {!prefix && (
           <p className="hinweis">
-            Kein Prefix hinterlegt — dann prüft an dieser Stelle nichts. Trage
-            die Hausregel ein, wenn es eine gibt.
+            {t(
+              'audit.noPrefix',
+              'No prefix stored — then nothing is checked at this point. Enter the house rule if there is one.',
+            )}
           </p>
         )}
       </div>
@@ -400,14 +427,15 @@ export function Inventur() {
       {/* ── Schritt 2 ────────────────────────────────────────────────── */}
       {ortId === null ? (
         <p className="leer">
-          Erst der Ort, dann die Objekte. Ohne ihn kann keine Zeile sagen, ob
-          etwas am richtigen Platz liegt — das ist die ganze Frage einer
-          Inventur.
+          {t(
+            'audit.placeFirst',
+            'The place first, then the objects. Without it no line can say whether something sits in the right spot — and that is the whole question of a stocktake.',
+          )}
         </p>
       ) : (
         <>
           <div className="schritt">
-            <h2>Schritt 2: Objekte an {nodePathLabel(nodes, ortId)}</h2>
+            <h2>{format(t('audit.step2', 'Step 2: objects at {place}'), { place: nodePathLabel(nodes, ortId) })}</h2>
             <div className="zeile">
               <input
                 ref={codeFeld}
@@ -418,14 +446,14 @@ export function Inventur() {
                   // hier der Auslöser — kein Knopf dazwischen.
                   if (e.key === 'Enter') scannen()
                 }}
-                placeholder="Code scannen oder eintippen, Enter"
-                aria-label="Code des Objekts"
+                placeholder={t('audit.scan.placeholder', 'Scan or type the code, Enter')}
+                aria-label={t('audit.scan.aria', 'Code of the object')}
               />
               <button type="button" onClick={scannen} disabled={!code.trim()}>
-                Erfassen
+                {t('audit.record', 'Record')}
               </button>
               <button type="button" onClick={blattLaden} disabled={treffer.length === 0 && fehlend.length === 0}>
-                Blatt laden (CSV)
+                {t('audit.sheet', 'Download sheet (CSV)')}
               </button>
             </div>
 
@@ -434,12 +462,12 @@ export function Inventur() {
               <div className="kamera">
                 <div className="zeile">
                   <button type="button" onClick={kameraAn ? kameraAus : () => void kameraStarten()}>
-                    {kameraAn ? 'Kamera aus' : 'Mit Kamera scannen'}
+                    {kameraAn ? t('audit.cam.off', 'Camera off') : t('audit.cam.on', 'Scan with the camera')}
                   </button>
                   {kameraAn && (
                     <>
                       <button type="button" onClick={() => void kameraWechseln()}>
-                        {hinten ? 'Auf Frontkamera' : 'Auf Rückkamera'}
+                        {hinten ? t('audit.cam.front', 'To front camera') : t('audit.cam.back', 'To rear camera')}
                       </button>
                       {/*
                         Der Lampen-Knopf erscheint nur, wenn die Spur die
@@ -449,7 +477,7 @@ export function Inventur() {
                       */}
                       {hatLampe && (
                         <button type="button" onClick={() => void lampeSchalten()}>
-                          {lampeAn ? 'Licht aus' : 'Licht an'}
+                          {lampeAn ? t('audit.torch.off', 'Light off') : t('audit.torch.on', 'Light on')}
                         </button>
                       )}
                     </>
@@ -466,15 +494,14 @@ export function Inventur() {
                   className={kameraAn ? 'sucher' : 'sucher aus'}
                   muted
                   playsInline
-                  aria-label="Sucher der Kamera"
+                  aria-label={t('audit.viewfinder', 'Camera viewfinder')}
                 />
                 {kameraAn && (
                   <p className="hinweis">
-                    Erkannte Codes landen in derselben Liste wie getippte. Wer
-                    zweimal dasselbe Etikett vor die Kamera hält, bekommt zwei
-                    Zeilen — dazwischen liegt eine Sperre von anderthalb
-                    Sekunden, damit ein Aufkleber im Bild nicht dreissig Zeilen
-                    pro Sekunde erzeugt.
+                    {t(
+                      'audit.cam.hint',
+                      'Recognised codes land in the same list as typed ones. Holding the same label in front of the camera twice gives two lines — with a lock of one and a half seconds in between, so a sticker in frame does not produce thirty lines a second.',
+                    )}
                   </p>
                 )}
               </div>
@@ -486,8 +513,8 @@ export function Inventur() {
                 der zutrifft, und nicht „Kamera nicht verfügbar".
               */
               <p className="hinweis">
-                <strong>Kein Kamera-Scan auf diesem Gerät.</strong>{' '}
-                {HINDERNIS_TEXT[faehigkeit.grund]}
+                <strong>{t('audit.noCam', 'No camera scanning on this device.')}</strong>{' '}
+                {hindernisText(faehigkeit.grund, t)}
               </p>
             )}
             {kameraFehler && (
@@ -499,12 +526,13 @@ export function Inventur() {
 
           <div className="spalten">
             <div>
-              <h3>Soll hier liegen ({erwartet.length})</h3>
+              <h3>{format(t('audit.expectedHere', 'Should be here ({n})'), { n: erwartet.length })}</h3>
               {erwartet.length === 0 ? (
                 <p className="hinweis">
-                  Der Datensatz verortet hier nichts. Das ist etwas anderes als
-                  „hier ist nichts" — es kann auch heißen, dass für die Objekte
-                  hier nie ein Lagerort hinterlegt wurde.
+                  {t(
+                    'audit.nothingExpected',
+                    'The record places nothing here. That is something other than "there is nothing here" — it can also mean that a location was never stored for the objects here.',
+                  )}
                 </p>
               ) : (
                 <ul className="abhaken">
@@ -515,7 +543,7 @@ export function Inventur() {
                         onClick={() => abhaken(k)}
                         disabled={erfasst.has(k.key)}
                       >
-                        {erfasst.has(k.key) ? '✓' : 'liegt hier'}
+                        {erfasst.has(k.key) ? '✓' : t('audit.isHere', 'is here')}
                       </button>
                       <span>{k.label}</span>
                       {k.model && k.model !== k.label && <em>{k.model}</em>}
@@ -526,26 +554,26 @@ export function Inventur() {
             </div>
 
             <div>
-              <h3>Erfasst ({treffer.length})</h3>
+              <h3>{format(t('audit.recorded', 'Recorded ({n})'), { n: treffer.length })}</h3>
               {treffer.length === 0 ? (
-                <p className="hinweis">Noch nichts erfasst.</p>
+                <p className="hinweis">{t('audit.nothingRecorded', 'Nothing recorded yet.')}</p>
               ) : (
                 <table>
                   <thead>
                     <tr>
-                      <th>Ergebnis</th>
-                      <th>Wie</th>
-                      <th>Code</th>
-                      <th>Objekt</th>
-                      <th>Erwartet in</th>
+                      <th>{t('audit.col.outcome', 'Result')}</th>
+                      <th>{t('audit.col.viaShort', 'How')}</th>
+                      <th>{t('audit.col.code', 'Code')}</th>
+                      <th>{t('audit.col.object', 'Object')}</th>
+                      <th>{t('audit.col.expected', 'Expected in')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {treffer.map((h, i) => (
                       <tr key={`${h.code}-${i}`} className={`ergebnis-${h.outcome}`}>
-                        <td>{AUDIT_LABEL[h.outcome]}</td>
-                        <td>{AUDIT_VIA_LABEL[h.via]}</td>
-                        <td>{h.code || NO_CODE}</td>
+                        <td>{auditLabel(h.outcome, t)}</td>
+                        <td>{auditViaLabel(h.via, t)}</td>
+                        <td>{h.code || noCode(t)}</td>
                         <td>{h.label || '—'}</td>
                         <td>{h.expected ?? '—'}</td>
                       </tr>
@@ -561,19 +589,19 @@ export function Inventur() {
             und nicht in der Erfasst-Liste: was fehlt, ist keine Erfassung.
           */}
           <div className="schritt">
-            <h3>Fehlt ({fehlend.length})</h3>
+            <h3>{format(t('audit.missing', 'Missing ({n})'), { n: fehlend.length })}</h3>
             {fehlend.length === 0 ? (
               <p className="hinweis">
                 {erwartet.length === 0
-                  ? 'Hier wurde nichts erwartet — es kann also auch nichts fehlen.'
-                  : 'Alles, was hier liegen soll, wurde erfasst.'}
+                  ? t('audit.missing.none', 'Nothing was expected here — so nothing can be missing either.')
+                  : t('audit.missing.allFound', 'Everything that should be here has been recorded.')}
               </p>
             ) : (
               <ul className="fehlt">
                 {fehlend.map((k) => (
                   <li key={k.key}>
                     {k.label}
-                    {k.model && k.model !== k.label ? ` · ${k.model}` : ''} — erwartet in {k.expected}
+                    {k.model && k.model !== k.label ? ` · ${k.model}` : ''} — {t('audit.expectedIn', 'expected in')} {k.expected}
                   </li>
                 ))}
               </ul>

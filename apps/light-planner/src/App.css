@@ -23,7 +23,13 @@
   /* Aktionsflaeche der Marke: Off-White, darauf Navy — 13:1 statt 4:1. */
   --accent: #F6F5F0;
   --accent-soft: rgba(246, 245, 240, 0.13);
-  /* Nur die Suite-Fassung liest das — Navy auf der Off-White-Flaeche. */
+  /* Die Schrift AUF der Aktionsflaeche — Navy auf Off-White.
+   *
+   * Upstream fehlte sie bis B-70, und das war teuer: seit ADR-007 Stufe 5
+   * ist `--accent` Off-White, aber SIEBEN Zustaende schrieben weiterhin
+   * `color: #fff` darauf — Weiss auf Off-White, also unlesbar, und zwar in
+   * jedem Thema. Diese Kopie hatte das Token schon und einen Teil der
+   * Zustaende bereits umgestellt; der Rest kommt mit diesem Vendoring. */
   --accent-text: #132040;
   --accent2: #8C9CB3;       /* Stahlblau — die Marke hat keinen zweiten Akzent */
   --warm: #C8892B;
@@ -38,21 +44,80 @@
    * nie Text, nie zweimal in einem Sichtfeld. Fehlerrot ist --danger und
    * ein anderer Ton. */
   --signal: #D6402E;
+  /* Schrift auf den Statusfarben. Die bedeuten etwas und drehen sich nicht
+   * mit dem Thema — also dreht sich auch ihre Schrift nicht. */
+  --text-on-status: #FFFFFF;
+  /* Flaechen, die keine Farbe sind, sondern ein Zustand oder ein Grund.
+   *
+   * `--overlay` ist die schwebende Werkzeuggruppe ueber dem Plan. Upstream
+   * stand hier eine Zeitlang `var(--overlay)` — eine Eigenschaft, die sich
+   * selbst nennt, ist zyklisch und damit ungueltig, und die Gruppe stand
+   * ohne Hinterlegung auf dem Grundriss. `farben:check` misst die Form. */
+  --overlay: #10161ecc;
+  --disabled: #555555;
+  /* Statusfarben in der aufgehellten Fassung, die auf dunklem Grund lesbar
+   * ist. Auf hellem Grund waere sie es nicht — deshalb ein Token und kein
+   * Hexwert im Regelblock. Die BEDEUTUNG bleibt dieselbe, nur die Helligkeit
+   * dreht sich. */
+  --warn-text: #ffcc88;
+  --warn-text-soft: #c9a06a;
+  --good-text: #6ab04c;
+  /* Schrift auf einer GETOENTEN Statusflaeche (die Ist-Chips im Ablauf, der
+   * „alle zeigen"-Knopf). Nicht dasselbe wie `--text-on-status`: dort liegt
+   * die Schrift auf der vollen Farbe, hier auf einem 16-%-Schleier ueber dem
+   * Grund — der Schleier dreht sich mit dem Thema, die Schrift also auch. */
+  --text-tint-good: #8fe0ac;
+  --text-tint-stop: #ffa898;
+  /* Weitere Schriftrollen, die im Dunkeln aufgehellt sind und es im Hellen
+   * nicht bleiben duerfen. */
+  --text-danger: #ff6b6b;
+  --text-est: #d9a441;
+  --text-stale: #d96a4a;
+  /* BEDEUTUNGSFARBE, die sich NICHT dreht: der Punkt „laeuft" am Ablauf.
+   * Sie steht hier und fehlt im Hell-Block mit Absicht — ein Token ohne
+   * zweite Fassung ist die Aussage „diese Farbe bedeutet etwas". */
+  --dot-on: #5fd07a;
   /* Keine Rundungen (Guide S. 10). Der Name bleibt fuer die Aufrufer. */
   --radius: 0;
 }
 
-/* Light-Theme: eingebettet setzt die Shell data-theme + injiziert die Palette;
-   dieser Block deckt Standalone-Light und die nicht gebrückten Variablen ab. */
-/* ADR-007 — dieselbe Palette, gedrehte Gewichtung: Print ist hell (60 %
-   Weiss), das Web dunkel (70 % Deep Navy). Schiefer ist hier der
-   Sekundaertext — der Wert, fuer den der Guide ihn misst (5,4:1 auf Weiss);
-   auf Navy waere er unlesbar und kommt dort nicht vor.
-
-   `--accent` MUSS hier mitgesetzt werden: ohne ihn faellt er auf das
-   Off-White aus `:root` zurueck, und `--accent-text: #ffffff` stuende dann
-   weiss auf Off-White. */
-:root[data-theme="light"] {
+/* ─── DAS HELL-THEMA ───────────────────────────────────────────────────────
+ *
+ * DREI ZUSTAENDE, NICHT ZWEI. „System" ist keine Umschreibung fuer
+ * „dunkel": wer nichts waehlt, folgt dem Betriebssystem; wer waehlt, gewinnt
+ * gegen es. Deshalb `[data-theme]` am Wurzelelement UND eine Medienabfrage,
+ * und die Medienabfrage ist gegen eine ausdrueckliche Wahl abgesichert.
+ *
+ * VIER WEGE FUEHREN HIERHER, und sie widersprechen sich nicht:
+ *   eingebettet   die Shell setzt `data-theme` und schiebt ihre Palette als
+ *                 Inline-Variablen nach — die schlagen jede Regel hier.
+ *   standalone    `src/lib/thema.ts` setzt `data-theme` aus der gespeicherten
+ *                 Wahl (Einstellungen-Dialog).
+ *   „System"      kein Attribut; die Medienabfrage unten greift.
+ *   Vorgabe       nichts von alledem: der dunkle `:root`-Satz gilt.
+ *
+ * ADR-007 — dieselbe Palette, gedrehte Gewichtung: Print ist hell (60 %
+ * Weiss), das Web dunkel (70 % Deep Navy). Schiefer ist hier der
+ * Sekundaertext — der Wert, fuer den der Guide ihn misst (5,4:1 auf Weiss);
+ * auf Navy waere er unlesbar und kommt dort nicht vor.
+ *
+ * `--accent` MUSS hier mitgesetzt werden: ohne ihn faellt er auf das
+ * Off-White aus `:root` zurueck, waehrend `--accent-text` auf Off-White
+ * umspringt — Off-White auf Off-White.
+ *
+ * WAS NICHT MITSPRINGT, und warum das kein Rest ist:
+ *
+ *   Der 2D-Plan und die 3D-Szene. Ein Lichtplan zeigt eine BELEUCHTETE
+ *   Buehne — Farben, Kegel, Schatten. Sie hell zu machen hiesse, anderes
+ *   Licht zu behaupten, und genau darueber gibt dieses Werkzeug Auskunft.
+ *   Der Plan ist der Inhalt, nicht die Verpackung.
+ *
+ *   Die Gel-Farben, die Statusfarben und das Signalrot. Sie bedeuten etwas,
+ *   und ihre Bedeutung haengt nicht am Thema.
+ *
+ *   Das Etikettenblatt (`.label-sheet`). Papier ist weiss, auch nachts.
+ */
+:root[data-theme='light'] {
   --bg: #F6F5F0;
   --bg-2: #ECEBE6;
   --panel: #FFFFFF;
@@ -70,6 +135,57 @@
   --text: #1D324F;
   --text2: #5C6B85;
   --text3: #8C9CB3;
+  /* Die Rollen aus B-70. Auf hellem Grund ist die aufgehellte Statusfarbe
+   * nicht mehr lesbar — die BEDEUTUNG bleibt, die Helligkeit dreht sich. */
+  --warn-text: #8A5B12;
+  --warn-text-soft: #7A5520;
+  --good-text: #2C6B2F;
+  --text-tint-good: #2C6B2F;
+  --text-tint-stop: #A33A28;
+  --text-danger: #B0342A;
+  --text-est: #8A5B12;
+  --text-stale: #A33A28;
+  --overlay: #ffffffcc;
+  --disabled: #AAB0BB;
+  color-scheme: light;
+}
+
+/* Ohne ausdrueckliche Wahl entscheidet das Betriebssystem. Gegen
+ * `data-theme='dark'` abgesichert: wer ausdruecklich dunkel gewaehlt hat,
+ * bekommt dunkel, auch auf einem hell eingestellten Rechner. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg: #F6F5F0;
+    --bg-2: #ECEBE6;
+    --panel: #FFFFFF;
+    --panel-alt: #E1ECEF;
+    --border: rgba(29, 50, 79, 0.16);
+    --line-2: rgba(29, 50, 79, 0.32);
+    --accent: #1D324F;
+    --accent-soft: rgba(29, 50, 79, 0.10);
+    --accent-text: #F6F5F0;
+    --warm: #C8892B;
+    --warn: #C8892B;
+    --danger: #B04A3F;
+    --success: #2F7D5C;
+    --good: #2F7D5C;
+    --text: #1D324F;
+    --text2: #5C6B85;
+    --text3: #8C9CB3;
+    /* Die Rollen aus B-70. Auf hellem Grund ist die aufgehellte Statusfarbe
+     * nicht mehr lesbar — die BEDEUTUNG bleibt, die Helligkeit dreht sich. */
+    --warn-text: #8A5B12;
+    --warn-text-soft: #7A5520;
+    --good-text: #2C6B2F;
+    --text-tint-good: #2C6B2F;
+    --text-tint-stop: #A33A28;
+    --text-danger: #B0342A;
+    --text-est: #8A5B12;
+    --text-stale: #A33A28;
+    --overlay: #ffffffcc;
+    --disabled: #AAB0BB;
+    color-scheme: light;
+  }
 }
 
 body {
@@ -1049,7 +1165,7 @@ body {
 .tool-nav button span { flex: 1; }
 .tool-nav button:hover { background: var(--panel); color: var(--text); }
 .tool-nav button.on { background: var(--accent-soft); color: var(--accent); }
-.tool-nav .nav-badge { min-width: 19px; height: 19px; padding: 0 5px; border-radius: 0; color: #fff;
+.tool-nav .nav-badge { min-width: 19px; height: 19px; padding: 0 5px; border-radius: 0; color: var(--text-on-status);
   font-size: 10.5px; font-weight: 700; display: grid; place-items: center; }
 .tool-nav .nav-badge.err { background: var(--danger); }
 .tool-nav .nav-badge.warn { background: var(--warn); }
@@ -1103,7 +1219,7 @@ body {
   border-radius: 0; background: var(--panel-alt); }
 .focus-row.done { background: rgba(52, 211, 153, 0.08); border-color: rgba(52, 211, 153, 0.35); }
 .focus-tick { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 0; border: 1.5px solid var(--text3);
-  background: transparent; color: #fff; display: grid; place-items: center; cursor: pointer; }
+  background: transparent; color: var(--text); display: grid; place-items: center; cursor: pointer; }
 .focus-tick.on { background: var(--success); border-color: var(--success); }
 .focus-ch { flex: 0 0 auto; min-width: 26px; font-size: 16px; font-weight: 800; color: var(--text);
   font-variant-numeric: tabular-nums; text-align: center; }
@@ -1502,7 +1618,7 @@ kbd {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--disabled);
 }
 
 /* ── 3D View ───────────────────────────────────────────── */
@@ -1800,7 +1916,7 @@ kbd {
 }
 .nudge-btn:hover {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
 }
 
 .prop-derived {
@@ -2003,7 +2119,7 @@ kbd {
 .gp-btn.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-weight: 600;
 }
 .gel-placement-note { margin-top: 2px; }
@@ -2020,7 +2136,7 @@ kbd {
   cursor: pointer;
 }
 .dist-toggle button:hover { border-color: var(--accent); color: var(--text); }
-.dist-toggle button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.dist-toggle button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
 .area-physics {
   margin-top: 6px;
   font-size: 10px;
@@ -2046,12 +2162,12 @@ kbd {
 .hide-toggle.is-hidden {
   background: rgba(255, 170, 60, 0.18);
   border-color: #d8922e;
-  color: #ffcc88;
+  color: var(--warn-text);
   font-weight: 600;
 }
 .hide-note {
   font-size: 10.5px;
-  color: #c9a06a;
+  color: var(--warn-text-soft);
   background: rgba(255, 170, 60, 0.08);
   border-left: 2px solid #d8922e;
   padding: 4px 6px;
@@ -2100,7 +2216,7 @@ kbd {
   border: 1px solid var(--accent);
   border-radius: 0;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
@@ -2139,7 +2255,7 @@ kbd {
   width: 9px; height: 9px; border-radius: 0;
   border: 1px solid #6a7280; background: transparent; flex: 0 0 auto;
 }
-.sp-dot.on { background: #5fd07a; border-color: #5fd07a; box-shadow: none; }
+.sp-dot.on { background: var(--dot-on); border-color: var(--dot-on); box-shadow: none; }
 .sp-rename {
   flex: 1; padding: 4px 6px; border: 1px solid var(--accent);
   border-radius: 0; background: var(--panel); color: var(--text); font-size: 11.5px;
@@ -2150,11 +2266,11 @@ kbd {
   cursor: pointer; font-size: 12px; padding: 3px 4px; border-radius: 0; line-height: 1;
 }
 .sp-mini:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
-.sp-del:hover { color: #ff6b6b; }
+.sp-del:hover { color: var(--text-danger); }
 .sp-showall {
   width: 100%; padding: 6px 8px; margin-top: 2px;
   border: 1px solid #d8922e; border-radius: 0;
-  background: rgba(255, 170, 60, 0.12); color: #ffcc88;
+  background: rgba(255, 170, 60, 0.12); color: var(--warn-text);
   font-size: 11px; cursor: pointer;
 }
 .sp-showall:hover { background: rgba(255, 170, 60, 0.22); }
@@ -2171,17 +2287,17 @@ kbd {
   border: 1px solid transparent; border-radius: 0;
   font-size: 12px; line-height: 1; cursor: pointer; padding: 2px 6px;
 }
-.sp-ist-start { background: rgba(80, 200, 120, 0.16); border-color: #3f9d63; color: #8fe0ac; }
+.sp-ist-start { background: rgba(80, 200, 120, 0.16); border-color: #3f9d63; color: var(--text-tint-good); }
 .sp-ist-start:hover { background: rgba(80, 200, 120, 0.3); }
-.sp-ist-ende { background: rgba(255, 110, 90, 0.16); border-color: #c85a48; color: #ffa898; }
+.sp-ist-ende { background: rgba(255, 110, 90, 0.16); border-color: #c85a48; color: var(--text-tint-stop); }
 .sp-ist-ende:hover { background: rgba(255, 110, 90, 0.3); }
 /* Erfasst: kein Knopf mehr, sondern die Auskunft. Der Griff ueberschreibt
    nichts, also wird hier auch keiner angeboten. */
 .sp-ist-fertig { cursor: default; color: var(--text2); font-variant-numeric: tabular-nums; }
 .sp-ist-fertig em { font-style: normal; font-size: 10px; }
-.sp-ist-ohne-start { color: #ffa898; }
-.sp-ist-fertig em.plus { color: #ffa898; }
-.sp-ist-fertig em.minus { color: #8fe0ac; }
+.sp-ist-ohne-start { color: var(--text-tint-stop); }
+.sp-ist-fertig em.plus { color: var(--text-tint-stop); }
+.sp-ist-fertig em.minus { color: var(--text-tint-good); }
 /* Geplante Dauer. Schmal, weil sie eine Zahl ist und kein Formular. */
 .sp-plan {
   flex: 0 0 auto; width: 40px; border: 1px solid var(--line); border-radius: 0;
@@ -2267,7 +2383,7 @@ kbd {
   padding: 2px 10px;
   border-radius: 0;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-text);
   font-size: 12px;
   font-weight: 600;
 }
@@ -2779,7 +2895,7 @@ kbd {
 .tb-btn:hover { border-color: var(--line-2); }
 /* Der Primaerknopf traegt den Tally-Punkt links — er macht sichtbar,
  * welcher der EINE ist (ADR-007). Off-White-Flaeche, Navy darauf. */
-.tb-btn.primary { background: var(--accent); border-color: transparent; color: #132040; }
+.tb-btn.primary { background: var(--accent); border-color: transparent; color: var(--accent-text); }
 .tb-btn.primary::before { content: ''; width: 6px; height: 6px; background: var(--signal); flex: none; }
 .tb-div { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
 .topbar-right { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
@@ -2788,7 +2904,7 @@ kbd {
 .tb-modeswitch button { appearance: none; border: 0; background: transparent; color: var(--text2); font: inherit; font-weight: 600;
   font-size: 13px; padding: 6px 16px; border-radius: 0; cursor: pointer; display: flex; align-items: center; gap: 7px; }
 .tb-modeswitch button:hover { color: var(--text); }
-.tb-modeswitch button.on { background: var(--accent); color: #fff; box-shadow: none; }
+.tb-modeswitch button.on { background: var(--accent); color: var(--accent-text); box-shadow: none; }
 
 /* dropdown / popover */
 .tb-dropdown { position: absolute; top: 100%; min-width: 250px; background: var(--panel); border: 1px solid var(--line-2);
@@ -2841,7 +2957,7 @@ kbd {
   background: transparent; color: var(--text2); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 0; position: relative; }
 .dock-tab:hover { color: var(--text); }
 .dock-tab.on { color: var(--text); background: var(--panel-alt); box-shadow: none; }
-.dock-badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; border-radius: 0; padding: 0 6px; }
+.dock-badge { background: var(--accent); color: var(--accent-text); font-size: 10px; font-weight: 700; border-radius: 0; padding: 0 6px; }
 .dock-body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 /* panels reused inside the dock — strip their standalone chrome */
 .dock-body .sidebar { width: 100%; min-width: 0; border: 0; background: transparent; flex: 1; }
@@ -2866,7 +2982,7 @@ kbd {
 
 /* ── Canvas contextual actions ── */
 .canvas-actions { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 15; }
-.ca-group { display: flex; align-items: center; gap: 3px; background: #10161ecc; backdrop-filter: blur(10px);
+.ca-group { display: flex; align-items: center; gap: 3px; background: var(--overlay); backdrop-filter: blur(10px);
   border: 1px solid var(--line-2); border-radius: 0; padding: 5px 8px; box-shadow: none; }
 .ca-label { color: var(--text3); font-size: 10px; letter-spacing: .8px; text-transform: uppercase; font-weight: 700; margin-right: 4px; }
 .ca-btn { height: 30px; min-width: 30px; padding: 0 6px; border: 0; border-radius: 0; background: transparent; color: var(--text2);
@@ -2885,11 +3001,11 @@ kbd {
 .spec-src {
   margin-left: 0.3em;
   font-size: 0.85em;
-  color: #6ab04c;
+  color: var(--good-text);
   cursor: help;
 }
-.spec-src-est { color: #d9a441; }
-.spec-src-stale { color: #d96a4a; font-weight: 700; }
+.spec-src-est { color: var(--text-est); }
+.spec-src-stale { color: var(--text-stale); font-weight: 700; }
 
 /* ─── BEDARF 148 — Etiketten aus denselben Daten wie die Papiere ───────────
    Ein Etikettenbogen ist ein physischer Gegenstand: die Masse stehen deshalb

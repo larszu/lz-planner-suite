@@ -40,18 +40,41 @@
 //   Ansicht, und dagegen ist sie gebaut.
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react'
-import { OCR_HINDERNIS_TEXT, sprachdatenDa, tesseractErkenner } from '../lib/belegOcr'
+import { useT } from '../i18n'
+import { ocrHindernisText, sprachdatenDa, tesseractErkenner } from '../lib/belegOcr'
 import { useInventoryStore } from '../domain/store/inventoryStore'
 import { lesen, buchbar, type EingangsEigentum } from '../domain/lib/wareneingang'
-import { OWNERSHIP_LABEL } from '../domain/lib/ownership'
+import { ownershipLabel } from '../domain/lib/ownership'
 
-const LAGE_TEXT = {
-  bekannt: 'Menge erhöhen',
-  neu: 'Artikel anlegen',
-  unlesbar: 'nicht gebucht',
-} as const
+type UebersetzFn = (key: string, en: string) => string
+
+const lageText = (lage: 'bekannt' | 'neu' | 'unlesbar', t: UebersetzFn): string =>
+  ({
+    bekannt: t('receiving.case.raise', 'raise quantity'),
+    neu: t('receiving.case.create', 'create item'),
+    unlesbar: t('receiving.case.skipped', 'not booked'),
+  })[lage]
+
+/** Der Satz zu einem unlesbaren Grund. Die Domäne nennt nur die ART. */
+const grundText = (
+  grund: { art: 'leer' | 'keineBezeichnung' | 'keineMenge' | 'nichtTrennbar'; wert?: string },
+  t: UebersetzFn,
+  format: (v: string, w: Record<string, string | number>) => string,
+): string => {
+  switch (grund.art) {
+    case 'leer':
+      return t('receiving.reason.empty', 'empty line')
+    case 'keineBezeichnung':
+      return t('receiving.reason.noName', 'no designation in the first column')
+    case 'keineMenge':
+      return format(t('receiving.reason.notAQty', '"{value}" is not a quantity'), { value: grund.wert ?? '' })
+    case 'nichtTrennbar':
+      return t('receiving.reason.notSeparable', 'quantity and designation cannot be told apart')
+  }
+}
 
 export function Wareneingang() {
+  const { t, format } = useT()
   const items = useInventoryStore((s) => s.items)
   const addItem = useInventoryStore((s) => s.addItem)
   const updateItem = useInventoryStore((s) => s.updateItem)
@@ -74,12 +97,12 @@ export function Wareneingang() {
     setOcrLaeuft(true)
     try {
       if (!(await sprachdatenDa())) {
-        setOcrFehler(OCR_HINDERNIS_TEXT['sprachdaten-fehlen'])
+        setOcrFehler(ocrHindernisText('sprachdaten-fehlen', t))
         return
       }
       const erkenner = await tesseractErkenner()
       if (!erkenner) {
-        setOcrFehler(OCR_HINDERNIS_TEXT['kein-worker'])
+        setOcrFehler(ocrHindernisText('kein-worker', t))
         return
       }
       const ergebnis = await erkenner.lies(datei)
@@ -128,22 +151,26 @@ export function Wareneingang() {
     // Der Beleg bleibt stehen. Wer ihn nach dem Buchen sofort verliert, kann
     // nicht mehr nachsehen, was er gerade getan hat — und die zwei Zeilen
     // ohne Menge stehen ja noch offen.
+    // EIN Schlüssel, EIN Satz — nicht zwei Halbsätze aneinandergehängt. Im
+    // Deutschen steht das Verb woanders als im Englischen; wer den Satz aus
+    // zwei `t()`-Aufrufen baut, bekommt in der einen Sprache Kauderwelsch.
     setGebucht(
-      `${erhoeht === 1 ? '1 Artikel' : `${erhoeht} Artikel`} erhöht, ` +
-        `${angelegt === 1 ? '1 Artikel' : `${angelegt} Artikel`} neu angelegt.`,
+      format(t('receiving.booked', '{raised} items raised, {created} items newly created.'), {
+        raised: erhoeht,
+        created: angelegt,
+      }),
     )
   }
 
   return (
     <section className="eingang">
       <div className="block">
-        <h3>Beleg</h3>
+        <h3>{t('receiving.receipt', 'Receipt')}</h3>
         <p className="hinweis">
-          Positionen aus dem Lieferschein hier hineinschreiben oder einfügen —
-          eine je Zeile. Lesbar sind <code>4 x Shure ULXD2</code>,{' '}
-          <code>Shure ULXD2; 4; 249,00</code> (Semikolon oder Tabulator, wie aus
-          einem Portal) und der blosse Name. Beim blossen Namen fehlt die Menge,
-          und sie wird nicht als 1 erfunden.
+          {t(
+            'receiving.receipt.hint',
+            'Type or paste the delivery note lines here — one per line. Readable are "4 x Shure ULXD2", "Shure ULXD2; 4; 249.00" (semicolon or tab, as from a portal) and the bare name. With the bare name the quantity is missing, and it is not invented as 1.',
+          )}
         </p>
         <textarea
           value={text}
@@ -153,7 +180,7 @@ export function Wareneingang() {
           }}
           rows={8}
           placeholder={'4 x Shure ULXD2\nXLR 3m; 10; 3,50\n2 Manfrotto Stativ'}
-          aria-label="Positionen des Lieferscheins"
+          aria-label={t('receiving.lines.aria', 'Delivery note lines')}
         />
 
         {/* ── Foto statt tippen ─────────────────────────────────────────
@@ -165,7 +192,7 @@ export function Wareneingang() {
             wird. */}
         <div className="zeile">
           <label className="datei-knopf">
-            {ocrLaeuft ? 'Beleg wird gelesen…' : 'Beleg-Foto einlesen'}
+            {ocrLaeuft ? t('receiving.ocr.running', 'Reading the receipt…') : t('receiving.ocr.start', 'Read a photo of the receipt')}
             <input
               type="file"
               accept="image/*"
@@ -175,7 +202,7 @@ export function Wareneingang() {
                 e.target.value = ''
                 if (datei) void fotoLesen(datei)
               }}
-              aria-label="Foto oder Scan des Lieferscheins"
+              aria-label={t('receiving.ocr.aria', 'Photo or scan of the delivery note')}
             />
           </label>
           {ocrSicherheit !== null && (
@@ -183,7 +210,7 @@ export function Wareneingang() {
               {/* Die Zahl steht da und ist KEINE Schwelle im Code: eine
                   Grenze, ab der ein Ergebnis „gut" ist, wäre eine
                   Behauptung über fremde Fotos. */}
-              Erkennung {ocrSicherheit} % sicher — Zeilen bitte durchsehen.
+              {format(t('receiving.ocr.confidence', 'Recognition {n} % confident — please read the lines through.'), { n: ocrSicherheit })}
             </span>
           )}
         </div>
@@ -192,25 +219,33 @@ export function Wareneingang() {
 
       {bericht.zeilen.length > 0 && (
         <div className="block">
-          <h3>Was daraus würde</h3>
+          <h3>{t('receiving.preview', 'What this would become')}</h3>
           <p className={bericht.unlesbar > 0 ? 'warnung' : 'hinweis'}>
             {/*
               Ein Satz, kein Baukasten. Die unlesbaren zuerst: sie sind das
               Einzige, was der Mensch JETZT beheben muss.
             */}
             {bericht.unlesbar > 0
-              ? `${bericht.unlesbar === 1 ? 'Eine Zeile ist' : `${bericht.unlesbar} Zeilen sind`} nicht lesbar und wird nicht gebucht — sie steht unten mit dem Grund.`
-              : 'Jede Zeile ist lesbar.'}
+              ? bericht.unlesbar === 1
+                ? t('receiving.unreadable.one', 'One line is not readable and will not be booked — it is listed below with the reason.')
+                : format(
+                    t(
+                      'receiving.unreadable.many',
+                      '{n} lines are not readable and will not be booked — they are listed below with the reason.',
+                    ),
+                    { n: bericht.unlesbar },
+                  )
+              : t('receiving.allReadable', 'Every line is readable.')}
           </p>
           <div className="tabelle-rahmen">
             <table>
               <thead>
                 <tr>
-                  <th>Zeile</th>
-                  <th>Artikel</th>
-                  <th className="rechts">Menge</th>
-                  <th>daraus</th>
-                  <th className="rechts">Bestand danach</th>
+                  <th>{t('receiving.col.line', 'Line')}</th>
+                  <th>{t('receiving.col.item', 'Item')}</th>
+                  <th className="rechts">{t('receiving.col.qty', 'Qty')}</th>
+                  <th>{t('receiving.col.becomes', 'becomes')}</th>
+                  <th className="rechts">{t('receiving.col.after', 'Stock after')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -225,11 +260,11 @@ export function Wareneingang() {
                     */}
                     <td className="rechts">{z.menge ?? '—'}</td>
                     <td>
-                      {LAGE_TEXT[z.lage]}
+                      {lageText(z.lage, t)}
                       {z.lage !== 'unlesbar' && z.menge === undefined
-                        ? <span className="leise"> · ohne Menge, offen</span>
+                        ? <span className="leise"> · {t('receiving.noQty', 'no quantity, open')}</span>
                         : null}
-                      {z.grund ? <span className="leise"> · {z.grund}</span> : null}
+                      {z.grund ? <span className="leise"> · {grundText(z.grund, t, format)}</span> : null}
                     </td>
                     <td className="rechts">{z.neueMenge ?? ''}</td>
                   </tr>
@@ -240,41 +275,43 @@ export function Wareneingang() {
 
           <div className="zeile">
             <label>
-              Eigentum
+              {t('receiving.ownership', 'Ownership')}
               <select
                 value={eigentum}
                 onChange={(e) => setEigentum(e.target.value as EingangsEigentum)}
-                aria-label="Eigentum der neuen Artikel"
+                aria-label={t('receiving.ownership.aria', 'Ownership of the new items')}
               >
                 {(['owned', 'rented', 'subhire'] as EingangsEigentum[]).map((o) => (
                   <option key={o} value={o}>
-                    {OWNERSHIP_LABEL[o]}
+                    {ownershipLabel(o, t)}
                   </option>
                 ))}
               </select>
             </label>
             <label>
-              Lieferant
+              {t('receiving.supplier', 'Supplier')}
               <input
                 value={lieferant}
                 onChange={(e) => setLieferant(e.target.value)}
-                placeholder="optional"
-                aria-label="Lieferant"
+                placeholder={t('receiving.optional', 'optional')}
+                aria-label={t('receiving.supplier', 'Supplier')}
               />
             </label>
             <button type="button" onClick={buchen} disabled={zuBuchen.length === 0}>
-              {zuBuchen.length === 1 ? '1 Zeile buchen' : `${zuBuchen.length} Zeilen buchen`}
+              {zuBuchen.length === 1
+                ? t('receiving.book.one', 'Book 1 line')
+                : format(t('receiving.book.many', 'Book {n} lines'), { n: zuBuchen.length })}
             </button>
           </div>
           <p className="hinweis">
-            Das Eigentum gilt für die Artikel, die NEU angelegt werden. Was das
-            Haus zumietet, gehört auf die Sub-Hire-Liste — eine Vorgabe wäre für
-            die Hälfte der Lieferungen falsch, und zwar die teurere Hälfte.
+            {t(
+              'receiving.ownership.hint',
+              'The ownership applies to the items that are newly CREATED. What the house hires in belongs on the sub-hire list — a default would be wrong for half of all deliveries, and for the more expensive half.',
+            )}
           </p>
           {gebucht && (
             <p className="hinweis" role="status">
-              {gebucht} Der Beleg bleibt stehen, damit nachsehbar ist, was
-              gerade passiert ist.
+              {gebucht} {t('receiving.booked.hint', 'The receipt stays on screen so it can be checked what just happened.')}
             </p>
           )}
         </div>

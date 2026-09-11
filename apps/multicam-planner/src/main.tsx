@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { connectShellTheme, declareNoHistory } from '@avplan/ui/embed';
 import { initShellSeed } from './utils/shellSeedBridge';
+import { themaAnwenden } from './lib/thema';
+import { isEmbedded } from './hooks/useIsEmbedded';
 import { initShellReveal } from './utils/shellRevealBridge';
 import { initShellSettings } from './shellSettings';
 import App from './App';
@@ -10,6 +12,19 @@ import { loadZoom, applyZoom } from './utils/uiZoom';
 
 // Gespeicherten UI-Zoom vor dem ersten Render anwenden (kein Flash).
 applyZoom(loadZoom());
+
+// Das Thema VOR dem ersten Rendern setzen: sonst zeigt die App fuer einen
+// Wimpernschlag das Vorgabe-Thema und springt dann um.
+//
+// NUR STANDALONE, und das ist keine Vorsicht, sondern eine Reihenfolge: in
+// der Shell kommt das Thema per `avplan:theme` herein, `connectShellTheme`
+// setzt `data-theme` und schreibt die Palette als Inline-Variablen ans
+// Wurzelelement. Wuerde hier die lokal gespeicherte Wahl angewendet, saehe
+// der eingebettete Planer bis zur ersten Shell-Nachricht anders aus als der
+// Rest der Suite — genau das Umspringen, das diese Zeile verhindern soll,
+// nur eine Ebene hoeher. Die Shell ist die Quelle; `src/lib/thema.ts` gilt
+// fuer die Web-Seite und die Electron-Fassung.
+if (!isEmbedded) themaAnwenden();
 
 // In die Suite-Shell eingebettet? Dann folgt das Theme der Shell (No-op im
 // Standalone-Betrieb — window.parent === window). Vollständigen Shell-Token-Satz

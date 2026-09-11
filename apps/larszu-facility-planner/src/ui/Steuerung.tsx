@@ -13,6 +13,7 @@
 // schaltet, ohne zu wissen, was passiert.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { useT } from '../i18n'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { steuerklinken } from '../domain/vertrag'
 import { adresseMehrdeutig } from '../domain/gebaeudeAuskunft'
@@ -21,6 +22,7 @@ import type { Adressart, Steuersystem } from '../domain/modell'
 const SYSTEME: Steuersystem[] = ['knx', 'dali', 'crestron', 'vissonic', 'sonstige']
 
 export function Steuerung() {
+  const { t } = useT()
   const gebaeude = useGebaeudeStore((s) => s.gebaeude)
   const klinkeAnlegen = useGebaeudeStore((s) => s.klinkeAnlegen)
   const [system, setSystem] = useState<Steuersystem>('knx')
@@ -44,7 +46,7 @@ export function Steuerung() {
         <select
           value={system}
           onChange={(e) => setSystem(e.target.value as Steuersystem)}
-          aria-label="System"
+          aria-label={t('control.system', 'System')}
         >
           {SYSTEME.map((s) => (
             <option key={s} value={s}>
@@ -55,33 +57,35 @@ export function Steuerung() {
         <input
           value={adresse}
           onChange={(e) => setAdresse(e.target.value)}
-          placeholder="Adresse"
-          aria-label="Adresse"
+          placeholder={t('control.address', 'Address')}
+          aria-label={t('control.address', 'Address')}
         />
         {brauchtAdressart && (
           <select
             value={adressart}
             onChange={(e) => setAdressart(e.target.value as Adressart)}
-            aria-label="Adressart"
+            aria-label={t('control.addressKind', 'Address kind')}
           >
-            <option value="kurz">Kurzadresse — ein Vorschaltgerät</option>
-            <option value="gruppe">Gruppe — alles in dieser Gruppe</option>
-            <option value="broadcast">Broadcast — ALLES am Bus</option>
+            {/* Die Kennungen `kurz`/`gruppe`/`broadcast` bleiben, was sie
+                sind — Werte im Datensatz. Übersetzt wird, was davor steht. */}
+            <option value="kurz">{t('control.kind.short', 'Short address — one ballast')}</option>
+            <option value="gruppe">{t('control.kind.group', 'Group — everything in this group')}</option>
+            <option value="broadcast">{t('control.kind.broadcast', 'Broadcast — EVERYTHING on the bus')}</option>
           </select>
         )}
         <select
           value={richtung}
           onChange={(e) => setRichtung(e.target.value as 'lesen' | 'schalten')}
-          aria-label="Richtung"
+          aria-label={t('control.direction', 'Direction')}
         >
-          <option value="schalten">schalten</option>
-          <option value="lesen">lesen</option>
+          <option value="schalten">{t('control.direction.write', 'switch')}</option>
+          <option value="lesen">{t('control.direction.read', 'read')}</option>
         </select>
         <input
           value={bedeutung}
           onChange={(e) => setBedeutung(e.target.value)}
-          placeholder="Was passiert, wenn man sie benutzt"
-          aria-label="Bedeutung"
+          placeholder={t('control.meaning.placeholder', 'What happens when it is used')}
+          aria-label={t('control.meaning', 'Meaning')}
         />
         <button
           type="button"
@@ -102,30 +106,33 @@ export function Steuerung() {
             setBedeutung('')
           }}
         >
-          Freigeben
+          {t('control.release', 'Release')}
         </button>
       </div>
 
       {klinken.length === 0 ? (
         <p className="leer">
-          Keine Klinke freigegeben. Solange hier nichts steht, darf die Show die
-          Haussteuerung nicht ansprechen — und das ist die richtige Vorgabe: eine
-          Adresse, die niemand beschrieben hat, ist keine Freigabe.
+          {t(
+            'control.empty',
+            'No hook released. As long as nothing stands here, the show must not address the building control — and that is the right default: an address nobody has described is not a release.',
+          )}
         </p>
       ) : (
         <div className="tabelle-rahmen">
           <table>
             <caption>
-              Hervorgehoben: eine DALI-Adresse ohne Art. „3" ist dort ein Vorschaltgerät, eine
-              Gruppe von dreissig Leuchten oder alles am Bus — die Adresse allein sagt das nicht.
+              {t(
+                'control.table.caption',
+                'Highlighted: a DALI address without a kind. There, "3" is one ballast, a group of thirty luminaires, or everything on the bus — the address alone does not say which.',
+              )}
             </caption>
             <thead>
               <tr>
-                <th>System</th>
-                <th>Adresse</th>
-                <th>Art</th>
-                <th>Richtung</th>
-                <th>Bedeutung</th>
+                <th>{t('control.system', 'System')}</th>
+                <th>{t('control.address', 'Address')}</th>
+                <th>{t('common.kind', 'Kind')}</th>
+                <th>{t('control.direction', 'Direction')}</th>
+                <th>{t('control.meaning', 'Meaning')}</th>
               </tr>
             </thead>
             <tbody>
@@ -140,8 +147,20 @@ export function Steuerung() {
                   {/* Bei DALI ist die Art die halbe Auskunft: „Gruppe 3"
                       und „Kurzadresse 3" schalten Verschiedenes. Wo sie
                       fehlt, steht ein Strich und keine Vermutung. */}
-                  <td>{k.adressart ?? '—'}</td>
-                  <td>{k.richtung}</td>
+                  <td>
+                    {k.adressart
+                      ? {
+                          kurz: t('control.kind.short.short', 'short address'),
+                          gruppe: t('control.kind.group.short', 'group'),
+                          broadcast: t('control.kind.broadcast.short', 'broadcast'),
+                        }[k.adressart]
+                      : '—'}
+                  </td>
+                  <td>
+                    {k.richtung === 'schalten'
+                      ? t('control.direction.write', 'switch')
+                      : t('control.direction.read', 'read')}
+                  </td>
                   <td>{k.bedeutung}</td>
                 </tr>
               ))}

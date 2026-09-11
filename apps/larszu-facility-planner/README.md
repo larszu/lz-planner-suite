@@ -3,7 +3,18 @@
 Das **Gebäude** als eigenes Werkzeug: Anschlusspunkte, Verteilung und Kreise,
 die benannten Klinken der Haussteuerung — und der eine Rückweg für Mängel.
 
-**Source language:** `de`
+**Source language:** `en`
+
+Die Oberfläche startet auf Englisch — auch auf einem deutschen Rechner. Deutsch
+ist die erste Übersetzung und steht in **Einstellungen → Language**; die Wahl
+überlebt den Neustart. Fehlt zu einem Schlüssel die Übersetzung, erscheint der
+englische Quelltext: das ist die Rückfallebene und kein Fehler. Eine weitere
+Sprache ist eine Datei unter `src/i18n/` plus ein Eintrag in `WOERTERBUECHER` —
+keine Zeile Logik.
+
+Die **Normbegriffe** übersetzt niemand: `TN-S`, `RCD Typ B`, `CEE 63`, `KNX`,
+`DALI` heissen in jeder Sprache so. Übersetzt wird, was das Werkzeug sagt —
+nicht, wie die Anlage heisst.
 
 ## Warum es dieses Repo gibt
 

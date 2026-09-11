@@ -1594,6 +1594,17 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Zeichenketten erneut anzufassen.
 * **Deshalb nicht geraten:** siehe E-20. Ohne diese Entscheidung wäre jede
   Richtung eine halbe Tageslast, die man im Zweifel wegwirft.
+* **ÜBERHOLT DURCH E-28 (2026-09-09), der Absatz bleibt trotzdem stehen.** Der
+  Satz „`cable-planner` und `light-planner` machen es genau andersherum"
+  stimmte am 2026-09-04 und stimmt heute nicht mehr: der Eigentümer hat die
+  Quellsprache auf **`en` für ALLE Repos** festgelegt, und damit ist sie keine
+  Eigenschaft des einzelnen Repos mehr. Der Absatz ist nicht gelöscht, weil
+  die Abwägung darin die Entscheidung trägt — wer E-28 umdrehen will, findet
+  hier, wogegen er argumentiert. Was aus ihm veraltet ist, ist die
+  Tatsachenbehauptung, nicht die Begründung. Stand 2026-09-11: alle fünf
+  Oberflächen-Repos tragen `avplan.sourceLanguage: en`, zuletzt
+  `inventory-planner` (`inventory#13`) und `larszu-facility-planner`
+  (`facility#8`), die vorher gar keine i18n-Schicht hatten.
 * **Aufwand:** groß
 
 ### B-61 · `multicam-planner`: deutsche Texte in einer englisch-quelligen Oberfläche — und der Wächter sieht sie nicht
@@ -3960,53 +3971,83 @@ belegbar, dort sind sie erprobt.
   ging das Kürzel verloren.
 * **Aufwand:** klein — erledigt.
 
-### B-70 · Ein Hell-Thema für `multicam-planner` und `light-planner` — und was dagegen steht
+### B-70 · Ein Hell-Thema für `multicam-planner` und `light-planner`
 
-* **Status:** offen. **Herausgefallen aus dem Kopfzeilen-Durchgang vom
-  2026-09-11** (`multicam#129`, `light#116`), nicht aus einer Nutzer-Meldung.
-* **Warum der Eintrag existiert.** Der Eigentümer hat am 2026-09-11 gewählt:
-  die Einstellungen sollen in allen Apps an derselben Stelle stehen, mit
-  demselben Grundstock — **Sprache, Thema, Über**. Zwei der vier gebauten
-  Dialoge führen nur Sprache und Über. Das Thema fehlt, und das steht als
-  eigener Eintrag hier, damit es nicht als „vergessen" durchgeht und nicht
-  als ausgegrauter Punkt im Dialog steht. Ein Umschalter, der eine halb
-  umgefärbte App liefert, ist schlimmer als keiner: er sieht aus wie eine
-  Fähigkeit. Genau davor warnt `IMPLEMENTATION_STATUS.md` in seiner eigenen
-  Legende (PLACEHOLDER).
-* **Gemessen, nicht geschätzt.**
+* **Status:** **erledigt 2026-09-11** — `multicam#131`, `light#117`,
+  nachgezogen in `light#118`; in die Suite vendoriert mit diesem PR.
+  Herausgefallen war der Eintrag aus dem Kopfzeilen-Durchgang vom
+  2026-09-11 (`multicam#129`, `light#116`), nicht aus einer Nutzer-Meldung.
+* **Warum der Eintrag existierte.** Der Eigentümer hat am 2026-09-11
+  gewählt: die Einstellungen sollen in allen Apps an derselben Stelle
+  stehen, mit demselben Grundstock — **Sprache, Thema, Über**. Zwei der
+  vier gebauten Dialoge führten nur Sprache und Über. Ein Umschalter, der
+  eine halb umgefärbte App liefert, ist schlimmer als keiner: er sieht aus
+  wie eine Fähigkeit (PLACEHOLDER, siehe Legende in
+  `IMPLEMENTATION_STATUS.md`). Deshalb stand erst die Umstellung an und
+  dann der Schalter.
+* **Was tatsächlich davorlag** — die Schätzung von morgens stimmte in der
+  Grössenordnung und nicht in der Zahl:
 
-  | App | was einem Hell-Thema im Weg steht |
-  |---|---|
-  | `multicam-planner` | **464 rohe Tailwind-Graustufen** (`text-white`, `text-gray-200/300/400/500/600`, `bg-white`) in **17 Dateien**. Sie hängen an keinem `--color-bc-*`-Token und blieben dunkel. Dazu der 2D-Plan, der seine Farben im Canvas zeichnet, und das FlexLayout-Thema. |
-  | `light-planner` | `App.css` ist **ein einziges dunkles Stilblatt** mit festgeschriebenen Flächen; dazu der 2D-Canvas und die 3D-Szene. |
+  | App | geschätzt | gemessen beim Umbau |
+  |---|---|---|
+  | `multicam-planner` | 464 rohe Tailwind-Graustufen in 17 Dateien | **406** — die Differenz waren Treffer in Kommentaren, die der erste Zähler mitzählte |
+  | `light-planner` | „ein einziges dunkles Stilblatt" | **zur Hälfte falsch.** Die Flächen hingen längst an den Variablen aus ADR-007 Stufe 5; gefehlt haben ein zweiter Satz **Werte** und einzelne Stellen mit rohem Hex |
 
-* **Die Suite hat dafür schon einen Notbehelf — und der ist der Grund, warum
-  es niemandem auffiel.** `apps/multicam-planner/src/index.css` trägt in der
-  vendorierten Kopie einen Block
-  `:root[data-theme="light"] .text-white { … !important }` und sechs
-  Geschwister: die Shell biegt die festen Tailwind-Klassen um, wenn ihr
-  Theme-Schalter umspringt. **Im eingebetteten Modul funktioniert das
-  Hell-Thema also**, in der eigenständigen App nicht. Der Notbehelf ist
-  bewusst suite-only und nicht upstream gewandert; er überschreibt Klassen
-  statt Tokens und wächst mit jeder neuen Graustufe, die jemand einbaut.
-* **Was zu tun wäre**, in dieser Reihenfolge und je für sich lieferbar:
-  1. `multicam-planner`: die 464 Stellen auf die `bc-*`-Token heben. Die
-     Rampe braucht dafür zwei Stufen mehr (heute endet sie bei `--color-bc-muted`),
-     sonst fällt die dreistufige Grau-Hierarchie auf eine zusammen.
-  2. Ein Wächter, der rohe Graustufen ab dann rot macht — sonst kommt die
-     erste neue beim nächsten Feature zurück, und der Notbehelf lebt weiter.
-  3. Die Token für Hell definieren, den Umschalter in den
-     Einstellungen-Dialog, den `!important`-Block in der Suite-Kopie
-     **löschen** (er wäre danach die zweite Rechnung).
-  4. `light-planner` dasselbe, mit dem grösseren Stilblatt und der 3D-Szene.
-* **Was der Eintrag NICHT behauptet:** dass der Canvas-Inhalt mitmuss. Ein
-  Zeichenbereich darf dunkel bleiben, wenn die Bedienoberfläche hell ist —
-  im `cable-planner` ist das Canvas-Thema deshalb eine eigene Einstellung.
-  Wer diese Arbeit anfängt, entscheidet das zuerst und nicht nebenbei.
-* **Bis dahin sagt jeder der beiden Dialoge in seinem Kopf, dass das Thema
-  fehlt, und warum** — mit der Zahl. Und der Repo-eigene `kopfzeile:check`
-  hält fest, dass der Grund dort steht: fällt er, weil jemand die Umstellung
-  gebaut hat, wird die Zeile **geändert** statt gelöscht.
+* **Was der Umbau nebenbei gefunden hat, und das ist der eigentliche
+  Ertrag:** **acht Zustände, die weisse oder navyfarbene Schrift auf die
+  gleichfarbige Aktionsfläche schrieben** — unlesbar, in *jedem* Thema,
+  seit ADR-007 Stufe 5 und niemandem gemeldet. Darunter die Zahl am
+  Reiter, die sagt, wieviel dort offen ist, und der Primärknopf der
+  Kopfzeile, den ADR-007 eigens hervorhebt. `#fff` war gegen den früheren,
+  gesättigten Akzent richtig und ist beim Farbwechsel stehengeblieben.
+  Kein Themenfehler, sondern einer, den die Themenarbeit gefunden hat.
+* **Drei Wächter-Defekte, alle beim Bauen aufgefallen:**
+  1. `farben:check` (`light-planner`) war am **Zeilenanfang verankert** und
+     sah keine Einzeiler — hinter dem blinden Fleck lagen elf Stellen,
+     darunter der achte unlesbare Zustand. Derselbe Fehler sass im
+     Selektor-Finder, weshalb die Ausnahmeliste dort nie gefragt wurde.
+     Die alte Notiz, die Liste sei „länger als ihre Ausbeute", war die
+     richtige Beobachtung mit der falschen Erklärung.
+  2. `--overlay: var(--overlay)` — beim Herausziehen des Wertes in ein
+     Token hat der Umstellungs-Lauf die eben geschriebene **Definition**
+     mit ersetzt. Eine Eigenschaft, die sich selbst nennt, ist zyklisch
+     und damit ungültig; die schwebende Werkzeuggruppe stand ohne
+     Hinterlegung über dem Plan, im Dunkel-Thema. `farben:check` misst die
+     Form jetzt.
+  3. `chrome:parity` (Suite) verlangte für den Menüpunkt „Neu" das Muster
+     `New project|Neues ` und hat die beiden kleinen Apps nach E-28 falsch
+     beschuldigt: aus „Neues Lager" war „New stock list" geworden. Das
+     Muster nennt jetzt das Verb und nicht das Objekt.
+* **Der `!important`-Notbehelf in der Suite ist gelöscht.** Er bog in
+  `apps/multicam-planner/src/index.css` die festen Tailwind-Klassen um,
+  wenn der Theme-Schalter der Shell umsprang — er überschrieb Klassen
+  statt Tokens und wuchs mit jeder neuen Graustufe. Seit die 406 Stellen
+  Token sind, ist er die zweite Rechnung und steht als Kommentar mit
+  Begründung an seiner Stelle.
+* **Eingebettet gehört das Thema der Shell, und das ist die einzige
+  Abweichung der vendorierten Kopien.** `connectShellTheme` setzt
+  `data-theme` **und** schreibt die Palette als Inline-Variablen ans
+  Wurzelelement; inline schlägt jede Regel aus dem Stilblatt. Ein lokaler
+  Schalter könnte dort keine Farbe ändern, und die nächste Theme-Nachricht
+  setzte ihn zurück — wieder ein Bedienelement, das aussieht wie eine
+  Fähigkeit. Beide Kopien zeigen ihn deshalb nur standalone
+  (`{!isEmbedded && …}`), und `main.tsx` wendet die gespeicherte Wahl nur
+  standalone an. Der repo-eigene `kopfzeile:check` misst beides getrennt,
+  weil es zwei verschiedene Fehler sind.
+* **Was NICHT mitspringt, und warum das kein Rest ist:** die
+  Kamera-Vorschau und die 3D-Ansicht im `multicam-planner`, der 2D-Plan
+  und die 3D-Szene im `light-planner`. Sie zeigen einen **simulierten
+  Raum**. Ein „helles" Kamerabild wäre kein anderes Aussehen, sondern eine
+  andere Beleuchtung — also eine Aussage über den Saal, die niemand
+  gemacht hat. Ebenso die Gel-Farben, die Statusfarben und das Signalrot:
+  sie bedeuten etwas, und die Bedeutung hängt nicht am Thema. Papier
+  bleibt weiss, auch nachts (`.label-sheet`).
+* **Drei Zustände, nicht zwei.** „System" ist keine Umschreibung für
+  „dunkel": wer nichts gewählt hat, folgt dem Betriebssystem, wer gewählt
+  hat, gewinnt gegen es. Deshalb `[data-theme]` am Wurzelelement **und**
+  eine Medienabfrage, und die Medienabfrage ist gegen
+  `data-theme='dark'` abgesichert — sonst bekäme, wer ausdrücklich dunkel
+  gewählt hat, auf einem hell eingestellten Rechner trotzdem hell.
 
 ### B-49 · Bedarfs-Audit: die siebzehn, die nirgends stehen
 
@@ -4465,6 +4506,133 @@ eine Antwort:**
   Vendoring liefert nur die erste.
 
 
+### B-71 · `lang:parity` sah drei von fünf Kopien — und nur deren halbe Logik
+
+* **Status:** **erledigt 2026-09-11.** Gemessen wurde der Befund beim i18n-Umbau
+  von `inventory-planner` und `larszu-facility-planner` (`inventory#13`,
+  `facility#8`), gesucht hat ihn niemand. Behoben in `inventory#14`,
+  `facility#9` und diesem PR.
+* **Der Befund, in einem Satz.** Die Kopie des Quellsprachen-Wächters im
+  `larszu-facility-planner` hing zwei Tage hinter der im `inventory-planner`
+  zurück: ihr fehlte die Korrektur vom 2026-09-09, die `=>` und `>=` vom
+  Tag-Ende ausnimmt. `lang:parity` hat das nicht gemeldet, und zwar aus zwei
+  voneinander unabhängigen Gründen.
+* **Grund 1 — die Liste war zu kurz.** `KOPIEN` führte drei Einträge; die
+  Suite vendoriert **fünf** Apps mit einem Quellsprachen-Wächter.
+* **Grund 2 — verglichen wurde nur die halbe Datei.** Der Sprachmix-Teil
+  existiert nur in den drei grossen Kopien; die beiden kleinen führen
+  stattdessen `jsxTextMuster` und `ohneGenerics`, und zwischen diesen beiden
+  verglich niemand irgendetwas.
+
+* **WAS HINTER DER LÜCKE LAG — und das ist mehr, als der Eintrag erwartet
+  hatte.** Die Wortliste `DEUTSCH` führte in den beiden kleinen Kopien **63**
+  Einträge und in den drei grossen **90**. Die 27 fehlenden sind nicht
+  beliebig: es sind genau die Wörter, an denen eine deutsche **Beschriftung**
+  hängt — `speichern`, `abbrechen`, `bearbeiten`, `einstellungen`, `ansicht`,
+  `auswahl`, `vorlage`, `datei`, `suchen`, `farbe`, `spalte`, `ordner` und
+  Geschwister. Die 63, die dastanden, sind Funktionswörter; die fangen einen
+  deutschen *Satz*. Eine einzelne Beschriftung ist aber kein Satz.
+
+  Gemessen mit einem eingelegten `t('probe.speichern', 'Speichern')`:
+
+  | Repo | mit den 27 | ohne die 27 |
+  |---|---|---|
+  | `inventory-planner` | `1 deutsch, 117 englisch, 760 ohne Merkmal` → fällt | `0 deutsch, 117 englisch, 761 ohne Merkmal` → grün |
+  | `larszu-facility-planner` | `1 deutsch, 66 englisch, 492 ohne Merkmal` → fällt | `0 deutsch, 66 englisch, 493 ohne Merkmal` → grün |
+
+  Der schwächere Lauf hat das Wort also nicht für englisch gehalten, sondern
+  für **merkmallos**. Das ist die stillste Art, an einem Wächter
+  vorbeizukommen: kein Fehlalarm, kein Befund, kein Anlass nachzusehen.
+  Der Bestand beider Repos bleibt mit der vollen Liste bei **0 deutschen
+  Fallbacks** — E-28 hat gehalten, war aber schwächer geprüft als gedacht.
+
+  Zweitens `fallbackMuster`: den beiden kleinen Kopien fehlten `tr|` (der
+  Übersetzer, den Module ausserhalb von React rufen — `\bt\(` trifft `tr(`
+  nicht) und die Absicherung `(?=\s*[,)])`. Heute ruft keines der beiden
+  Repos ein `tr(`; die Lücke war latent und nicht wirksam. Sie stehenzulassen
+  hiesse, auf den Tag zu warten, an dem sie es wird.
+
+* **Wie der Lauf jetzt vergleicht** — drei Runden statt einer:
+
+  | Runde | Stücke |
+  |---|---|
+  | alle fünf | `DEUTSCH`, `ENGLISCH`, `klassifiziere`, `fallbackMuster` |
+  | nur die drei grossen | `SICHTBARE_ATTRIBUTE`, `JSX_TEXT`, `NACH_CODE`, `RUFE`, `ohneKommentare`, `sichtbareTexte`, `ohneAusdruecke`, `PROBE` |
+  | nur die zwei kleinen | `jsxTextMuster`, `ohneGenerics` |
+
+  **Die Runden sind der Punkt, nicht die längere Liste.** Ein Lauf, der
+  stattdessen alles über alle fünf vergliche, fände überall `null` für die
+  fehlenden Stücke — und `null === null` ist grün. Er meldete Ruhe, weil er
+  nichts gefunden hat: dieselbe Bauform von stiller Abschaltung, gegen die
+  der Wächter überhaupt gebaut ist.
+* **Und er sagt jetzt, was er NICHT misst:** dass die fünf gleich *viel*
+  können. Die beiden kleinen tragen den vollen Sprachmix-Teil nicht — das ist
+  ein Unterschied im Umfang, keine Drift, und es steht in ihren eigenen
+  Kopfzeilen.
+* **Gegenprobe, wie der Eintrag sie verlangt hat:** jede der fünf Kopien
+  einzeln verstellt (ein erfundenes Wort in `DEUTSCH`), `lang:parity` je
+  einmal rot gesehen, zurückgedreht, grün. Fünf von fünf.
+
+
+### B-72 · Die MITGELIEFERTEN Presets haben keine Herkunft — und der Wächter misst die andere
+
+* **Status:** offen, und der offene Teil ist eine EIGENTÜMER-FRAGE, keine
+  Bauarbeit. **Gemessen am 2026-09-11.**
+* **Woher der Eintrag kommt.** Die Frage „Geräte-Presets gegen Datenblätter
+  prüfen" stand als Aufgabe da, ohne dass jemand die Ausgangslage gemessen
+  hatte. Das ist jetzt nachgeholt, und die Antwort ist unbequemer als die
+  Frage.
+* **Was `specSource` wirklich ist.** Ein Feld an der EINZELNEN Instanz, das
+  der Planer füllt, wenn er ein Datenblatt in die App reicht: Feld → Wert →
+  Beleg, plus `isStaleSource` (der Nutzer hat den Wert danach geändert) und
+  `isEstimate` (der Beleg sagt selbst, dass er eine Schätzung ist). Diese
+  Maschinerie ist gut und sie funktioniert; `spec:check` prüft sie in beiden
+  Sprachen.
+* **Der Katalog, den die App AUSLIEFERT, hat sie nicht.** Gemessen:
+
+  | Katalog | Einträge | Beleg als FELD | Beleg als Kommentar |
+  |---|---:|---:|---:|
+  | `light-planner` · `fixtureLibrary.ts` | 60 | **0** | 3 |
+  | `multicam-planner` · `cameras.ts` | 60 | **0** | 1 |
+  | `multicam-planner` · `lenses.ts` | 202 | **0** | 1 |
+
+  Drei von 60 Leuchten tragen eine Zeile wie
+  `// Measured with LS 600x Pro at 5600K spot 15°: 137,000 lux @ 1m`. Die
+  übrigen 57 tragen nichts. Ein Kommentar ist kein Beleg: er steht nicht im
+  Modell, kommt nicht in die Oberfläche und wird von keiner Messung erfasst.
+* **Warum das genau die Defektform ist, gegen die `specSource` gebaut wurde.**
+  Die Begründung im Typ sagt es wörtlich: eine GESCHÄTZTE Streuwinkel-Angabe
+  soll von einer abgelesenen unterscheidbar sein, „während genau diese Zahl
+  in die Lichtberechnung und die 3D-Darstellung eingeht". Für die Zahlen,
+  die der Nutzer selbst einträgt, gilt das. Für die 262 Zahlen, die die App
+  MITBRINGT, gilt es nicht — und die sind die Vorgabe, also die, mit denen
+  die meisten Pläne gerechnet werden.
+* **Was der Wächter nicht sieht, und warum er trotzdem grün ist.**
+  `spec:check` misst die Maschinerie um das Instanz-Feld: sind Schätzung und
+  Ablesung unterscheidbar, wird ein veralteter Beleg erkannt, speichert der
+  Editor ihn mit, zeigt das Feld ihn an. Alle vier stimmen. Über den
+  ausgelieferten Katalog sagt er kein Wort — er kennt ihn nicht. Das ist
+  kein Fehler des Laufs, sondern eine Lücke zwischen zwei Läufen, und
+  genau solche Lücken sind schwerer zu sehen als ein roter Test.
+* **Die Entscheidung, die dem Eigentümer gehört** (und die dieser Eintrag
+  NICHT vorwegnimmt):
+  1. Bekommt der ausgelieferte Katalog dasselbe `specSource`-Feld? Dann sind
+     es 262 Einträge, die je einen Beleg brauchen — und ein Beleg, den
+     niemand nachgeschlagen hat, wäre schlimmer als keiner.
+  2. Oder trägt der Katalog als GANZES eine Herkunftsangabe („Herstellerseite,
+     Stand TT.MM.JJJJ") statt je Eintrag? Billiger, gröber, und für die
+     Frage „woher kommt DIESE Zahl" nutzlos.
+  3. Oder bleibt es, wie es ist — dann gehört in die Oberfläche der Satz,
+     dass eine Katalog-Zahl eine Katalog-Zahl ist und kein abgelesenes
+     Datenblatt.
+* **Was ausdrücklich NICHT getan wurde:** Datenblätter nachschlagen und
+  Werte eintragen. Ein Beleg, der aus einem Modell statt aus einem Datenblatt
+  stammt, ist genau die Zahl, gegen die dieses Repo anschreibt — und 262
+  davon wären ein Katalog, der vertrauenswürdig AUSSIEHT. Die Arbeit ist
+  echt, aber sie beginnt mit der Entscheidung oben und nicht mit der ersten
+  Herstellerseite.
+
+
 ## Eigentümer-Entscheidungen
 
 **Alle offen gebliebenen Punkte dieser Tabelle sind am 2026-09-08 entschieden
@@ -4500,6 +4668,21 @@ B-65 ausdrücklich als „nicht zu entscheiden ohne den Eigentümer" stehengelas
 worden waren. Der Grund, warum sie hier stehen und nicht nur im Bau-Eintrag:
 eine beantwortete Frage, die nur im Code steht, wird beim nächsten Durchgang
 wieder gestellt.
+
+**E-28 (2026-09-09) steht in dieser Tabelle nicht als eigene Zeile, und das
+war eine Lücke** — nachgetragen am 2026-09-11. Der Eigentümer hat die
+Quellsprache auf **`en` festgelegt, und zwar für alle Repos der Suite**; das
+**hebt E-17 und E-20 auf**, die sie ausdrücklich zu einer Eigenschaft des
+einzelnen Repos gemacht hatten. Die Entscheidung stand bis dahin nur in den
+CLAUDE.md-Dateien der betroffenen Repos — also genau dort, wo sie jemand
+liest, der schon in dem Repo arbeitet, und nirgends dort, wo jemand nachsieht,
+was für die Suite gilt. Am 2026-09-11 hat der Eigentümer sie bestätigt und
+ausgeweitet: „Die Standard Sprache muss immer Englisch sein und über i18n muss
+man auf deutsch übersetzen können." Damit sind auch `inventory-planner` und
+`larszu-facility-planner` englisch-quellig (`inventory#13`, `facility#8`) —
+beide hatten vorher **gar keine** i18n-Schicht, der Umbau war deshalb zwei
+Dinge auf einmal: die Schicht einziehen und die Quelle drehen. Deutsch ist
+seither die erste Übersetzung.
 
 **Eine Zeile ist am 2026-09-10 dazugekommen** — E-29, und sie ist die
 einzige der Tabelle, die einen Fund festhält statt einer Bauentscheidung: die

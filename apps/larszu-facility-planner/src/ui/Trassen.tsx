@@ -21,20 +21,45 @@
 // rein" auf einem Blatt, mit dem jemand auf die Leiter steigt.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { useT } from '../i18n'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { wegFrei } from '../domain/gebaeudeAuskunft'
 import type { Belegung } from '../domain/modell'
 
 const BELEGUNGEN: Belegung[] = ['unbekannt', 'frei', 'teilbelegt', 'voll']
 
-const BELEGUNG_TEXT: Record<Belegung, string> = {
-  unbekannt: 'unbekannt — niemand hat nachgesehen',
-  frei: 'frei',
-  teilbelegt: 'teilbelegt',
-  voll: 'voll',
-}
+type UebersetzFn = (key: string, en: string) => string
+
+/** Als FUNKTION und nicht als Modul-Konstante: die würde beim Laden einmal
+ *  gebaut und bliebe in der Sprache stehen, die damals galt. */
+const belegungText = (t: UebersetzFn): Record<Belegung, string> => ({
+  unbekannt: t('routes.load.unknown', 'unknown — nobody has looked'),
+  frei: t('routes.load.free', 'free'),
+  teilbelegt: t('routes.load.partial', 'partly occupied'),
+  voll: t('routes.load.full', 'full'),
+})
+
+/**
+ * Was `wegFrei` zurückgibt, in einem Satz.
+ *
+ * Bis 2026-09-11 stand die KENNUNG in der Zelle: `keine-trasse` mit
+ * Bindestrich, mitten in einer Tabelle aus deutschen Wörtern. Eine Kennung
+ * ist ein Name für den Code und keine Auskunft für den Menschen — und
+ * „keine-trasse" beantwortet die Frage der Spalte („bester Weg") gerade
+ * nicht, sondern sagt, dass es keinen gibt.
+ */
+const wegText = (lage: ReturnType<typeof wegFrei>, t: UebersetzFn): string =>
+  ({
+    frei: t('routes.best.free', 'free'),
+    teilbelegt: t('routes.best.partial', 'partly occupied'),
+    voll: t('routes.best.full', 'full'),
+    unbekannt: t('routes.best.unknown', 'unknown'),
+    'keine-trasse': t('routes.best.none', 'no route between these rooms'),
+  })[lage]
 
 export function Trassen() {
+  const { t: uebersetze } = useT()
+  const BELEGUNG_TEXT = belegungText(uebersetze)
   const gebaeude = useGebaeudeStore((s) => s.gebaeude)
   const trasseAnlegen = useGebaeudeStore((s) => s.trasseAnlegen)
   const entfernen = useGebaeudeStore((s) => s.entfernen)
@@ -56,19 +81,19 @@ export function Trassen() {
         <input
           value={bezeichnung}
           onChange={(e) => setBezeichnung(e.target.value)}
-          placeholder="Bezeichnung (z. B. Leerrohr Bühne–Regie)"
-          aria-label="Bezeichnung"
+          placeholder={uebersetze('routes.name.placeholder', 'Name (e.g. conduit stage–control room)')}
+          aria-label={uebersetze('routes.name', 'Name')}
         />
-        <select value={von} onChange={(e) => setVon(e.target.value)} aria-label="Von Raum">
-          <option value="">von …</option>
+        <select value={von} onChange={(e) => setVon(e.target.value)} aria-label={uebersetze('routes.from.aria', 'From room')}>
+          <option value="">{uebersetze('routes.from', 'from …')}</option>
           {raeume.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
             </option>
           ))}
         </select>
-        <select value={nach} onChange={(e) => setNach(e.target.value)} aria-label="Nach Raum">
-          <option value="">nach …</option>
+        <select value={nach} onChange={(e) => setNach(e.target.value)} aria-label={uebersetze('routes.to.aria', 'To room')}>
+          <option value="">{uebersetze('routes.to', 'to …')}</option>
           {raeume.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
@@ -78,7 +103,7 @@ export function Trassen() {
         <select
           value={belegung}
           onChange={(e) => setBelegung(e.target.value as Belegung)}
-          aria-label="Belegung"
+          aria-label={uebersetze('routes.load', 'Occupancy')}
         >
           {BELEGUNGEN.map((b) => (
             <option key={b} value={b}>
@@ -89,8 +114,8 @@ export function Trassen() {
         <input
           value={hinweis}
           onChange={(e) => setHinweis(e.target.value)}
-          placeholder="Was liegt schon drin?"
-          aria-label="Hinweis"
+          placeholder={uebersetze('routes.note.placeholder', 'What is already in there?')}
+          aria-label={uebersetze('routes.note', 'Note')}
         />
         <button
           type="button"
@@ -107,30 +132,32 @@ export function Trassen() {
             setHinweis('')
           }}
         >
-          Trasse anlegen
+          {uebersetze('routes.add', 'Add route')}
         </button>
       </div>
 
       {raeume.length < 2 && (
         <p className="leer">
-          Eine Trasse verbindet zwei Räume. Lege zuerst unter „Anschlusspunkte" mindestens zwei
-          Räume an.
+          {uebersetze(
+            'routes.needRooms',
+            'A route connects two rooms. Create at least two rooms under "Connection points" first.',
+          )}
         </p>
       )}
 
       {trassen.length === 0 ? (
-        <p className="leer">Noch keine Trasse erfasst.</p>
+        <p className="leer">{uebersetze('routes.empty', 'No route recorded yet.')}</p>
       ) : (
         <div className="tabelle-rahmen">
         <table>
           <thead>
             <tr>
-              <th>Bezeichnung</th>
-              <th>Von</th>
-              <th>Nach</th>
-              <th>Belegung</th>
-              <th>Bester Weg</th>
-              <th>Hinweis</th>
+              <th>{uebersetze('routes.name', 'Name')}</th>
+              <th>{uebersetze('routes.col.from', 'From')}</th>
+              <th>{uebersetze('routes.col.to', 'To')}</th>
+              <th>{uebersetze('routes.load', 'Occupancy')}</th>
+              <th>{uebersetze('routes.col.best', 'Best route')}</th>
+              <th>{uebersetze('routes.note', 'Note')}</th>
               <th />
             </tr>
           </thead>
@@ -144,11 +171,11 @@ export function Trassen() {
                 {/* Der beste Weg zwischen DIESEN beiden Räumen, über alle
                     Trassen hinweg. Wer drei Rohre nebeneinander hat, will
                     nicht drei Zeilen lesen, sondern eine Antwort. */}
-                <td>{wegFrei(gebaeude, t.vonRaumId, t.nachRaumId)}</td>
+                <td>{wegText(wegFrei(gebaeude, t.vonRaumId, t.nachRaumId), uebersetze)}</td>
                 <td>{t.hinweis ?? '—'}</td>
                 <td>
                   <button type="button" onClick={() => entfernen(t.id)}>
-                    Entfernen
+                    {uebersetze('common.remove', 'Remove')}
                   </button>
                 </td>
               </tr>

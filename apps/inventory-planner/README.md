@@ -3,7 +3,14 @@
 Das Lager als eigenes Werkzeug: **Bestand**, **Ausgabescheine**, **Sub-Hire** —
 mit einer Bedienung für den Lageristen statt eines Dialogs im Kabelplan.
 
-**Source language:** `de`
+**Source language:** `en`
+
+Die Oberfläche startet auf Englisch — auch auf einem deutschen Rechner. Deutsch
+ist die erste Übersetzung und steht in **Einstellungen → Language**; die Wahl
+überlebt den Neustart. Fehlt zu einem Schlüssel die Übersetzung, erscheint der
+englische Quelltext: das ist die Rückfallebene und kein Fehler. Eine weitere
+Sprache ist eine Datei unter `src/i18n/` plus ein Eintrag in `WOERTERBUECHER` —
+keine Zeile Logik.
 
 ## Warum es dieses Repo gibt
 
@@ -40,7 +47,7 @@ npm run build   # tsc -b && vite build
 npm run lint
 npm test        # vitest
 npm run grenze:check   # die Grenze zum Plan
-npm run lang:check     # Quellsprache (deutsch)
+npm run lang:check     # Quellsprache (englisch, E-28)
 
 npm run electron:dev   # Desktop-Fassung lokal starten (baut vorher)
 npm run dist:win       # Windows: Setup + Portable nach release/

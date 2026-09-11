@@ -141,7 +141,20 @@ const menueStelle = (block, woerter) => {
  */
 const GRUNDSTOCK = {
   File: [
-    { was: 'Neu', muster: /New project|Neues /i },
+    // „Neu" heisst in jeder App etwas anderes — „New project", „New stock
+    // list", „New building". Das Muster nennt deshalb das VERB und nicht das
+    // Objekt.
+    //
+    // Es stand bis zum 2026-09-11 als `/New project|Neues /i` da und traf
+    // die zwei kleinen Apps nur ueber ihre deutsche Fassung. Mit E-28
+    // (Quellsprache Englisch) wurde daraus „New stock list" bzw. „New
+    // building", und der Lauf meldete einen fehlenden Menuepunkt, den es
+    // gab — eine falsche Anschuldigung, und die kostet mehr als ein
+    // Durchrutscher: der naechste schaltet den Lauf ab.
+    //
+    // `\bNew [A-Za-z]` statt `\bNew\b`: der Eintrag traegt ein Objekt. So
+    // erfuellt weder ein blosses „News" noch ein „Newsletter" die Zeile.
+    { was: 'Neu', muster: /\bNew [A-Za-z]|\bNeue[sr]? [A-ZÄÖÜa-zäöü]/i },
     { was: 'Oeffnen', muster: /Open[….]|Öffnen/i },
     // „Speichern" darf einen Zusatz tragen und muss doch „Speichern" sein.
     // Der `light-planner` schreibt „Save (browser)", weil er zwei Ablagen hat

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   scanFaehigkeit,
   einLesen,
-  HINDERNIS_TEXT,
+  hindernisText,
   type CodeLeser,
   type ScanUmgebung,
 } from '../../lib/codeLeser'
@@ -66,7 +66,12 @@ describe('scanFaehigkeit — ein Grund mit Namen statt eines toten Knopfs', () =
 
   it('4. jeder Grund hat einen Satz, den man vorlesen kann', () => {
     // Ein Grund ohne Text waere ein Fehlercode im Gesicht des Lageristen.
-    for (const [grund, text] of Object.entries(HINDERNIS_TEXT)) {
+    // Ohne `t` geliefert: das ist die QUELLE (Englisch, E-28). Der Lauf
+    // misst damit den Text, der erscheint, wenn keine Übersetzung greift —
+    // und genau der ist die Rückfallebene, die niemand pflegt.
+    const gruende = ['unsicherer-kontext', 'keine-kamera-api', 'kein-decoder', 'keine-erlaubnis'] as const
+    for (const grund of gruende) {
+      const text = hindernisText(grund)
       expect(text.length, `${grund} ohne Text`).toBeGreaterThan(30)
       expect(text.trim().endsWith('.'), `${grund} ohne Satzende`).toBe(true)
     }

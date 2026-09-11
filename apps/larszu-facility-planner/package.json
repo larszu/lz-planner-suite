@@ -2,7 +2,7 @@
   "name": "larszu-facility-planner",
   "private": true,
   "avplan": {
-    "sourceLanguage": "de"
+    "sourceLanguage": "en"
   },
   "version": "0.1.0",
   "type": "module",

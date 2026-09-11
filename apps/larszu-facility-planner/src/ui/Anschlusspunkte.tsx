@@ -14,6 +14,8 @@
 // wie eine Auskunft des Hauses.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { useT } from '../i18n'
+import { bauformText } from './beschriftungen'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { belastbarkeit, einspeisung, ort, verfuegbarkeit } from '../domain/vertrag'
 import type { Anschlussart, Bauform, Netzform, RcdTyp } from '../domain/modell'
@@ -36,11 +38,15 @@ const BAUFORMEN: Bauform[] = [
   'sonstige',
 ]
 
+type UebersetzFn = (key: string, en: string) => string
+
 /** Ja / nein / nichts gesagt — als drei Zustände, nicht als zwei. */
-const jaNein = (v: boolean | undefined): string =>
-  v === undefined ? 'nicht angegeben' : v ? 'ja' : 'nein'
+const jaNein = (v: boolean | undefined, t: UebersetzFn): string =>
+  v === undefined ? t('common.notStated', 'not stated') : v ? t('common.yes', 'yes') : t('common.no', 'no')
 
 export function Anschlusspunkte() {
+  const { t, format } = useT()
+  const BAUFORM_TEXT = bauformText(t)
   const gebaeude = useGebaeudeStore((s) => s.gebaeude)
   const punktAnlegen = useGebaeudeStore((s) => s.punktAnlegen)
   const punktAendern = useGebaeudeStore((s) => s.punktAendern)
@@ -54,7 +60,7 @@ export function Anschlusspunkte() {
     if (!b) return
     let raumId = gebaeude.raeume[0]?.id
     if (!raumId) {
-      const n = raumName.trim() || 'Raum 1'
+      const n = raumName.trim() || t('points.room.default', 'Room 1')
       raumId = raumAnlegen({ name: n, hausbezeichner: n })
     }
     punktAnlegen({
@@ -76,57 +82,58 @@ export function Anschlusspunkte() {
         <input
           value={bezeichnung}
           onChange={(e) => setBezeichnung(e.target.value)}
-          placeholder="Neuer Anschlusspunkt"
-          aria-label="Bezeichnung des Anschlusspunkts"
+          placeholder={t('points.new.placeholder', 'New connection point')}
+          aria-label={t('points.new.aria', 'Name of the connection point')}
         />
         {gebaeude.raeume.length === 0 && (
           <input
             value={raumName}
             onChange={(e) => setRaumName(e.target.value)}
-            placeholder="Raum (wird mit angelegt)"
-            aria-label="Raum"
+            placeholder={t('points.room.placeholder', 'Room (created along with it)')}
+            aria-label={t('common.room', 'Room')}
           />
         )}
         <button type="button" onClick={raumAnlegenUndPunkt}>
-          Anlegen
+          {t('common.add', 'Add')}
         </button>
       </div>
 
       {gebaeude.punkte.length === 0 ? (
         <p className="leer">
-          Noch kein Anschlusspunkt. Ein Punkt ist alles, woran der Aufbau Strom bekommt —
-          die Einspeisung am Schaltschrank ebenso wie die Dose in der Wand. Beide tragen
-          dieselben Angaben, weil ein Plan von beiden dasselbe wissen muss.
+          {t(
+            'points.empty',
+            'No connection point yet. A point is anything the rig draws power from — the feed at the cabinet as much as the outlet in the wall. Both carry the same fields, because a plan needs to know the same things about both.',
+          )}
         </p>
       ) : (
         <div className="tabelle-rahmen">
           <table>
             <thead>
               <tr>
-                <th>Bezeichnung</th>
-                <th>Art</th>
-                <th>Bauform</th>
-                <th>Anschluss</th>
-                <th>Netzform</th>
-                <th className="rechts">Absicherung</th>
+                <th>{t('common.name', 'Name')}</th>
+                <th>{t('common.kind', 'Kind')}</th>
+                <th>{t('points.col.form', 'Housing')}</th>
+                <th>{t('points.col.connector', 'Connector')}</th>
+                <th>{t('points.col.system', 'Earthing system')}</th>
+                <th className="rechts">{t('points.col.breaker', 'Breaker')}</th>
                 <th>RCD</th>
-                <th>Dauerlast</th>
-                <th>Ort</th>
-                <th>Geschaltet</th>
-                <th>Gedimmt</th>
-                <th>Frei</th>
+                <th>{t('points.col.load', 'Continuous load')}</th>
+                <th>{t('points.col.place', 'Place')}</th>
+                <th>{t('points.col.switched', 'Switched')}</th>
+                <th>{t('points.col.dimmed', 'Dimmed')}</th>
+                <th>{t('points.col.free', 'Free')}</th>
               </tr>
             </thead>
             <tbody>
               {gebaeude.punkte.map((p) => {
                 const a = einspeisung(gebaeude, p.id)!
-                const o = ort(gebaeude, p.id)
+                const o = ort(gebaeude, p.id, t)
                 const v = verfuegbarkeit(gebaeude, p.id)!
-                const last = belastbarkeit(p)
+                const last = belastbarkeit(p, t)
                 return (
                   <tr key={p.id}>
                     <td>{a.bezeichnung}</td>
-                    <td>{p.art === 'einspeisung' ? 'Einspeisung' : 'Dose'}</td>
+                    <td>{p.art === 'einspeisung' ? t('points.kind.feed', 'Feed') : t('points.kind.outlet', 'Outlet')}</td>
                     {/* Issue #1 — die Bauform ist NICHT die Montageart. Ein
                         Bodentank und eine Unterflurdose sind beide
                         `montage: 'boden'` und verhalten sich vollkommen
@@ -145,12 +152,12 @@ export function Anschlusspunkte() {
                               bauform: (e.target.value || undefined) as Bauform | undefined,
                             })
                           }
-                          aria-label={`Bauform von ${a.bezeichnung}`}
+                          aria-label={format(t('points.form.aria', 'Housing of {name}'), { name: a.bezeichnung })}
                         >
-                          <option value="">nicht angegeben</option>
+                          <option value="">{t('common.notStated', 'not stated')}</option>
                           {BAUFORMEN.map((x) => (
                             <option key={x} value={x}>
-                              {x}
+                              {BAUFORM_TEXT[x]}
                             </option>
                           ))}
                         </select>
@@ -162,7 +169,7 @@ export function Anschlusspunkte() {
                         onChange={(e) =>
                           punktAendern(p.id, { anschlussart: e.target.value as Anschlussart })
                         }
-                        aria-label={`Anschlussart von ${a.bezeichnung}`}
+                        aria-label={format(t('points.connector.aria', 'Connector of {name}'), { name: a.bezeichnung })}
                       >
                         {ANSCHLUSSARTEN.map((x) => (
                           <option key={x} value={x}>
@@ -175,7 +182,7 @@ export function Anschlusspunkte() {
                       <select
                         value={p.netzform}
                         onChange={(e) => punktAendern(p.id, { netzform: e.target.value as Netzform })}
-                        aria-label={`Netzform von ${a.bezeichnung}`}
+                        aria-label={format(t('points.system.aria', 'Earthing system of {name}'), { name: a.bezeichnung })}
                       >
                         {NETZFORMEN.map((x) => (
                           <option key={x} value={x}>
@@ -193,7 +200,7 @@ export function Anschlusspunkte() {
                           const n = Number(e.target.value)
                           if (Number.isFinite(n) && n > 0) punktAendern(p.id, { absicherungA: n })
                         }}
-                        aria-label={`Absicherung von ${a.bezeichnung}`}
+                        aria-label={format(t('points.breaker.aria', 'Breaker of {name}'), { name: a.bezeichnung })}
                         className="schmal"
                       />
                     </td>
@@ -201,7 +208,7 @@ export function Anschlusspunkte() {
                       <select
                         value={p.rcdTyp}
                         onChange={(e) => punktAendern(p.id, { rcdTyp: e.target.value as RcdTyp })}
-                        aria-label={`RCD-Typ von ${a.bezeichnung}`}
+                        aria-label={format(t('points.rcd.aria', 'RCD type of {name}'), { name: a.bezeichnung })}
                       >
                         {RCD.map((x) => (
                           <option key={x} value={x}>
@@ -213,16 +220,16 @@ export function Anschlusspunkte() {
                     <td>
                       {last.watt === null ? (
                         <span className="leise" title={last.grund}>
-                          nicht angegeben
+                          {t('common.notStated', 'not stated')}
                         </span>
                       ) : (
                         `${last.watt} W`
                       )}
                     </td>
                     <td>{o.gefunden ? o.hausbezeichner : <span className="leise">{o.grund}</span>}</td>
-                    <td className="leise">{jaNein(v.geschaltet)}</td>
-                    <td className="leise">{jaNein(v.gedimmt)}</td>
-                    <td>{v.frei ? 'frei' : v.belegtDurch}</td>
+                    <td className="leise">{jaNein(v.geschaltet, t)}</td>
+                    <td className="leise">{jaNein(v.gedimmt, t)}</td>
+                    <td>{v.frei ? t('points.free', 'free') : v.belegtDurch}</td>
                   </tr>
                 )
               })}

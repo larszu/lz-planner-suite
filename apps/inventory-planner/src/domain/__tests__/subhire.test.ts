@@ -84,18 +84,32 @@ describe('ownershipNote', () => {
     expect(ownershipNote(artikel({ model: 'a', ownership: 'owned' }), HEUTE)).toBe('')
   })
 
+  // OHNE `t` GERUFEN — das ist die QUELLE (Englisch, E-28). Der Lauf misst
+  // damit den Text, der erscheint, wenn keine Übersetzung greift.
   it('nennt einen fehlenden Lieferanten, statt ihn wegzulassen', () => {
     const text = ownershipNote(artikel({ model: 'a', ownership: 'subhire' }), HEUTE)
-    expect(text).toContain('Lieferant unbekannt')
-    expect(text).toContain('kein Rückgabedatum')
+    expect(text).toContain('supplier unknown')
+    expect(text).toContain('no return date')
   })
 
   it('unterscheidet „zurück seit" von „zurück"', () => {
     expect(
       ownershipNote(artikel({ model: 'a', ownership: 'rented', returnDue: '2026-08-01' }), HEUTE),
-    ).toContain('zurück seit 2026-08-01')
+    ).toContain('back since 2026-08-01')
     expect(
       ownershipNote(artikel({ model: 'a', ownership: 'rented', returnDue: '2026-12-01' }), HEUTE),
-    ).toContain('zurück 2026-12-01')
+    ).toContain('back 2026-12-01')
+  })
+
+  it('nimmt eine Übersetzung an, ohne selbst eine zu kennen', () => {
+    // Die Gegenprobe zur Umstellung: die Domäne entscheidet die Wortwahl
+    // NICHT mehr, sie nimmt sie entgegen. Ein `t`, das etwas anderes
+    // liefert, muss durchschlagen — sonst wäre der Parameter Zierde.
+    const text = ownershipNote(
+      artikel({ model: 'a', ownership: 'subhire' }),
+      HEUTE,
+      (key) => (key === 'ownership.subhire' ? 'GEMIETET-PROBE' : key),
+    )
+    expect(text).toContain('GEMIETET-PROBE')
   })
 })

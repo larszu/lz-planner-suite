@@ -102,7 +102,7 @@ export const leseGebaeude = (json: string): Gebaeude | null => {
   const g = f.gebaeude as Partial<Gebaeude>
   if (typeof g.id !== 'string' || !g.id) return null
   return heileGebaeude({
-    ...leeresGebaeude(g.id, typeof g.name === 'string' && g.name ? g.name : 'Gebäude'),
+    ...leeresGebaeude(g.id, typeof g.name === 'string' && g.name ? g.name : 'Building'),
     ...g,
   })
 }

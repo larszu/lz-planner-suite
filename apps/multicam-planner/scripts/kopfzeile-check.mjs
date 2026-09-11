@@ -158,16 +158,55 @@ assert.ok(
 assert.ok(menu.includes("document.addEventListener('mousedown'"), 'die eine Mechanik schliesst nicht auf Klick daneben');
 assert.ok(menu.includes("e.key === 'Escape'"), 'die eine Mechanik kennt Escape nicht');
 
-// ── 7. Was der Dialog NICHT hat, steht begruendet darin ──────────────────
+// ── 7. Der Dialog fuehrt den GANZEN Grundstock der Suite ─────────────────
 //
-// Der gemeinsame Grundstock der Suite ist Sprache, Thema und Ueber. Das Thema
-// fehlt hier mit Messung (464 rohe Tailwind-Graustufen in 17 Dateien, dazu
-// der Canvas des 2D-Plans). Faellt diese Zeile, weil jemand die Umstellung
-// gebaut hat: dann gehoert der Umschalter hinein, und sie wird GEAENDERT
-// statt geloescht.
+// Sprache, Thema, Ueber. Bis zum 2026-09-11 standen hier zwei davon, und
+// diese Stelle verlangte ausdruecklich, dass das Thema FEHLT — mit Messung
+// (406 rohe Farb-Utilities in 17 Dateien, dazu der Canvas des 2D-Plans) und
+// mit dem Satz: „Faellt diese Zeile, weil jemand die Umstellung gebaut hat:
+// dann gehoert der Umschalter hinein, und sie wird GEAENDERT statt
+// geloescht."
+//
+// Genau das ist passiert (B-70), und genau so ist es gemacht. Der Waechter
+// hat beim Bau angeschlagen — er stand an der richtigen Tuer.
 assert.ok(einstellungen.includes("t('settings.language'"), 'der Dialog fuehrt keine Sprache');
 assert.ok(einstellungen.includes("t('settings.about'"), 'der Dialog fuehrt kein Ueber');
-assert.ok(!einstellungen.includes("t('settings.theme'"), 'ein Thema-Umschalter ohne Thema');
-assert.ok(einstellungen.includes('B-70'), 'der Grund fuer das fehlende Thema fehlt im Dialog');
+assert.ok(einstellungen.includes("t('settings.theme'"), 'der Dialog fuehrt kein Thema');
+
+// DREI ZUSTAENDE, nicht zwei. „System" ist keine Umschreibung fuer „dunkel":
+// wer nichts gewaehlt hat, folgt dem Betriebssystem. Ein Schalter mit zwei
+// Stellungen muesste beim ersten Oeffnen eine Wahl erfinden.
+for (const zustand of ['settings.theme.system', 'settings.theme.dark', 'settings.theme.light']) {
+  assert.ok(einstellungen.includes(`t('${zustand}'`), `der Thema-Schalter kennt ${zustand} nicht`);
+}
+
+// Und er schaltet WIRKLICH: ein Knopf, der nur einen lokalen Zustand setzt,
+// faerbt sich selbst um und sonst nichts. Das ist die Sorte Schalter, gegen
+// die dieser ganze Abschnitt steht.
+assert.ok(einstellungen.includes('setzeThema('), 'der Thema-Schalter ruft setzeThema nicht auf');
+
+// NUR IN DIESER KOPIE: eingebettet gehoert der Schalter der Shell.
+//
+// Die Suite laedt MultiCam in ein iframe. Dort setzt die Shell `data-theme`
+// und schreibt ihre Palette als INLINE-Variablen ans Wurzelelement
+// (`connectShellTheme`). Inline schlaegt jede Regel aus dem Stilblatt — ein
+// lokaler Schalter aenderte also keine einzige Farbe, und die naechste
+// Theme-Nachricht setzte ihn zurueck. Er waere genau das Bedienelement ohne
+// Wirkung, gegen das der ganze Abschnitt hier steht.
+//
+// Gemessen wird die Klammer und die Anwendung getrennt, weil die zwei
+// verschiedene Fehler sind: ein sichtbarer Schalter ohne Wirkung (Dialog)
+// und ein Aufblitzen des lokalen Themas vor der ersten Shell-Nachricht
+// (main.tsx).
+assert.ok(
+  /\{!isEmbedded && \(\s*<section[^]*?t\('settings\.theme'/.test(einstellungen),
+  'der Thema-Schalter steht auch eingebettet im Dialog — dort kann er nichts bewirken',
+);
+
+const start = lies('src/main.tsx');
+assert.ok(
+  start.includes('if (!isEmbedded) themaAnwenden();'),
+  'main.tsx wendet das lokale Thema auch eingebettet an',
+);
 
 console.log('kopfzeile:check ok — 40 px, File/Edit/Tools/View/Help, Einstellungen rechts aussen, eine Klappen-Mechanik');

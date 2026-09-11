@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { connectShellTheme } from '@avplan/ui/embed';
 import { ErrorBoundary } from '@avplan/ui';
 import { initShellSettings } from './shellSettings';
+import { themaAnwenden } from './lib/thema';
+import { isEmbedded } from './hooks/useIsEmbedded';
 import App from './App';
 
 // In die Suite-Shell eingebettet? Dann folgt das Theme der Shell (No-op im
@@ -25,6 +27,19 @@ connectShellTheme({
   '--av-warn': '--warn',
   '--av-danger': '--danger',
 });
+// Das Thema VOR dem ersten Rendern setzen: sonst zeigt die App fuer einen
+// Wimpernschlag das Vorgabe-Thema und springt dann um.
+//
+// NUR STANDALONE, und das ist keine Vorsicht, sondern eine Reihenfolge: in
+// der Shell kommt das Thema per `avplan:theme` herein, `connectShellTheme`
+// setzt `data-theme` und schreibt die Palette als Inline-Variablen ans
+// Wurzelelement. Wuerde hier die lokal gespeicherte Wahl angewendet, saehe
+// der eingebettete Planer bis zur ersten Shell-Nachricht anders aus als der
+// Rest der Suite — genau das Umspringen, das diese Zeile verhindern soll,
+// nur eine Ebene hoeher. Die Shell ist die Quelle; `src/lib/thema.ts` gilt
+// fuer die Web-Seite und die Electron-Fassung.
+if (!isEmbedded) themaAnwenden();
+
 // Suite-Einstellungen (Ansicht, Belichtung, Lichtkegel, Heatmap …) übernehmen.
 initShellSettings();
 

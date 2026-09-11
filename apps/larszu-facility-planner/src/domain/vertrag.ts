@@ -19,6 +19,7 @@
 // schreibt, macht aus „das Haus sagt nichts dazu" die Zusicherung „diese Dose
 // haengt an keinem Schalter". Danach plant jemand ein Netzteil darauf.
 // ───────────────────────────────────────────────────────────────────────────
+import { format, quelle, type Uebersetzen } from '../i18n/quelle'
 import type {
   Anschlusspunkt,
   Gebaeude,
@@ -104,15 +105,19 @@ export type Belastbarkeit =
   | { watt: number; herkunft: 'angegeben' }
   | { watt: null; grund: string }
 
-export const belastbarkeit = (punkt: Anschlusspunkt): Belastbarkeit =>
+export const belastbarkeit = (punkt: Anschlusspunkt, t: Uebersetzen = quelle): Belastbarkeit =>
   punkt.dauerleistungW === undefined
     ? {
         watt: null,
-        grund:
-          `Dauerleistung nicht angegeben. ${punkt.absicherungA} A ` +
-          `(Charakteristik ${punkt.charakteristik}) ist die Ausloeseschwelle, ` +
-          'nicht die zulaessige Dauerlast — sie ergibt sich erst mit ' +
-          'Querschnitt, Laenge, Haeufung und Gleichzeitigkeit.',
+        // Die Zahl und die Charakteristik stehen als Platzhalter im Satz und
+        // nicht davor: wo im Satz sie stehen, gehoert zur Sprache.
+        grund: format(
+          t(
+            'contract.load.notStated',
+            'Continuous power not stated. {a} A (characteristic {c}) is the tripping threshold, not the permissible continuous load — that follows only from cross-section, length, grouping and simultaneity.',
+          ),
+          { a: punkt.absicherungA, c: punkt.charakteristik },
+        ),
       }
     : { watt: punkt.dauerleistungW, herkunft: 'angegeben' }
 
@@ -139,7 +144,7 @@ export type Ortsauskunft =
  * andere Frage. Sie kommt als `gefunden: false` mit genau diesem Grund zurueck,
  * damit der Aufrufer den Unterschied zu „Id unbekannt" sieht.
  */
-export const ort = (gebaeude: Gebaeude, objektId: string): Ortsauskunft => {
+export const ort = (gebaeude: Gebaeude, objektId: string, t: Uebersetzen = quelle): Ortsauskunft => {
   const punkt = gebaeude.punkte.find((p) => p.id === objektId)
   const verteilung = gebaeude.verteilungen.find((v) => v.id === objektId)
   const raumId =
@@ -152,19 +157,31 @@ export const ort = (gebaeude: Gebaeude, objektId: string): Ortsauskunft => {
     if (strecke) {
       return {
         gefunden: false,
-        grund:
-          `„${strecke.bezeichnung}" ist eine Strecke und verbindet zwei Raeume — ` +
-          'sie hat keinen Ort. Frage ihre Enden.',
+        grund: format(
+          t(
+            'contract.place.isRoute',
+            '"{name}" is a route and connects two rooms — it has no place. Ask its ends.',
+          ),
+          { name: strecke.bezeichnung },
+        ),
       }
     }
-    return { gefunden: false, grund: `Kein Gebaeude-Objekt mit der Id „${objektId}".` }
+    return {
+      gefunden: false,
+      grund: format(t('contract.place.noObject', 'No building object with the id "{id}".'), {
+        id: objektId,
+      }),
+    }
   }
 
   const raum = gebaeude.raeume.find((r) => r.id === raumId)
   if (!raum) {
     return {
       gefunden: false,
-      grund: `Objekt „${objektId}" verweist auf den Raum „${raumId}", den es nicht gibt.`,
+      grund: format(
+        t('contract.place.noSuchRoom', 'Object "{id}" points at the room "{raum}", which does not exist.'),
+        { id: objektId, raum: raumId },
+      ),
     }
   }
   return {
@@ -201,20 +218,39 @@ export type Geschwister =
  * sie liest sich als „teilt sich mit niemandem" und ist damit eine Zusicherung,
  * die das Gebaeude nie gegeben hat. Deshalb `bekannt: false` mit Grund.
  */
-export const kreisGeschwister = (gebaeude: Gebaeude, punktId: string): Geschwister => {
+export const kreisGeschwister = (
+  gebaeude: Gebaeude,
+  punktId: string,
+  t: Uebersetzen = quelle,
+): Geschwister => {
   const p = gebaeude.punkte.find((x) => x.id === punktId)
-  if (!p) return { bekannt: false, grund: `Kein Anschlusspunkt mit der Id „${punktId}".` }
+  if (!p) {
+    return {
+      bekannt: false,
+      grund: format(t('contract.siblings.noPoint', 'No connection point with the id "{id}".'), {
+        id: punktId,
+      }),
+    }
+  }
   if (!p.stromkreisId) {
     return {
       bekannt: false,
-      grund: `Fuer „${p.bezeichnung}" ist kein Stromkreis angegeben.`,
+      grund: format(t('contract.siblings.noCircuit', 'No circuit is stated for "{name}".'), {
+        name: p.bezeichnung,
+      }),
     }
   }
   const kreis = gebaeude.stromkreise.find((k) => k.id === p.stromkreisId)
   if (!kreis) {
     return {
       bekannt: false,
-      grund: `„${p.bezeichnung}" verweist auf den Stromkreis „${p.stromkreisId}", den es nicht gibt.`,
+      grund: format(
+        t(
+          'contract.siblings.noSuchCircuit',
+          '"{name}" points at the circuit "{kreis}", which does not exist.',
+        ),
+        { name: p.bezeichnung, kreis: p.stromkreisId },
+      ),
     }
   }
 
@@ -330,12 +366,24 @@ export type MangelErgebnis =
  * nicht gibt, wird abgelehnt statt abgelegt: sie waere ein Zettel ohne
  * Empfaenger, und der faellt niemandem auf.
  */
-export const mangelMelden = (gebaeude: Gebaeude, mangel: Mangel): MangelErgebnis => {
+export const mangelMelden = (
+  gebaeude: Gebaeude,
+  mangel: Mangel,
+  t: Uebersetzen = quelle,
+): MangelErgebnis => {
   if (mangel.befund.trim() === '') {
-    return { ok: false, grund: 'Ein Mangel ohne Befund ist keine Meldung.' }
+    return {
+      ok: false,
+      grund: t('contract.defect.noFinding', 'A defect without a finding is not a report.'),
+    }
   }
   if (gebaeude.maengel.some((m) => m.id === mangel.id)) {
-    return { ok: false, grund: `Ein Mangel mit der Id „${mangel.id}" ist schon gemeldet.` }
+    return {
+      ok: false,
+      grund: format(t('contract.defect.duplicate', 'A defect with the id "{id}" is already reported.'), {
+        id: mangel.id,
+      }),
+    }
   }
   const kennt =
     gebaeude.punkte.some((x) => x.id === mangel.hausObjektId) ||
@@ -347,7 +395,13 @@ export const mangelMelden = (gebaeude: Gebaeude, mangel: Mangel): MangelErgebnis
   if (!kennt) {
     return {
       ok: false,
-      grund: `Das Gebaeude kennt kein Objekt „${mangel.hausObjektId}" — die Meldung haette keinen Empfaenger.`,
+      grund: format(
+        t(
+          'contract.defect.noRecipient',
+          'The building knows no object "{id}" — the report would have no recipient.',
+        ),
+        { id: mangel.hausObjektId },
+      ),
     }
   }
   return { ok: true, gebaeude: { ...gebaeude, maengel: [...gebaeude.maengel, mangel] } }

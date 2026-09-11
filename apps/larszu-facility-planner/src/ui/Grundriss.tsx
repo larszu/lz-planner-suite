@@ -32,11 +32,15 @@
 // was sie sind: noch nicht verortet.
 // ───────────────────────────────────────────────────────────────────────────
 import { useRef, useState } from 'react'
+import { useT } from '../i18n'
+import { bauformText } from './beschriftungen'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { punkteMitLage } from '../domain/gebaeudeAuskunft'
 import { anteilAusMeter, meterAusAnteil } from '../lib/massstab'
 
 export function Grundriss() {
+  const { t, format } = useT()
+  const BAUFORM_TEXT = bauformText(t)
   const gebaeude = useGebaeudeStore((s) => s.gebaeude)
   const raumAendern = useGebaeudeStore((s) => s.raumAendern)
   const punktAendern = useGebaeudeStore((s) => s.punktAendern)
@@ -99,8 +103,10 @@ export function Grundriss() {
     return (
       <section>
         <p className="leer">
-          Noch kein Raum angelegt. Ein Grundriss gehört zu einem Raum — lege zuerst unter
-          „Anschlusspunkte" einen an.
+          {t(
+            'plan.noRoom',
+            'No room created yet. A floor plan belongs to a room — create one under "Connection points" first.',
+          )}
         </p>
       </section>
     )
@@ -116,7 +122,7 @@ export function Grundriss() {
             setGewaehlt('')
             setBildFehlt(false)
           }}
-          aria-label="Raum"
+          aria-label={t('common.room', 'Room')}
         >
           {gebaeude.raeume.map((r) => (
             <option key={r.id} value={r.id}>
@@ -136,8 +142,8 @@ export function Grundriss() {
                 : undefined,
             })
           }}
-          placeholder="Bildquelle (Pfad oder URL)"
-          aria-label="Bildquelle"
+          placeholder={t('plan.source.placeholder', 'Image source (path or URL)')}
+          aria-label={t('plan.source', 'Image source')}
           size={38}
         />
         <input
@@ -153,16 +159,16 @@ export function Grundriss() {
               grundriss: { quelle: grundriss?.quelle ?? '', meterProBild: meter },
             })
           }}
-          placeholder="m/Bild"
-          aria-label="Meter je Bildbreite"
+          placeholder={t('plan.scale.placeholder', 'm/image')}
+          aria-label={t('plan.scale', 'Metres per image width')}
         />
-        <span className="leise">Meter je Bildbreite</span>
+        <span className="leise">{t('plan.scale', 'Metres per image width')}</span>
         <select
           value={gewaehlt}
           onChange={(e) => setGewaehlt(e.target.value)}
-          aria-label="Punkt zum Setzen"
+          aria-label={t('plan.pick.aria', 'Point to place')}
         >
-          <option value="">Punkt zum Setzen …</option>
+          <option value="">{t('plan.pick.none', 'Point to place …')}</option>
           {punkteDesRaums.map((p) => (
             <option key={p.id} value={p.id}>
               {p.bezeichnung}
@@ -173,9 +179,10 @@ export function Grundriss() {
 
       {!setzbar && (
         <p className="leer">
-          Ohne Massstab wird nichts gesetzt. Ein Klick ins Bild ist ein Bruchteil einer Bildbreite;
-          erst „Meter je Bildbreite" macht daraus eine Länge. Eine hier geratene Zahl sähe im Plan
-          aus wie eine Auskunft des Hauses.
+          {t(
+            'plan.noScale',
+            'Without a scale nothing is placed. A click in the image is a fraction of an image width; only "metres per image width" turns that into a length. A number guessed here would look in the plan like a statement of the building.',
+          )}
         </p>
       )}
 
@@ -185,12 +192,22 @@ export function Grundriss() {
         onClick={setzen}
       >
         {grundriss?.quelle && !bildFehlt ? (
-          <img src={grundriss.quelle} alt={`Grundriss ${raum?.name ?? ''}`} onError={() => setBildFehlt(true)} />
+          <img
+            src={grundriss.quelle}
+            alt={format(t('plan.image.alt', 'Floor plan of {name}'), { name: raum?.name ?? '' })}
+            onError={() => setBildFehlt(true)}
+          />
         ) : (
           <p className="leer">
             {grundriss?.quelle
-              ? 'Das Bild liegt auf diesem Rechner nicht vor. Die Lagen bleiben gültig — sie stehen in Metern, nicht in Pixeln.'
-              : 'Kein Grundriss hinterlegt. Die Lagen lassen sich trotzdem setzen, sobald ein Massstab da ist.'}
+              ? t(
+                  'plan.image.missing',
+                  'The image is not present on this machine. The positions stay valid — they are in metres, not in pixels.',
+                )
+              : t(
+                  'plan.image.none',
+                  'No floor plan stored. The positions can still be set as soon as a scale is there.',
+                )}
           </p>
         )}
 
@@ -205,7 +222,11 @@ export function Grundriss() {
               key={p.id}
               className={p.id === gewaehlt ? 'marke gewaehlt' : 'marke'}
               style={{ left: `${links * 100}%`, top: `${oben * 100}%` }}
-              title={`${p.bezeichnung} — ${p.lage.xM} m / ${p.lage.yM} m`}
+              title={format(t('plan.marker.title', '{name} — {x} m / {y} m'), {
+                name: p.bezeichnung,
+                x: p.lage.xM,
+                y: p.lage.yM,
+              })}
             >
               {p.bezeichnung}
             </span>
@@ -216,13 +237,15 @@ export function Grundriss() {
       <div className="tabelle-rahmen">
         <table>
           <caption>
-            Punkte dieses Raums. „Noch nicht verortet" ist eine Angabe und keine Lücke — deshalb
-            steht hier kein 0/0.
+            {t(
+              'plan.table.caption',
+              'Points of this room. "Not placed yet" is a statement and not a gap — that is why no 0/0 stands here.',
+            )}
           </caption>
           <thead>
             <tr>
-              <th>Punkt</th>
-              <th>Bauform</th>
+              <th>{t('dist.col.point', 'Point')}</th>
+              <th>{t('points.col.form', 'Housing')}</th>
               <th className="rechts">x (m)</th>
               <th className="rechts">y (m)</th>
               <th />
@@ -232,7 +255,13 @@ export function Grundriss() {
             {punkteDesRaums.map((p) => (
               <tr key={p.id}>
                 <td>{p.bezeichnung}</td>
-                <td>{p.bauform ?? <span className="leise">nicht angegeben</span>}</td>
+                <td>
+                  {p.bauform ? (
+                    BAUFORM_TEXT[p.bauform]
+                  ) : (
+                    <span className="leise">{t('common.notStated', 'not stated')}</span>
+                  )}
+                </td>
                 <td className="rechts">
                   <input
                     className="schmal rechts"
@@ -240,7 +269,7 @@ export function Grundriss() {
                     step={0.1}
                     value={p.lage ? String(p.lage.xM) : ''}
                     onChange={(e) => setzeAchse(p.id, 'xM', e.target.value)}
-                    aria-label={`x von ${p.bezeichnung} in Metern`}
+                    aria-label={format(t('plan.x.aria', 'x of {name} in metres'), { name: p.bezeichnung })}
                   />
                 </td>
                 <td className="rechts">
@@ -250,7 +279,7 @@ export function Grundriss() {
                     step={0.1}
                     value={p.lage ? String(p.lage.yM) : ''}
                     onChange={(e) => setzeAchse(p.id, 'yM', e.target.value)}
-                    aria-label={`y von ${p.bezeichnung} in Metern`}
+                    aria-label={format(t('plan.y.aria', 'y of {name} in metres'), { name: p.bezeichnung })}
                   />
                 </td>
                 <td>
@@ -260,10 +289,10 @@ export function Grundriss() {
                       className="still"
                       onClick={() => punktAendern(p.id, { lage: undefined })}
                     >
-                      Lage löschen
+                      {t('plan.clearPosition', 'Clear position')}
                     </button>
                   ) : (
-                    <span className="leise">noch nicht verortet</span>
+                    <span className="leise">{t('plan.notPlaced', 'not placed yet')}</span>
                   )}
                 </td>
               </tr>
@@ -275,8 +304,10 @@ export function Grundriss() {
       {ohneLage.length > 0 && setzbar && (
         <p className="leer">
           {ohneLage.length === punkteDesRaums.length
-            ? 'Wähle oben einen Punkt und klicke ins Feld, um ihn zu verorten.'
-            : `Noch ohne Lage: ${ohneLage.map((p) => p.bezeichnung).join(', ')}.`}
+            ? t('plan.hint.pickFirst', 'Choose a point above and click into the field to place it.')
+            : format(t('plan.hint.without', 'Still without a position: {namen}.'), {
+                namen: ohneLage.map((p) => p.bezeichnung).join(', '),
+              })}
         </p>
       )}
     </section>

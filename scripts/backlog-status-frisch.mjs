@@ -117,7 +117,36 @@ const ersterSatz = (t) => {
 }
 
 const text = readFileSync(DATEI, 'utf8')
-const bloecke = text.split(/\n(?=### )/)
+
+/**
+ * Die Bloecke — getrennt an JEDER Ueberschrift, nicht nur an `###`.
+ *
+ * DIE ERSTE FASSUNG TRENNTE NUR AN `### `, und das hat am 2026-09-11 eine
+ * falsche Anschuldigung erzeugt. Der LETZTE Eintrag der Datei bekam damit
+ * alles ab, was nach ihm kam — hier die ganze Tabelle der
+ * Eigentuemer-Entscheidungen, die naturgemaess voller „entschieden" und
+ * „gebaut" steht. B-71 sagte in seiner Kopfzeile „offen" und im
+ * angeblichen Rumpf „entschieden 2026-09-07: BEIDES…", also eine Zeile aus
+ * E-5, die fuenfhundert Zeilen tiefer steht.
+ *
+ * Dass es nicht frueher auffiel, ist Zufall: es traf immer nur den letzten
+ * Eintrag, und der sagte bis dahin nie „offen". Ein Waechter, der bei
+ * einem richtigen Eintrag anschlaegt, wird abgeschaltet und nicht gelesen —
+ * und sein Befund hier war besonders irrefuehrend, weil er einen BELEG
+ * mitlieferte, der aus einem fremden Abschnitt stammte.
+ */
+const bloecke = text.split(/\n(?=#{2,3} )/)
+// Die Gegenprobe zur Trennung: ein Block darf NICHT ueber die naechste
+// Ueberschrift hinauslaufen, egal welcher Ebene.
+{
+  const probe = '### A\n* **Status:** offen.\n\n## Andere\n\nHier steht gebaut.\n'
+  const teile = probe.split(/\n(?=#{2,3} )/)
+  if (teile.length !== 2 || teile[1].startsWith('### ')) {
+    console.error('Die Block-Trennung laeuft ueber die naechste Ueberschrift hinaus.')
+    process.exit(1)
+  }
+}
+
 const funde = []
 const ohneStatus = []
 let geprueft = 0

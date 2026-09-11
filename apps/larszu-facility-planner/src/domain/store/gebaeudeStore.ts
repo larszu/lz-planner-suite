@@ -30,13 +30,14 @@ import {
   type Verteilung,
 } from '../modell'
 import { mangelMelden } from '../vertrag'
+import type { Uebersetzen } from '../../i18n/quelle'
 
 const KEY = STORAGE_KEYS.gebaeude
 
 const laden = (): Gebaeude => {
   try {
     const roh = localStorage.getItem(KEY)
-    if (!roh) return leeresGebaeude('haus-1', 'Gebäude')
+    if (!roh) return leeresGebaeude('haus-1', 'Building')
     const g = JSON.parse(roh) as Partial<Gebaeude>
     // Fehlende Listen werden ERGAENZT und nicht als leer geglaubt: eine aeltere
     // Datei kennt ein spaeter dazugekommenes Feld nicht, und `undefined.map`
@@ -46,9 +47,9 @@ const laden = (): Gebaeude => {
     // `heileGebaeude` fuellt Listen, die als `null` oder `undefined` IN der
     // Datei stehen. Der Spread allein reicht dafuer nicht — ein
     // ausgeschriebenes `"trassen": null` ueberschreibt die Vorgabe.
-    return heileGebaeude({ ...leeresGebaeude(g.id ?? 'haus-1', g.name ?? 'Gebäude'), ...g })
+    return heileGebaeude({ ...leeresGebaeude(g.id ?? 'haus-1', g.name ?? 'Building'), ...g })
   } catch {
-    return leeresGebaeude('haus-1', 'Gebäude')
+    return leeresGebaeude('haus-1', 'Building')
   }
 }
 
@@ -83,7 +84,7 @@ interface GebaeudeState {
   schaltstelleAnlegen: (s: Omit<Schaltstelle, 'id'>) => string
   schaltstelleAendern: (id: string, patch: Partial<Omit<Schaltstelle, 'id'>>) => void
   /** Der eine Rueckweg. Gibt den Grund zurueck, wenn die Meldung abgelehnt wird. */
-  mangelEintragen: (m: Omit<Mangel, 'id'>) => string | undefined
+  mangelEintragen: (m: Omit<Mangel, 'id'>, t?: Uebersetzen) => string | undefined
   entfernen: (id: string) => void
   /**
    * Ein eingelesenes Gebaeude uebernehmen (Issue #2).
@@ -165,8 +166,11 @@ export const useGebaeudeStore = create<GebaeudeState>((set, get) => ({
       schaltstellen: (g.schaltstellen ?? []).map((x) => (x.id === id ? { ...x, ...patch } : x)),
     })),
 
-  mangelEintragen: (m) => {
-    const ergebnis = mangelMelden(get().gebaeude, { ...m, id: uuidv4() })
+  mangelEintragen: (m, t) => {
+    // Der Uebersetzer geht DURCH den Store an den Vertrag. Ohne ihn liefert
+    // `mangelMelden` die englische Quelle — das ist die Rueckfallebene und
+    // kein Platzhalter.
+    const ergebnis = mangelMelden(get().gebaeude, { ...m, id: uuidv4() }, t)
     if (!ergebnis.ok) return ergebnis.grund
     mit(set, () => ergebnis.gebaeude)
     return undefined

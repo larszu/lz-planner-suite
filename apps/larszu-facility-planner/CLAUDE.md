@@ -16,7 +16,7 @@ npm run build          # tsc -b && vite build — MUSS vor jedem Push sauber sei
 npm run lint
 npm test               # vitest + grenze:check + lang:check
 npm run grenze:check   # die Grenze zum Show-Plan (ADR-006)
-npm run lang:check     # Quellsprache
+npm run lang:check     # Quellsprache (englisch, E-28)
 
 npm run electron:dev   # Desktop-Fassung lokal (Electron, electron/main.cjs)
 npm run dist:win       # Windows-Installer nach release/
@@ -67,9 +67,45 @@ Liste, `undefined` statt `false`.
 
 ## Konventionen
 
-- **Quellsprache: `de`.** Maschinenlesbar in `package.json` unter
+- **Quellsprache: `en`** (E-28, entschieden 2026-09-11 vom Eigentümer:
+  „Die Standard Sprache muss immer Englisch sein und über i18n muss man auf
+  deutsch übersetzen können."). Maschinenlesbar in `package.json` unter
   `avplan.sourceLanguage`, zweite Stelle die README; `lang:check` hält beide
-  zusammen.
+  zusammen. **Hier stand bis dahin `de`.**
+- **i18n:** Englisch steht als zweites Argument direkt im JSX —
+  `t('bereich.schluessel', 'English text')`. Es gibt **keine `en.ts`**: eine
+  englische Wörterbuch-Datei wäre die zweite Wahrheit (ADR-001) und liefe
+  beim nächsten Umbau gegen das JSX. Übersetzungen je Sprache in einer
+  eigenen Datei unter `src/i18n/` (heute `de.ts`), eingetragen in
+  `WOERTERBUECHER` (`src/i18n/index.ts`). **Eine weitere Sprache ist eine
+  Datei und ein Eintrag — keine Zeile Logik.**
+  Sätze NIE aus mehreren `t()`-Aufrufen zusammensetzen: die Wortstellung
+  gehört zur Sprache. Ein Schlüssel, ein ganzer Satz, Platzhalter über
+  `format()`.
+  **Die Vorgabe ist Englisch und nicht `navigator.language`** — ein deutscher
+  Rechner startet englisch, und wer Deutsch will, wählt es einmal in den
+  Einstellungen.
+  **`t()` immer ausgeschrieben**, nie hinter einem lokalen Helfer: der
+  Wächter liest Quelltext, und ein `mit(key, en, name)` machte ihn blind —
+  die Schlüssel fielen dann als verwaiste Wörterbuch-Einträge auf, also an
+  der falschen Stelle und mit der falschen Begründung.
+  Der Vertrag und die Module unter `domain/` nehmen den Übersetzer als
+  LETZTEN Parameter mit Vorgabe: `t: Uebersetzen = quelle` aus
+  `src/i18n/quelle.ts`. Die Vorgabe liefert die englische Quelle, damit ein
+  Test ohne Wörterbuch genau die Rückfallebene misst, die im Betrieb
+  erscheint. `quelle.ts` hat **keine Abhängigkeit** — deshalb zieht der
+  Vertrag darüber keinen Store mit hoch.
+  Beschriftungs-Tabellen gehören in eine **Funktion**, nie in eine
+  Modul-Konstante: die wird beim Laden einmal gebaut und bliebe in der
+  Sprache stehen, die damals galt.
+  **Normbegriffe bleiben, wie sie heissen.** `TN-S`, `RCD Typ B`, `CEE 63`,
+  `KNX`, `DALI`, `DGUV V3` sind Namen und keine Beschriftungen; sie zu
+  übersetzen hiesse, den Prüfbericht nicht mehr wiederzufinden. Übersetzt
+  wird, was das Werkzeug SAGT — nicht, wie die Anlage HEISST.
+  Gemessen wird beides: `npm run lang:check` prüft, dass die Quelle englisch
+  ist, `uebersetzungVollstaendig.node.test.ts` prüft, dass jeder Schlüssel
+  eine deutsche Fassung hat, keine Fassung verwaist ist und die Platzhalter
+  beider Seiten übereinstimmen.
 - **Keine Emojis im Code** außer auf ausdrücklichen Wunsch.
 - **Der Abgleich gegen ADR-006 lebt in der Suite**, nicht hier: dort liegen ADR
   und Code im selben Baum. Eine Abschrift der sechs Namen in diesem Repo wäre

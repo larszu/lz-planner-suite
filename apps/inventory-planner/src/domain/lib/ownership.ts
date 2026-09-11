@@ -48,11 +48,28 @@ import type { InventoryItem, InventoryOwnership } from '../types/inventory'
 /** Kanonisches Deutsch fuer Blaetter — dieselbe Regel wie `deliveryIssueText`:
  *  der Stand eines Dokuments wird aus seinem Inhalt gerechnet, uebersetzte
  *  Zeilen ergaeben je Sprache einen anderen Stand. */
-export const OWNERSHIP_LABEL: Record<InventoryOwnership, string> = {
-  owned: 'Eigen',
-  rented: 'Gemietet',
-  subhire: 'Sub-Hire',
-}
+/**
+ * Die Beschriftung einer Eigentumsart.
+ *
+ * WARUM SIE EIN `t` NIMMT UND KEINE TABELLE MEHR IST (2026-09-11). Sie stand
+ * hier als `OWNERSHIP_LABEL` mit drei deutschen Wörtern — eine
+ * Domänen-Konstante, die eine Oberflächen-Entscheidung traf. Seit die
+ * Quellsprache Englisch ist und Deutsch eine Übersetzung, kann sie das nicht
+ * mehr: eine Konstante kennt die gewählte Sprache nicht.
+ *
+ * Die Domäne bleibt trotzdem rein. `t` ist ein Parameter mit Vorgabe, und die
+ * Vorgabe liefert die QUELLE — die Tests rufen sie ohne Argument und
+ * bekommen Englisch, ohne eine i18n-Schicht zu laden.
+ */
+export type { Uebersetzen } from '../../i18n/quelle'
+import { quelle, type Uebersetzen } from '../../i18n/quelle'
+
+export const ownershipLabel = (o: InventoryOwnership, t: Uebersetzen = quelle): string =>
+  ({
+    owned: t('ownership.owned', 'Owned'),
+    rented: t('ownership.rented', 'Rented'),
+    subhire: t('ownership.subhire', 'Sub-hire'),
+  })[o]
 
 /** Traegt dieser Artikel fremdes Material? `undefined` gilt als eigenes:
  *  der Bestand ist alt und die meisten Positionen sind es auch. */
@@ -98,17 +115,21 @@ export const subhireStatus = (
 export const ownershipNote = (
   item: { ownership?: InventoryOwnership; supplier?: string; returnDue?: string },
   heute: string,
+  t: Uebersetzen = quelle,
 ): string => {
   const status = subhireStatus(item, heute)
   if (status === 'owned') return ''
-  const teile: string[] = [OWNERSHIP_LABEL[item.ownership as InventoryOwnership]]
+  // DREI ANGABEN, MIT PUNKTEN GETRENNT — kein zusammengesetzter Satz. Die
+  // Regel „nie mehrere t()-Aufrufe zu einem Satz fügen" gilt der
+  // Wortstellung; eine Aufzählung hat keine.
+  const teile: string[] = [ownershipLabel(item.ownership as InventoryOwnership, t)]
   const lieferant = (item.supplier ?? '').trim()
   // Ohne Lieferant steht es DA und wird nicht weggelassen: „es geht zurueck,
   // aber wir wissen nicht wohin" ist die Auskunft, die jemand braucht.
-  teile.push(lieferant || 'Lieferant unbekannt')
-  if (status === 'no-date') teile.push('kein Rückgabedatum')
-  else if (status === 'overdue') teile.push(`zurück seit ${item.returnDue}`)
-  else teile.push(`zurück ${item.returnDue}`)
+  teile.push(lieferant || t('ownership.supplierUnknown', 'supplier unknown'))
+  if (status === 'no-date') teile.push(t('ownership.noReturnDate', 'no return date'))
+  else if (status === 'overdue') teile.push(`${t('ownership.backSince', 'back since')} ${item.returnDue}`)
+  else teile.push(`${t('ownership.back', 'back')} ${item.returnDue}`)
   return teile.join(' · ')
 }
 

@@ -83,6 +83,7 @@ import { deckung, nachzubestellen } from '../domain/lib/mindestmenge'
 import { fristenLage } from '../domain/lib/fristen'
 import { useCheckoutStore } from '../domain/store/checkoutStore'
 import { toCsv } from '../lib/csv'
+import { useT, locale } from '../i18n'
 import type { ImportReport } from '../domain/store/inventoryStore'
 
 /**
@@ -93,10 +94,21 @@ import type { ImportReport } from '../domain/store/inventoryStore'
  * soll. Wer die Grammatik nicht hinbekommt, dem glaubt man die Zahl auch
  * nicht.
  */
-const zaehlwort = (n: number, eins: string, viele: string) => `${n} ${n === 1 ? eins : viele}`
+// `zaehlwort` ist am 2026-09-11 weggefallen. Es baute Saetze aus Fragmenten
+// („3" + „Artikel liegen" + „unter …") — im Deutschen ging das auf, im
+// Englischen nicht, und genau davor warnt die i18n-Regel dieser Suite: ein
+// Schluessel, ein ganzer Satz, Platzhalter ueber `format()`.
 
 /** Ein Block der Aufschlüsselung. Fünf davon sehen gleich aus — also einmal. */
-function Aufschluesselung({ titel, zeilen }: { titel: string; zeilen: CountValue[] }) {
+function Aufschluesselung({
+  titel,
+  zeilen,
+  t,
+}: {
+  titel: string
+  zeilen: CountValue[]
+  t: (key: string, en: string) => string
+}) {
   if (zeilen.length === 0) return null
   return (
     <div className="block">
@@ -109,8 +121,8 @@ function Aufschluesselung({ titel, zeilen }: { titel: string; zeilen: CountValue
         <thead>
           <tr>
             <th>{titel}</th>
-            <th className="rechts">Positionen</th>
-            <th className="rechts">Stück</th>
+            <th className="rechts">{t('report.col.lines', 'Lines')}</th>
+            <th className="rechts">{t('report.col.pieces', 'Pieces')}</th>
           </tr>
         </thead>
         <tbody>
@@ -128,6 +140,7 @@ function Aufschluesselung({ titel, zeilen }: { titel: string; zeilen: CountValue
 }
 
 export function Bericht() {
+  const { t, format, sprache } = useT()
   const items = useInventoryStore((s) => s.items)
   const nodes = useInventoryStore((s) => s.nodes)
   const units = useInventoryStore((s) => s.units)
@@ -194,8 +207,13 @@ export function Bericht() {
       // Kein stiller Fehlschlag: eine Datei, die nicht passt, ist etwas
       // anderes als eine, die nichts enthaelt.
       setFehler(
-        `„${f.name}" ist keine Datei im Format avplan-inventory — oder ihre ` +
-          'Version ist neuer als die, die diese App liest.',
+        format(
+          t(
+            'report.import.badFile',
+            '"{name}" is not a file in the avplan-inventory format — or its version is newer than the one this app reads.',
+          ),
+          { name: f.name },
+        ),
       )
       return
     }
@@ -205,7 +223,15 @@ export function Bericht() {
   const nachbestellListe = () => {
     const zeilen = nachzubestellen(lage)
     const csv = toCsv(
-      ['Artikel', 'Kategorie', 'Bestand', 'gebunden', 'verfuegbar', 'Mindestmenge', 'fehlt'],
+      [
+        t('report.csv.item', 'Item'),
+        t('report.csv.category', 'Category'),
+        t('report.csv.stock', 'Stock'),
+        t('report.csv.committed', 'committed'),
+        t('report.csv.available', 'available'),
+        t('report.csv.target', 'Target'),
+        t('report.csv.short', 'short'),
+      ],
       zeilen.map((z) => [
         z.model,
         z.category ?? '',
@@ -231,11 +257,11 @@ export function Bericht() {
       wurzel.name,
       wurzel.code,
       packliste,
-      new Date().toLocaleDateString('de-DE'),
+      new Date().toLocaleDateString(locale(sprache)),
     )
     const w = window.open('', '_blank')
     if (!w) {
-      setFehler('Das Blatt konnte nicht geöffnet werden — der Browser hat das Fenster blockiert.')
+      setFehler(t('report.printBlocked', 'The sheet could not be opened — the browser blocked the window.'))
       return
     }
     w.document.write(html)
@@ -248,24 +274,24 @@ export function Bericht() {
       <div className="kennzahlen">
         <div className="kachel">
           <strong>{zahlen.itemCount}</strong>
-          <span>Positionen</span>
+          <span>{t('report.tile.lines', 'Lines')}</span>
         </div>
         <div className="kachel">
           <strong>{zahlen.totalUnits}</strong>
-          <span>Stück gesamt</span>
+          <span>{t('report.tile.pieces', 'Pieces in total')}</span>
         </div>
         <div className="kachel">
           <strong>{zahlen.serializedCount}</strong>
-          <span>serialisierte Einheiten</span>
+          <span>{t('report.tile.units', 'serialised units')}</span>
         </div>
         <div className="kachel">
           <strong>
-            {zahlen.dailyRentalValue.toLocaleString('de-DE', {
+            {zahlen.dailyRentalValue.toLocaleString(locale(sprache), {
               style: 'currency',
               currency: 'EUR',
             })}
           </strong>
-          <span>Tagesmiete</span>
+          <span>{t('report.tile.dailyRate', 'Daily rate')}</span>
         </div>
         {/*
           Die einzige Kachel hier, die zu einer HANDLUNG fuehrt: nachbestellen
@@ -275,7 +301,7 @@ export function Bericht() {
         */}
         <div className={lage.unter > 0 ? 'kachel achtung' : 'kachel'}>
           <strong>{lage.unter}</strong>
-          <span>unter Ziel</span>
+          <span>{t('report.tile.belowTarget', 'below target')}</span>
         </div>
         {/*
           Die zweite Kachel, die zu einer Handlung fuehrt. Sie zaehlt
@@ -287,7 +313,7 @@ export function Bericht() {
         */}
         <div className={fristen.ueberfaellig > 0 ? 'kachel achtung' : 'kachel'}>
           <strong>{fristen.ueberfaellig + fristen.faellig}</strong>
-          <span>Fristen fällig</span>
+          <span>{t('report.tile.dueChecks', 'checks due')}</span>
         </div>
       </div>
       {/*
@@ -297,29 +323,41 @@ export function Bericht() {
       */}
       <p className={zahlen.itemsWithoutPrice > 0 ? 'warnung' : 'hinweis'}>
         {zahlen.itemsWithoutPrice > 0
-          ? `${zahlen.itemsWithoutPrice} von ${zahlen.itemCount} Positionen haben keinen Mietpreis — die Tagesmiete oben ist die Summe über die übrigen, nicht über den Bestand.`
-          : 'Jede Position hat einen Mietpreis; die Tagesmiete deckt den ganzen Bestand.'}
+          ? format(
+              t(
+                'report.noPrice',
+                '{without} of {all} lines carry no rental price — the daily rate above is the sum over the rest, not over the stock.',
+              ),
+              { without: zahlen.itemsWithoutPrice, all: zahlen.itemCount },
+            )
+          : t('report.allPriced', 'Every line carries a rental price; the daily rate covers the whole stock.')}
       </p>
 
       <div className="spalten">
-        <Aufschluesselung titel="Kategorie" zeilen={zahlen.byCategory} />
-        <Aufschluesselung titel="Eigentum" zeilen={zahlen.byOwnership} />
-        <Aufschluesselung titel="Material-Art" zeilen={zahlen.byMaterial} />
-        <Aufschluesselung titel="Lagerort" zeilen={zahlen.byLocation} />
-        <Aufschluesselung titel="Zustand der Einheiten" zeilen={zahlen.unitsByCondition} />
+        <Aufschluesselung titel={t('report.by.category', 'Category')} zeilen={zahlen.byCategory} t={t} />
+        <Aufschluesselung titel={t('report.by.ownership', 'Ownership')} zeilen={zahlen.byOwnership} t={t} />
+        <Aufschluesselung titel={t('report.by.material', 'Material kind')} zeilen={zahlen.byMaterial} t={t} />
+        <Aufschluesselung titel={t('report.by.location', 'Location')} zeilen={zahlen.byLocation} t={t} />
+        <Aufschluesselung titel={t('report.by.condition', 'Unit condition')} zeilen={zahlen.unitsByCondition} t={t} />
       </div>
 
       {/* ── Unter Ziel ───────────────────────────────────────────────── */}
       <div className="block">
-        <h3>Unter Ziel</h3>
+        <h3>{t('report.belowTarget', 'Below target')}</h3>
         {lage.zeilen.length === 0 ? (
           // Ein Satz, kein Baukasten: die Wortstellung gehört zur Sprache,
           // und aus Fragmenten zusammengesetzt stünde hier ein Leerzeichen
           // vor dem Punkt.
           <p className="hinweis">
             {lage.unbewertet === 0
-              ? 'Der Bestand ist leer — es gibt nichts zu vergleichen.'
-              : `Für keinen der ${zaehlwort(lage.unbewertet, 'Artikel', 'Artikel')} im Bestand ist eine Mindestmenge hinterlegt. Ohne eine solche Zahl gibt es nichts zu vergleichen — die Spalte „Ziel" in der Bestands-Ansicht legt sie fest.`}
+              ? t('report.stockEmpty', 'The stock is empty — there is nothing to compare.')
+              : format(
+                  t(
+                    'report.noTargets',
+                    'Not one of the {n} items in stock has a minimum quantity. Without such a number there is nothing to compare — the "Target" column in the stock view sets it.',
+                  ),
+                  { n: lage.unbewertet },
+                )}
           </p>
         ) : (
           <>
@@ -331,25 +369,36 @@ export function Bericht() {
             */}
             <p className={lage.unter > 0 ? 'warnung' : 'hinweis'}>
               {lage.unter > 0
-                ? `${zaehlwort(lage.unter, 'Artikel liegt', 'Artikel liegen')} unter der hinterlegten Mindestmenge.`
-                : 'Kein Artikel liegt unter seiner hinterlegten Mindestmenge.'}
+                ? format(t('report.below.n', '{n} items are below their stored minimum quantity.'), { n: lage.unter })
+                : t('report.below.none', 'No item is below its stored minimum quantity.')}
               {lage.knapp > 0
-                ? ` ${zaehlwort(lage.knapp, 'Artikel steht', 'Artikel stehen')} genau darauf — die nächste Ausgabe reisst die Lücke.`
+                ? ' ' +
+                  format(
+                    t('report.below.exact', '{n} items sit exactly on it — the next checkout tears the gap open.'),
+                    { n: lage.knapp },
+                  )
                 : ''}
               {lage.unbewertet > 0
-                ? ` Für ${zaehlwort(lage.unbewertet, 'weiteren Artikel', 'weitere Artikel')} ist keine Mindestmenge hinterlegt; über sie sagt diese Liste nichts.`
+                ? ' ' +
+                  format(
+                    t(
+                      'report.below.unrated',
+                      'For {n} further items no minimum quantity is stored; this list says nothing about them.',
+                    ),
+                    { n: lage.unbewertet },
+                  )
                 : ''}
             </p>
             <div className="tabelle-rahmen">
               <table>
                 <thead>
                   <tr>
-                    <th>Artikel</th>
-                    <th className="rechts">Bestand</th>
-                    <th className="rechts">gebunden</th>
-                    <th className="rechts">verfügbar</th>
-                    <th className="rechts">Ziel</th>
-                    <th className="rechts">fehlt</th>
+                    <th>{t('report.csv.item', 'Item')}</th>
+                    <th className="rechts">{t('report.csv.stock', 'Stock')}</th>
+                    <th className="rechts">{t('report.csv.committed', 'committed')}</th>
+                    <th className="rechts">{t('report.csv.available', 'available')}</th>
+                    <th className="rechts">{t('report.csv.target', 'Target')}</th>
+                    <th className="rechts">{t('report.csv.short', 'short')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -385,8 +434,8 @@ export function Bericht() {
               </button>
               <span className="hinweis">
                 {lage.unter === 0
-                  ? 'Nichts nachzubestellen.'
-                  : 'Nur die Artikel unter Ziel, mit der Fehlmenge.'}
+                  ? t('report.reorder.none', 'Nothing to reorder.')
+                  : t('report.reorder.hint', 'Only the items below target, with the shortfall.')}
               </span>
             </div>
           </>
@@ -395,22 +444,23 @@ export function Bericht() {
 
       {/* ── Packliste ────────────────────────────────────────────────── */}
       <div className="block">
-        <h3>Packliste</h3>
+        <h3>{t('report.packList', 'Pack list')}</h3>
         {wurzeln.length === 0 ? (
           <p className="hinweis">
-            Kein Wurzel-Lagerort angelegt. Eine Packliste beschreibt einen
-            Container mit allem, was darin liegt — ohne Baum gibt es nichts zu
-            beschreiben.
+            {t(
+              'report.packList.empty',
+              'No root storage location set up. A pack list describes a container with everything inside it — without a tree there is nothing to describe.',
+            )}
           </p>
         ) : (
           <>
             <div className="zeile">
               <label>
-                Wurzel
+                {t('report.packList.root', 'Root')}
                 <select
                   value={packRoot}
                   onChange={(e) => setPackRoot(e.target.value)}
-                  aria-label="Wurzel-Lagerort für die Packliste"
+                  aria-label={t('report.packRoot.aria', 'Root location for the pack list')}
                 >
                   <option value="">— Lagerort —</option>
                   {wurzeln.map((n) => (
@@ -421,12 +471,15 @@ export function Bericht() {
                 </select>
               </label>
               <button type="button" onClick={blattOeffnen} disabled={packliste.length === 0}>
-                Blatt öffnen (A4)
+                {t('report.packList.open', 'Open sheet (A4)')}
               </button>
             </div>
             {packRoot && (
               <p className="hinweis">
-                {packliste.length} Knoten, {packListTotalCount(packliste)} Stück.
+                {format(t('report.packList.count', '{nodes} nodes, {pieces} pieces.'), {
+                  nodes: packliste.length,
+                  pieces: packListTotalCount(packliste),
+                })}
               </p>
             )}
           </>
@@ -435,31 +488,40 @@ export function Bericht() {
 
       {/* ── Austausch ────────────────────────────────────────────────── */}
       <div className="block">
-        <h3>Bestand austauschen</h3>
+        <h3>{t('report.exchange', 'Exchange stock')}</h3>
+        {/* Der Formatname steht IM Satz und nicht daneben: „Format" und
+            „avplan-inventory" als zwei Stuecke zusammenzusetzen hiesse, die
+            Wortstellung festzulegen — und die gehoert zur Sprache. Der
+            Platzhalter traegt die Auszeichnung. */}
         <p className="hinweis">
-          Format <code>avplan-inventory</code> — dieselbe Datei, die die
-          Planer der Suite schreiben und lesen.
+          {format(
+            t(
+              'report.exchange.format',
+              'Format {name} — the same file the planners of the suite write and read.',
+            ),
+            { name: 'avplan-inventory' },
+          )}
         </p>
         <div className="zeile">
           <button type="button" onClick={speichern}>
-            Bestand exportieren
+            {t('report.exchange.export', 'Export stock')}
           </button>
           <label>
-            Beim Einlesen
+            {t('report.exchange.onImport', 'When reading in')}
             <select
               value={modus}
               onChange={(e) => setModus(e.target.value as 'merge' | 'replace')}
-              aria-label="Wie soll eingelesen werden"
+              aria-label={t('report.importMode.aria', 'How should it be read in')}
             >
-              <option value="merge">zusammenführen (nichts geht verloren)</option>
-              <option value="replace">ersetzen (Bestand wird überschrieben)</option>
+              <option value="merge">{t('report.importMode.merge', 'merge (nothing is lost)')}</option>
+              <option value="replace">{t('report.importMode.replace', 'replace (stock is overwritten)')}</option>
             </select>
           </label>
           <input
             ref={datei}
             type="file"
             accept="application/json,.json"
-            aria-label="Datei zum Einlesen"
+            aria-label={t('report.importFile.aria', 'File to read in')}
             onChange={(e) => {
               const f = e.target.files?.[0]
               if (f) void einlesen(f)

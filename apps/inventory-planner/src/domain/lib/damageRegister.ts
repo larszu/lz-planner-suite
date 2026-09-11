@@ -42,6 +42,7 @@
 
 import type { CheckoutRecord } from '../types/checkout'
 import type { CsvCell, CsvTable } from '../../lib/csv'
+import { quelle, type Uebersetzen } from '../../i18n/quelle'
 
 export interface DamageEntry {
   recordId: string
@@ -61,7 +62,13 @@ export interface DamageEntry {
   at: string
 }
 
-const UNBEKANNT = 'nicht benannt'
+/**
+ * Was dasteht, wenn eine Angabe fehlte.
+ *
+ * Als FUNKTION seit 2026-09-11 (E-28): eine Modul-Konstante bliebe in der
+ * Sprache stehen, die beim Laden galt.
+ */
+const unbekannt = (t: Uebersetzen): string => t('damage.unnamed', 'not named')
 
 /**
  * Alle Schaeden aller abgeschlossenen Vorgaenge, mit ihrer Zuordnung.
@@ -69,7 +76,8 @@ const UNBEKANNT = 'nicht benannt'
  * Neueste zuerst: wer das Fenster oeffnet, will wissen, was gerade
  * zurueckkam — die Rechnung dafuer geht diese Woche raus.
  */
-export const damageEntries = (records: CheckoutRecord[]): DamageEntry[] => {
+export const damageEntries = (records: CheckoutRecord[], t: Uebersetzen = quelle): DamageEntry[] => {
+  const UNBEKANNT = unbekannt(t)
   const out: DamageEntry[] = []
   for (const r of records) {
     for (const d of r.in?.damaged ?? []) {
@@ -109,9 +117,10 @@ export interface DamageTally {
 export const damageTally = (
   records: CheckoutRecord[],
   nach: 'person' | 'container' | 'job',
+  t: Uebersetzen = quelle,
 ): DamageTally[] => {
   const zaehler = new Map<string, number>()
-  for (const e of damageEntries(records)) {
+  for (const e of damageEntries(records, t)) {
     const k = nach === 'person' ? e.person : nach === 'container' ? e.container : e.job
     zaehler.set(k, (zaehler.get(k) ?? 0) + 1)
   }
@@ -125,14 +134,29 @@ export const damageTally = (
  *
  * Der Bedarf nennt sie beim Namen („feeds the invoice-or-absorb decision
  * directly"), und dafuer braucht sie genau diese Spalten: was, woran, wem,
- * wann. Kanonisches Deutsch, weil das Blatt einen Stand traegt.
+ * wann.
+ *
+ * DAS BLATT TRAEGT DIE SPRACHE DER OBERFLAECHE. Hier stand bis 2026-09-11
+ * „kanonisches Deutsch, weil das Blatt einen Stand traegt" — der Gedanke war
+ * richtig und die Folgerung falsch: ein Stand haelt sich an den ZAHLEN und
+ * am Zeitpunkt, nicht an der Spaltenueberschrift. Wer das Blatt an eine
+ * Versicherung im Ausland schickt, braucht die Ueberschriften in deren
+ * Sprache, und die Zahlen darunter bleiben dieselben.
  */
-export const damageTable = (records: CheckoutRecord[]): CsvTable => ({
-  headers: ['Zurück am', 'Objekt', 'Etiketten-Code', 'Schaden', 'Show', 'Ausgegeben an', 'Container'],
-  rows: damageEntries(records).map((e): CsvCell[] => [
+export const damageTable = (records: CheckoutRecord[], t: Uebersetzen = quelle): CsvTable => ({
+  headers: [
+    t('damage.csv.returnedOn', 'Returned on'),
+    t('damage.csv.object', 'Object'),
+    t('damage.csv.labelCode', 'Label code'),
+    t('damage.csv.damage', 'Damage'),
+    t('damage.csv.show', 'Show'),
+    t('damage.csv.issuedTo', 'Issued to'),
+    t('damage.csv.container', 'Container'),
+  ],
+  rows: damageEntries(records, t).map((e): CsvCell[] => [
     e.at.slice(0, 10),
     e.label,
-    e.code ?? 'kein Etikett',
+    e.code ?? t('damage.csv.noLabel', 'no label'),
     e.note,
     e.job,
     e.person,

@@ -77,7 +77,7 @@ import {
   versicherungsTabelle,
   carnetDatenblatt,
   geldText,
-  NICHT_ANGEGEBEN,
+  nichtAngegeben,
 } from '../domain/lib/insuranceSchedule'
 import { damageEntries, damageTally, damageTable } from '../domain/lib/damageRegister'
 import { committedByItem, commitmentNote } from '../domain/lib/inventoryCommitment'
@@ -87,13 +87,14 @@ import {
   anzugehen,
   alterMonate,
   terminVon,
-  FRIST_ART_LABEL,
+  fristArtLabels,
   fristArtLabel,
   istUnbekannteArt,
 } from '../domain/lib/fristen'
 import type { Frist, FristArt } from '../domain/types/inventory'
 import { EINGEBAUTE_FRIST_ARTEN } from '../domain/types/inventory'
 import { toCsv, type CsvTable } from '../lib/csv'
+import { useT } from '../i18n'
 
 /** Eine Tabelle als CSV herunterladen. Vier Knöpfe brauchen dasselbe. */
 const csvLaden = (tabelle: CsvTable, name: string) => {
@@ -108,6 +109,7 @@ const csvLaden = (tabelle: CsvTable, name: string) => {
 }
 
 export function WerteUndSchaeden() {
+  const { t, format } = useT()
   const items = useInventoryStore((s) => s.items)
   const units = useInventoryStore((s) => s.units)
   const updateUnit = useInventoryStore((s) => s.updateUnit)
@@ -133,8 +135,10 @@ export function WerteUndSchaeden() {
     const nachId = new Map(items.map((i) => [i.id, i.model]))
     // Kein Raten: eine Einheit ohne auffindbaren Artikel bekommt den
     // ausdruecklichen Platzhalter des Moduls, nicht einen leeren String.
-    return (u: { itemId: string }) => nachId.get(u.itemId) ?? NICHT_ANGEGEBEN
-  }, [items])
+    return (u: { itemId: string }) => nachId.get(u.itemId) ?? nichtAngegeben(t)
+    // `t` gehoert in die Abhaengigkeiten: sonst behaelt die Tabelle den
+    // Platzhalter der Sprache, die beim ersten Rendern galt.
+  }, [items, t])
 
   const artikelVon = useMemo(() => {
     const nachId = new Map(items.map((i) => [i.id, i]))
@@ -142,8 +146,8 @@ export function WerteUndSchaeden() {
   }, [items])
 
   const werte = useMemo(() => versicherungsListe(units, modellVon), [units, modellVon])
-  const schaeden = useMemo(() => damageEntries(records), [records])
-  const verteilung = useMemo(() => damageTally(records, nach), [records, nach])
+  const schaeden = useMemo(() => damageEntries(records, t), [records, t])
+  const verteilung = useMemo(() => damageTally(records, nach, t), [records, nach, t])
   const gebunden = useMemo(() => committedByItem(records, units), [records, units])
 
   // Die Uhr steht in der ANSICHT und nicht in der Ableitung: `fristenLage`
@@ -151,7 +155,11 @@ export function WerteUndSchaeden() {
   // unter `domain/`. Nur so ist die Ampel testbar, ohne die Systemzeit zu
   // stellen.
   const heute = new Date().toISOString().slice(0, 10)
-  const fristen = useMemo(() => fristenLage(units, items, heute, vorwarn), [units, items, heute, vorwarn])
+  // Die Beschriftungen der eingebauten Arten, einmal je Rendern. Als
+  // Modul-Konstante stuenden sie fuer immer in der Sprache, die beim Laden
+  // galt — dieselbe Falle wie bei der Reiter-Liste in `App.tsx`.
+  const ARTEN = fristArtLabels(t)
+  const fristen = useMemo(() => fristenLage(units, items, heute, vorwarn, t), [units, items, heute, vorwarn, t])
 
   const gebundeneZeilen = useMemo(
     () =>
@@ -197,27 +205,28 @@ export function WerteUndSchaeden() {
     <section className="werte">
       {/* ── Fristen ──────────────────────────────────────────────────── */}
       <div className="block">
-        <h3>Fristen</h3>
+        <h3>{t('checks.title', 'Inspection dates')}</h3>
         {units.length === 0 ? (
           <p className="hinweis">
-            Keine serialisierten Einheiten. Eine Prüffrist hängt am einzelnen
-            Gerät, nicht am Modell — „die ULXD2 sind im März geprüft" ist eine
-            Aussage über zwölf Geräte, von denen zwei in der Werkstatt standen.
+            {t(
+              'checks.empty',
+              'No serialised units. An inspection date belongs to the single device, not to the model — "the ULXD2 were checked in March" is a claim about twelve devices, two of which sat in the workshop.',
+            )}
           </p>
         ) : (
           <>
             <div className="kennzahlen">
               <div className={fristen.ueberfaellig > 0 ? 'kachel achtung' : 'kachel'}>
                 <strong>{fristen.ueberfaellig}</strong>
-                <span>überfällig</span>
+                <span>{t('checks.overdue', 'overdue')}</span>
               </div>
               <div className="kachel">
                 <strong>{fristen.faellig}</strong>
-                <span>fällig in {vorwarn} Tagen</span>
+                <span>{format(t('checks.dueIn', 'due within {n} days'), { n: vorwarn })}</span>
               </div>
               <div className="kachel">
                 <strong>{fristen.ok}</strong>
-                <span>später</span>
+                <span>{t('checks.later', 'later')}</span>
               </div>
               {/*
                 Die vierte Kachel ist KEINE vierte Lage. Sie zaehlt die
@@ -227,19 +236,36 @@ export function WerteUndSchaeden() {
               */}
               <div className="kachel">
                 <strong>{fristen.ohneFrist}</strong>
-                <span>ohne Frist hinterlegt</span>
+                <span>{t('checks.withoutDate', 'without a stated date')}</span>
               </div>
             </div>
 
             <p className={fristen.ueberfaellig > 0 ? 'warnung' : 'hinweis'}>
-              {fristen.ohneFrist > 0
-                ? `Für ${fristen.ohneFrist === 1 ? 'eine Einheit' : `${fristen.ohneFrist} Einheiten`} ist keine Frist hinterlegt — über sie sagt diese Ampel nichts, weder „geprüft" noch „fällig".`
-                : 'Jede Einheit trägt mindestens eine Frist; die Ampel deckt den ganzen Bestand.'}
+              {/* Singular und Plural als ZWEI ganze Saetze und nicht als ein
+                  Satz mit eingesetztem Wort: welche Formen eine Sprache
+                  ueberhaupt unterscheidet, gehoert zur Sprache. */}
+              {fristen.ohneFrist === 1
+                ? t(
+                    'checks.coverage.one',
+                    'One unit has no stated date — this light says nothing about it, neither "checked" nor "due".',
+                  )
+                : fristen.ohneFrist > 1
+                  ? format(
+                      t(
+                        'checks.coverage.many',
+                        '{n} units have no stated date — this light says nothing about them, neither "checked" nor "due".',
+                      ),
+                      { n: fristen.ohneFrist },
+                    )
+                  : t(
+                      'checks.coverage.full',
+                      'Every unit carries at least one date; the light covers the whole stock.',
+                    )}
             </p>
 
             <div className="zeile">
               <label>
-                Vorwarnzeit (Tage)
+                {t('checks.leadTime', 'Lead time (days)')}
                 <input
                   type="number"
                   min="0"
@@ -248,7 +274,7 @@ export function WerteUndSchaeden() {
                     const n = Number(e.target.value)
                     if (Number.isFinite(n) && n >= 0) setVorwarn(Math.round(n))
                   }}
-                  aria-label="Vorwarnzeit in Tagen"
+                  aria-label={t('checks.leadTime.aria', 'Lead time in days')}
                   className="schmal"
                 />
               </label>
@@ -256,19 +282,21 @@ export function WerteUndSchaeden() {
 
             {anzugehen(fristen).length === 0 ? (
               <p className="hinweis">
-                Nichts überfällig und nichts in den nächsten {vorwarn} Tagen fällig.
+                {format(t('checks.allClear', 'Nothing overdue and nothing due within the next {n} days.'), {
+                  n: vorwarn,
+                })}
               </p>
             ) : (
               <div className="tabelle-rahmen">
                 <table>
                   <thead>
                     <tr>
-                      <th>Einheit</th>
-                      <th>Modell</th>
-                      <th>Art</th>
-                      <th>fällig</th>
-                      <th className="rechts">Tage</th>
-                      <th>Termin</th>
+                      <th>{t('checks.col.unit', 'Unit')}</th>
+                      <th>{t('checks.col.model', 'Model')}</th>
+                      <th>{t('checks.col.kind', 'Kind')}</th>
+                      <th>{t('checks.col.due', 'Due')}</th>
+                      <th className="rechts">{t('checks.col.days', 'Days')}</th>
+                      <th>{t('checks.col.source', 'Date')}</th>
                       <th />
                     </tr>
                   </thead>
@@ -287,12 +315,14 @@ export function WerteUndSchaeden() {
                             einen Namen, den niemand vergeben hat.
                           */}
                           <span className={istUnbekannteArt(z.art, fristArten) ? 'warnung' : undefined}>
-                            {fristArtLabel(z.art, fristArten)}
+                            {fristArtLabel(z.art, fristArten, t)}
                           </span>
                           {z.bezeichnung ? <span className="leise"> · {z.bezeichnung}</span> : null}
                         </td>
                         <td>{z.faellig}</td>
-                        <td className="rechts">{z.tage < 0 ? `${-z.tage} über` : z.tage}</td>
+                        <td className="rechts">
+                          {z.tage < 0 ? format(t('checks.daysOver', '{n} over'), { n: -z.tage }) : z.tage}
+                        </td>
                         {/*
                           Ob der Termin eingetragen oder gerechnet ist, steht
                           IN der Zeile. Ein gerechneter Termin, der wie ein
@@ -300,7 +330,9 @@ export function WerteUndSchaeden() {
                           gegen die dieses Repo anschreibt.
                         */}
                         <td className="leise">
-                          {z.quelle === 'eingetragen' ? 'eingetragen' : 'aus Intervall'}
+                          {z.quelle === 'eingetragen'
+                            ? t('checks.source.entered', 'entered')
+                            : t('checks.source.derived', 'from interval')}
                         </td>
                         <td>
                           <button
@@ -308,7 +340,7 @@ export function WerteUndSchaeden() {
                             className="still"
                             onClick={() => fristEntfernen(z.unitId, z.faellig, z.art)}
                           >
-                            Entfernen
+                            {t('common.remove', 'Remove')}
                           </button>
                         </td>
                       </tr>
@@ -321,33 +353,33 @@ export function WerteUndSchaeden() {
             {/* ── Frist eintragen ─────────────────────────────────────── */}
             <div className="zeile">
               <label>
-                Einheit
+                {t('checks.col.unit', 'Unit')}
                 <select
                   value={neueFrist.unitId}
                   onChange={(e) => setNeueFrist((n) => ({ ...n, unitId: e.target.value }))}
-                  aria-label="Einheit für die neue Frist"
+                  aria-label={t('checks.new.unit.aria', 'Unit for the new date')}
                 >
-                  <option value="">— Einheit —</option>
+                  <option value="">{t('checks.new.unit.none', '— Unit —')}</option>
                   {units.map((u) => (
                     <option key={u.id} value={u.id}>
                       {unitLabel(u, 'house')} · {modellVon(u)}
                       {alterMonate(u, heute) !== undefined
-                        ? ` · ${alterMonate(u, heute)} Mon. alt`
+                        ? ` · ${format(t('checks.ageMonths', '{n} mo. old'), { n: alterMonate(u, heute)! })}`
                         : ''}
                     </option>
                   ))}
                 </select>
               </label>
               <label>
-                Art
+                {t('checks.col.kind', 'Kind')}
                 <select
                   value={neueFrist.art}
                   onChange={(e) => setNeueFrist((n) => ({ ...n, art: e.target.value as FristArt }))}
-                  aria-label="Art der Frist"
+                  aria-label={t('checks.new.kind.aria', 'Kind of date')}
                 >
                   {EINGEBAUTE_FRIST_ARTEN.map((a) => (
                     <option key={a} value={a}>
-                      {FRIST_ART_LABEL[a]}
+                      {ARTEN[a]}
                     </option>
                   ))}
                   {fristArten.map((a) => (
@@ -358,22 +390,22 @@ export function WerteUndSchaeden() {
                 </select>
               </label>
               <label>
-                zuletzt erledigt
+                {t('checks.new.last', 'last done')}
                 <input
                   type="date"
                   value={neueFrist.zuletzt}
                   onChange={(e) => setNeueFrist((n) => ({ ...n, zuletzt: e.target.value }))}
-                  aria-label="Datum der letzten Erledigung"
+                  aria-label={t('checks.new.last.aria', 'Date it was last done')}
                 />
               </label>
               <label>
-                Intervall (Monate)
+                {t('checks.interval', 'Interval (months)')}
                 <input
                   type="number"
                   min="1"
                   value={neueFrist.intervall}
                   onChange={(e) => setNeueFrist((n) => ({ ...n, intervall: e.target.value }))}
-                  aria-label="Intervall in Monaten"
+                  aria-label={t('checks.interval.aria', 'Interval in months')}
                   className="schmal"
                 />
               </label>
@@ -382,7 +414,7 @@ export function WerteUndSchaeden() {
                 onClick={fristSetzen}
                 disabled={!neueFrist.unitId || !neueFrist.zuletzt}
               >
-                Frist eintragen
+                {t('checks.new.add', 'Add date')}
               </button>
             </div>
             {/*
@@ -393,9 +425,10 @@ export function WerteUndSchaeden() {
               Wer eine will, traegt sie als Frist der Art „Akku" ein.
             */}
             <p className="hinweis">
-              Das Alter neben der Einheit kommt aus ihrem Kaufdatum und ist eine
-              Angabe, kein Urteil: ab wann ein Akku zu alt ist, entscheidet das
-              Haus — als Frist der Art „Akku".
+              {t(
+                'checks.ageNote',
+                'The age next to a unit comes from its purchase date and is a statement, not a verdict: when a battery is too old is for the house to decide — as a date of the "Battery" kind.',
+              )}
             </p>
 
             {/* ── Eigene Fristarten ───────────────────────────────────────
@@ -405,12 +438,17 @@ export function WerteUndSchaeden() {
                 „Sonstige", und die Ampel war für alles außer den
                 eingebauten Arten eine Sammelmeldung ohne Sortierung. */}
             <details className="unterblock">
-              <summary>Eigene Fristarten ({fristArten.length})</summary>
+              <summary>
+                {format(t('checks.kinds.title', 'Own kinds of date ({n})'), { n: fristArten.length })}
+              </summary>
               <p className="hinweis">
-                Eingebaut sind {EINGEBAUTE_FRIST_ARTEN.length} Arten. Alles, was
-                dieses Haus zusätzlich prüft oder ablaufen lässt, steht hier —
-                und reist in der Lager-Datei mit, damit ein Termin drüben nicht
-                ohne seinen Grund ankommt.
+                {format(
+                  t(
+                    'checks.kinds.hint',
+                    '{n} kinds are built in. Whatever this house additionally checks or lets expire goes here — and travels along in the stock file, so a date does not arrive over there without its reason.',
+                  ),
+                  { n: EINGEBAUTE_FRIST_ARTEN.length },
+                )}
               </p>
               {fristArten.length > 0 && (
                 <ul className="artenliste">
@@ -419,16 +457,22 @@ export function WerteUndSchaeden() {
                       <strong>{a.name}</strong>
                       <span className="leise"> · {a.id}</span>
                       {a.standardIntervallMonate ? (
-                        <span className="leise"> · alle {a.standardIntervallMonate} Mon.</span>
+                        <span className="leise">
+                          {' '}
+                          · {format(t('checks.kinds.every', 'every {n} mo.'), { n: a.standardIntervallMonate })}
+                        </span>
                       ) : null}
                       {a.grundlage ? <span className="leise"> · {a.grundlage}</span> : null}
                       <button
                         type="button"
                         className="still"
                         onClick={() => fristArtEntfernen(a.id)}
-                        title="Eingetragene Termine dieser Art bleiben bestehen und werden danach als unbekannte Art angezeigt."
+                        title={t(
+                          'checks.kinds.remove.title',
+                          'Dates already entered under this kind stay as they are and are shown as an unknown kind afterwards.',
+                        )}
                       >
-                        Entfernen
+                        {t('common.remove', 'Remove')}
                       </button>
                     </li>
                   ))}
@@ -436,34 +480,34 @@ export function WerteUndSchaeden() {
               )}
               <div className="zeile">
                 <label>
-                  Name
+                  {t('checks.kinds.name', 'Name')}
                   <input
                     type="text"
                     value={neueArt.name}
-                    placeholder="z. B. Anschlagmittel"
+                    placeholder={t('checks.kinds.name.example', 'e.g. lifting gear')}
                     onChange={(e) => setNeueArt((n) => ({ ...n, name: e.target.value }))}
-                    aria-label="Name der neuen Fristart"
+                    aria-label={t('checks.kinds.name.aria', 'Name of the new kind of date')}
                   />
                 </label>
                 <label>
-                  Intervall (Monate)
+                  {t('checks.interval', 'Interval (months)')}
                   <input
                     type="number"
                     min="1"
                     value={neueArt.intervall}
                     onChange={(e) => setNeueArt((n) => ({ ...n, intervall: e.target.value }))}
-                    aria-label="Vorschlag für das Intervall"
+                    aria-label={t('checks.kinds.interval.aria', 'Suggested interval')}
                     className="schmal"
                   />
                 </label>
                 <label>
-                  Grundlage
+                  {t('checks.kinds.basis', 'Basis')}
                   <input
                     type="text"
                     value={neueArt.grundlage}
-                    placeholder="z. B. DGUV Regel 100-500"
+                    placeholder={t('checks.kinds.basis.example', 'e.g. DGUV Regel 100-500')}
                     onChange={(e) => setNeueArt((n) => ({ ...n, grundlage: e.target.value }))}
-                    aria-label="Grundlage der Frist"
+                    aria-label={t('checks.kinds.basis.aria', 'Basis of the date')}
                   />
                 </label>
                 <button
@@ -478,7 +522,7 @@ export function WerteUndSchaeden() {
                     setNeueArt({ name: '', intervall: '', grundlage: '' })
                   }}
                 >
-                  Art anlegen
+                  {t('checks.kinds.add', 'Add kind')}
                 </button>
               </div>
             </details>
@@ -488,12 +532,13 @@ export function WerteUndSchaeden() {
 
       {/* ── Werte ────────────────────────────────────────────────────── */}
       <div className="block">
-        <h3>Werte</h3>
+        <h3>{t('values.title', 'Values')}</h3>
         {units.length === 0 ? (
           <p className="hinweis">
-            Keine serialisierten Einheiten. Ein Versicherungswert hängt an der
-            einzelnen Einheit, nicht am Modell — ohne Einheiten gibt es nichts
-            zu bewerten.
+            {t(
+              'values.empty',
+              'No serialised units. An insured value belongs to the single unit, not to the model — without units there is nothing to value.',
+            )}
           </p>
         ) : (
           <>
@@ -505,15 +550,17 @@ export function WerteUndSchaeden() {
             <div className="summen">
               {werte.summen.length === 0 ? (
                 <p className="warnung">
-                  Keine einzige Einheit trägt einen Wert — es gibt nichts zu
-                  summieren.
+                  {t('values.noneValued', 'Not a single unit carries a value — there is nothing to total.')}
                 </p>
               ) : (
                 werte.summen.map((s) => (
                   <div className="kachel" key={s.waehrung}>
                     <strong>{geldText({ cent: s.cent, waehrung: s.waehrung })}</strong>
                     <span>
-                      {s.einheiten} von {werte.zeilen.length} Einheiten
+                      {format(t('values.ofUnits', '{n} of {all} units'), {
+                        n: s.einheiten,
+                        all: werte.zeilen.length,
+                      })}
                     </span>
                   </div>
                 ))
@@ -527,9 +574,17 @@ export function WerteUndSchaeden() {
                   wirken, auf den es hier ankommt.
                 */}
                 {werte.ohneWert.length === 1
-                  ? 'Eine Einheit ohne hinterlegten Wert — sie geht'
-                  : `${werte.ohneWert.length} Einheiten ohne hinterlegten Wert — sie gehen`}{' '}
-                in keine Summe oben ein:{' '}
+                  ? t(
+                      'values.withoutValue.one',
+                      'One unit has no stated value — it goes into none of the totals above:',
+                    )
+                  : format(
+                      t(
+                        'values.withoutValue.many',
+                        '{n} units have no stated value — they go into none of the totals above:',
+                      ),
+                      { n: werte.ohneWert.length },
+                    )}{' '}
                 {werte.ohneWert
                   .slice(0, 8)
                   .map((z) => z.modell)
@@ -540,15 +595,15 @@ export function WerteUndSchaeden() {
             <div className="zeile">
               <button
                 type="button"
-                onClick={() => csvLaden(versicherungsTabelle(werte), 'versicherungsliste.csv')}
+                onClick={() => csvLaden(versicherungsTabelle(werte, t), 'versicherungsliste.csv')}
               >
-                Versicherungsliste (CSV)
+                {t('values.csvButton', 'Insurance schedule (CSV)')}
               </button>
               <button
                 type="button"
-                onClick={() => csvLaden(carnetDatenblatt(units, artikelVon), 'carnet.csv')}
+                onClick={() => csvLaden(carnetDatenblatt(units, artikelVon, t), 'carnet.csv')}
               >
-                Carnet-Datenblatt (CSV)
+                {t('values.carnetButton', 'Carnet data sheet (CSV)')}
               </button>
             </div>
           </>
@@ -557,41 +612,42 @@ export function WerteUndSchaeden() {
 
       {/* ── Schäden ──────────────────────────────────────────────────── */}
       <div className="block">
-        <h3>Schäden ({schaeden.length})</h3>
+        <h3>{format(t('damage.title', 'Damage ({n})'), { n: schaeden.length })}</h3>
         {schaeden.length === 0 ? (
           <p className="hinweis">
-            Bei keiner Rückgabe wurde ein Schaden aufgenommen. Das ist etwas
-            anderes als „nichts ist kaputt": es heißt, dass nichts vermerkt
-            wurde.
+            {t(
+              'damage.empty',
+              'No return has recorded any damage. That is something other than "nothing is broken": it means nothing was noted.',
+            )}
           </p>
         ) : (
           <>
             <div className="zeile">
               <label>
-                Zählen nach
+                {t('damage.countBy', 'Count by')}
                 <select
                   value={nach}
                   onChange={(e) => setNach(e.target.value as 'person' | 'container' | 'job')}
-                  aria-label="Schäden zählen nach"
+                  aria-label={t('damage.countBy.aria', 'Count damage by')}
                 >
-                  <option value="person">Person</option>
-                  <option value="container">Container</option>
-                  <option value="job">Show</option>
+                  <option value="person">{t('damage.by.person', 'Person')}</option>
+                  <option value="container">{t('damage.by.container', 'Container')}</option>
+                  <option value="job">{t('damage.by.show', 'Show')}</option>
                 </select>
               </label>
-              <button type="button" onClick={() => csvLaden(damageTable(records), 'schaeden.csv')}>
-                Schadensregister (CSV)
+              <button type="button" onClick={() => csvLaden(damageTable(records, t), 'schaeden.csv')}>
+                {t('damage.csvButton', 'Damage register (CSV)')}
               </button>
             </div>
             <div className="spalten">
               <table>
                 <thead>
                   <tr>
-                    <th>Objekt</th>
-                    <th>Vermerk</th>
-                    <th>Show</th>
-                    <th>bei</th>
-                    <th>Container</th>
+                    <th>{t('damage.col.object', 'Object')}</th>
+                    <th>{t('damage.col.note', 'Note')}</th>
+                    <th>{t('damage.by.show', 'Show')}</th>
+                    <th>{t('damage.col.with', 'With')}</th>
+                    <th>{t('damage.by.container', 'Container')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -613,9 +669,13 @@ export function WerteUndSchaeden() {
                 <thead>
                   <tr>
                     <th>
-                      {nach === 'person' ? 'Person' : nach === 'container' ? 'Container' : 'Show'}
+                      {nach === 'person'
+                        ? t('damage.by.person', 'Person')
+                        : nach === 'container'
+                          ? t('damage.by.container', 'Container')
+                          : t('damage.by.show', 'Show')}
                     </th>
-                    <th className="rechts">Schäden</th>
+                    <th className="rechts">{t('damage.col.count', 'Damage')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -634,21 +694,25 @@ export function WerteUndSchaeden() {
 
       {/* ── Gebunden ─────────────────────────────────────────────────── */}
       <div className="block">
-        <h3>Auf offenen Ausgaben ({gebundeneZeilen.length})</h3>
+        <h3>{format(t('committed.title', 'On open checkouts ({n})'), { n: gebundeneZeilen.length })}</h3>
         <p className="hinweis">
-          Diese Stücke zählt der Bestand mit, im Regal liegen sie nicht. Wer
-          das nicht sieht, sucht das fünfte Stück dort, wo es nicht mehr ist.
+          {t(
+            'committed.hint',
+            'The stock count includes these pieces; they are not on the shelf. Anyone who cannot see that looks for the fifth piece where it no longer is.',
+          )}
         </p>
         {gebundeneZeilen.length === 0 ? (
-          <p className="hinweis">Nichts gebunden — alle Ausgaben sind zurück.</p>
+          <p className="hinweis">
+            {t('committed.none', 'Nothing committed — every checkout is back.')}
+          </p>
         ) : (
           <table>
             <thead>
               <tr>
-                <th>Artikel</th>
-                <th className="rechts">im Bestand</th>
-                <th className="rechts">gebunden</th>
-                <th>wo</th>
+                <th>{t('committed.col.item', 'Item')}</th>
+                <th className="rechts">{t('committed.col.inStock', 'In stock')}</th>
+                <th className="rechts">{t('committed.col.committed', 'Committed')}</th>
+                <th>{t('committed.col.where', 'Where')}</th>
               </tr>
             </thead>
             <tbody>
@@ -657,7 +721,7 @@ export function WerteUndSchaeden() {
                   <td>{item.model}</td>
                   <td className="rechts">{item.quantity}</td>
                   <td className="rechts">{c!.quantity}</td>
-                  <td>{commitmentNote(c)}</td>
+                  <td>{commitmentNote(c, t)}</td>
                 </tr>
               ))}
             </tbody>
@@ -669,14 +733,14 @@ export function WerteUndSchaeden() {
           zeigt die Einheit unter der Kennung, die auf ihr klebt. */}
       {units.length > 0 && (
         <div className="block">
-          <h3>Einheiten mit Wert</h3>
+          <h3>{t('values.units.title', 'Units with a value')}</h3>
           <table>
             <thead>
               <tr>
-                <th>Einheit</th>
-                <th>Modell</th>
-                <th>Wert</th>
-                <th>Stand</th>
+                <th>{t('checks.col.unit', 'Unit')}</th>
+                <th>{t('checks.col.model', 'Model')}</th>
+                <th>{t('values.col.value', 'Value')}</th>
+                <th>{t('values.csv.asOf', 'As of')}</th>
               </tr>
             </thead>
             <tbody>
@@ -686,7 +750,7 @@ export function WerteUndSchaeden() {
                   <tr key={z.unitId} className={z.wert ? '' : 'ohne-wert'}>
                     <td>{u ? unitLabel(u, 'house') : z.unitId}</td>
                     <td>{z.modell}</td>
-                    <td>{z.wert ? geldText(z.wert) : NICHT_ANGEGEBEN}</td>
+                    <td>{z.wert ? geldText(z.wert) : nichtAngegeben(t)}</td>
                     <td>{z.stand ?? '—'}</td>
                   </tr>
                 )
