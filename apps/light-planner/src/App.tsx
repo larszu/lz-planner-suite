@@ -1847,27 +1847,27 @@ const App: React.FC = () => {
           )}
           {activeTool === 'wall' && viewMode === '2d' && (
             <div className="placing-hint">
-              🧱 <strong>{t('app.hint.wall.title', 'Wall path')}</strong>{t('app.hint.wall.mid', ': click points one after another · click the start point to close the room · ')}<kbd>Shift</kbd>{t('app.hint.wall.angle', ' = 15° angle · double-click/')}<kbd>ESC</kbd>{t('app.hint.wall.end', ' to finish')}
+              <Icon name="wall" size={13} /> <strong>{t('app.hint.wall.title', 'Wall path')}</strong>{t('app.hint.wall.mid', ': click points one after another · click the start point to close the room · ')}<kbd>Shift</kbd>{t('app.hint.wall.angle', ' = 15° angle · double-click/')}<kbd>ESC</kbd>{t('app.hint.wall.end', ' to finish')}
             </div>
           )}
           {activeTool === 'stagepoly' && viewMode === '2d' && (
             <div className="placing-hint">
-              ⬠ <strong>{t('app.hint.stagepoly.title', 'Stage (polygon)')}</strong>{t('app.hint.stagepoly.mid', ': click the corner points · click the start point or double-click/')}<kbd>Enter</kbd>{t('app.hint.stagepoly.close', ' closes the area · ')}<kbd>ESC</kbd>{t('app.hint.stagepoly.end', ' to cancel')}
+              <Icon name="stage" size={13} /> <strong>{t('app.hint.stagepoly.title', 'Stage (polygon)')}</strong>{t('app.hint.stagepoly.mid', ': click the corner points · click the start point or double-click/')}<kbd>Enter</kbd>{t('app.hint.stagepoly.close', ' closes the area · ')}<kbd>ESC</kbd>{t('app.hint.stagepoly.end', ' to cancel')}
             </div>
           )}
           {activeTool === 'camera' && viewMode === '2d' && (
             <div className="placing-hint">
-              🎥 <strong>{t('app.hint.camera.title', 'Camera')}</strong>{t('app.hint.camera.body', ': click to place a camera · then set the aim & field of view and “Look through camera”')}
+              <Icon name="camera" size={13} /> <strong>{t('app.hint.camera.title', 'Camera')}</strong>{t('app.hint.camera.body', ': click to place a camera · then set the aim & field of view and “Look through camera”')}
             </div>
           )}
           {planMode === 'calibrate' && viewMode === '2d' && (
             <div className="placing-hint plan-calibrate-hint">
-              📏 {t('app.hint.calibrate.pre', 'Drag a line along a ')}<strong>{t('app.hint.calibrate.strong', 'known distance')}</strong>{t('app.hint.calibrate.post', ' (e.g. a wall) · press ESC to cancel')}
+              <Icon name="ruler" size={13} /> {t('app.hint.calibrate.pre', 'Drag a line along a ')}<strong>{t('app.hint.calibrate.strong', 'known distance')}</strong>{t('app.hint.calibrate.post', ' (e.g. a wall) · press ESC to cancel')}
             </div>
           )}
           {planMode === 'move' && viewMode === '2d' && (
             <div className="placing-hint plan-calibrate-hint">
-              ✋ {t('app.hint.move', 'Drag the floor plan to align it · press ESC to finish')}
+              <Icon name="pan" size={13} /> {t('app.hint.move', 'Drag the floor plan to align it · press ESC to finish')}
             </div>
           )}
           {floorPlan && viewMode === '2d' && (

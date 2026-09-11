@@ -431,6 +431,67 @@ for (const { app, dateien } of SPALTEN_APPS) {
   if (!/vertical-rl/.test(text)) {
     melde(app, 'eingeklappt steht kein Spaltenname senkrecht in der Leiste')
   }
+
+  // ── Die Kopfzeile der Spalte ────────────────────────────────────────────
+  //
+  // ADR-007 Abschnitt 6 verlangt seit dem 2026-09-11 nicht nur den Griff,
+  // sondern die ZEILE, in der er sitzt: jede Spalte nennt oben ihren Namen
+  // und traegt darunter die Kopflinie im Akzent (Abschnitt 3).
+  //
+  // GEMESSEN, weil die Regel sonst wieder nur dasteht. Nachgesehen am selben
+  // Tag, nachdem der Griff vereinheitlicht war:
+  //
+  //   cable-planner  Inspektor: Name ja, Linie GEDAEMPFT statt Akzent
+  //                  Bibliothek: gar kein Name, die Register begannen sofort
+  //   multicam       gar keine Kopfzeile — nur die Registerzeile
+  //   light-planner  beides da (`SeitenPanel`)
+  //
+  // Drei Apps, drei Antworten auf „wie heisst diese Spalte" — und in zweien
+  // sagte die offene Spalte ihren Namen gar nicht, waehrend die eingeklappte
+  // ihn senkrecht trug.
+  //
+  // WARUM EIN MARKER UND KEIN MUSTER. Der erste Anlauf suchte irgendwo im
+  // Text nach „Rand unten in der Akzentfarbe". Er blieb GRUEN, als die
+  // Kopfzeile des `multicam-planner` versuchsweise auf den gedaempften Rand
+  // gedreht wurde — denn dieselbe Datei traegt `border-b-2 border-bc-accent`
+  // am aktiven REGISTER. Der Lauf bestaetigte also einen Unterstrich und
+  // nannte ihn Kopflinie. Die Kopfzeile sagt jetzt selbst, dass sie eine
+  // ist: die Klasse `spaltenkopf` steht an ihr und an nichts sonst.
+  //
+  // WAS DIESE PRUEFUNG NICHT KANN: sie liest Klassen, nicht Pixel. Ob die
+  // Linie im Fenster wirklich in der Akzentfarbe erscheint, haengt am
+  // Stilblatt — ein `--accent`, das auf den Randton gesetzt wird, faellt ihr
+  // nicht auf. Und ob in der Zeile ein sinnvoller Name steht, entscheidet
+  // kein Ausdruck; gemessen ist, DASS die Spalte eine Kopfzeile auszeichnet
+  // und dass diese die Akzentlinie fuehrt.
+  const AKZENT_UTILITY = /border-(?:b|bottom)\b[^"'`]*\b(?:border-)?(?:cp-accent|bc-accent)\b/
+  const kopfzeilen = [...text.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)]
+    .map((m) => m[1] ?? m[2])
+    .filter((k) => /(^|\s)spaltenkopf(\s|$)/.test(k))
+  if (!kopfzeilen.length) {
+    melde(app, 'keine Spalten-Kopfzeile ausgezeichnet (Klasse `spaltenkopf`)')
+  } else {
+    // Die Akzentlinie steht entweder als Utility in derselben Klassenliste
+    // (cable, multicam) oder im Stilblatt an einer der uebrigen Klassen
+    // (light: `.panel-head`). Beide Bauformen sind zugelassen — die Apps
+    // laufen auch allein und teilen kein Stilblatt.
+    const stil = dateien
+      .filter((rel) => rel.endsWith('.css'))
+      .map((rel) => {
+        const pf = join(WURZEL, 'apps', app, rel)
+        return existsSync(pf) ? readFileSync(pf, 'utf8') : ''
+      })
+      .join('\n')
+    const ausStilblatt = (klassen) =>
+      klassen.some((k) => {
+        const regel = new RegExp(`\\.${k}\\s*\\{[^}]*border-bottom:[^;}]*var\\(--accent\\)`, 's')
+        return regel.test(stil)
+      })
+    const traegt = kopfzeilen.some(
+      (k) => AKZENT_UTILITY.test(k) || ausStilblatt(k.split(/\s+/).filter(Boolean)),
+    )
+    if (!traegt) melde(app, 'die Spalten-Kopfzeile fuehrt keine Akzentlinie')
+  }
 }
 
 const proApp = new Map()

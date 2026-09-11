@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Icon from './Icon';
 import type { Fixture, FixtureCategory } from '../types';
 import { fixtureLibrary } from '../core/fixtureLibrary';
 import { useTranslation } from '../i18n';
@@ -128,7 +129,7 @@ const Sidebar: React.FC<Props> = ({
                     </div>
                     {f.compatibleAttachments && f.compatibleAttachments.length > 0 && (
                       <div className="fixture-item-info attachment-hint">
-                        🔧 {f.compatibleAttachments.length} {t('side.attachmentsAvailable', 'attachments available')}
+                        <Icon name="group" size={11} /> {f.compatibleAttachments.length} {t('side.attachmentsAvailable', 'attachments available')}
                       </div>
                     )}
                   </button>

@@ -1,4 +1,5 @@
 import React from 'react';
+import Icon from './Icon';
 import type { PlacedFixture, Person, StageElement, Fixture, Truss, Wall, Ceiling, Shape, CameraView, WallWindow, DmxMode, DmxModeOrigin } from '../types';
 import { wallMidHandle, curveControlForMid, wallLength } from '../core/geometry';
 import { luxFromFixture, effectiveFieldAngleDeg, explainLux } from '../core/lightCalc';
@@ -116,10 +117,10 @@ const PropertyPanel: React.FC<Props> = ({
       <label className="prop-field prop-pos-field">
         <span>{label}</span>
         <div className="pos-nudge-group">
-          <button type="button" className="nudge-btn" onClick={() => onChange(clamp(value - step))}>◀</button>
+          <button type="button" className="nudge-btn" onClick={() => onChange(clamp(value - step))} aria-label="−"><Icon name="chevronLeft" size={11} /></button>
           <input type="number" value={value} step={step} min={min} max={max}
             onChange={(e) => onChange(Number(e.target.value))} />
-          <button type="button" className="nudge-btn" onClick={() => onChange(clamp(value + step))}>▶</button>
+          <button type="button" className="nudge-btn" onClick={() => onChange(clamp(value + step))} aria-label="+"><Icon name="chevronRight" size={11} /></button>
         </div>
       </label>
     );
@@ -168,7 +169,8 @@ const PropertyPanel: React.FC<Props> = ({
           onClick={() => onUpdateFixture(f.id, { hidden: !f.hidden })}
           title={f.hidden ? t('prop.fixture.showTitle', 'Show fixture again') : t('prop.fixture.hideTitle', 'Temporarily hide fixture (excluded from heatmap)')}
         >
-          {f.hidden ? t('prop.fixture.show', '👁 Show') : t('prop.fixture.hide', '🚫 Temporarily hide')}
+          <Icon name={f.hidden ? 'eye' : 'eyeOff'} size={13} />
+          {f.hidden ? t('prop.fixture.show', 'Show') : t('prop.fixture.hide', 'Temporarily hide')}
         </button>
         {f.hidden && <div className="hide-note">{t('prop.fixture.hiddenNote', 'Hidden – this fixture currently does not contribute to the heatmap. The values below show its contribution once it is shown again.')}</div>}
 
@@ -205,25 +207,25 @@ const PropertyPanel: React.FC<Props> = ({
           <label className="prop-field prop-pos-field">
             <span>X (m)</span>
             <div className="pos-nudge-group">
-              <button className="nudge-btn" onClick={() => onUpdateFixture(f.id, { x: f.x - 0.5, aimX: f.aimX - 0.5 })}>◀</button>
+              <button className="nudge-btn" onClick={() => onUpdateFixture(f.id, { x: f.x - 0.5, aimX: f.aimX - 0.5 })}><Icon name="chevronLeft" size={11} /></button>
               <input type="number" value={f.x} step={0.1}
                 onChange={(e) => {
                   const dx = Number(e.target.value) - f.x;
                   onUpdateFixture(f.id, { x: f.x + dx, aimX: f.aimX + dx });
                 }} />
-              <button className="nudge-btn" onClick={() => onUpdateFixture(f.id, { x: f.x + 0.5, aimX: f.aimX + 0.5 })}>▶</button>
+              <button className="nudge-btn" onClick={() => onUpdateFixture(f.id, { x: f.x + 0.5, aimX: f.aimX + 0.5 })}><Icon name="chevronRight" size={11} /></button>
             </div>
           </label>
           <label className="prop-field prop-pos-field">
             <span>Y (m)</span>
             <div className="pos-nudge-group">
-              <button className="nudge-btn" onClick={() => onUpdateFixture(f.id, { y: f.y - 0.5, aimY: f.aimY - 0.5 })}>◀</button>
+              <button className="nudge-btn" onClick={() => onUpdateFixture(f.id, { y: f.y - 0.5, aimY: f.aimY - 0.5 })}><Icon name="chevronLeft" size={11} /></button>
               <input type="number" value={f.y} step={0.1}
                 onChange={(e) => {
                   const dy = Number(e.target.value) - f.y;
                   onUpdateFixture(f.id, { y: f.y + dy, aimY: f.aimY + dy });
                 }} />
-              <button className="nudge-btn" onClick={() => onUpdateFixture(f.id, { y: f.y + 0.5, aimY: f.aimY + 0.5 })}>▶</button>
+              <button className="nudge-btn" onClick={() => onUpdateFixture(f.id, { y: f.y + 0.5, aimY: f.aimY + 0.5 })}><Icon name="chevronRight" size={11} /></button>
             </div>
           </label>
           {numField(t('prop.height', 'Height (m)'), f.mountingHeight, (v) => onUpdateFixture(f.id, { mountingHeight: v }), 0.5, 0.5, 30)}
@@ -281,7 +283,7 @@ const PropertyPanel: React.FC<Props> = ({
         <div className="prop-section">
           <span className="prop-section-title">
             {t('prop.beamDetails', 'Beam details')}
-            <button type="button" className="beam-help-toggle" onClick={() => setBeamHelp((v) => !v)} title={t('prop.whatDoesThisMean', 'What does this mean?')}>ℹ</button>
+            <button type="button" className="beam-help-toggle" onClick={() => setBeamHelp((v) => !v)} title={t('prop.whatDoesThisMean', 'What does this mean?')}><Icon name="info" size={12} /></button>
           </span>
           <div className="beam-angles">
             <div><span className="ba-dot ba-beam" /> {t('prop.beam50', 'Beam (50 %)')} <strong>{effectiveBeamAngle.toFixed(1)}°</strong></div>
@@ -390,7 +392,7 @@ const PropertyPanel: React.FC<Props> = ({
         <div className="prop-section">
           <span className="prop-section-title">
             {t('prop.barnTitle', 'Barn doors & gel position')}
-            <button type="button" className="beam-help-toggle" onClick={() => setBarnHelp((v) => !v)} title={t('prop.explainDifferences', 'Explain the differences')}>ℹ</button>
+            <button type="button" className="beam-help-toggle" onClick={() => setBarnHelp((v) => !v)} title={t('prop.explainDifferences', 'Explain the differences')}><Icon name="info" size={12} /></button>
           </span>
           {(() => {
             const bd = f.barnDoors ?? { top: 0, bottom: 0, left: 0, right: 0 };
@@ -742,7 +744,8 @@ const PropertyPanel: React.FC<Props> = ({
           <div className="prop-derived">{t('prop.poseNote', 'Sitting pairs well with a riser/chair underneath. Takes effect in 3D photo mode.')}</div>
         </div>
         <button className="auto-btn wide" onClick={() => onAutoThreePointForPerson(p.id)}>
-          {t('prop.threePoint', '💡 Create three-point light')}
+          <Icon name="autolight" size={13} />
+          {t('prop.threePoint', 'Create three-point light')}
         </button>
         <button className="delete-btn" onClick={() => onDelete(p.id)}>{t('prop.deletePerson', 'Delete person')}</button>
       </div>
@@ -831,9 +834,10 @@ const PropertyPanel: React.FC<Props> = ({
     const tilt = (Math.atan2(c.height, Math.max(0.01, hDist)) * 180) / Math.PI;
     return (
       <div className="property-panel">
-        <h3>{t('prop.camera', '🎥 Camera')}</h3>
+        <h3><Icon name="camera" size={14} />{t('prop.camera', 'Camera')}</h3>
         <button className="auto-btn wide" onClick={() => onLookThroughCamera(c.id)}>
-          {t('prop.lookThrough', '🎬 Look through this camera')}
+          <Icon name="camera" size={13} />
+          {t('prop.lookThrough', 'Look through this camera')}
         </button>
         <div className="prop-section">
           <span className="prop-section-title">{t('prop.positionGaze', 'Position & gaze')}</span>
@@ -1017,7 +1021,7 @@ const PropertyPanel: React.FC<Props> = ({
           <p className="prop-hint">{t('prop.edgeDragNote', 'Dragging an edge moves the area.')}</p>
         </div>
         {isRect && (
-          <button className="auto-btn wide" onClick={onAreaLight}>{t('prop.lightArea', '🔆 Light this area')}</button>
+          <button className="auto-btn wide" onClick={onAreaLight}><Icon name="beam" size={13} />{t('prop.lightArea', 'Light this area')}</button>
         )}
         <button className="delete-btn" onClick={() => onDelete(sh.id)}>{t('prop.delete', 'Delete')}</button>
       </div>
@@ -1047,8 +1051,8 @@ const PropertyPanel: React.FC<Props> = ({
           </p>
           {multiFixtures.length > 0 && (
             <div className="reflectance-presets">
-              <button className="refl-btn" onClick={() => { for (const mf of multiFixtures) onUpdateFixture(mf.id, { hidden: true }); }}>{t('prop.multiHide', '🚫 Hide')}</button>
-              <button className="refl-btn" onClick={() => { for (const mf of multiFixtures) onUpdateFixture(mf.id, { hidden: undefined }); }}>{t('prop.multiShow', '👁 Show')}</button>
+              <button className="refl-btn" onClick={() => { for (const mf of multiFixtures) onUpdateFixture(mf.id, { hidden: true }); }}><Icon name="eyeOff" size={13} />{t('prop.multiHide', 'Hide')}</button>
+              <button className="refl-btn" onClick={() => { for (const mf of multiFixtures) onUpdateFixture(mf.id, { hidden: undefined }); }}><Icon name="eye" size={13} />{t('prop.multiShow', 'Show')}</button>
             </div>
           )}
         </div>
@@ -1069,9 +1073,9 @@ const PropertyPanel: React.FC<Props> = ({
       <div className="prop-section">
         <span className="prop-section-title">{t('prop.quickstart', 'Quick start')}</span>
         <ol className="quickstart-list">
-          <li><span>📐</span> <strong>{t('prop.qs1strong', 'Floor plan')}</strong> {t('prop.qs1rest', 'import – JPG, PNG or PDF')}</li>
-          <li><span>📏</span> <strong>{t('prop.qs2strong', 'Calibrate scale')}</strong> {t('prop.qs2rest', '– drag a segment, enter the real length')}</li>
-          <li><span>💡</span> {t('prop.qs3', 'Drag fixtures from the library onto the plan')}</li>
+          <li><span><Icon name="plan2d" size={13} /></span> <strong>{t('prop.qs1strong', 'Floor plan')}</strong> {t('prop.qs1rest', 'import – JPG, PNG or PDF')}</li>
+          <li><span><Icon name="ruler" size={13} /></span> <strong>{t('prop.qs2strong', 'Calibrate scale')}</strong> {t('prop.qs2rest', '– drag a segment, enter the real length')}</li>
+          <li><span><Icon name="fixture" size={13} /></span> {t('prop.qs3', 'Drag fixtures from the library onto the plan')}</li>
         </ol>
       </div>
       <div className="prop-section">

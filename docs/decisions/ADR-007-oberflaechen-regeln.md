@@ -249,6 +249,58 @@ Von aussen nach innen:
     trugen sie in allen drei grossen Apps nur die Dialoge und die
     Kommandopalette.
 
+  - **Und die Kopfzeile nennt die Spalte beim Namen** (ergaenzt am
+    2026-09-11, zweite Runde). Der Satz darueber sagte, dass es eine
+    Kopfzeile gibt; er sagte nicht, was darin steht. Nachgesehen, nachdem
+    der Griff vereinheitlicht war:
+
+    | App | offen | eingeklappt |
+    |---|---|---|
+    | `cable-planner` Inspektor | Name ja, Linie gedaempft statt Akzent | Name senkrecht |
+    | `cable-planner` Bibliothek | kein Name — die Register begannen sofort | Name senkrecht |
+    | `multicam-planner` | keine Kopfzeile, nur die Registerzeile | Name senkrecht |
+    | `light-planner` | Name und Linie | Name senkrecht |
+
+    In zwei von vier Spalten sagte die OFFENE Spalte ihren Namen nicht,
+    waehrend die eingeklappte ihn senkrecht trug. Wer aufklappt, verliert
+    damit die Auskunft, die er zugeklappt hatte — das ist genau verkehrt
+    herum.
+
+    Eine Spalte mit Registern bekommt die Kopfzeile TROTZDEM: die Register
+    sagen, welche SICHT man waehlt, nicht was die Spalte ist. „Settings" und
+    „Templates" nebeneinander beantworten nicht die Frage, wozu die Spalte
+    gehoert.
+
+    Die Kopfzeile kostet keine eigene Zeile, wo schon eine da ist: im
+    `cable-planner` traegt die vorhandene Knopfzeile (Einklappen, Fenster)
+    jetzt auch den Namen. Das ist kein Detail — diese Spalte ist fest 260 px
+    breit, und ihre Registerzeile musste 2026-09-07 zweispaltig umgebaut
+    werden, weil zwei von vier Registern aus dem Fenster ragten.
+
+    Gemessen wird beides von `scripts/chrome-parity.mjs` Abschnitt 5.
+    NICHT gemessen: ob die Linie im Fenster wirklich in der Akzentfarbe
+    erscheint. Der Lauf liest Klassen, nicht Pixel.
+
+  - **Die Zeichen der Oberflaeche kommen aus dem Icon-Satz der App**, nicht
+    aus der Zeichentabelle (ergaenzt am 2026-09-11). Ein Piktogramm kommt
+    aus der Schrift des Systems: eigene Farbe, eigene Strichstaerke, auf
+    Windows, macOS und Linux drei verschiedene Formen. Neben einem
+    Strichsymbol mit 1,7 px in `currentColor` sieht das aus wie zwei
+    Programme in einem Fenster.
+
+    Gemessen am 2026-09-11 ueber `\p{Extended_Pictographic}`:
+    `light-planner` 92 Zeilen, `cable-planner` 143, `multicam-planner` 33.
+    Im `light-planner` waren es die Ebenen-Liste, der Grundriss-Kasten, die
+    Szenen-Liste, vier Dialoge und die Platzier-Hinweise — waehrend die
+    Werkzeug-Rail derselben App seit jeher `Icon.tsx` nutzt, dessen erste
+    Zeile ausdruecklich sagt, es ersetze „the emoji icons across the UI".
+
+    DIE REGEL GILT FUER DIE BEDIENUNG, NICHT FUER DEN INHALT. Ein
+    Buehnenobjekt in einer Auswahlliste (`multicam-planner`: Schlagzeug,
+    Fluegel, Mikrofonstaender) darf ein Piktogramm sein — dafuer gibt es
+    keinen Strichsatz, und es ist eine Sache, keine Schaltflaeche. Ebenso
+    alles, was auf ein Canvas gemalt wird: dort gibt es kein SVG.
+
   **Spaltenbreiten:** Inspektor 280–360 px (siehe oben), linke Spalte
   260–320 px, eingeklappt je 32 px. Wo eine App ihre Spalte mit dem Fenster
   wachsen laesst, ist das eine begruendete Abweichung und gehoert

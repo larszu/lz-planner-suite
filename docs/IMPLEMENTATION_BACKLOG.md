@@ -4674,6 +4674,92 @@ eine Antwort:**
   `ci:complete` vergleicht deshalb gegen einen Workflow, den niemand
   ausführt. Beides stand schon vor dieser Arbeit so.
 
+---
+
+#### Zweite Runde am selben Tag: das Innere der Spalten
+
+Der Rahmen war gleich, der Griff war gleich — und dann fiel auf, dass die
+Spalten sich *darin* weiter unterscheiden. Vier Befunde, alle gemessen:
+
+* **Der Inspektor des `light-planner` liess 68 px leer.** `.property-panel`
+  trug `width: 240px; min-width: 240px` aus der Zeit, als es die Spalte noch
+  nicht gab. Seit dem Umbau auf `SeitenPanel` ist die Spalte 308 px breit
+  (ADR-007: 280–360) — das Panel blieb bei 240, der Rest war leere Fläche mit
+  der Trennlinie weit rechts daneben. **Ein `flex: 1` half nicht und das ist
+  der lehrreiche Teil:** der Wickel ist eine SPALTE, in einem
+  `flex-direction: column` wirkt `flex` auf die Höhe. Die Breite gehört jetzt
+  der Spalte, das Panel füllt sie.
+
+* **Die offene Spalte sagte ihren Namen nicht.** Gemessen über die vier
+  Spalten der drei grossen Apps:
+
+  | Spalte | offen | eingeklappt |
+  |---|---|---|
+  | `cable-planner` Inspektor | Name ja, Linie gedämpft statt Akzent | Name senkrecht |
+  | `cable-planner` Bibliothek | **kein Name** — die vier Register begannen sofort | Name senkrecht |
+  | `multicam-planner` | **keine Kopfzeile**, nur die Registerzeile | Name senkrecht |
+  | `light-planner` | Name und Akzentlinie | Name senkrecht |
+
+  In zwei von vier Spalten sagte die OFFENE Spalte nicht, was sie ist,
+  während die eingeklappte den Namen senkrecht trug. Wer aufklappt, verliert
+  also die Auskunft, die er zugeklappt hatte — genau verkehrt herum. Alle
+  vier tragen jetzt Name und Kopflinie; im `cable-planner` in der Zeile, die
+  schon da war (Einklapp-Knopf, Fenster-Menü), damit die 260 px breite
+  Bibliothek keine zweite Zeile Höhe verliert.
+
+  **Der Wächter dafür brauchte zwei Anläufe, und der erste ist der
+  interessante:** er suchte im Quelltext der Spalten-Dateien nach „Rand unten
+  in der Akzentfarbe" und blieb GRÜN, als die Kopfzeile des
+  `multicam-planner` versuchsweise auf den gedämpften Rand gedreht wurde —
+  denn dieselbe Datei trägt `border-b-2 border-bc-accent` am aktiven
+  REGISTER. Der Lauf bestätigte einen Unterstrich und nannte ihn Kopflinie.
+  Die Kopfzeile zeichnet sich jetzt selbst aus (Klasse `spaltenkopf`); fünf
+  Gegenproben fallen, die wiederhergestellte Fassung ist grün.
+
+* **Toter Code als grösste Fundstelle.** `light-planner/src/components/
+  Toolbar.tsx` — 395 Zeilen, von niemandem importiert. Der eigene
+  i18n-Wächter weiss das seit Langem und schreibt es in seinen Kopf („wird
+  nirgends importiert"); gelöscht wurde die Datei nie. Sie trug 20
+  Piktogramme und war damit die erste Fundstelle für jeden, der die
+  Oberflächen vergleicht: eine zweite, widersprüchliche Werkzeugleiste, die
+  wie die echte aussieht. Mit ihr fielen 90 Zeilen CSS und **45 verwaiste
+  `tb.*`-Übersetzungen**. Nachgesehen, was verloren geht: nichts — jede
+  Funktion liegt in `ToolRail` oder `CanvasActions`, auch die automatische
+  Decke, die auf den ersten Blick nur dort zu hängen schien. Zwei
+  Hinweistexte nannten die Toolbar als Ort einer Funktion; sie nennen jetzt
+  die Aktionsleiste über dem Plan.
+
+* **Piktogramme in der Bedienung.** Gemessen über
+  `\p{Extended_Pictographic}`: `light-planner` 92 Zeilen, `cable-planner`
+  143, `multicam-planner` 33. Im `light-planner` waren es die Ebenen-Liste,
+  der Grundriss-Kasten, die Szenen-Liste, vier Dialoge und die
+  Platzier-Hinweise — während die Werkzeug-Rail derselben App seit jeher
+  `Icon.tsx` nutzt, dessen erste Zeile ausdrücklich sagt, es ersetze „the
+  emoji icons across the UI". Ein Piktogramm kommt aus der Schrift des
+  Systems: eigene Farbe, eigene Strichstärke, drei Formen auf drei
+  Betriebssystemen, direkt neben einem Strichsymbol mit 1,7 px in
+  `currentColor`.
+
+  **Die Regel gilt für die Bedienung, nicht für den Inhalt** — und deshalb
+  bleiben die 33 Zeilen im `multicam-planner` fast alle stehen: ein
+  Bühnenobjekt in einer Auswahlliste (Schlagzeug, Flügel, Mikrofonständer)
+  ist eine Sache, keine Schaltfläche, und für sie gibt es keinen Strichsatz.
+  Ebenso alles, was auf ein Canvas gemalt wird: dort gibt es kein SVG.
+
+* **Und drei deutsche Texte, die beide Hälften des Sprachwächters
+  übersprangen** (E-28: Quellsprache `en`): „Maßstab kalibrieren" und
+  „Position anpassen" standen roh im JSX des Grundriss-Kastens, „Kamera" als
+  Rückfall einer namenlosen Kamera in einer `ctx.fillText`-Vorlage. Die
+  ersten beiden trugen ein Piktogramm als erstes Zeichen, der dritte steht
+  im Canvas — `PlanCanvas` kannte i18n bis dahin gar nicht.
+
+**Was hier NICHT entschieden wurde:** ob die Kopflinie auch in den Dialogen
+der kleinen Repos (`inventory-planner`, `larszu-facility-planner`) gilt —
+die führen Reiter statt Spalten und stehen in `chrome:parity` bewusst
+ausserhalb des Spalten-Abschnitts. Und die 82 deutschen Zeichenketten in
+Konstanten-Tabellen aus dem Absatz oben bleiben offen; die drei hier
+behobenen waren keine Tabellen-Einträge, sondern rohes JSX.
+
 ### B-72 · Die MITGELIEFERTEN Presets haben keine Herkunft — und der Wächter misst die andere
 
 * **Status:** offen, und der offene Teil ist eine EIGENTÜMER-FRAGE, keine
