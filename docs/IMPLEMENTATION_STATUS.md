@@ -35,18 +35,38 @@ Antwort darauf.
 
 ---
 
-## 1. Die acht Repos
+## 1. Die zehn Repos
+
+**Nachgemessen am 2026-09-11.** Die Tabelle stand bis dahin auf dem Stand vom
+2026-09-04 und nannte **acht** Repos — seit E-26 und E-27 sind es zehn
+(`inventory-planner`, `larszu-facility-planner`). Auch die Zahlen waren
+überholt: `cable-planner` stand auf 8.3.2 und „~123.000 LOC" und ist
+inzwischen 9.0.1 mit 191.059.
+
+**Wie gemessen wurde, damit die nächste Messung dieselbe Frage stellt:**
+Zeilen in `.ts`/`.tsx` unter `src/` (bei den Workspace-Repos unter dem ganzen
+Repo ohne `node_modules`/`dist`), gezählt wie `wc -l`; Python-Repos in `.py`;
+Workflows sind die Dateien in `.github/workflows/`. Das ist dieselbe
+Definition, die `cable-planner/scripts/update-doc-stats.mjs` für seine eigenen
+Zahlen benutzt — dort laufen sie bei jedem Merge automatisch nach, hier nicht,
+und genau deshalb war diese Tabelle eine Woche alt.
 
 | Repo | Version | Umfang | CI |
 | --- | --- | --- | --- |
-| `cable-planner` | 8.3.2 | ~123.000 LOC, Electron 3-Prozess | 6 Workflows |
-| `multicam-planner` | 4.3.2 | ~21.800 LOC | 2 Workflows |
-| `light-planner` | 1.0.0 | ~15.800 LOC | 2 Workflows |
-| `av-planner-suite` | 1.0.0 | Shell + 4 Pakete + 3 vendorte Planer | 2 Workflows |
-| `Broadcast-intercom` | 0.1.0 | ~7.250 LOC (server/web/shared/companion) | 1 Workflow (neu) |
-| `sony-camera-bridge` | 1.0.0 | ~11.500 LOC | 1 Workflow (neu) |
-| `tally-pi` | — | 2.978 LOC Python, 5 Module | 1 Workflow (`verify.yml`: compileall + `bash -n` + Unit-Tests) |
-| `pi-media-station` | — | 638 LOC Python + Electron-Manager | 1 Workflow (`verify.yml`: Deps + compileall + `bash -n` + Unit-Tests) |
+| `cable-planner` | 9.0.1 | 191.059 LOC in 657 Modulen, Electron 3-Prozess | 5 Workflows (`ci`, `docs-stats`, `docs-sync`, `pages`, `release`) |
+| `multicam-planner` | 4.3.3 | 33.153 LOC in 136 Modulen | 3 Workflows (`ci`, `pages`, `release`) |
+| `light-planner` | 1.0.0 | 26.298 LOC in 104 Modulen | 3 Workflows |
+| `inventory-planner` | 0.1.0 | 10.876 LOC in 55 Modulen — das Lager als eigenes Werkzeug (E-27) | 3 Workflows |
+| `larszu-facility-planner` | 0.1.0 | 3.539 LOC in 22 Modulen — Festinstallation, Elektro, Haussteuerung (E-26) | 3 Workflows |
+| `av-planner-suite` | 1.0.0 | Shell + **5** Pakete (`dmx-core`, `inventory-core`, `lexware-core`, `onboarding-core`, `ui`) + **5** vendorte Planer; 20.964 LOC in Shell und Paketen | 3 Workflows |
+| `Broadcast-intercom` | 0.1.0 | 7.661 LOC (server/web/shared/companion) | 2 Workflows |
+| `sony-camera-bridge` | 1.0.0 | 13.707 LOC in 66 Modulen | 3 Workflows |
+| `tally-pi` | — | 6.882 LOC Python | 2 Workflows (`syntax`, `pages`) |
+| `pi-media-station` | — | 2.442 LOC Python + Electron-Manager | 2 Workflows (`verify`, `pages`) |
+
+**Was diese Tabelle NICHT sagt:** LOC ist ein Umfangsmass und kein
+Qualitätsmass, und die Zahl der Workflows sagt nichts darüber, was sie prüfen.
+Wofür die Läufe einstehen, steht in Abschnitt 2.
 
 ---
 
@@ -170,6 +190,7 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | Geheimnis-Filter beim Export | `COMPLETE` | `util/stripSecrets.ts`, 10 Tests; `SECRET_KEYS` **und** `OPAQUE_KEYS` (Hersteller-Rohdokumente gehen als Ganzes nicht mit) |
 | Dokument-Stempel + Register | `COMPLETE` | `lib/documentStamp.ts`, `lib/documentRegistry.ts`; Aufbaustand im Fingerabdruck (`cable#654`) |
 | Adressplan (Initiative 8) | `COMPLETE` | `cable#701`; `lib/addressPlan.ts` leitet aus den Ports ab, welches Geraet eine Adresse braucht, und liefert den Beleg mit. Fuenf nachrechenbare Befunde, keine Vermutungen. Vergibt bewusst KEINE Adressen (E-5 offen) -- ein Test haelt das fest |
+| DMX-Adressen und Betriebsmodi | `COMPLETE` | B-67, E-33 — `cable#847`, `light#114`, gerechnet im gemeinsamen Paket `@avplan/dmx-core`. Der Kanalbedarf haengt am **Modus** und nicht am Geraetetyp: eine Robe hat je nach Modus 20, 31 oder 53 Kanaele, und eine Zahl am Typ kann das nicht sagen. Drei Zustaende, und der dritte ist der Punkt: `0` heisst Dimmer (eine Aussage), `n` heisst Kanaele des gewaehlten Modus, `null` heisst unbekannt — wer `null` zu `0` faltet, macht ein Geraet unpatchbar UND unauffaellig. Vergabe dicht gepackt in Lesereihenfolge; eine Kollision wird **geschrieben und gemeldet**, nicht still verschoben; eine festgesetzte Adresse wird uebersprungen, nicht umgangen. Jeder Modus traegt seine Herkunft (`handbuch`/`gdtf`/`pult`/`geraet`/`geschaetzt`) — der aus dem Alt-Feld `dmxChannels` gerechnete ist `geschaetzt` und gibt sich nicht als Messung aus. **Liest keine GDTF-Datei**: die Herkunft ist vorgesehen und wird von Hand gesetzt, ein ungeprueftes Parser-Ergebnis saehe aus wie eine belegte Quelle |
 | Dokument-Stempel in den anderen beiden Planern | `COMPLETE` | ADR-004 Inkrement 4. `light#70`: alle vier Ausdrucke (Instrument Schedule, Geraeteliste, Farbliste, Plan-PDF), Abweichung gegen den juengsten Versions-Schnappschuss, Guard `stamp:check`. `multicam#91`: Kamerakarte und Storyboard (PNG wie Druck), ohne Revisions-Behauptung, weil `projectVersion` Aenderungen zaehlt statt Staende festzuschreiben; 22 Tests. Die drei Kopien haelt `stamp:parity` in der Suite gegeneinander — ausgefuehrt, nicht textverglichen |
 | Änderungs-Auswirkung | `COMPLETE` | `lib/changeImpact.ts`, `lib/planDiff.ts`, Vergleich auch gegen festgeschriebene Revision (`cable#655`) |
 | Tally-Datenvertrag | `COMPLETE` | `lib/tallyMap.ts` + `tests/tallyMap.test.ts`; Felder decken sich mit `gpio_watcher.py:79` (`me` fällt bewusst weg, dort Default 1) |
@@ -270,6 +291,8 @@ Der Kern ist also **nicht** Gerüst. Was fehlt, ist nicht Funktion, sondern
 | `Broadcast-intercom` Kern | `IMPLEMENTED` | 38 Smoke-Prüfungen grün gegen laufenden Server |
 | `Broadcast-intercom` CI | `COMPLETE` | `ci.yml` baut, startet den Kern mit `MOCK_DEVICES=1` und fährt die 38 Smoke-Prüfungen (`#6`, erster Lauf grün) |
 | `sony-camera-bridge` | `IMPLEMENTED` | 15 Tests grün in zwei Workspaces, ganz auf ADR-003 ausgerichtet |
+| `inventory-planner` | `IMPLEMENTED` | E-27, seit 2026-09-09 eigenes Repo mit eigener Oberfläche. Der Hauptbefund aus B-65 ist abgearbeitet: von 18 Domänen-Modulen waren **10 von keiner Oberfläche aus erreichbar**, heute **null** (`#2`, `#3`, `#4`, nachgerechnet über den Import-Graph, nicht über eine gepflegte Liste). Dazu Mindestmenge (`#5`), Fristen-Ampel mit **eigenen Arten** (`#6`, `#9`, E-32), Kamera-Scan mit mitgeliefertem Decoder (`#7`, `#10`, E-30) und Wareneingang mit lokalem OCR (`#8`, `#10`, E-31). **Die Grenze zum Plan ist gemessen, nicht behauptet:** `scripts/plan-grenze-check.ts` verbietet jedes Plan-Modell im Lager (ADR-006) |
+| `larszu-facility-planner` | `IMPLEMENTED` | E-26, seit 2026-09-09 eigenes Repo. Schaltschrank, UP-/AP-Dose, Stromkreis, Trassen, Schaltstellen, Grundriss, DALI-Adressart (`#4`); seit `#5` trägt das Gebäude ein eigenes Dateiformat (`avplan-facility` v1) mit Kopf- und Fussweg in der Oberfläche. **Der Vertrag ist Code:** `@avplan/facility-core` (E-26 Schritt 2), gehalten von `vertrag:parity` in der Suite. Der `cable-planner` liest die Auskunft und prüft gegen sie, ohne sie abzuschreiben (`cable#849`, Plan-Check 26) |
 | `Broadcast-intercom` i18n | `COMPLETE` | 165 Schluessel, EN und DE vollstaendig — und zwar **vom Typ erzwungen** (`const DE: typeof EN`), ein fehlender Schluessel waere ein Compile-Fehler. Die 29 wertgleichen Eintraege sind echte Gleichwoerter (Monitor, Signal, Sidetone, VOX) |
 | `sony-camera-bridge` Oberflaechen-Sprache | `COMPLETE` | `sony#22` (B-26, E-17). Die Oberflaeche ist einsprachig englisch, und das ist keine Behauptung: `scripts/quellsprache-check.mjs` meldet dort „keine fremdsprachige Zeichenkette in der Oberflaeche". Eine einzige deutsche laesst den Lauf fallen. **Nachgemessen 2026-09-09** — die Zeile sprach bis dahin von 32 deutschen Stellen |
 | `sony-camera-bridge` CI | `COMPLETE` | `ci.yml` mit `npm ci` + `npm test` (`#11`, grün) |
@@ -369,6 +392,6 @@ nicht „halbfertiges Produkt", sondern **reifer Kern mit benannten Lücken**.
 Die Lücken sind nicht gleichmäßig verteilt: sie sitzen fast alle an den
 **Nahtstellen** — zwischen Suite und upstream, zwischen Plan und Gerät,
 zwischen zwei Repos, die dasselbe Vokabular in eigenen Kopien führen. Das ist
-kein Zufall, sondern die Bauform: acht Repos, die einzeln funktionieren.
+kein Zufall, sondern die Bauform: zehn Repos, die einzeln funktionieren.
 
 Der offene Backlog steht in [`IMPLEMENTATION_BACKLOG.md`](IMPLEMENTATION_BACKLOG.md).

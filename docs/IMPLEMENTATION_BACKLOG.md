@@ -592,11 +592,13 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   (`#7`), Wareneingang (`#8`). Die Tabelle unten hat keine `fehlt`-Zeile
   mehr.
 
-  **Offen sind nur noch zwei ABHÄNGIGKEITS-Entscheidungen des Eigentümers**,
-  und beide sind so gebaut, dass sie später ohne Umbau fallen können:
-  ein mitgeliefertes WASM (`zxing-wasm`, MIT, ~1 MB gegen 269 kB Bundle),
-  damit der Kamera-Scan auch auf dem Desktop dekodiert; und OCR, damit der
-  Wareneingang ein Beleg-FOTO liest statt Text. Siehe unten.
+  **Die zwei ABHÄNGIGKEITS-Entscheidungen sind am 2026-09-10 beantwortet und
+  gebaut** (`inventory#10`): der Decoder wird mitgeliefert (E-30), das OCR
+  läuft lokal (E-31). Dass sie als Schnittstelle vorbereitet waren, hat sich
+  ausgezahlt — `CodeLeser` hat eine Methode, und der zweite Leser war ein
+  Modul und keine Umbaustelle. **Eine dritte Frage kam noch dazu und ist
+  ebenfalls entschieden und gebaut:** eigene Fristarten und Prüferinnen
+  (E-32, `inventory#9`, Wire-Contract Version 7 in allen vier Repos).
 * **Auslöser:** Der Eigentümer schickte fünf Bildschirmfotos einer fremden
   Bestands-App („Vorratix", Haushalts-Vorrat) mit dem Satz: „Analysiere diese
   paar Fotos für das Lagermodul. Es fehlen noch einige Funktionen."
@@ -638,13 +640,13 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   | Geführter Scan in Schritten („Schritt 1: Lagerplatz scannen") | Platz scannen → Artikel scannen → buchen | **fehlt** (`inventoryScan` löst auf, niemand ruft es) |
   | Erwarteter Prefix (`L#`) als Vorgabe und Prüfung | Lagerplatz-Codes gegen ein Hausschema prüfen | **fehlt** (`prefix`: 0 Fundstellen) |
   | Ausweg ohne Scan („Ohne Scan einbuchen", Raum/Objekt wählen) | Aufkleber unlesbar, Hand-Eingabe | **fehlt** |
-  | Taschenlampe, Kamerawechsel im Scanner | dunkler Truck, Case über Kopf | **GEBAUT** (`inventory#7`) — mit dem gemessenen Vorbehalt unten |
+  | Taschenlampe, Kamerawechsel im Scanner | dunkler Truck, Case über Kopf | **GEBAUT** (`inventory#7`); der gemessene Vorbehalt „kein Decoder auf dem Schreibtisch" ist seit `inventory#10` weg (E-30) |
   | Kennzahlen-Startseite (Bestand, „Unter Ziel", fällig) | Was muss ich heute anfassen? | **GEBAUT** (`inventory#3`, `#5`, `#6`) |
   | Soll-/Mindestmenge, „Unter Ziel" | Meldebestand je Artikel | **GEBAUT** (`inventory#5`) |
-  | „Bald ablaufend / Abgelaufen / Diese Woche fällig" | DGUV-V3-Prüftermin, Kalibrierung, Akku-Alter, Versicherungsende | **GEBAUT** (`inventory#6`) |
-  | „Anomalien — auffällige Artikel prüfen" | Inventur-Abweichung, Ware am falschen Platz | **halb**: `inventoryAudit` (390 Zeilen) hat keine Oberfläche |
+  | „Bald ablaufend / Abgelaufen / Diese Woche fällig" | DGUV-V3-Prüftermin, Kalibrierung, Akku-Alter, Versicherungsende | **GEBAUT** (`inventory#6`), seit `inventory#9` mit **eigenen Arten** statt einer festen Liste (E-32) |
+  | „Anomalien — auffällige Artikel prüfen" | Inventur-Abweichung, Ware am falschen Platz | **GEBAUT** — der Inventur-Reiter aus `inventory#2` hängt `inventoryAudit` an; die Zeile stand bis 2026-09-11 auf „halb" und war damit älter als ihr eigener Eintrag |
   | „Verlauf" | wer hat wann was gebucht | **halb**: `storageMoves` bewegt, eine Historie je Artikel fehlt |
-  | Kassenbon-Import (Foto → Positionen) | Lieferschein/Rechnung → Wareneingang | **GEBAUT als Text-Weg** (`inventory#8`); das FOTO braucht OCR und ist die Eigentümer-Frage unten |
+  | Kassenbon-Import (Foto → Positionen) | Lieferschein/Rechnung → Wareneingang | **GEBAUT** — Text-Weg `inventory#8`, das FOTO seit `inventory#10` (E-31, lokales OCR). Die Sprachdatei liegt hinter dem Egress-Filter und ist nicht im Repo; der Lauf sagt es, statt eine Kamera zu öffnen |
   | „Einkauf"-Reiter | was muss beschafft oder sub-hired werden | **halb**: die Nachbestell-Liste als CSV steht (`inventory#5`), ein eigener Reiter nicht |
   | Artikelgruppen als gepflegte Liste | Kategorie ist heute freier Text | **offen** — kein B-65-Befund, sondern eine eigene Frage (siehe unten) |
   | „Beispieldaten erstellen" | Seed (vorhanden in `@avplan/ui`) | **prüfen**, ob das Lager daran hängt |
@@ -825,28 +827,70 @@ ist damit Arbeit — und wo eine Bedingung bleibt, die kein Beschluss aufhebt
   Beides gleichzusetzen füllte die Tagesmiete im Bericht mit Einkaufspreisen —
   die Summe dort sähe danach vollständig aus und wäre falsch.
 
-* **NICHT ZU ENTSCHEIDEN OHNE DEN EIGENTÜMER — zwei Abhängigkeiten:**
+* **GEBAUT, achte Zeile — `inventory#9` (2026-09-10): eigene Fristarten und
+  Prüferinnen** (E-32). Die Fristen-Ampel aus `inventory#6` kannte drei
+  eingebaute Arten. Ein Haus, das Höhensicherung, Gassensoren oder
+  Akku-Tausch führt, wartete damit auf ein Feld. Jetzt ist die Art eine
+  **gepflegte Liste**, und das Ablaufdatum, um das die alte offene Frage
+  ging, ist einer ihrer Fälle statt eines eigenen Schemas — ein Termin ohne
+  Intervall.
 
-  1. **`zxing-wasm` (MIT, ~1 MB) für den Decoder auf dem Desktop.** Ohne ihn
-     bleibt der Kamera-Scan ein Weg für Telefone; die App baut heute 269 kB.
-     `CodeLeser` in `lib/codeLeser.ts` ist genau dafür eine Schnittstelle mit
-     EINER Methode — ein zweiter Leser ist dann ein Modul und keine
-     Umbaustelle.
-  2. **OCR für das Beleg-Foto.** Dieselbe Sorte Frage, eine Grössenordnung
-     grösser, und mit dem Zusatzproblem, dass ein OCR-Ergebnis geprüft werden
-     muss, um verlässlich zu sein.
+  **Das ist eine Änderung am Wire-Contract und deshalb ein Versionssprung in
+  allen vier Repos**, nicht ein Feld nebenbei: `avplan-inventory` steht auf
+  **7** (`inventory#9`, `cable#848`, `light#115`, `multicam#128`, vendoriert
+  in `suite#220`). `heileFristArten` trägt die drei eingebauten immer nach —
+  ein Bestand aus einem Haus ohne eigene Arten kommt sonst mit einer leeren
+  Liste an und sähe aus, als führte es gar keine Prüfungen.
 
-  Beide sind bewusst offen gelassen und nicht still entschieden.
+  **`istUnbekannteArt` ist der eigentliche Schutz.** Wer einen Bestand aus
+  einem Haus mit anderen Arten importiert, bekommt Fristen, deren Art hier
+  niemand kennt. Sie bleiben SICHTBAR und tragen ihre rohe Kennung, statt
+  still aus der Ampel zu fallen — ein geschluckter Prüftermin ist genau der
+  Ausgang, gegen den die Ampel gebaut wurde.
+
+* **GEBAUT, neunte und letzte Zeile — `inventory#10` (2026-09-10): die
+  beiden Abhängigkeiten, beide vom Eigentümer entschieden.**
+
+  1. **Der Decoder wird mitgeliefert** (E-30, `zxing-wasm`, MIT).
+     `waehleLeser()` nimmt den nativen Leser, wo es ihn gibt, und lädt das
+     WASM erst sonst — es kostet also nichts auf den Geräten, die ohnehin
+     dekodieren können. `hatDecoder` ist damit keine Eigenschaft des Browsers
+     mehr, sondern eine der Lieferung. **Die Zeile, ohne die die Entscheidung
+     ihr eigenes Versprechen bräche:** `zxing-wasm` holt seine `.wasm` in der
+     Voreinstellung von einem CDN — mit `?url` und gesetztem Pfad bleibt der
+     Scan offline, und „mitgeliefert" heisst mitgeliefert. Der Fall „das WASM
+     lädt nicht" bleibt ein benannter Grund und keine Kamera, die nie etwas
+     erkennt.
+  2. **Das OCR läuft lokal** (E-31, `tesseract.js`). Kein Bild verlässt das
+     Haus; ein Lieferschein trägt Kundennamen und Preise. Gelesen wird in
+     dieselbe Vorschau-Tabelle wie beim Text-Weg — erst lesen, dann buchen —,
+     und die gemeldete Sicherheit steht je Zeile daneben, weil ein
+     OCR-Ergebnis geprüft werden muss, um verlässlich zu sein.
+
+     **Eine Tatsachen-Sperre bleibt und ist benannt:** die Sprachdatei
+     `deu.traineddata.gz` liegt hinter demselben Egress-Filter wie die
+     Hersteller-Domänen aus B-60 und ist nicht im Repo. `sprachdatenDa()`
+     fragt danach, BEVOR irgendetwas geöffnet wird;
+     `public/tessdata/README.md` nennt Datei, Herkunft und Lizenz. Ein
+     Foto-Knopf, der ohne die Datei erscheint, wäre derselbe tote Knopf,
+     gegen den `inventory#7` gebaut wurde.
 
 * **Was aus der Tabelle bleibt, ist KEIN B-65-Befund mehr:** die
   Artikelgruppen als gepflegte Liste (Kategorie ist heute freier Text). Das
   ist eine eigene Frage über Stammdaten und gehört in einen eigenen Eintrag,
   wenn der Eigentümer sie stellt.
-* **Nicht entschieden, gehört dem Eigentümer:** ob das Lagermodul
-  Verbrauchsmaterial mit Haltbarkeit führen soll (Batterien, Gaffa, Filter)
-  oder nur Rental-Material mit Prüfterminen. Die Vorlage zeigt Ersteres, das
-  Haus lebt von Letzterem, und die Antwort entscheidet, ob „Ablaufdatum" ein
-  eigenes Feld wird oder ein Fall von „Frist".
+* **Entschieden am 2026-09-10 (E-32) — und die Frage fiel breiter aus, als
+  sie gestellt war.** Sie lautete: führt das Lagermodul Verbrauchsmaterial
+  mit Haltbarkeit (Batterien, Gaffa, Filter) oder nur Rental-Material mit
+  Prüfterminen? Die Antwort des Eigentümers war „zusätzliche Arten von
+  Haltbarkeiten und Prüferinnen custom anlegen möglich machen" — also weder
+  das eine noch das andere, sondern die Liste selbst in die Hand des Hauses.
+  Damit ist „Ablaufdatum" kein eigenes Feld: es ist ein Termin ohne
+  Intervall, und wer eine Art braucht, die hier niemand vorgesehen hat, legt
+  sie an. **Was sie weiterhin NICHT beantwortet, und das war im
+  ursprünglichen Eintrag schon so benannt:** die BEDIENUNG von Verbrauch —
+  führt man Chargen? bucht man Verbrauch ab? Das ist eine eigene Frage und
+  steht hier als solche, statt als mitentschieden zu gelten.
 * **Aufwand:** groß — und teilbar: jede Zeile der Tabelle ist für sich
   lieferbar.
 
@@ -2412,6 +2456,17 @@ entfernte Probe-Zeile, ein zusätzlicher Eintrag in der Attributliste.
   `fixture-erreicht-grenze-nicht` sind durchgearbeitet. **Der Sweep ist
   abgeschlossen** — 24 bestätigte und behobene Befunde, jeder gegengeprobt.
 
+* **Eine sechste Form kam später dazu, und dieser Sweep hat sie nicht
+  gesucht:** `fokus-nach-dem-ereignis` (gefunden 2026-09-11, siehe **B-69**)
+  — eine Prüfung, die richtig formuliert ist und trotzdem die falsche
+  Grösse misst, weil zwischen dem Ereignis und der Messung ein anderer
+  Hörer gelaufen ist. Das ändert **nichts** am Ergebnis oben: die fünf
+  Formen sind durch, und was hier steht, ist keine nachträgliche Lücke im
+  Sweep, sondern eine Form, die es zur Laufzeit des Sweeps noch nicht als
+  Begriff gab. Ein Sweep über sie wäre eine eigene Arbeit und ist **nicht
+  gelaufen** — wer B-36 liest und daraus „die Formen sind alle geprüft"
+  mitnimmt, läge bei dieser einen falsch.
+
 * **Aufwand:** ~~mittel (Wiederholung, sobald Kontingent da ist)~~ ~~eine Form
   von fünf ist durch; drei stehen aus~~ ~~zwei Formen von fünf sind durch;
   zwei stehen aus~~ ~~drei Formen von fünf sind durch; eine steht aus~~
@@ -3612,6 +3667,143 @@ belegbar, dort sind sie erprobt.
   Griff auf dem Strich"** — die Frage, die der Nutzer gestellt hat.
 * **Aufwand:** mittel — erledigt.
 
+### B-67 · Lampen mit DMX-Adressen im Kabel-Planer — und ein Betriebsmodus, der den Fussabdruck entscheidet
+
+* **Status: ERLEDIGT 2026-09-10** — `cable#847`, `light#114`,
+  `packages/dmx-core`, vendoriert in `suite#219`. Entschieden vom Eigentümer
+  in vier Punkten (E-33).
+* **Der Wunsch (Eigentümer, 2026-09-10):** „Optimiere auch im Cable planner
+  so, dass man Lampen (z.B auch Robe movingheads mit DMX Adressen etc.
+  einplanen kann und daraus auch automatisch die DMX Adressen generiert
+  werden nach eingestelltem Modi. Prüfe wie das in light planner ist und wie
+  man beides optimieren kann."
+* **DER BEFUND BEIM NACHSEHEN IM `light-planner` IST DIE EIGENTLICHE
+  NACHRICHT, und er ist älter als der Wunsch.** Dort gab es Adressvergabe
+  längst — aber der Kanalbedarf stand als **eine Zahl am Gerätetyp**
+  (`dmxChannels`). Eine Robe hat je nach Modus 20, 31 oder 53 Kanäle; eine
+  Zahl kann das nicht sagen. Wer den Modus am Pult umstellte, hatte einen
+  Patchzettel, der weiterhin richtig aussah und falsch war — und die
+  Vergabe packte die nächste Lampe mitten in die vorige.
+* **Die drei Zustände des Fussabdrucks, und warum keiner davon `0` heissen
+  darf, wenn er „unbekannt" meint:**
+  * `0` = **Dimmer**, und das ist eine Aussage: eine konventionelle Leuchte
+    hängt an einem Dimmerkanal und belegt keinen DMX-Platz.
+  * `n > 0` = die Kanäle des **gewählten** Modus.
+  * `null` = **unbekannt** — kein Modus gewählt, keine Angabe.
+
+  `footprintOrNull()` (light) und `fussabdruck()` (Paket) geben `null`
+  zurück; `modeMissing()` fragt danach. Wer `null` zu `0` zusammenfaltet,
+  macht ein Gerät **unpatchbar UND unauffällig zugleich** — es belegt nichts,
+  fällt nirgends auf, und steht am Showtag dunkel im Rig. Genau dieselbe
+  Defektform hatte `multicam#92` schon einmal in der Gegenrichtung
+  (`1` statt `0` für „keine Angabe", siehe B-36).
+* **Die Herkunft steht am Modus, nicht im Kopf des Planers.**
+  `ModusHerkunft` kennt fünf Werte (`handbuch`, `gdtf`, `pult`, `geraet`,
+  `geschaetzt`). Das folgt der zweiten Entscheidung des Eigentümers — Daten
+  aus dem Pult-Patch **und** aus GDTF, von Hand nachbearbeitbar — und hat
+  eine Nebenwirkung, die wichtiger ist als die Quelle selbst: der aus dem
+  Alt-Feld `dmxChannels` gerechnete Modus trägt `geschaetzt` samt
+  Fundstelle. Er verschwindet damit **nicht** (ein Bestandsprojekt bleibt
+  lesbar), aber er gibt sich auch nicht als Messung aus.
+* **Kollisionen werden vergeben und gemeldet, nicht still verschoben**
+  (dritte Entscheidung). Das ist der Punkt, an dem ein Adress-Werkzeug
+  gefährlich wird: wer bei einem Zusammenstoss ausweicht, verrückt eine
+  Adresse, die vielleicht jemand von Hand gesetzt und auf einen Zettel
+  geschrieben hat — und niemand sieht, wann es passierte. Die Vergabe
+  schreibt deshalb, was sich ergibt, und `pruefeAdressen` nennt beide
+  Geräte. **Eine festgesetzte Adresse ist etwas anderes als eine kollidierende:**
+  `adresseFestgesetzt` wird übersprungen und danach wird weitergezählt, wo
+  die Automatik war — sie weicht nicht aus, sie fasst nicht an.
+* **Dicht gepackt, in Lesereihenfolge** (vierte Entscheidung): jedes Gerät
+  direkt hinter das vorige, keine 10er-Sprünge, kein Block je Typ. Die
+  Reihenfolge ist die, in der ein Mensch das Rig liest, damit der Zettel
+  neben der Bühne dieselbe Reihenfolge hat wie die Bühne.
+* **Warum ein gemeinsames Paket und keine zweite Rechnung** (erste
+  Entscheidung): `@avplan/dmx-core` rechnet für beide Planer und kennt keine
+  App. Hätte der Kabel-Planer seine eigene Vergabe bekommen, stünden für
+  dieselbe Bühne zwei Adresspläne nebeneinander, die sich bei jeder
+  Modus-Änderung weiter auseinanderbewegen — die Defektform
+  `zwei-rechnungen`, hier mit einem Zettel als Ausgang. `planner-drift.mjs`
+  trägt die beiden ersetzten Dateien deshalb in `REPLACED_BY_PACKAGE`.
+* **Was der Bau ausdrücklich NICHT tut:** er liest keine GDTF-Datei. Die
+  Herkunft `gdtf` ist im Modell vorgesehen und wird von Hand gesetzt; ein
+  Parser, den niemand gegen echte Dateien geprüft hat, sähe aus wie eine
+  belegte Quelle und wäre eine geratene. Dasselbe gilt für `pult`: der
+  Konsolen-Patch-Vergleich zeigt den Modus als Spalte und als Diff-Zeile
+  (`consolePatch.ts`), gelesen wird er aus dem, was jemand eingetragen hat.
+* **Gemessen:** `scripts/dmx-mode-check.ts` prüft acht Gruppen; der
+  Contract-Test des Pakets steht in `test/`. Die Gegenprobe, die den Wert
+  hat: ein Gerät ohne Modus **fällt** in der Vergabe auf, statt mit `0`
+  durchzulaufen.
+* **Aufwand:** mittel — erledigt.
+
+---
+
+### B-68 · ADR-007 nennt acht Repos, und die beiden neuen standen daneben
+
+* **Status: ERLEDIGT 2026-09-11** — `inventory#11`, `facility#6`, ADR-007
+  Stufe 6.
+* **Der Befund, und er kam aus dem Dokument selbst.** Beim Durchgehen der
+  offenen Punkte aus `/docs` fiel der Geltungsbereich von ADR-007 auf: „Gilt
+  fuer: alle **acht** Repos", mit Aufzaehlung. Seit E-26 und E-27 sind es
+  **zehn** — `inventory-planner` und `larszu-facility-planner` wurden am
+  2026-09-09 angelegt, einen Tag nachdem die fuenf Stufen des ADR als „stehen"
+  vermerkt worden waren.
+* **Nachgemessen am 2026-09-11, nicht geschaetzt:** die acht genannten Repos
+  tragen alle `#1D324F`; die beiden neuen **keines davon**. Statt der Palette
+  standen dort rohe slate-Werte (`#0f172a`, `#1e293b`, `#334155`, `#e2e8f0`,
+  `#94a3b8`, `#f59e0b`) und zusammen **elf** `border-radius`, die das ADR
+  ausdruecklich ausschliesst (Guide S. 10, „Was es nicht gibt").
+* **Das war kein Verstoss, und genau das macht es interessant.** Im Kopf
+  beider Stilblaetter stand der Aufschub woertlich: „Die Marken-Palette der
+  Suite (ADR-007) zieht mit dem Einbetten nach; bis dahin ist eine lesbare
+  Tabelle mehr wert als ein Thema, das gleich wieder ersetzt wird." Am
+  2026-09-09 war das richtig — die Repos waren einen Tag alt. Eingebettet sind
+  sie seit dem Vendoring, und damit war „bis dahin" vorbei, ohne dass jemand
+  es gemerkt haette. **Ein Aufschub ohne Termin ist eine Entscheidung, die
+  niemand trifft.**
+* **Die eigentliche Lehre liegt nicht bei den Farben, sondern beim
+  Geltungsbereich.** Er ist eine AUFZAEHLUNG. Eine Aufzaehlung waechst nicht
+  mit; sie muss gepflegt werden, und wer sie nicht pflegt, hat einen Beschluss,
+  der genau fuer die gilt, die es damals schon gab. Dieselbe Defektform wie in
+  B-4 (Status-Zeile altert schneller als der Bau) und B-62 (die Kopfzeile eines
+  Backlog-Eintrags altert schneller als sein Rumpf) — hier trifft sie einen
+  ADR. Deshalb steht jetzt in ADR-007 der Satz, der beim naechsten neuen Repo
+  gebraucht wird: eintragen UND den Waechter mit anlegen.
+* **Gebaut:** die Token-Schicht beider Repos auf die Palette aus
+  `@avplan/ui` (`src/brand.ts`), die Regelnamen unveraendert — dieselbe Form
+  wie bei `pi-media-station` und `tally-pi`. `--erhoben` haengt am gewaehlten
+  Reiter, damit es kein Token ist, das niemand benutzt. Die Rundungen fallen
+  ganz weg statt auf `0` zu gehen: eine Regel, die zusichert, was ohnehin gilt,
+  saehe beim naechsten Lesen wie eine Entscheidung aus.
+* **Je ein Waechter**, `src/domain/__tests__/markenPalette.node.test.ts`. Er
+  prueft die Palette, die Linie als Deckung, dass **Tally-Rot nicht die
+  Warnfarbe ist** (auf Ungleichheit, nicht nur auf den Wert — wer eine Warnung
+  im Aufnahmelicht setzt, nimmt dem Signal seine Bedeutung), dass keine
+  Rundungen, Schatten oder Verlaeufe mehr da sind, und dass keine der sechs
+  alten slate-Farben mehr im Stilblatt steht.
+  * **Gemessen und nicht behauptet:** der Lauf hat die elf Rundungen selbst
+    gefunden — sie standen auf keiner Liste.
+  * **Mit Gegenprobe zum Lauf selbst:** ein Token-Leser, der fuer jeden Namen
+    `''` liefert, machte jede Zusicherung zu einem Vergleich zweier leerer
+    Zeichenketten. Gruen, und ohne Aussage.
+  * **Eine Ausnahme steht benannt drin:** das eine `#000` im
+    `inventory-planner` ist die Kamera-Flaeche (`.inventur .sucher`). Schwarz
+    ist dort die richtige Umgebung fuer ein Kamerabild, so wie in
+    `pi-media-station` die Wiedergabe-Flaeche — eine Marken-Regel fuer
+    Bedienoberflaechen endet am Bild. Der Lauf haelt fest, dass es bei DIESEM
+    einen bleibt.
+* **Nebenbefund im `larszu-facility-planner`, der ohne den Waechter nicht
+  aufgefallen waere:** ein Test, der das Dateisystem liest, brach den Build
+  (`Cannot find name 'node:fs'`) — `tsconfig.app.json` stellt `lib` auf DOM
+  und kennt kein Node. Der `inventory-planner` hat dafuer laengst den Schnitt
+  (`.node.test.ts` gehoert in `tsconfig.node.json`), dieses Repo nicht. Jetzt
+  schon, mit derselben Begruendung fuer die Namensregel: eine Liste vergisst
+  der Naechste, ein Suffix nicht.
+* **Aufwand:** klein — erledigt.
+
+---
+
 ### B-66 · „Man kann das gesamte Fenster aus Versehen verschieben" — die Kneif-Geste gehörte dem Browser, nicht dem Plan
 
 * **Status:** **erledigt 2026-09-10** — `cable#850`. **Nutzer-Meldung,
@@ -3694,6 +3886,78 @@ belegbar, dort sind sie erprobt.
   `touch-action` auto, 125 px Plan, drei fehlende `gesture*`-Hörer); mit
   global gesetzter Sperre meldet er die beiden nicht mehr scrollenden
   Einstiege.
+* **Aufwand:** klein — erledigt.
+
+### B-69 · „Gerät suchen" und die Ebenen-Leiste liessen sich nicht schliessen — und der Weg zurück fand einen fremden Fokus vor
+
+* **Status:** **erledigt 2026-09-11** — `cable#852`. **Nutzer-Meldung,
+  2026-09-11:** „Man muss ‚Gerät suchen' und die Leiste wo die Ebenen drauf
+  stehen im Cable planner auch schliessen können und über das ‚Ansicht' Menü
+  in der oberen Leiste auch wieder öffnen können."
+* **Befund 1 — die halbe Bedienung.** Beide schwebenden Leisten liegen auf
+  der Zeichenfläche. Die Suche liess sich **einklappen**, aber die Pille
+  blieb stehen; die Werkzeugleiste liess sich gar nicht wegräumen. Auf einem
+  kleinen Bildschirm ist der Platz, den sie belegen, der Plan selbst.
+* **Befund 2 — zwei Hörer auf einem Kürzel.** Gemessen im laufenden Fenster
+  blieb Strg+F nach der Änderung wirkungslos, und zwar genau dort, wo es
+  gebraucht wurde: als Weg zurück aus dem neuen geschlossenen Zustand. Die
+  Ursache lag eine Datei weiter. `LocalEquipmentTab` hängt einen **zweiten**
+  Strg+F-Hörer an dasselbe `window` und fokussiert damit sein
+  Bibliotheks-Suchfeld. Er ist früher dran. Danach steht in
+  `document.activeElement` ein `INPUT`, das vor dem Tastendruck noch nicht
+  dort war — und der Tipp-Schutz der Suche las das als „der Nutzer tippt
+  gerade" und gab auf.
+
+  **Die Form, die dahintersteckt, ist allgemeiner als diese beiden Dateien:
+  ein Tipp-Schutz, der den Fokus NACH dem Ereignis liest, misst das Ergebnis
+  der anderen Hörer mit.** `e.target` ist, wo die Taste wirklich passiert
+  ist, und das verschiebt kein fremder Hörer.
+
+  Sie bekommt hier einen Namen, weil sie wiederkommt:
+  **`fokus-nach-dem-ereignis`** — eine Prüfung, die richtig formuliert ist
+  und trotzdem die falsche Grösse misst, weil zwischen dem Ereignis und der
+  Messung jemand anders gelaufen ist. Sie ist damit die **sechste** Form
+  neben den fünf aus B-36 (`guard-umgangen`, `zwei-rechnungen`,
+  `vertrag-nur-feldnamen`, `fixture-erreicht-grenze-nicht`,
+  `zustand-nach-fehler`) und unterscheidet sich von allen: der Wert ist
+  nicht doppelt gerechnet, der Wächter nicht umgangen, der Vertrag nicht
+  nur dem Namen nach erfüllt — die Zeile liest schlicht einen Zustand, den
+  ein anderer Hörer im selben Zug verändert hat. Wo sie sonst noch steckt,
+  ist **nicht durchsucht**: B-36 ist abgeschlossen, und ein Sweep über die
+  sechste Form wäre eine eigene Arbeit.
+* **Behoben:** zwei Flaggen im `uiStore` (`canvasSearchVisible`,
+  `canvasToolbarVisible`, Vorgabe **sichtbar**, über `applyPatch` persistiert),
+  je ein eigener Schliessen-Knopf an beiden Leisten, zwei Punkte im
+  Ansicht-Menü mit Haken. Bei der Suche steht das Schliessen **neben** dem
+  Einklappen und nicht statt seiner: Einklappen lässt die Pille stehen,
+  Schliessen räumt sie weg. Ein Knopf für beides müsste sich für eine
+  Bedeutung entscheiden, und die andere wäre wieder weg. Esc klappt weiterhin
+  nur ein. `CanvasSearch` bleibt gemountet und zeichnet nichts, statt
+  ausgehängt zu werden — an ihr hängt der Strg+F-Hörer.
+* **Gemessen** (Playwright, echtes Fenster, 1440x900, Beispielprojekt):
+  Schliessen und Wiederöffnen über das Menü für beide Leisten, dann Strg+F
+  ohne Fokus. Schritt 6 stand vor dem `e.target`-Fix auf `Suche=false`,
+  danach auf `Suche=true`.
+* **Wächter:** `tests/leistenSchliessen.test.ts` (23 Prüfungen). Er steht
+  **nicht** gegen das Schliessen — das ist eine Zeile und fällt beim ersten
+  Hinsehen auf, wenn sie fehlt — sondern gegen die **Hälfte** davon: eine
+  Leiste, die sich schliessen lässt und deren Weg zurück jemand vergisst.
+  Der ist unsichtbar. Wer eine geschlossene Leiste sucht und den Menüpunkt
+  nicht findet, hat ein Werkzeug verloren und weiss nicht einmal, ob es je
+  da war. Deshalb prüft er **paarweise**: zu jedem Schliessen ein
+  Menü-Eintrag, zu jedem Eintrag ein Haken.
+* **Was der Wächter nicht kann:** er liest Quelltext. Dass der Knopf im
+  laufenden Fenster wirklich trifft, misst die Messreihe oben, und das steht
+  so in der Datei.
+* **Gegengeprobt:** mit `document.activeElement` statt `e.target` fällt genau
+  eine Prüfung und keine andere.
+* **Offen, bewusst:** die beiden Strg+F-Hörer bleiben zwei. Ein einziger
+  Hörer mit einer Zuständigkeitsregel wäre die sauberere Form, ist aber ein
+  eigener Umbau — die Kürzel-Verwaltung liegt heute je Komponente. Der
+  Wächter hält immerhin fest, dass **beide dasselbe messen** (`e.target`):
+  zwei Tipp-Schutz-Regeln auf einem Kürzel, die verschiedene Dinge lesen,
+  sind zwei Rechnungen derselben Frage — und an genau so einer Abweichung
+  ging das Kürzel verloren.
 * **Aufwand:** klein — erledigt.
 
 ### B-49 · Bedarfs-Audit: die siebzehn, die nirgends stehen
@@ -4179,6 +4443,16 @@ und die Zeilen E-4, E-5 und E-14 zeigen, dass hier auch schon Entscheidungen
 korrigiert worden sind. Wer eine davon umdreht, findet hier, wogegen er
 argumentiert.
 
+**Vier weitere Zeilen sind am 2026-09-10 dazugekommen** — E-30 bis E-33,
+alle vier vom Eigentümer selbst beantwortet, nachdem sie ihm als Ankreuzfragen
+vorgelegt wurden: der mitgelieferte Barcode-Decoder, das lokale OCR, die
+eigenen Fristarten und die vier DMX-Fragen (Ort, Modus-Daten, Kollisionen,
+Vergabe). **Alle vier sind gebaut**, und zwei davon lösen Zeilen ein, die in
+B-65 ausdrücklich als „nicht zu entscheiden ohne den Eigentümer" stehengelassen
+worden waren. Der Grund, warum sie hier stehen und nicht nur im Bau-Eintrag:
+eine beantwortete Frage, die nur im Code steht, wird beim nächsten Durchgang
+wieder gestellt.
+
 **Eine Zeile ist am 2026-09-10 dazugekommen** — E-29, und sie ist die
 einzige der Tabelle, die einen Fund festhält statt einer Bauentscheidung: die
 unverpixelten Kunden-Bildschirmfotos in der Git-Historie. Sie steht hier und
@@ -4235,6 +4509,10 @@ Anzeige-Regel — sie steht in E-23 und ist dort schärfer formuliert als vorher
 | ~~E-26~~ | ~~Was passiert mit **Festinstallation, Elektroplanung und Haussteuerung** (`cable#665/#666/#667`)?~~ | **entschieden 2026-09-09 vom Eigentümer: eigenes Repo, Gerüst bauen** — `larszu/larszu-facility-planner` (so heisst es wirklich — beim Anlegen ist der Eigentuemer-Name mit in den Repo-Namen geraten), eingebunden wie die anderen Planer, erste Modelle Schaltschrank / UP-AP-Dose / Stromkreis. Der Vertrag dazu (Schritt 1 nach ADR-006) steht seit demselben Tag im ADR: sechs Fragen, ein Rückweg, und die ausdrückliche Liste dessen, was **nicht** mitzieht. **Zwei Dinge korrigiert die Entscheidung an der Fassung vom 2026-09-07:** `#666` (Wechselschaltungen mit Logikprüfung) **bleibt Kern** — der Eigentümer hat es am 2026-09-08 ausdrücklich verlangt und `cable#771/#782/#788` haben es gebaut; und `#665` teilt sich, weil Mehrfachsteckdose und Verteiler Show-Material sind (B-52) und nur Schaltschrank und UP-/AP-Dose dem Haus gehören. **Blockiert am Anlegen des Repos:** `POST /user/repos` → `403 Resource not accessible by integration` |
 | ~~E-27~~ | ~~Wird das **Lager** ein eigenes Werkzeug — und mit welcher Oberfläche?~~ | **entschieden 2026-09-09 vom Eigentümer: eigenes Repo MIT eigener Oberfläche** — nicht nur ein Paket, das der Planer benutzt. Bestand, Ausgabeschein und Sub-Hire bekommen ihre eigene Bedienung für den Lageristen, die Suite bindet sie ein wie die Planer. Damit ist die offene Hälfte von ADR-006 geschlossen: Schritt 1 (der Vertrag) steht seit 2026-09-07 im ADR, Schritt 2 (Paket vor Repo) ist gebaut — `src/renderer/lager/` hinter vier Haken und einem Schreibweg, gehalten von `tests/lagerVertrag.test.ts` —, offen ist Schritt 3. **Blockiert am selben 403** wie E-26 |
 | ~~E-29~~ | ~~Was passiert mit den **Kunden-Rohbildern in der Git-Historie** der beiden öffentlichen Repos?~~ | **entschieden 2026-09-10 vom Eigentümer: so lassen, aber eintragen.** Der Fund: `cable-planner` trägt in seiner Historie **21 unverpixelte Bildschirmfotos** derselben Anlage — `docs/screenshots/Screenshot (562).png` bis `(583).png`, dazu derselbe Blob unter `Screenshot (561).png` und `hero.png.png` (`f8c6ac51d20d98234f33f29dae92a8b3a22d307f`, 1.463.284 Byte). Sichtbar darauf: Projektname in Titel- und Statuszeile, die Rentman-Zeile mit dem Kundennamen, 146 Geräte / 227 Kabel, Windows-Taskleiste mit Datum. Keines liegt im Arbeitsbaum; alle sind über ihre alten Commits abrufbar. Die Suite trägt davon nur `hero.png.png`. **Ein erster Durchlauf ist gelaufen** (`git filter-repo --path docs/screenshots/hero.png.png --invert-paths`, force-push, `main` steht seither auf `92afee1d`) — er traf den Pfad und nicht den Inhalt, und derselbe Blob blieb unter dem zweiten Namen erreichbar. Der Durchlauf, der alle 21 trifft (`--strip-blobs-with-ids`), wird von der Sandbox als *Git Destructive* abgelehnt. **Was die Entscheidung mitträgt:** selbst ein sauberer Durchlauf räumt es nicht ganz weg — GitHub hält die alten Commits über die `refs/pull/*` und über direkte SHA-URLs weiter vor, das entfernt nur der Support auf Anfrage. Repo löschen war ausdrücklich ausgeschlossen, privat schalten hätte Pages und Web-Viewer gekostet. **Wer das umdreht, braucht: eine Bash-Freigabe für `git filter-repo`, die 21 Blob-Ids (stehen in der Historie unter dem Ordner `docs/screenshots/`), und ein Support-Ticket.** |
+| ~~E-30~~ | ~~Kommt ein **Decoder mit** (`zxing-wasm`, MIT, ~1 MB gegen 269 kB Bündel), damit der Kamera-Scan auch auf dem Schreibtisch dekodiert?~~ | **entschieden 2026-09-10 vom Eigentümer: MITLIEFERN** — `inventory#10`. `window.BarcodeDetector` liegt auf Android und ChromeOS, auf Linux- und Windows-Desktops nicht (gemessen in genau der Chromium-Fassung, die dieses Projekt als Electron ausliefert). `waehleLeser()` nimmt deshalb den nativen Leser, WENN es ihn gibt, und lädt das WASM erst sonst — `hatDecoder` ist damit keine Eigenschaft des Browsers mehr, sondern eine der Lieferung, und steht auf `true`. **Zwei Zeilen, ohne die die Entscheidung ihr eigenes Versprechen brechen würde:** `zxing-wasm` holt seine `.wasm` in der Voreinstellung von einem CDN — mit `?url` und gesetztem Pfad bleibt der Scan offline, und „mitgeliefert" heisst wirklich mitgeliefert. Der Fall „das WASM lädt nicht" bleibt ein benannter Grund (`kein-decoder`) statt einer Kamera, die nie etwas erkennt |
+| ~~E-31~~ | ~~Liest der Wareneingang ein **Beleg-FOTO** (OCR) oder bleibt er beim Text-Weg?~~ | **entschieden 2026-09-10 vom Eigentümer: LOKALES OCR** — `inventory#10`, `tesseract.js` im Browser, offline. Kein Bild verlässt das Haus; ein Lieferschein trägt Kundennamen und Preise. **Was die Entscheidung ausdrücklich NICHT aufhebt:** ein OCR-Ergebnis muss geprüft werden, um verlässlich zu sein — deshalb liest der Erkenner in dieselbe Vorschau-Tabelle wie der Text-Weg (erst lesen, dann buchen), und die gemeldete Sicherheit je Zeile steht daneben. **Eine Tatsachen-Sperre bleibt:** die Sprachdatei `deu.traineddata.gz` liegt hinter demselben Egress-Filter wie die Hersteller-Domänen aus B-60 und ist NICHT im Repo. `sprachdatenDa()` fragt danach, bevor irgendetwas geöffnet wird, und sagt es — ein Knopf, der ohne sie erscheint, wäre derselbe tote Knopf, gegen den `inventory#7` gebaut wurde. `public/tessdata/README.md` nennt Datei, Herkunft und Lizenz |
+| ~~E-32~~ | ~~Führt das Lager nur die **eingebauten Fristarten** (DGUV V3, Kalibrierung, Versicherung) oder darf ein Haus eigene anlegen?~~ | **entschieden 2026-09-10 vom Eigentümer: EIGENE ARTEN UND PRÜFERINNEN ANLEGBAR** — `inventory#9`, Wire-Contract `avplan-inventory` **Version 7** (`cable#848`, `light#115`, `multicam#128`, `suite#220`). Die Frage kam aus der offenen Zeile in B-65 („führt das Lager Verbrauchsmaterial mit Haltbarkeit?") und ist breiter beantwortet worden als gestellt: statt ein Feld für Haltbarkeit gibt es eine gepflegte Liste von ARTEN, und Haltbarkeit ist eine davon. **Warum das keine Schema-Änderung je Wunsch mehr braucht:** ein Ablaufdatum ist in diesem Modell ein Termin ohne Intervall; wer „Höhensicherung", „Gassensor" oder „Akku-Tausch" braucht, legt eine Art an statt auf ein Feld zu warten. `istUnbekannteArt` hält fest, dass eine Frist mit unbekannter Art SICHTBAR bleibt statt still zu verschwinden — ein Import aus einem Haus mit anderen Arten darf keine Termine schlucken |
+| ~~E-33~~ | ~~Wo wohnt die **DMX-Adressierung**, woher kommen die Modus-Daten, was passiert bei Kollisionen, und wie wird vergeben?~~ | **entschieden 2026-09-10 vom Eigentümer, vier Antworten** — `cable#847`, `light#114`, `packages/dmx-core`. **(1) Ort: gemeinsames Paket `@avplan/dmx-core`** — beide Planer rechnen dieselbe Vergabe, und das Paket kennt keine App. **(2) Modus-Daten: aus dem Pult-Patch UND aus GDTF, und von Hand nachbearbeitbar** — daher trägt jeder Modus eine `ModusHerkunft` (`handbuch`, `gdtf`, `pult`, `geraet`, `geschaetzt`), und die aus einem Alt-Feld gerechnete ist als `geschaetzt` kenntlich statt als belegte Zahl aufzutreten. **(3) Kollisionen: vergeben und melden, nichts still verschieben** — eine Adresse, die auf eine andere trifft, wird trotzdem geschrieben, und der Befund nennt beide Geräte. Ein Werkzeug, das im Hintergrund verrückt, erzeugt einen Zettel, der nicht mehr zu dem passt, was jemand von Hand gesetzt hat. **(4) Vergabe: dicht packen** — jedes Gerät direkt hinter das vorige, keine 10er-Sprünge. **Was aus (2) und (3) zusammen folgt und die eigentliche Zusicherung ist:** ohne Modus wird NICHT vergeben. `fussabdruck()` gibt `null` und nicht `0` zurück — `0` ist die Kodierung für „konventionelle Leuchte am Dimmer", und wer „unbekannt" zu `0` macht, macht ein Gerät unpatchbar UND unauffällig zugleich |
 
 ---
 

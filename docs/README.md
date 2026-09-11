@@ -13,7 +13,7 @@ Inhaltsverzeichnis; es verlinkte nur niemand.
 
 | Dokument | Was es ist |
 | --- | --- |
-| [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) | Was in den acht Repos tatsächlich läuft — nach Ausführung belegt, nicht nach Plan. Enthält die Ausführungs-Nachweise (Exit-Codes echter Läufe) und den Stand je Bereich. |
+| [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) | Was in den zehn Repos tatsächlich läuft — nach Ausführung belegt, nicht nach Plan. Enthält die Ausführungs-Nachweise (Exit-Codes echter Läufe) und den Stand je Bereich. |
 | [`IMPLEMENTATION_BACKLOG.md`](IMPLEMENTATION_BACKLOG.md) | Die offenen Punkte mit Befund, Begründung und Aufwand — plus der Abschnitt „Nicht zu entscheiden ohne den Eigentümer". |
 
 ## Architektur-Entscheidungen (ADR)

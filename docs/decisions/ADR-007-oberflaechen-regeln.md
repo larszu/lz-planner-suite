@@ -1,9 +1,11 @@
 # ADR-007 — Die Oberflaechen-Regeln der Suite
 
 **Status:** angenommen · 2026-09-07
-**Gilt fuer:** alle acht Repos (av-planner-suite, cable-planner,
-multicam-planner, light-planner, Broadcast-intercom, tally-pi,
-sony-camera-bridge, pi-media-station)
+**Gilt fuer:** alle zehn Repos (av-planner-suite, cable-planner,
+multicam-planner, light-planner, inventory-planner, larszu-facility-planner,
+Broadcast-intercom, tally-pi, sony-camera-bridge, pi-media-station)
+**Erweitert:** 2026-09-11 um `inventory-planner` und `larszu-facility-planner`
+— siehe Stufe 6 unten
 **Quelle der Werte:** Brand Guide 2.0 der Lars Zumpe Medienproduktion,
 September 2026 — Seiten 8 (Farbe), 9 (Typografie), 10 (Raster, Linie, Punkt),
 11 (Bewegung), 17 (Web: Farbrollen, Interaktion)
@@ -227,7 +229,28 @@ werden in dieser Reihenfolge nachgezogen — jede Stufe ist fuer sich lieferbar:
    der ein Rueckfall auffiele.
 
 **Alle fuenf Stufen stehen** (nachgesehen am Code, 2026-09-08: `#1D324F` liegt
-in allen acht Repos). Dieser Abschnitt hat die Reihenfolge vorgegeben und
+in allen acht Repos, die es damals gab).
+
+**Stufe 6 — die beiden Repos, die es am 2026-09-08 noch nicht gab**
+(`inventory-planner`, `larszu-facility-planner`, beide angelegt am 2026-09-09
+nach E-26/E-27). Nachgemessen am 2026-09-11: sie trugen **keines** der Token
+dieses ADR, sondern rohe slate-Farben, und zusammen elf `border-radius`. Das
+war kein Verstoss — der Geltungsbereich oben nannte sie nicht, und im Kopf
+ihrer Stilblaetter stand der Aufschub ausdruecklich („zieht mit dem Einbetten
+nach"). Es war eine LUECKE: ein Beschluss, der die Repos aufzaehlt, waechst
+nicht von selbst mit, und der naechste neue Planer faellt genauso durch.
+
+Umgestellt in `inventory#11` und `facility#6`, mit je einem eigenen Waechter
+(`src/domain/__tests__/markenPalette.node.test.ts`) — dieselbe Form wie bei
+`tally-pi` und `pi-media-station`: die Werte stehen dort ein zweites Mal, weil
+die Repos an keinem Paket der Suite haengen, und der Waechter faellt bei jedem
+Rueckweg. Er prueft ausdruecklich auch, dass Tally-Rot NICHT die Warnfarbe ist
+— eine Warnung im Aufnahmelicht nimmt dem Signal seine Bedeutung.
+
+**Was daraus fuer den naechsten neuen Planer folgt:** der Geltungsbereich oben
+ist eine Aufzaehlung und damit eine Liste, die jemand pflegen muss. Wer ein
+Repo anlegt, traegt es dort ein UND legt den Waechter mit an — sonst steht die
+Regel wieder nur fuer die, die es schon gab. Dieser Abschnitt hat die Reihenfolge vorgegeben und
 haette danach ohne Vermerk dagestanden — ein Uebernahmeplan, der nach der
 Uebernahme nicht angefasst wird, schickt den naechsten Leser los, etwas zu
 bauen, das schon steht.
