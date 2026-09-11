@@ -14,6 +14,7 @@ import {
 } from '@avplan/ui'
 import type { SuiteProject } from '../data/project'
 import { useT } from '../i18n'
+import { APP_VERSION } from '../version'
 
 function ProjectPicker({
   project,
@@ -98,6 +99,36 @@ function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void 
   )
 }
 
+/**
+ * „Ueber die Suite" — der eine Ort, an dem steht, WAS das hier ist und in
+ * welcher Fassung.
+ *
+ * WARUM ER NACHGEZOGEN WURDE (2026-09-11): `scripts/chrome-parity.mjs` misst
+ * den gemeinsamen Grundstock der Menues in allen sechs Apps. Hilfe braucht
+ * darin ein „Ueber" — jede App gibt Auskunft ueber sich selbst. Die Shell
+ * war die einzige ohne, und das fiel niemandem auf, weil ihr Hilfe-Menue
+ * zwei andere, nuetzliche Eintraege hatte.
+ *
+ * Die Version kommt aus `package.json` ueber das Vite-Define und ist hier
+ * NICHT hingeschrieben.
+ */
+function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT()
+  return (
+    <Modal open={open} onClose={onClose} title={t('chrome.topbar.about.title', 'Über die AV-Planner-Suite')} size="sm">
+      <div className="flex flex-col gap-2">
+        <p className="text-[13px] text-av-text-secondary">
+          {t(
+            'chrome.topbar.about.body',
+            'Ein Arbeitsplatz für die Planung einer Show: Signalweg, Kameras, Licht, Lager und Gebäude — als Module über einem gemeinsamen Projekt.',
+          )}
+        </p>
+        <p className="av-num text-[13px] text-av-text-faint">v{APP_VERSION}</p>
+      </div>
+    </Modal>
+  )
+}
+
 export function Topbar({
   project,
   theme,
@@ -151,6 +182,7 @@ export function Topbar({
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [aboutOpen, setAboutOpen] = useState(false)
   const openFileDialog = () => fileInputRef.current?.click()
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,6 +241,7 @@ export function Topbar({
                 {theme === 'dark' ? t('chrome.topbar.view.lightTheme', 'Helles Theme') : t('chrome.topbar.view.darkTheme', 'Dunkles Theme')}
               </MenuItem>
               <MenuItem icon={<Icon name="settings" size={15} />} onClick={() => { close(); onOpenSettings() }}>{t('chrome.topbar.view.settings', 'Einstellungen…')}</MenuItem>
+              <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { close(); setAboutOpen(true) }}>{t('chrome.topbar.help.about', 'Über die Suite…')}</MenuItem>
               <MenuSeparator />
               <MenuItem icon={<Icon name="command" size={15} />} onClick={() => { close(); setShortcutsOpen(true) }}>{t('chrome.topbar.help.shortcuts', 'Tastenkürzel…')}</MenuItem>
             </>
@@ -275,6 +308,8 @@ export function Topbar({
               <MenuItem icon={<Icon name="search" size={15} />} hint={<span><Kbd>⌘</Kbd><Kbd>K</Kbd></span>} onClick={() => { close(); onOpenPalette() }}>{t('chrome.topbar.help.search', 'Suchen & Befehle')}</MenuItem>
               <MenuSeparator />
               <MenuItem icon={<Icon name="command" size={15} />} onClick={() => { close(); setShortcutsOpen(true) }}>{t('chrome.topbar.help.shortcuts', 'Tastenkürzel…')}</MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { close(); setAboutOpen(true) }}>{t('chrome.topbar.help.about', 'Über die Suite…')}</MenuItem>
             </>
           )}
         </Menu>
@@ -328,6 +363,7 @@ export function Topbar({
       </div>
 
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
       <input
         ref={fileInputRef}
         type="file"

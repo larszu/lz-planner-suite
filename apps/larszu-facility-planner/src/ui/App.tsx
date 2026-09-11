@@ -29,6 +29,8 @@
 // den zwei Repos lesen.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { Kopfzeile } from './Kopfzeile'
+import { leeresGebaeude } from '../domain/modell'
 import { leseGebaeude, serialisiereGebaeude } from '../domain/gebaeudeDatei'
 import { Anschlusspunkte } from './Anschlusspunkte'
 import { Verteilung } from './Verteilung'
@@ -74,7 +76,7 @@ export function App() {
   const gebaeudeSetzen = useGebaeudeStore((s) => s.gebaeudeSetzen)
   const [dateiFehler, setDateiFehler] = useState<string | null>(null)
 
-  const exportieren = () => {
+  const exportieren = (dateiname?: string) => {
     const url = URL.createObjectURL(
       new Blob([serialisiereGebaeude(gebaeude, { exportiertAm: new Date().toISOString(), app: 'facility-planner' })], {
         type: 'application/json',
@@ -83,8 +85,10 @@ export function App() {
     const a = document.createElement('a')
     a.href = url
     // Der Dateiname trägt den Gebäudenamen: wer drei Häuser betreut, hat
-    // sonst dreimal `gebaeude.avfacility` im Download-Ordner.
-    a.download = `${gebaeude.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'gebaeude'}.avfacility`
+    // sonst dreimal `gebaeude.avfacility` im Download-Ordner. „Speichern
+    // unter…" reicht einen eigenen Namen herein; ohne ihn bleibt es bei
+    // diesem.
+    a.download = dateiname || `${gebaeude.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'gebaeude'}.avfacility`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -105,40 +109,30 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="kopf">
-        <h1>{name}</h1>
-        <nav>
-          {REITER.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setReiter(r.id)}
-              aria-pressed={r.id === reiter}
-              className={r.id === reiter ? 'reiter aktiv' : 'reiter'}
-            >
-              {r.titel}
-            </button>
-          ))}
-        </nav>
-        <div className="datei">
-          <button type="button" onClick={exportieren} title="Das Gebäude als .avfacility sichern — der Kabelplaner liest diese Datei.">
-            Gebäude sichern
+      {/* Kopfzeile, Reiter und die Frage sind DREI Zeilen, seit 2026-09-11.
+          Vorher standen Gebaeudename, die sieben Reiter und die beiden
+          Datei-Knoepfe nebeneinander — drei verschiedene Dinge in einer
+          Zeile. Die Datei-Knoepfe sind jetzt das Datei-Menue, die Reiter
+          ordnen darunter die Module. */}
+      <Kopfzeile
+        name={name}
+        onNeu={() => gebaeudeSetzen(leeresGebaeude('haus-1', 'Gebäude'))}
+        onSichern={(dateiname) => exportieren(dateiname)}
+        onLaden={(datei) => void importieren(datei)}
+      />
+      <nav className="reiter-leiste">
+        {REITER.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => setReiter(r.id)}
+            aria-pressed={r.id === reiter}
+            className={r.id === reiter ? 'reiter aktiv' : 'reiter'}
+          >
+            {r.titel}
           </button>
-          <label className="datei-knopf">
-            Gebäude laden
-            <input
-              type="file"
-              accept=".avfacility,application/json"
-              onChange={(e) => {
-                const datei = e.target.files?.[0]
-                e.target.value = ''
-                if (datei) void importieren(datei)
-              }}
-              aria-label="Gebäude-Datei laden"
-            />
-          </label>
-        </div>
-      </header>
+        ))}
+      </nav>
 
       {dateiFehler && <p className="fehler">{dateiFehler}</p>}
 

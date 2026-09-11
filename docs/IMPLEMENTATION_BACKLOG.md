@@ -3960,6 +3960,54 @@ belegbar, dort sind sie erprobt.
   ging das Kürzel verloren.
 * **Aufwand:** klein — erledigt.
 
+### B-70 · Ein Hell-Thema für `multicam-planner` und `light-planner` — und was dagegen steht
+
+* **Status:** offen. **Herausgefallen aus dem Kopfzeilen-Durchgang vom
+  2026-09-11** (`multicam#129`, `light#116`), nicht aus einer Nutzer-Meldung.
+* **Warum der Eintrag existiert.** Der Eigentümer hat am 2026-09-11 gewählt:
+  die Einstellungen sollen in allen Apps an derselben Stelle stehen, mit
+  demselben Grundstock — **Sprache, Thema, Über**. Zwei der vier gebauten
+  Dialoge führen nur Sprache und Über. Das Thema fehlt, und das steht als
+  eigener Eintrag hier, damit es nicht als „vergessen" durchgeht und nicht
+  als ausgegrauter Punkt im Dialog steht. Ein Umschalter, der eine halb
+  umgefärbte App liefert, ist schlimmer als keiner: er sieht aus wie eine
+  Fähigkeit. Genau davor warnt `IMPLEMENTATION_STATUS.md` in seiner eigenen
+  Legende (PLACEHOLDER).
+* **Gemessen, nicht geschätzt.**
+
+  | App | was einem Hell-Thema im Weg steht |
+  |---|---|
+  | `multicam-planner` | **464 rohe Tailwind-Graustufen** (`text-white`, `text-gray-200/300/400/500/600`, `bg-white`) in **17 Dateien**. Sie hängen an keinem `--color-bc-*`-Token und blieben dunkel. Dazu der 2D-Plan, der seine Farben im Canvas zeichnet, und das FlexLayout-Thema. |
+  | `light-planner` | `App.css` ist **ein einziges dunkles Stilblatt** mit festgeschriebenen Flächen; dazu der 2D-Canvas und die 3D-Szene. |
+
+* **Die Suite hat dafür schon einen Notbehelf — und der ist der Grund, warum
+  es niemandem auffiel.** `apps/multicam-planner/src/index.css` trägt in der
+  vendorierten Kopie einen Block
+  `:root[data-theme="light"] .text-white { … !important }` und sechs
+  Geschwister: die Shell biegt die festen Tailwind-Klassen um, wenn ihr
+  Theme-Schalter umspringt. **Im eingebetteten Modul funktioniert das
+  Hell-Thema also**, in der eigenständigen App nicht. Der Notbehelf ist
+  bewusst suite-only und nicht upstream gewandert; er überschreibt Klassen
+  statt Tokens und wächst mit jeder neuen Graustufe, die jemand einbaut.
+* **Was zu tun wäre**, in dieser Reihenfolge und je für sich lieferbar:
+  1. `multicam-planner`: die 464 Stellen auf die `bc-*`-Token heben. Die
+     Rampe braucht dafür zwei Stufen mehr (heute endet sie bei `--color-bc-muted`),
+     sonst fällt die dreistufige Grau-Hierarchie auf eine zusammen.
+  2. Ein Wächter, der rohe Graustufen ab dann rot macht — sonst kommt die
+     erste neue beim nächsten Feature zurück, und der Notbehelf lebt weiter.
+  3. Die Token für Hell definieren, den Umschalter in den
+     Einstellungen-Dialog, den `!important`-Block in der Suite-Kopie
+     **löschen** (er wäre danach die zweite Rechnung).
+  4. `light-planner` dasselbe, mit dem grösseren Stilblatt und der 3D-Szene.
+* **Was der Eintrag NICHT behauptet:** dass der Canvas-Inhalt mitmuss. Ein
+  Zeichenbereich darf dunkel bleiben, wenn die Bedienoberfläche hell ist —
+  im `cable-planner` ist das Canvas-Thema deshalb eine eigene Einstellung.
+  Wer diese Arbeit anfängt, entscheidet das zuerst und nicht nebenbei.
+* **Bis dahin sagt jeder der beiden Dialoge in seinem Kopf, dass das Thema
+  fehlt, und warum** — mit der Zahl. Und der Repo-eigene `kopfzeile:check`
+  hält fest, dass der Grund dort steht: fällt er, weil jemand die Umstellung
+  gebaut hat, wird die Zeile **geändert** statt gelöscht.
+
 ### B-49 · Bedarfs-Audit: die siebzehn, die nirgends stehen
 
 * **Status:** Audit **erledigt 2026-09-08**; die daraus folgende Arbeit steht

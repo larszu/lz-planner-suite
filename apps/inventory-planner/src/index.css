@@ -48,17 +48,217 @@ body {
   padding: 1rem;
 }
 
+/* ── Kopfzeile, Menue, Einstellungen ─────────────────────────────────────
+ *
+ * ADR-007 Abschnitt 6: 40 px hoch, Menues links, Einstellungen rechts aussen.
+ * Dieselben Zahlen wie `.cp-topbar` im Cable Planner und `.av-topbar` in
+ * `@avplan/ui` — dieses Repo laeuft auch ALLEIN und kann das Paket nicht
+ * laden, deshalb steht die Zahl hier ein zweites Mal.
+ *
+ * ALS KLASSE UND NICHT ALS MASS AM ELEMENT: als benannte Klasse ist die 40
+ * eine Zusage, die `scripts/chrome-parity.mjs` in der Suite messen kann. Am
+ * Element waere sie dieselbe Zahl, aber keine Regel. */
 .kopf {
   display: flex;
-  align-items: baseline;
-  gap: 1.5rem;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  flex: none;
+  padding: 0 12px;
+  background: var(--flaeche);
   border-bottom: 1px solid var(--rand);
-  padding-bottom: 0.5rem;
 }
 
-.kopf h1 {
-  font-size: 1.1rem;
-  margin: 0;
+.kopf .marke {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Schiebt alles Folgende ans rechte Ende — der Einstellungen-Knopf ist der
+ * letzte Bedienpunkt der Zeile, genau wie im Cable Planner. */
+.kopf-rechts {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kopf-knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 8px;
+  background: var(--erhoben);
+  border: 1px solid transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.kopf-knopf:hover { border-color: var(--rand); }
+
+/* Das Wort erst ab breiteren Fenstern; darunter traegt der Knopf nur sein
+ * Zeichen, damit die 40-px-Zeile nicht bricht. */
+.nur-breit { display: none; }
+@media (min-width: 900px) { .nur-breit { display: inline; } }
+
+.menue { position: relative; }
+
+.menue-knopf {
+  background: none;
+  border: none;
+  color: var(--text);
+  padding: 0 8px;
+  min-height: 28px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.menue-knopf:hover,
+.menue-knopf.offen { background: var(--erhoben); }
+
+.menue-klappe {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  min-width: 220px;
+  padding: 4px 0;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  display: flex;
+  flex-direction: column;
+}
+
+.menue-punkt {
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  padding: 6px 12px;
+  min-height: 28px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.menue-punkt:hover:not(:disabled) { background: var(--erhoben); }
+.menue-punkt:disabled { color: var(--leise); cursor: not-allowed; }
+.menue-trenner { height: 1px; margin: 4px 0; background: var(--rand); }
+
+.reiter-leiste {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px 0;
+  border-bottom: 1px solid var(--rand);
+}
+
+.versteckt { display: none; }
+
+/* Dialoge sind FLAECHEN, keine Karten: kein Radius, kein Schatten,
+ * Kopflinie oben, Aktionen unten rechts (ADR-007 Abschnitt 6). */
+.dialog-hinter {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  color: var(--text);
+}
+
+.dialog-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--signal);
+}
+
+.dialog-kopf h2 { margin: 0; font-size: 1rem; }
+
+.dialog-zu {
+  background: none;
+  border: none;
+  color: var(--leise);
+  font-size: 1.2rem;
+  line-height: 1;
+  min-width: 24px;
+  min-height: 24px;
+  cursor: pointer;
+}
+
+/* Der Rumpf scrollt, die Fusszeile bleibt stehen — der gemeldete Fehler aus
+ * ADR-007 („der Drucken-Knopf war nicht erreichbar"). */
+.dialog-rumpf { padding: 12px; overflow-y: auto; }
+.dialog-rumpf h3 { font-size: 0.85rem; color: var(--leise); margin: 12px 0 6px; }
+.dialog-rumpf section:first-child h3 { margin-top: 0; }
+
+.dialog-fuss {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--rand);
+}
+
+.knopf-haupt {
+  background: var(--erhoben);
+  border: 1px solid var(--rand);
+  color: var(--text);
+  padding: 4px 12px;
+  min-height: 28px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.wahl { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; cursor: pointer; }
+.wahl em { display: block; font-style: normal; font-size: 0.8rem; color: var(--leise); }
+.leise { color: var(--leise); margin: 2px 0; }
+
+/* ── Helles Thema ────────────────────────────────────────────────────────
+ *
+ * NUR die Token werden getauscht, keine Regel darunter — genau dafuer ist die
+ * Token-Schicht da (ADR-007). `data-thema` steht am Wurzelknoten und kommt
+ * aus `lib/thema.ts`; ohne Attribut gilt die Angabe des Betriebssystems.
+ *
+ * Die Marken-Werte bleiben dieselben Farben in anderer ROLLE: Zumpe Navy ist
+ * im hellen Thema die Schrift, nicht die Flaeche. Tally-Rot bleibt Tally-Rot
+ * — es ist das Aufnahmelicht und kein Flaechenton. */
+:root[data-thema='hell'] {
+  color-scheme: light;
+  --bg: #F6F5F0;
+  --flaeche: #FFFFFF;
+  --erhoben: #E8EAEC;
+  --rand: rgba(19, 32, 64, 0.16);
+  --text: #132040;
+  --leise: #5A6B82;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-thema='dunkel']) {
+    color-scheme: light;
+    --bg: #F6F5F0;
+    --flaeche: #FFFFFF;
+    --erhoben: #E8EAEC;
+    --rand: rgba(19, 32, 64, 0.16);
+    --text: #132040;
+    --leise: #5A6B82;
+  }
 }
 
 .reiter {

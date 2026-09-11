@@ -23,6 +23,7 @@
 // Lageristen ist so ein Modul kein Code.
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
+import { Kopfzeile } from './Kopfzeile'
 import { Bestand } from './Bestand'
 import { Ausgabescheine } from './Ausgabescheine'
 import { SubHire } from './SubHire'
@@ -49,22 +50,25 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="kopf">
-        <h1>Lager</h1>
-        <nav>
-          {REITER.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setReiter(r.id)}
-              aria-pressed={r.id === reiter}
-              className={r.id === reiter ? 'reiter aktiv' : 'reiter'}
-            >
-              {r.titel}
-            </button>
-          ))}
-        </nav>
-      </header>
+      {/* Kopfzeile und Reiter sind ZWEI Zeilen, seit 2026-09-11. Vorher stand
+          der App-Name mit den sieben Reitern in einer — und damit sah die
+          Modul-Navigation aus wie eine Menueleiste. Die Kopfzeile fuehrt
+          jetzt die Menues und rechts aussen die Einstellungen (wie im Cable
+          Planner), die Reiter stehen darunter und ordnen die Module. */}
+      <Kopfzeile />
+      <nav className="reiter-leiste">
+        {REITER.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => setReiter(r.id)}
+            aria-pressed={r.id === reiter}
+            className={r.id === reiter ? 'reiter aktiv' : 'reiter'}
+          >
+            {r.titel}
+          </button>
+        ))}
+      </nav>
       <p className="frage">{aktiv.frage}</p>
       <main>
         {reiter === 'bestand' && <Bestand />}

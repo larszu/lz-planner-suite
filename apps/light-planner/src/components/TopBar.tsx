@@ -4,6 +4,10 @@ import type { FloorMaterial, FloorPresetId, SunSettings } from '../types';
 import { FLOOR_PRESETS, floorPreset } from '../core/surfaceTextures';
 import { useTranslation } from '../i18n';
 import { isEmbedded } from '../hooks/useIsEmbedded';
+import { buildMenus } from './menuModel';
+import TopMenu from './TopMenu';
+import CommandPalette from './CommandPalette';
+import SettingsDialog from './SettingsDialog';
 
 type Mode = '2d' | '3d' | 'photo';
 
@@ -55,13 +59,18 @@ interface Props {
   onVersions: () => void;
   onChanges: () => void;
   onAbout: () => void;
+  // Ab 2026-09-11 im Menue-Modell und damit auch in der Kommandopalette.
+  onCopy: () => void;
+  onPaste: () => void;
+  onDuplicate: () => void;
 }
 
 const mode = (p: Props): Mode => (p.viewMode === '2d' ? '2d' : p.photoMode ? 'photo' : '3d');
 
 const TopBar: React.FC<Props> = (p) => {
   const { t } = useTranslation();
-  const [open, setOpen] = useState<null | 'menu' | 'render'>(null);
+  const [open, setOpen] = useState<null | 'render'>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -71,6 +80,61 @@ const TopBar: React.FC<Props> = (p) => {
   }, []);
   const run = (fn: () => void) => () => { fn(); setOpen(null); };
   const m = mode(p);
+
+  // Die EINE Liste. Menueleiste und Kommandopalette lesen sie beide; wer
+  // einen Befehl ergaenzt, bekommt ihn in beiden Wegen.
+  //
+  // EINGEBETTET FAELLT WEG, WAS DIE SHELL STELLT: Speichern (Browser),
+  // Rueckgaengig und Wiederholen liegen dort in der Suite-Kopfzeile. Ein
+  // zweiter Eintrag daneben waere zwei Knoepfe fuer eine Sache — und der
+  // zweite waere der, der den falschen Stand speichert.
+  const menus = buildMenus(
+    {
+      viewMode: p.viewMode,
+      showHeatMap: p.showHeatMap,
+      snapEnabled: p.snapStep > 0,
+      showFocusNotes: p.showFocusNotes,
+      onNew: p.onNew,
+      onSave: p.onSave,
+      onLoad: p.onLoad,
+      onSaveToFile: p.onSaveToFile,
+      onLoadFromFile: p.onLoadFromFile,
+      onExport: p.onExport,
+      onUndo: p.onUndo,
+      onRedo: p.onRedo,
+      onCopy: p.onCopy,
+      onPaste: p.onPaste,
+      onDuplicate: p.onDuplicate,
+      onOpenSchedule: p.onOpenSchedule,
+      onViewModeChange: (v) => p.onSetMode(v),
+      onToggleHeatMap: p.onToggleHeatMap,
+      onToggleSnap: p.onToggleSnap,
+      onToggleFocusNotes: p.onToggleFocusNotes,
+      onAbout: p.onAbout,
+      onExportAvplan: p.onExportAvplan,
+      onImportAvplan: p.onImportAvplan,
+      onExportVenue: p.onExportVenue,
+      onImportVenue: p.onImportVenue,
+      onExportPlot: p.onExportPlot,
+      onUploadFloorPlan: () => fileRef.current?.click(),
+      onChanges: p.onChanges,
+      onVersions: p.onVersions,
+      onOpenSettings: () => setSettingsOpen(true),
+    },
+    t,
+  ).map((g) =>
+    isEmbedded
+      ? {
+          ...g,
+          items: g.items.filter(
+            (it) =>
+              it.label !== t('menu.save', 'Save (browser)') &&
+              it.label !== t('menu.undo', 'Undo') &&
+              it.label !== t('menu.redo', 'Redo'),
+          ),
+        }
+      : g,
+  );
 
   return (
     <header className="topbar" ref={ref}>
@@ -85,47 +149,23 @@ const TopBar: React.FC<Props> = (p) => {
         )}
         <span className="brand-proj">{p.projectName || t('topbar.untitled', 'Untitled')}</span>
 
-        <div className="tb-menuwrap">
-          <button className={`tb-icon ${open === 'menu' ? 'on' : ''}`} title={t('topbar.menuBtn', 'Menu')}
-            onClick={() => setOpen(open === 'menu' ? null : 'menu')}><Icon name="menu" /></button>
-          {open === 'menu' && (
-            <div className="tb-dropdown">
-              <div className="tb-dd-sec">{t('menu.file', 'File')}</div>
-              <button className="tb-dd-item" onClick={run(p.onNew)}><Icon name="plus" size={15} />{t('menu.new', 'New')}<kbd>Strg N</kbd></button>
-              {/* Eingebettet stellt die Shell Speichern (Browser) bereit. */}
-              {!isEmbedded && (
-                <button className="tb-dd-item" onClick={run(p.onSave)}><Icon name="save" size={15} />{t('menu.save', 'Save (browser)…')}<kbd>Strg S</kbd></button>
-              )}
-              <button className="tb-dd-item" onClick={run(p.onLoad)}><Icon name="open" size={15} />{t('menu.load', 'Load (browser)…')}</button>
-              <div className="tb-dd-div" />
-              <button className="tb-dd-item" onClick={run(p.onSaveToFile)}><Icon name="export" size={15} />{t('menu.saveFile', 'Project to file… (choose location)')}</button>
-              <button className="tb-dd-item" onClick={run(p.onLoadFromFile)}><Icon name="import" size={15} />{t('menu.loadFile', 'Open project file…')}</button>
-              <div className="tb-dd-div" />
-              <button className="tb-dd-item" onClick={run(p.onExportAvplan)} title={t('topbar.exportAvplanTitle', 'Export the full project (room + light + cameras + cabling) losslessly — readable by all three apps, foreign data is preserved')}><Icon name="export" size={15} />{t('topbar.exportAvplan', 'Export full project (.avplan)…')}</button>
-              <button className="tb-dd-item" onClick={run(p.onImportAvplan)} title={t('topbar.importAvplanTitle', 'Import a full project (.avplan) — lighting is loaded editable, camera/cabling data is preserved losslessly')}><Icon name="import" size={15} />{t('topbar.importAvplan', 'Import full project (.avplan)…')}</button>
-              <div className="tb-dd-div" />
-              <button className="tb-dd-item" onClick={run(p.onExportVenue)} title={t('topbar.exportVenueTitle', 'Export the shared room (walls, stage, people, floor plan) — importable in the MultiCam planner')}><Icon name="export" size={15} />{t('topbar.exportVenue', 'Export venue (.venue.json)…')}</button>
-              <button className="tb-dd-item" onClick={run(p.onImportVenue)} title={t('topbar.importVenueTitle', 'Import a shared room — replaces walls, stage, people, floor plan; fixtures stay')}><Icon name="import" size={15} />{t('topbar.importVenue', 'Import venue…')}</button>
-              <div className="tb-dd-div" />
-              <button className="tb-dd-item" onClick={run(p.onExportPlot)}><Icon name="schedule" size={15} />{t('topbar.printPlot', 'Print lighting plot (PDF, title block + legend)…')}</button>
-              <button className="tb-dd-item" onClick={run(() => p.onExport('png'))}>{t('menu.exportPng', 'Export as PNG…')}</button>
-              <button className="tb-dd-item" onClick={run(() => p.onExport('jpg'))}>{t('menu.exportJpg', 'Export as JPG…')}</button>
-              <button className="tb-dd-item" onClick={run(() => p.onExport('pdf'))}>{t('menu.exportPdf', 'Export as PDF…')}</button>
-              <div className="tb-dd-sec">{t('menu.edit', 'Edit')}</div>
-              {/* Eingebettet stellt die Shell Undo/Redo bereit. */}
-              {!isEmbedded && (
-                <>
-                  <button className="tb-dd-item" onClick={run(p.onUndo)}><Icon name="undo" size={15} />{t('menu.undo', 'Undo')}<kbd>Strg Z</kbd></button>
-                  <button className="tb-dd-item" onClick={run(p.onRedo)}><Icon name="redo" size={15} />{t('menu.redo', 'Redo')}<kbd>Strg Y</kbd></button>
-                </>
-              )}
-              <button className="tb-dd-item" onClick={run(p.onChanges)}><Icon name="tag" size={15} />{t('topbar.history', 'History & changes…')}</button>
-              <button className="tb-dd-item" onClick={run(p.onVersions)}><Icon name="layers" size={15} />{t('topbar.versions', 'Versions & compare…')}</button>
-              <div className="tb-dd-div" />
-              <button className="tb-dd-item" onClick={run(p.onAbout)}><Icon name="info" size={15} />{t('menu.about', 'About Light Planner…')}</button>
-            </div>
-          )}
-        </div>
+        {/* ─────────────────────────────────────────────────────────────
+            DIE MENUELEISTE — fuenf Titel statt eines Hamburgers.
+
+            NUTZER-AUFTRAG 2026-09-11: die obere Leiste in allen Repos gleich
+            aufbauen. ADR-007 Abschnitt 6 sagt dazu: Menues links, kein
+            Hamburger auf dem Desktop.
+
+            SIE LIEST DAS MODELL. Die Eintraege standen bis heute doppelt: als
+            Liste in `menuModel.ts` (fuer die Kommandopalette) und ein zweites
+            Mal getippt in dieser Klappe. Die beiden waren laengst
+            auseinander.
+
+            UND DIE PALETTE HAENGT JETZT HIER. Sie war in `MenuBar.tsx`
+            montiert — einer Datei, die `App.tsx` nie rendert; Strg/Cmd+K tat
+            in der laufenden App also nichts.
+            ───────────────────────────────────────────────────────────── */}
+        <TopMenu groups={menus} />
       </div>
 
       {/* ── center: mode switch ── */}
@@ -140,8 +180,10 @@ const TopBar: React.FC<Props> = (p) => {
         <button className={`tb-icon ${p.showHeatMap ? 'on' : ''}`} title={t('topbar.heatmapTitle', 'Heat-map (colour by illuminance)')} onClick={p.onToggleHeatMap}><Icon name="heatmap" /></button>
 
         <div className="tb-menuwrap">
+          {/* Regler statt Zahnrad: zwei Zahnraeder nebeneinander, von denen
+              eines die App einstellt und das andere das Bild, sind ein Raten. */}
           <button className={`tb-icon ${open === 'render' ? 'on' : ''}`} title={t('topbar.displaySettingsTitle', 'Display & render settings')}
-            onClick={() => setOpen(open === 'render' ? null : 'render')}><Icon name="settings" /></button>
+            onClick={() => setOpen(open === 'render' ? null : 'render')}><Icon name="photo" /></button>
           {open === 'render' && (
             <div className="tb-dropdown tb-render">
               {(p.viewMode === '3d' && p.photoMode) ? (
@@ -221,7 +263,29 @@ const TopBar: React.FC<Props> = (p) => {
         {!isEmbedded && (
           <button className="tb-btn primary" onClick={p.onSave}><Icon name="save" size={15} />{t('topbar.save', 'Save')}</button>
         )}
+
+        {/* RECHTS AUSSEN, als LETZTER Bedienpunkt der Zeile — dieselbe Stelle
+            wie im Cable Planner. Nicht zu verwechseln mit dem Regler-Knopf
+            daneben: das sind Belichtung, Boden und Strahlen, keine
+            App-Einstellungen.
+
+            AUCH EINGEBETTET: die Shell hat ihre eigenen Einstellungen, dieser
+            Dialog stellt die Sprache DIESES Moduls. Wer ihn eingebettet
+            ausblendete, naehme dem Modul seinen einzigen Weg dorthin. */}
+        <button
+          className="tb-icon"
+          title={t('settings.title', 'Settings')}
+          aria-label={t('settings.title', 'Settings')}
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Icon name="settings" />
+        </button>
       </div>
+
+      {/* Die Kommandopalette — Strg/Cmd+K, ADR-007 Abschnitt 6. Sie liest
+          DIESELBE Liste wie die Menueleiste daneben. */}
+      <CommandPalette groups={menus} />
+      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
     </header>
   );
 };

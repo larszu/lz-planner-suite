@@ -1676,6 +1676,9 @@ const App: React.FC = () => {
         onVersions={() => setVersionOpen(true)}
         onChanges={() => setChangesOpen(true)}
         onAbout={() => setAboutOpen(true)}
+        onCopy={handleCopy}
+        onPaste={handlePaste}
+        onDuplicate={handleDuplicate}
       />
       <div className="app-body">
         <ToolRail activeTool={activeTool} onToolChange={handleToolChange} />

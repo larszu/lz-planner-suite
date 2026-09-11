@@ -101,6 +101,16 @@ jobs:
       - name: Vertrag „Festinstallation" — ADR gegen Code
         run: npm run vertrag:parity
 
+      # Nutzer-Auftrag 2026-09-11: „Stelle sicher das in allen repos
+      # uebergreifend das Einstellungen Menue an der gleichen Stelle ist wie
+      # im Cable planner und das die obere Menueleiste gleich aufgebaut ist."
+      # ADR-007 Abschnitt 6 schrieb den Rahmen schon seit dem 2026-09-08 vor
+      # und wurde NIE gemessen — vier von sechs Apps hatten die Einstellungen
+      # ueberhaupt nicht. Nur hier liegen alle sechs Kopfzeilen im selben
+      # Baum, also kann nur hier jemand nachsehen, ob sie gleich gebaut sind.
+      - name: Kopfzeilen sind in allen Apps gleich gebaut (ADR-007 Abschnitt 6)
+        run: npm run chrome:parity
+
       - name: Vendorte Features haben einen Bedienweg
         run: npm run features:reachable
 

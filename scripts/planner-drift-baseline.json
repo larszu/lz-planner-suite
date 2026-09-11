@@ -25,22 +25,22 @@
     "drift": 21,
     "total": 30,
     "missingUpstream": false,
-    "upstreamSha": "aa6e8b91633c",
+    "upstreamSha": "409647eec0af",
     "version": "4.3.3",
     "upstreamVersion": "4.3.3"
   },
   "light-planner": {
     "only-upstream": 0,
     "only-suite": 5,
-    "two-way": 18,
+    "two-way": 17,
     "upstream-ahead": 1,
     "suite-ahead": 1,
     "expected-overlay": 10,
-    "dead-upstream": 4,
-    "drift": 25,
-    "total": 39,
+    "dead-upstream": 1,
+    "drift": 24,
+    "total": 35,
     "missingUpstream": false,
-    "upstreamSha": "f23695884315",
+    "upstreamSha": "c89758082ff5",
     "version": "1.0.0",
     "upstreamVersion": "1.0.0"
   },
@@ -55,7 +55,7 @@
     "drift": 0,
     "total": 0,
     "missingUpstream": false,
-    "upstreamSha": "dd1f055ef6b0",
+    "upstreamSha": "77b04787fcad",
     "version": "0.1.0",
     "upstreamVersion": "0.1.0"
   },
@@ -70,7 +70,7 @@
     "drift": 0,
     "total": 0,
     "missingUpstream": false,
-    "upstreamSha": "26644af11ce8",
+    "upstreamSha": "46889aa59136",
     "version": "0.1.0",
     "upstreamVersion": "0.1.0"
   }

@@ -170,7 +170,7 @@ dann still."
 
 ## 6. Der Rahmen — wo das Menue steht
 
-Damit alle acht Werkzeuge gleich zu bedienen sind, steht der Rahmen fest.
+Damit alle Werkzeuge gleich zu bedienen sind, steht der Rahmen fest.
 Von aussen nach innen:
 
 ```
@@ -187,9 +187,36 @@ Von aussen nach innen:
 └──────────────────────────────────────────────────────────────┘
 ```
 
-- **Menue immer oben links.** Datei · Bearbeiten · Ansicht · Werkzeuge ·
+- **Menue immer oben links.** Datei · Bearbeiten · **Werkzeuge · Ansicht** ·
   Hilfe. Nie ein zweites Menue an anderer Stelle, nie ein Hamburger auf dem
   Desktop.
+
+  > **Korrigiert am 2026-09-11.** Hier stand bis dahin „Datei · Bearbeiten ·
+  > Ansicht · Werkzeuge · Hilfe" — Ansicht und Werkzeuge vertauscht. Der
+  > `cable-planner` fuehrt sie seit jeher in der Folge oben, und der
+  > Nutzer-Auftrag vom selben Tag sagt ausdruecklich „Passe an den Cable
+  > planner stand an". Also war der Code der Massstab und dieser Satz die
+  > Abweichung. Dass sie drei Tage unbemerkt blieb, hat einen Grund: die
+  > Reihenfolge wurde nie GEMESSEN. Das tut jetzt
+  > `scripts/chrome-parity.mjs`.
+
+- **`File` und `Help` fuehrt jede App**, mit dem gemeinsamen Grundstock:
+  Neues Projekt · Oeffnen · Speichern · Speichern unter, und ein „Ueber".
+  `Edit`, `Tools` und `View` nur dort, wo das Darunterliegende existiert —
+  **abwesend statt leer**. Ein Menue „Ansicht" mit einem ausgegrauten
+  „Einpassen" in einem Lager ohne Zeichenbereich ist ein PLACEHOLDER: es
+  sieht aus wie eine Funktion und ist keine. Ein abwesendes Menue verschiebt
+  die uebrigen nach vorn; ihre Reihenfolge bleibt.
+
+- **Die Einstellungen stehen rechts aussen**, als LETZTER Bedienpunkt der
+  Kopfzeile. Nicht zu verwechseln mit Anzeige-Reglern, die zufaellig auch ein
+  Zahnrad tragen — der `light-planner` hatte genau das, und sein Zahnrad war
+  die Belichtung des 3D-Bildes.
+
+- **Die Beschriftungen folgen der Quellsprache des Repos, nicht dieser Liste.**
+  Vereinheitlicht wird der BAU der Leiste — welche Menues, in welcher Folge,
+  wo die Einstellungen sitzen. „File" in einer deutschen Oberflaeche waere
+  Sprachmix, und gegen den steht in dieser Suite ein eigener Zaehler.
 - **Modul-Rail links**, 56 px, senkrecht, mit Beschriftung unter dem Zeichen.
   Der aktive Eintrag ist Off-White auf versenkter Flaeche — kein Farbton.
 - **Inspektor rechts.** Eigenschaften des Ausgewaehlten, nie links.
@@ -201,6 +228,17 @@ Von aussen nach innen:
 - Ein Dialog, der laenger ist als sein Fenster, **scrollt in seinem Rumpf** —
   die Fusszeile mit den Aktionen bleibt stehen. (Das war ein gemeldeter
   Fehler: der Drucken-Knopf im Export-Dialog war nicht erreichbar.)
+
+**Gemessen wird dieser Abschnitt von `scripts/chrome-parity.mjs`** (Lauf:
+`npm run chrome:parity`), und zwar in allen sechs vendorierten Apps im selben
+Baum: Klasse und 40 px, die Menue-Folge, der Grundstock je Menue, die
+Einstellungen als letzter Bedienpunkt, kein Hamburger auf dem Desktop.
+
+Was er NICHT sieht: die Reihenfolge auf dem SCHIRM (nur die im Markup — ein
+`order`-Wert im Stilblatt wuerde ihn taeuschen) und die vier nicht
+vendorierten Repos (`Broadcast-intercom`, `tally-pi`, `sony-camera-bridge`,
+`pi-media-station`). Jedes Repo traegt zusaetzlich seinen eigenen
+`kopfzeile:check`, der beim Bauen faellt statt erst beim Vendorieren.
 
 ---
 

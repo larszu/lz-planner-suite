@@ -84,37 +84,31 @@ assert.match(
 // Die Rail steht im Raster der App und nicht in einer eigenen Regel.
 assert.match(css, /grid-template-columns:\s*56px/, 'Rail ist 56 px');
 
-// ── 7. Strg/Cmd + K gehoert hier der Shell ───────────────────────────────
+// ── 7. Die Kommandopalette liegt auf Strg/Cmd + K ────────────────────────
 //
-// OVERLAY (Suite): Upstream prueft an dieser Stelle, dass die App eine eigene
-// Kommandopalette hat und sie aus dem Menue-Modell speist. In der Suite gilt
-// das Gegenteil, und zwar aus derselben Regel: ADR-007 Abschnitt 6 verlangt
-// „derselbe Griff ueberall" — genau deshalb darf es nicht ZWEI Paletten auf
-// derselben Taste geben. Der eingebettete Planer laeuft im iframe der Shell,
-// und die Shell hoert bereits auf Strg/Cmd+K.
-//
-// Upstream haengt die Palette in der `MenuBar`; hier bedient die `TopBar`,
-// die MenuBar ist toter Upstream-Code (siehe DEAD_UPSTREAM in
-// scripts/planner-drift.mjs). Mitvendoriert waeren es zwei Dateien, die
-// nichts mountet. Der Waechter haelt beides fest, damit weder das eine noch
-// das andere unbemerkt zurueckkommt.
+// „Derselbe Griff ueberall" ist die halbe Zusage; die andere Haelfte ist,
+// dass die Palette dieselben Befehle anbietet wie das Menue. Deshalb prueft
+// der Waechter beides: die Tastenkombination UND dass die Liste aus
+// `menuModel.ts` kommt statt ein zweites Mal getippt zu sein.
 const lies = (rel: string): string => readFileSync(resolve(hier, '..', rel), 'utf8');
-const existiert = (rel: string): boolean => {
-  try {
-    readFileSync(resolve(hier, '..', rel), 'utf8');
-    return true;
-  } catch {
-    return false;
-  }
-};
-assert.ok(
-  !existiert('src/components/CommandPalette.tsx'),
-  'Die Suite-Kopie traegt keine eigene Kommandopalette — Strg/Cmd+K gehoert der Shell',
-);
-const app = lies('src/App.tsx');
-assert.match(app, /import TopBar from '\.\/components\/TopBar'/,
-  'die Suite-Kopie bedient ueber die TopBar');
-assert.ok(!app.includes('<CommandPalette'),
-  'keine zweite Palette im eingebetteten Planer');
+const palette = lies('src/components/CommandPalette.tsx');
+assert.match(palette, /ctrlKey \|\| e\.metaKey/, 'Palette hoert nicht auf Strg/Cmd');
+assert.match(palette, /e\.key === 'k' \|\| e\.key === 'K'/, 'Palette hoert nicht auf K');
+assert.match(palette, /import type \{ MenuGroup \} from '\.\/menuModel'/, 'Palette liest nicht das Menue-Modell');
+//
+// GEMESSEN WIRD JETZT `TopBar.tsx` UND NICHT MEHR `MenuBar.tsx`. Bis zum
+// 2026-09-11 las dieser Waechter eine Datei, die `App.tsx` nie rendert: die
+// Palette war dort gemountet, in der laufenden App tat Strg/Cmd+K also
+// nichts — und diese Zeile war trotzdem gruen. Der Waechter stand an der
+// falschen Tuer. `MenuBar.tsx` ist geloescht; die Leiste und die Palette
+// haengen in `TopBar.tsx`, das `App.tsx` wirklich rendert.
+//
+// DIE PRUEFUNG „wird gerendert" LEISTET DIESER LAUF NICHT SELBST — sie
+// gehoert `i18n-reachable-check.ts`, der dem Importgraphen von `App.tsx`
+// folgt. Hier steht nur, WAS in der Datei stehen muss.
+const topbar = lies('src/components/TopBar.tsx');
+assert.match(topbar, /buildMenus\(/, 'Menueleiste baut nicht aus dem Modell');
+assert.ok(topbar.includes('<TopMenu groups={menus} />'), 'Menueleiste ist nicht gemountet');
+assert.ok(topbar.includes('<CommandPalette groups={menus} />'), 'Palette ist nicht gemountet');
 
 console.log('brand:check ok — Oberflaechen-Regeln (ADR-007) eingehalten');

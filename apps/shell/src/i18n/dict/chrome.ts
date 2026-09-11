@@ -33,6 +33,10 @@ export const chrome: Record<string, string> = {
   'chrome.topbar.view.settings': 'Settings…',
   'chrome.topbar.help.search': 'Search & commands',
   'chrome.topbar.help.shortcuts': 'Keyboard shortcuts…',
+  'chrome.topbar.help.about': 'About the suite…',
+  'chrome.topbar.about.title': 'About the AV Planner suite',
+  'chrome.topbar.about.body':
+    'One workplace for planning a show: signal flow, cameras, lighting, stock and building — as modules over a shared project.',
   'chrome.topbar.fileReadError': 'Could not read file.',
   'chrome.topbar.searchAria': 'Open search and commands',
   'chrome.topbar.search': 'Search & commands',
