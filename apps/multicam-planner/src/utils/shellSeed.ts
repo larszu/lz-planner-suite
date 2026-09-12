@@ -48,16 +48,36 @@ const passt = (katalog: string, kandidat: string): boolean => {
   return k === kandidat || k.endsWith(` ${kandidat}`) || k.endsWith(`-${kandidat}`);
 };
 
+/**
+ * Der Katalog fuehrt Modelle mit Praefix („Sony PXW-FX9"), der Seed schreibt
+ * sie oft kurz („Sony FX9"). Deshalb wird zusaetzlich die Fassung ohne das
+ * erste Wort probiert. Das gilt nur fuer das MODELL: dort ist das erste Wort
+ * der Hersteller. Beim NAMEN ist es das nicht — „CAM 4" ist eine
+ * Beschriftung, und was uebrigbleibt, ist die Scherbe „4".
+ */
+const modellKandidaten = (text: string | undefined): string[] => {
+  if (!text || text.trim().length === 0) return [];
+  const n = normalisiere(text);
+  const ohneHersteller = n.split(' ').slice(1).join(' ');
+  return ohneHersteller ? [n, ohneHersteller] : [n];
+};
+
+/**
+ * Bezeichnet der Kandidat ueberhaupt ein Modell? Eine reine Zahl tut das nie.
+ * Sie trifft frueher oder spaeter genau ein Katalog-Modell, dessen Name
+ * zufaellig auf dieselbe Ziffer endet — gemessen am 2026-09-12: „4" traf
+ * „DJI Osmo Action 4", und damit stand statt der Sony FR7 PTZ eine Action-Cam
+ * mit 1"-Sensor in der Szene. Genau der Schaden, gegen den diese Datei
+ * geschrieben ist: falsche Bildwinkel, die voellig richtig aussehen.
+ */
+const bezeichnetEinModell = (kandidat: string): boolean => !/^[0-9]+$/.test(kandidat);
+
 /** Genau ein Treffer oder null. Mehrdeutig zaehlt ausdruecklich als kein Treffer. */
 export function katalogKamera(seed: Pick<SeedCamera, 'model' | 'name'>): Camera | null {
-  const kandidaten = [seed.model, seed.name]
-    .filter((s): s is string => !!s && s.trim().length > 0)
-    .flatMap((s) => {
-      const n = normalisiere(s);
-      // Zusaetzlich ohne fuehrenden Hersteller: „sony fx9" -> „fx9".
-      const ohneHersteller = n.split(' ').slice(1).join(' ');
-      return ohneHersteller ? [n, ohneHersteller] : [n];
-    });
+  const kandidaten = [
+    ...modellKandidaten(seed.model),
+    ...(seed.name && seed.name.trim().length > 0 ? [normalisiere(seed.name)] : []),
+  ].filter(bezeichnetEinModell);
   for (const kandidat of [...new Set(kandidaten)]) {
     const treffer = CAMERAS.filter(
       (c) => passt(`${c.manufacturer} ${c.model}`, kandidat) || passt(c.model, kandidat),

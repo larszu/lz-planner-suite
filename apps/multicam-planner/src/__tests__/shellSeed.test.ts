@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptySeed, type SuiteSeed } from '@avplan/ui/embed';
 import { camerasToSeedPatch, katalogKamera, seedToCameras, seedToVenue, venueToSeedPatch } from '../utils/shellSeed';
+import { CAMERAS } from '../data/cameras';
 import { LENSES } from '../data/lenses';
 import type { Venue } from '../types';
 
@@ -26,6 +27,47 @@ describe('shellSeed — Katalog-Aufloesung', () => {
   it('loest nicht auf, was mehrdeutig oder unbekannt ist', () => {
     expect(katalogKamera({ model: 'Sony FR7 PTZ', name: 'CAM 4' })).toBeNull();
     expect(katalogKamera({ model: 'Irgendeine Kamera', name: 'CAM 9' })).toBeNull();
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Der Waechter gegen die Scherbe. Die Aufloesung probiert ein Modell
+  // zusaetzlich ohne sein erstes Wort („sony fx9" -> „fx9"), weil der Katalog
+  // Praefixe fuehrt. Auf den NAMEN angewandt erzeugte dieselbe Regel aus
+  // „CAM 4" den Kandidaten „4" — und der traf am 2026-09-12 genau ein Modell,
+  // seit der Katalog die „DJI Osmo Action 4" fuehrt. Ergebnis: eine Action-Cam
+  // mit 1"-Sensor an der Position der Sony FR7 PTZ, mit falschen Bildwinkeln,
+  // die voellig richtig aussehen.
+  //
+  // Die beiden Faelle unten pruefen die Regel, nicht den Tagesstand des
+  // Katalogs: sie leiten ihre Eingaben aus CAMERAS ab und sagen vorher, ob
+  // dort ueberhaupt etwas zu treffen waere.
+  // NICHT gemessen: Kandidaten, die keine reine Zahl sind, aber trotzdem zu
+  // allgemein („pro", „mini"). Die treffen heute mehrfach und fallen damit
+  // schon durch die Eindeutigkeitsregel — geprueft ist das hier nicht.
+  // ─────────────────────────────────────────────────────────────────────────
+  const endziffern = [
+    ...new Set(
+      CAMERAS.map((c) => `${c.manufacturer} ${c.model}`.match(/ (\d+)$/)?.[1]).filter(
+        (z): z is string => !!z,
+      ),
+    ),
+  ];
+
+  it('hat ueberhaupt Modelle, deren Bezeichnung auf eine blosse Zahl endet', () => {
+    // Ohne die waeren die beiden folgenden Faelle gruen, ohne etwas zu messen.
+    expect(endziffern.length).toBeGreaterThan(0);
+  });
+
+  it('macht aus dem Namen keine Modellbezeichnung — „CAM 4" ist nicht „4"', () => {
+    for (const ziffer of endziffern) {
+      expect(katalogKamera({ model: 'Hersteller Ohne Katalogeintrag', name: `CAM ${ziffer}` })).toBeNull();
+    }
+  });
+
+  it('loest eine blosse Zahl nie auf, auch wenn sie genau ein Modell traefe', () => {
+    for (const ziffer of endziffern) {
+      expect(katalogKamera({ model: ziffer, name: ziffer })).toBeNull();
+    }
   });
 });
 
