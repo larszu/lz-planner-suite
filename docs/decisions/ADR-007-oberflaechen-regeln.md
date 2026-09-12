@@ -221,6 +221,24 @@ Von aussen nach innen:
   Der aktive Eintrag ist Off-White auf versenkter Flaeche — kein Farbton.
 - **Inspektor rechts.** Eigenschaften des Ausgewaehlten, nie links.
 
+- **Die Statusleiste fuehrt jede App mit einem Arbeitsbereich** (nachgetragen
+  am 2026-09-12). Der Rahmen oben nennt sie seit jeher; gefuehrt haben sie
+  nur `cable-planner` und `light-planner`. Im `multicam-planner` stand im
+  Stilblatt dazu „wo keine ist, wird auch keine erfunden, nur um eine Regel
+  abzuhaken" — richtig, solange offen war, WAS darin steht.
+
+  Offen war das aber nie: der Rahmen sagt „Meldungen links · Zaehler
+  rechts", und **Zaehler sind ableitbar**. Was dort NICHT hingehoert, sind
+  Werte, die eine Produktentscheidung waeren — eine „Komplexitaet", eine
+  Ampel, eine Bewertung des Plans. Der `cable-planner` fuehrt solche Werte;
+  sie sind seine Entscheidung und keine Vorlage.
+
+  Gemessen wird die Leiste je Repo (`kopfzeile:check`), nicht in der Suite:
+  sie ist eine Zahl im Stilblatt und ein Element im Markup, beides steht in
+  der App. `inventory-planner` und `larszu-facility-planner` fuehren Reiter
+  ohne Zeichenbereich — dort waere sie eine leere Zeile, also gilt die Regel
+  fuer sie nicht.
+
 - **Die Seitenleisten klappen ueberall gleich ein** (ergaenzt am 2026-09-11).
   Der Rahmen stand hier von Anfang an; der GRIFF nicht — und genau der ist,
   was ein Nutzer als Erstes anfasst. Verglichen ueber die fuenf vendorierten

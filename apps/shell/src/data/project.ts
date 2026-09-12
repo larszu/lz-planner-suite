@@ -281,6 +281,8 @@ export interface SuiteProject {
    * weg, bevor jemand ihn gelesen hat.
    */
   seedConflicts?: SeedConflictRecord[]
+  /** Angebotene Uebergaben an die anderen Planer (Nutzer-Auftrag 2026-09-12). */
+  seedHandoffs?: SeedHandoffRecord[]
 }
 
 /**
@@ -292,6 +294,35 @@ export interface SeedConflictRecord {
   id: string
   seenAt: number
   conflict: import('@avplan/ui/embed').SeedConflict
+}
+
+/**
+ * Eine ANGEBOTENE Uebergabe: ein Planer hat gemeldet, die Shell hat es
+ * eingearbeitet — und die Frage ist, ob die anderen Planer es bekommen.
+ *
+ * ─── WARUM DAS EIN KLICK IST UND KEIN AUTOMATISMUS ─────────────────────
+ *
+ * NUTZER-AUFTRAG vom 2026-09-12: „wenn man also im multicam planner eine
+ * kamera hinzufuegt soll man anklicken koennen das die auch im cable planner
+ * hinzugefuegt werden soll oder geaendert werden soll. und vice versa."
+ *
+ * Das ist nicht nur Geschmack. Eine Kamera im MultiCam-Planer ist eine
+ * Position im Raum; im Cable-Planner ist sie ein Geraet mit Ports, das in
+ * die Stueckliste eingeht und auf dem Kommissionierzettel landet. Wer im
+ * MultiCam eine Kamera versuchsweise dazustellt, um eine Sichtlinie zu
+ * pruefen, will sie nicht damit bestellt haben.
+ *
+ * Umgekehrt gilt dasselbe: automatisch stumm zu uebernehmen waere „letzter
+ * gewinnt" — genau die Regel, gegen die in dieser Suite schon der
+ * Konflikt-Streifen steht.
+ */
+export interface SeedHandoffRecord {
+  id: string
+  seenAt: number
+  /** Welcher Planer gemeldet hat. */
+  domain: import('@avplan/ui/embed').SeedDomain
+  /** Was sich dadurch am Shell-Projekt geaendert hat, zum Nachlesen. */
+  zusammenfassung: { neu: number; geaendert: number; entfernt: number }
 }
 
 export const PROJECT: SuiteProject = {

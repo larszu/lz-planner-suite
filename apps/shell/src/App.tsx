@@ -13,9 +13,9 @@ import { MODULES, MODULE_BY_ID, plannerMitgeliefert, type ModuleId } from './mod
 import { RUNTIMES, type RuntimeId } from './modules/runtimes'
 import { loadAddresses, runtimeUrl, saveAddresses, type RuntimeAddresses } from './shell/runtimeHosts'
 import { useRuntimeHealth } from './shell/runtimeHealth'
-import { PROJECT, type SeedConflictRecord, type ShowDetails, type SuiteProject } from './data/project'
+import { PROJECT, type SeedConflictRecord, type SeedHandoffRecord, type ShowDetails, type SuiteProject } from './data/project'
 import { applyPatchToSuite, suiteToSeed } from './data/seed'
-import { acceptProposal, type SeedPatch } from '@avplan/ui/embed'
+import { acceptProposal, type SeedDomain, type SeedPatch } from '@avplan/ui/embed'
 import {
   downloadProject,
   projectFileHost,
@@ -56,6 +56,7 @@ import { PropertiesPanel } from './shell/PropertiesPanel'
 import { TabDeck } from './shell/TabDeck'
 import type { HeaderDraft } from './shell/dashboardEditors'
 import { SeedConflictBar } from './shell/SeedConflictBar'
+import { SeedHandoffBar } from './shell/SeedHandoffBar'
 import { StatusBar } from './shell/StatusBar'
 import { buildCommands } from './shell/buildCommands'
 import { LanguageProvider, format, translate } from './i18n'
@@ -184,8 +185,21 @@ export function App() {
     bumpSeed()
   }, [bumpSeed])
 
+  /**
+   * Wessen Meldung die zuletzt UEBERGEBENE Revision ausgeloest hat.
+   *
+   * Sie faehrt am Seed mit, damit der Melder seinen eigenen Hall erkennt und
+   * nicht seine inzwischen neuere Arbeit damit ueberschreibt. Alle anderen
+   * Planer bekommen den Stand — genau das war bis zum 2026-09-12 nicht so
+   * (Nutzer-Meldung: „im cable planner stehen andere kameras als im multicam
+   * planner").
+   */
+  const [seedOrigin, setSeedOrigin] = useState<SeedDomain | undefined>(undefined)
   // Seed = die Teilmenge des Projekts, die einen Planer etwas angeht.
-  const plannerSeed = useMemo(() => suiteToSeed(project, seedRevision), [project, seedRevision])
+  const plannerSeed = useMemo(
+    () => suiteToSeed(project, seedRevision, seedOrigin),
+    [project, seedRevision, seedOrigin],
+  )
   // Rueckweg: ein Planer meldet seine Domaene. Bewusst OHNE Eintrag in der
   // Shell-Historie — die Aenderung ist im Planer passiert und hat dort schon
   // ihr eigenes Undo; ein zweiter Eintrag hier hiesse zweimal zuruecknehmen.
@@ -211,6 +225,46 @@ export function App() {
       )
     }
   }, [seedRevision, pushToast, tt])
+
+  /**
+   * Eine Uebergabe annehmen: der Stand geht an die ANDEREN Planer.
+   *
+   * Hier — und nur hier — zaehlt die Revision nach einer Planer-Meldung hoch.
+   * Bis zum 2026-09-12 tat sie das nie, und das war der Grund, warum eine im
+   * MultiCam angelegte Kamera den Cable-Planner nie erreichte: `apply` im
+   * Planer laeuft ausschliesslich bei einer NEUEREN Revision.
+   *
+   * Die Herkunft faehrt mit. Der meldende Planer erkennt daran seinen eigenen
+   * Hall und laesst ihn liegen — er hat den Stand ja, und seither vielleicht
+   * weitergearbeitet.
+   */
+  const acceptSeedHandoff = useCallback((record: SeedHandoffRecord) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const rest = (h.present.seedHandoffs ?? []).filter((x) => x.id !== record.id)
+      return { ...h, present: { ...h.present, seedHandoffs: rest } }
+    })
+    setSeedOrigin(record.domain)
+    bumpSeed()
+    pushToast(tt('seed.handoff.toast', 'An die anderen Planer übergeben'), { tone: 'ok' })
+  }, [bumpSeed, pushToast, tt])
+
+  /**
+   * Eine Uebergabe ablehnen: der Stand bleibt im Suite-Projekt stehen, die
+   * anderen Planer bekommen ihn nicht, und nur die Frage geht weg.
+   *
+   * Das ist kein „Verwerfen": die Meldung IST eingearbeitet — sie wird nur
+   * nicht weitergereicht. Wer sie spaeter doch weitergeben will, aendert im
+   * Planer etwas und bekommt das Angebot erneut.
+   */
+  const dismissSeedHandoff = useCallback((id: string) => {
+    setHistory((h) => {
+      if (!h.present) return h
+      const rest = (h.present.seedHandoffs ?? []).filter((x) => x.id !== id)
+      if (rest.length === (h.present.seedHandoffs ?? []).length) return h
+      return { ...h, present: { ...h.present, seedHandoffs: rest } }
+    })
+  }, [])
 
   /**
    * Einen Befund aufloesen: der Vorschlag zieht ein, und bei einem geteilten
@@ -905,6 +959,11 @@ export function App() {
         )}
       </div>
 
+      <SeedHandoffBar
+        handoffs={project?.seedHandoffs ?? []}
+        onAccept={acceptSeedHandoff}
+        onDismiss={dismissSeedHandoff}
+      />
       <SeedConflictBar
         conflicts={project?.seedConflicts ?? []}
         onAccept={acceptSeedConflict}

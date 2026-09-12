@@ -35,6 +35,7 @@ import {
   SUITE_SEED_KIND,
   SUITE_SEED_VERSION,
   mergeSeedPatch,
+  type SeedDomain,
   type SeedPatch,
   type SuiteSeed,
 } from '@avplan/ui/embed'
@@ -44,6 +45,7 @@ import type {
   Camera,
   Fixture,
   SeedConflictRecord,
+  SeedHandoffRecord,
   SignalNode,
   SuiteProject,
 } from './project'
@@ -61,12 +63,22 @@ export function layerForCableType(type: string): CableLayer {
 }
 
 /** Projekt → Seed. `revision` kommt von aussen (siehe `useSuiteSeed`). */
-export function suiteToSeed(project: SuiteProject | null, revision: number): SuiteSeed {
+export function suiteToSeed(
+  project: SuiteProject | null,
+  revision: number,
+  /**
+   * Woher dieser Stand kommt, wenn ihn die Meldung eines Planers ausgeloest
+   * hat. Der MELDER erkennt daran seinen eigenen Hall und uebernimmt ihn
+   * nicht; alle anderen bekommen ihn (siehe `origin` in `@avplan/ui`).
+   */
+  origin?: SeedDomain,
+): SuiteSeed {
   if (!project) {
     return {
       kind: SUITE_SEED_KIND,
       formatVersion: SUITE_SEED_VERSION,
       revision,
+      ...(origin ? { origin } : {}),
       venue: { name: '' },
       cameras: [],
       fixtures: [],
@@ -78,6 +90,7 @@ export function suiteToSeed(project: SuiteProject | null, revision: number): Sui
     kind: SUITE_SEED_KIND,
     formatVersion: SUITE_SEED_VERSION,
     revision,
+    ...(origin ? { origin } : {}),
     projectName: project.meta.name,
     venue: {
       name: project.meta.venue,
@@ -148,6 +161,13 @@ export interface PatchAufSuite {
   project: SuiteProject
   /** Leer heisst „nichts zu melden", nicht „nichts passiert". */
   conflicts: SeedConflictRecord[]
+  /**
+   * Die angebotene Uebergabe an die ANDEREN Planer, wenn sich am Inhalt
+   * wirklich etwas geaendert hat. `undefined` heisst „nichts zu uebergeben"
+   * — eine Meldung, die nur bestaetigt, was ohnehin dastand, soll niemanden
+   * fragen.
+   */
+  handoff?: SeedHandoffRecord
 }
 
 /**
@@ -276,5 +296,52 @@ export function applyPatchToSuite(
     seedHolds: seed.holds,
     seedConflicts: befunde.length ? [...(project.seedConflicts ?? []), ...befunde] : project.seedConflicts,
   }
-  return { project: next, conflicts: befunde }
+
+  /**
+   * Was sich fuer die ANDEREN Planer geaendert hat — gezaehlt ueber die drei
+   * Inhalts-Listen, die der Seed traegt.
+   *
+   * ABSICHTLICH UEBER DIE IDs UND NICHT UEBER EINEN TIEFEN VERGLEICH: der
+   * Streifen sagt „1 neu, 2 geaendert", und was davon der Nutzer wirklich
+   * sehen will, steht im Planer. Ein Feld-fuer-Feld-Vergleich wuerde hier
+   * eine Genauigkeit behaupten, die die Zahl gar nicht traegt.
+   */
+  const zaehle = <T extends { id: string }>(vorherL: T[], nachherL: T[]) => {
+    const v = new Map(vorherL.map((x) => [x.id, JSON.stringify(x)]))
+    const n = new Map(nachherL.map((x) => [x.id, JSON.stringify(x)]))
+    let neu = 0
+    let geaendert = 0
+    for (const [id, wert] of n) {
+      if (!v.has(id)) neu += 1
+      else if (v.get(id) !== wert) geaendert += 1
+    }
+    let entfernt = 0
+    for (const id of v.keys()) if (!n.has(id)) entfernt += 1
+    return { neu, geaendert, entfernt }
+  }
+  // AUF DEM SEED GEZAEHLT UND NICHT AUF DEM SHELL-MODELL, und das ist kein
+  // Detail: der erste Anlauf verglich `project.cameras` mit der neu gebauten
+  // Liste und meldete fuer eine Meldung, die NICHTS aenderte, „2 geaendert".
+  // Kein Wunder — die Rueckabbildung normalisiert (`?? ''`, `?? 0`), und zwei
+  // Kameras hatten ein Feld, das im Seed gar nicht vorkommt. Gezaehlt gehoert,
+  // was der Seed traegt: nur das faehrt zu den anderen Planern.
+  const a = zaehle(vorher.cameras, seed.cameras)
+  const b = zaehle(vorher.fixtures, seed.fixtures)
+  const c = zaehle(vorher.devices, seed.devices)
+  const d = zaehle(vorher.cables, seed.cables)
+  const summe = {
+    neu: a.neu + b.neu + c.neu + d.neu,
+    geaendert: a.geaendert + b.geaendert + c.geaendert + d.geaendert,
+    entfernt: a.entfernt + b.entfernt + c.entfernt + d.entfernt,
+  }
+  const handoff: SeedHandoffRecord | undefined =
+    summe.neu + summe.geaendert + summe.entfernt > 0
+      ? { id: id(now() + 1000), seenAt: now(), domain: patch.domain, zusammenfassung: summe }
+      : undefined
+
+  return {
+    project: handoff ? { ...next, seedHandoffs: [...(project.seedHandoffs ?? []), handoff] } : next,
+    conflicts: befunde,
+    handoff,
+  }
 }

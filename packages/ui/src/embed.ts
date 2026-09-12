@@ -562,6 +562,22 @@ export function connectShellSeed(h: ShellSeedHandlers): { publish: () => void; d
     if (!isShellMessage(e.data) || e.data.type !== 'avplan:seed') return
     const { seed } = e.data
     if (!isSuiteSeed(seed) || seed.revision <= appliedRevision) return
+    // DER EIGENE HALL. Traegt der Seed die eigene Domaene als Herkunft, steht
+    // darin, was dieser Planer selbst gerade gemeldet hat — er hat es also
+    // schon, und seither vielleicht weitergearbeitet. Uebernehmen hiesse hier,
+    // die eigene neuere Arbeit mit der eigenen aelteren zu ueberschreiben.
+    //
+    // Die Revision wird trotzdem vermerkt: sonst gilt der naechste Seed der
+    // Shell mit derselben Revision als „nicht neuer" und faellt durch.
+    //
+    // Bis 2026-09-12 stand an dieser Stelle nichts, und der Schutz lag statt
+    // dessen darin, dass die Shell die Revision beim Einarbeiten NICHT
+    // hochzaehlte. Das schnitt den Hall ab — und mit ihm die Weitergabe an
+    // alle anderen Planer (siehe `origin` in `seed.ts`).
+    if (seed.origin && seed.origin === h.domain) {
+      appliedRevision = seed.revision
+      return
+    }
     try {
       const taken = h.apply(seed)
       if (taken !== false) {

@@ -4574,6 +4574,129 @@ eine Antwort:**
   einmal rot gesehen, zurückgedreht, grün. Fünf von fünf.
 
 
+### B-74 · Die Planer waren verbunden — die Weitergabe war es nicht
+
+* **Status:** erledigt am 2026-09-12.
+
+* **Die Meldung.** Nutzer, 2026-09-12: „wenn man im av planner den cable
+  planner öffnet stehen dort andere kameras als im multicam planner. das soll
+  ja verknüpft werden. wenn man also im multicam planner eine kamera
+  hinzufügt soll man anklicken können das die auch im cable planner
+  hinzugefügt werden soll oder geändert werden soll. und vice versa. das muss
+  verknüpft sein durch av suite. sonst könnte ich alle apps ja standalone
+  nutzen."
+
+* **Der Rückweg war vollständig gebaut — und endete in der Shell.** MultiCam
+  meldet seine Kameras (`shellSeedBridge.ts`), die Shell arbeitet sie ein
+  (`applyPatchToSuite`). Was fehlte, war der letzte Schritt: die Shell zählte
+  die Seed-Revision beim Einarbeiten **bewusst nicht** hoch, und
+  `connectShellSeed` übernimmt nur einen Seed mit HÖHERER Revision. Eine in
+  MultiCam angelegte Kamera kam also bis ins Suite-Projekt und blieb dort
+  stehen.
+
+  **Das war kein Versehen, sondern ein Schutz**, und genau deshalb lehrreich:
+  die stehengelassene Revision schnitt die Echo-Schleife ab (Planer meldet →
+  Shell schiebt zurück → Planer überschreibt seine eigene neuere Arbeit).
+  Derselbe Riegel schnitt die Weitergabe an ALLE anderen Planer mit ab. Ein
+  Schutz, der mehr abschneidet als die Gefahr, sieht von innen aus wie
+  Vorsicht.
+
+* **Die Auflösung: der Seed trägt seine Herkunft** (`origin`, eine
+  `SeedDomain`). Damit geht beides — die Revision zählt hoch, alle anderen
+  Planer bekommen den Stand, und der MELDER erkennt seinen eigenen Hall und
+  lässt ihn liegen. Er vermerkt die Revision trotzdem; ohne das fiele der
+  nächste Seed der Shell als „nicht neuer" durch, und der Planer bliebe
+  stehen (Gegenprobe im Test).
+
+* **Die Übergabe ist ein Klick und kein Automatismus** — so, wie der Nutzer
+  es beschrieben hat, und aus einem Grund, der über Geschmack hinausgeht:
+  eine Kamera ist im MultiCam-Planer eine Position im Raum, im Cable-Planner
+  ein Gerät mit Ports, das in die Stückliste eingeht und auf dem
+  Kommissionierzettel landet. Wer im MultiCam eine Kamera versuchsweise
+  dazustellt, um eine Sichtlinie zu prüfen, will sie nicht damit bestellt
+  haben. Stumm zu übernehmen wäre „letzter gewinnt" — die Regel, gegen die
+  nebenan schon der Konflikt-Streifen steht.
+
+  `SeedHandoffBar` zeigt deshalb „Meldung aus dem Kamera-Planer: 1 neu — an
+  die anderen Planer übergeben?" mit **Übernehmen** und **Nur hier**. Der
+  zweite Knopf ist kein Verwerfen: die Meldung IST eingearbeitet, sie wird
+  nur nicht weitergereicht.
+
+* **Gezählt wird auf dem SEED und nicht auf dem Shell-Modell.** Der erste
+  Anlauf verglich `project.cameras` mit der neu gebauten Liste und meldete
+  für eine Meldung, die nichts änderte, „2 geändert" — die Rückabbildung
+  normalisiert (`?? ''`, `?? 0`), und zwei Kameras trugen ein Feld, das der
+  Seed gar nicht kennt. Gezählt gehört, was zu den anderen Planern fährt.
+
+* **Offen geblieben:** ob eine Übergabe auch RÜCKGÄNGIG gemacht werden
+  können soll, nachdem die anderen Planer sie übernommen haben. Heute nicht;
+  jeder Planer hat sein eigenes Undo, und ein suite-weites Zurücknehmen wäre
+  ein eigenes Stück Arbeit mit eigenen Fragen (was, wenn einer inzwischen
+  weitergearbeitet hat?).
+
+### B-75 · Unlesbare Texte im MultiCam-Planer — gemessen, nicht geschätzt
+
+* **Status:** erledigt am 2026-09-12.
+
+* **Die Meldung.** Nutzer, 2026-09-12: „in der av planner suite sieht der
+  multicam planner besser aus als der multicam planner einzeln, aber man kann
+  manche texte nicht lesen."
+
+* **Nachgemessen, und es war kein Eindruck.** WCAG-Kontrast der drei
+  Meta-Töne gegen `bc-panel` (#1D324F), den Grund, auf dem sie überwiegend
+  stehen:
+
+  | Ton | vorher | Grenze |
+  |---|---|---|
+  | `muted` | 4.64 | knapp darüber |
+  | `dim` | 3.17 | darunter |
+  | `faint` | **2.19** | weit darunter |
+
+  2.19:1 ist kein blasser Ton. Und genau dieser stand an **18 Stellen unter
+  `text-[9px]`** — an Hinweisen, die etwas erklären sollten. Zwei Fehler, die
+  sich gegenseitig verstärken.
+
+* **Die Rampe unter `muted` gibt es im Dunkel-Thema nicht mehr.** Stahlblau
+  #8C9CB3 ist die Markenfarbe für gedämpften Text und liegt bei 4.64. Auf
+  dunklem Grund heißt „noch gedämpfter" aber DUNKLER, also kontrastärmer —
+  unterhalb von 4.64 ist kein Platz. Der erste Anlauf hob deshalb alle drei
+  an und **brach damit die Markenfarbe**; `brand:check` hat es sofort
+  gemeldet und hatte recht. Wo Marke und Lesbarkeit sich widersprechen, gibt
+  die Rampe nach, nicht die Marke. Die Namen bleiben: mit einer helleren
+  Panel-Fläche geht sie wieder auf.
+
+* **Offen, mit Zahl:** die Mindest-Schriftgröße der Suite. Gemessen stehen
+  113 Stellen im `multicam-planner` auf 10/10.5 px, der `light-planner` setzt
+  seine Abschnitts-Überschriften ebenfalls mit 10 px, der `cable-planner`
+  fängt bei 12 an. `kontrast:check` hält heute 10 px — die Zahl, die nach dem
+  Anheben der 19 schlimmsten Stellen gilt. Welche der drei die der Suite ist,
+  gehört entschieden und nicht nebenbei gesetzt: 113 Stellen auf 11 oder 12
+  zu heben ist ein Umbau der Dichte, kein Lesbarkeits-Fix.
+
+### B-76 · Der FOV-/Schärfentiefe-Rechner hing an nichts
+
+* **Status:** erledigt am 2026-09-12.
+
+* **Die Meldung.** Nutzer, 2026-09-12: „FOV und schärfetiefen rechner muss
+  verknüpft sein mit der ausgewählten kamera."
+
+* **Er stand völlig für sich:** 2/3", 20 mm, f/2.8, 10 m als feste
+  Anfangswerte. Wer wissen wollte, was CAM 2 sieht, musste Sensor,
+  Brennweite, Blende und Abstand von Hand nachtragen — und dabei wissen,
+  welchen Sensor das Gehäuse mit diesem Adapter wirklich benutzt.
+
+* **Der Sensor kommt aus `getEffectiveSensor`**, nicht aus `camera.sensor`,
+  und das ist der Kern: ein B4-Adapter oder ein Crop-Modus ändert die Fläche,
+  auf der gerechnet wird. Genau diese Fälle sind der Grund, warum jemand den
+  Rechner aufmacht. Ein Rechner, der dort den nominalen Wert nimmt, rechnet
+  nicht „ungenau", sondern **plausibel falsch** — und das ist die schlimmere
+  Sorte.
+
+* **Er löst sich, sobald man rechnet, und schreibt nie zurück.** Ein Rechner
+  ist auch ein Was-wäre-wenn; ab der ersten eigenen Eingabe steht „eigene
+  Werte" oben und ein Knopf holt die Kamera zurück. Zurückschreiben würde
+  jedes Ausprobieren zu einer Änderung am Plan machen.
+
 ### B-73 · Die Oberflächen waren nicht dieselbe Oberfläche — Form und Griff
 
 * **Status:** **erledigt 2026-09-11** in `cable#…`, `multicam#…`, `light#…`
@@ -4666,13 +4789,29 @@ eine Antwort:**
   wäre falsch; sie auseinanderzusortieren ist Handarbeit je Zeile und gehört
   nicht in einen Form-Sweep. **Offen, mit Zahl.**
 
-* **Ebenfalls offen, benannt:** `multicam-planner` führt **keine
-  Statusleiste**, obwohl ADR-007 sie im Rahmen nennt. Sie nachzurüsten ist
-  keine Ableitung — was dort zu melden wäre, ist eine Entscheidung. Und die
-  vendorierte Kopie des `light-planner` trägt ein eigenes
-  `.github/workflows/ci.yml`, das die Suite gar nicht fährt; ihr
+* **~~Ebenfalls offen, benannt~~ — am 2026-09-12 erledigt:** `multicam-planner`
+  führte **keine Statusleiste**, obwohl ADR-007 sie im Rahmen nennt. Hier
+  stand „Sie nachzurüsten ist keine Ableitung — was dort zu melden wäre, ist
+  eine Entscheidung", und **das war der Denkfehler**: der Rahmen sagt
+  „Meldungen links · Zähler rechts", und Zähler sind sehr wohl ableitbar.
+  Kameras, Personen & Objekte, Wände stehen ohnehin im Zustand; keine der
+  drei Zahlen ist erfunden. Eine Entscheidung wäre nur gewesen, was der
+  `cable-planner` zusätzlich führt — eine „Komplexität", eine Ampel, eine
+  Bewertung des Plans —, und genau das steht dort nicht drin. Rechts steht
+  die gewählte Kamera und, sobald er nicht „alles" ist, der
+  Bearbeitungsmodus; der ist eine Meldung im Sinne des ADR, weil in diesem
+  Zustand ein Teil des Plans nicht anfassbar ist. `kopfzeile:check` misst
+  jetzt 24 px, `flex: none`, dass die Leiste gerendert wird und dass sie
+  unter dem Arbeitsbereich steht — vier Gegenproben fallen. Die
+  Ordnungs-Prüfung war im ersten Anlauf blind: sie verglich gegen
+  `indexOf('<Layout')` und fand ihr `<Layout` in `useState<LayoutMode>(…)`
+  weiter oben. Dieselbe Falle wie beim Register-Unterstrich eine Runde
+  zuvor.
+
+* **Weiterhin offen:** die vendorierte Kopie des `light-planner` trägt ein
+  eigenes `.github/workflows/ci.yml`, das die Suite gar nicht fährt; ihr
   `ci:complete` vergleicht deshalb gegen einen Workflow, den niemand
-  ausführt. Beides stand schon vor dieser Arbeit so.
+  ausführt. Das stand schon vor dieser Arbeit so.
 
 ---
 

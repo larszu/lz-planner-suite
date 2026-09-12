@@ -16,7 +16,7 @@
     "dist:mac": "npm run build && electron-builder --mac --x64 --arm64 --publish never",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "vitest run && npm run brand:check && npm run docs:reachable && npm run lang:check && npm run slider:check && npm run kopfzeile:check && npm run farben:check && npm run form:check",
+    "test": "vitest run && npm run brand:check && npm run docs:reachable && npm run lang:check && npm run slider:check && npm run kopfzeile:check && npm run farben:check && npm run form:check && npm run kontrast:check",
     "test:watch": "vitest",
     "docs:reachable": "node scripts/docs-reachable.mjs",
     "lang:check": "node scripts/quellsprache-check.mjs",
@@ -25,7 +25,8 @@
     "slider:check": "node scripts/slider-groesse-check.mjs",
     "kopfzeile:check": "node scripts/kopfzeile-check.mjs",
     "farben:check": "node scripts/rohe-farben-check.mjs",
-    "form:check": "node scripts/marken-form-check.mjs"
+    "form:check": "node scripts/marken-form-check.mjs",
+    "kontrast:check": "node scripts/kontrast-check.mjs"
   },
   "build": {
     "appId": "com.larszu.multicamplanner",

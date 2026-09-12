@@ -172,6 +172,32 @@ export interface SuiteSeed {
    * „ungueltig".
    */
   holds?: Partial<Record<SeedSharedField, SeedHold>>
+  /**
+   * WOHER dieser Stand kommt: die Domaene des Planers, dessen Meldung ihn
+   * ausgeloest hat. Fehlt das Feld, kommt er aus der Shell selbst
+   * (Projektwechsel, Undo, Kopf-Aenderung).
+   *
+   * ─── WARUM ES DAS BRAUCHT ────────────────────────────────────────────
+   *
+   * Die Echo-Schleife (Shell schiebt → Planer meldet → Shell schiebt
+   * erneut → Planer ueberschreibt seine eigene neuere Arbeit) war bis
+   * 2026-09-12 ueber die REVISION abgeschnitten: die Shell zaehlte sie beim
+   * Einarbeiten einer Meldung nicht hoch. Das schnitt das Echo ab — und mit
+   * ihm die Weitergabe. NUTZER-MELDUNG vom selben Tag: „wenn man im av
+   * planner den cable planner oeffnet stehen dort andere kameras als im
+   * multicam planner."
+   *
+   * Genau so war es: eine in MultiCam angelegte Kamera kam bis ins
+   * Shell-Projekt und blieb dort stehen. Der Cable-Planner bekam nie einen
+   * Seed mit hoeherer Revision und zeigte weiter seinen eigenen Stand. Die
+   * Schleife war zu, aber die Suite war keine Suite mehr — jede App haette
+   * genauso gut allein laufen koennen.
+   *
+   * Mit der Herkunft geht beides: die Revision zaehlt hoch (alle ANDEREN
+   * Planer bekommen den Stand), und der MELDER erkennt seinen eigenen Hall
+   * und uebernimmt ihn nicht.
+   */
+  origin?: SeedDomain
 }
 
 /**
