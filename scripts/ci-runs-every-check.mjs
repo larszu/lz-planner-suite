@@ -163,6 +163,15 @@ const APP_OHNE_CI = {
     'derselbe Grund: GitHub liest nur `.github/` der Wurzel. Der',
     '`actions:check` der Suite deckt die Workflows ab, die laufen.',
   ].join(' '),
+  'cable-planner/greifzonen:check': [
+    'Startet wie `ui:smoke` die GEBAUTE Electron-App mit X-Server, um zu',
+    'messen, ob auf der Linie eines Kabels der Griff eines anderen obenauf',
+    'liegt. Der Haupt-Job der Suite hat weder Binary noch X-Server (er setzt',
+    'ELECTRON_SKIP_BINARY_DOWNLOAD). Die Zusicherung selbst geht dabei nicht',
+    'verloren: der Lauf faehrt in der CI des cable-planner-Repos, und die',
+    'rechnende Haelfte davon — Griff-Zonen nur am ausgewaehlten Kabel —',
+    'haelt hier `tests/autoRouteEinRouter.test.ts`, das am `test` haengt.',
+  ].join(' '),
   'cable-planner/ui:smoke': [
     'Startet die GEBAUTE App mit X-Server und Electron-Binary. Der Haupt-Job',
     'der Suite hat beides nicht (er setzt ELECTRON_SKIP_BINARY_DOWNLOAD); der',

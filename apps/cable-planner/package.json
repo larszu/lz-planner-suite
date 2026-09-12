@@ -60,6 +60,7 @@
     "ui:smoke": "node scripts/ui-smoke.mjs",
     "mobil:check": "npm run build:renderer && node scripts/mobil-grenze-check.mjs",
     "ui:targets": "node scripts/ui-targets.mjs",
+    "greifzonen:check": "node scripts/greifzonen-check.mjs",
     "ui:overflow": "node scripts/ui-overflow.mjs",
     "ui:labels": "node scripts/ui-labels.mjs",
     "test:drag": "node scripts/drag-test.mjs",
