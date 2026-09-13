@@ -4899,11 +4899,13 @@ ausserhalb des Spalten-Abschnitts. Und die 82 deutschen Zeichenketten in
 Konstanten-Tabellen aus dem Absatz oben bleiben offen; die drei hier
 behobenen waren keine Tabellen-Einträge, sondern rohes JSX.
 
-### B-77 · Lager und Gebäude waren unbedienbar — und drei weitere Apps sind es noch
+### B-77 · Vier Planer waren unbedienbar — gemessen, behoben, und der Wächter misst jetzt mit
 
-* **Status:** für `inventory-planner` und `larszu-facility-planner`
-  **erledigt** (suite#231, 2026-09-13, gemessen im Browser). Für
-  `multicam-planner` und `light-planner` **offen**, mit Zahlen.
+* **Status:** **ERLEDIGT** für alle vier Browser-Planer.
+  `inventory-planner` und `larszu-facility-planner` in suite#231,
+  `multicam-planner` in `multicam#136` und `light-planner` in `light#127`
+  (alle 2026-09-13, alle im Browser gemessen). Offen bleibt allein der
+  `cable-planner` — und zwar ausdrücklich, siehe unten.
 * **Woher der Eintrag kommt.** Nutzer-Meldung suite#231: „aktuell ist die Ui
   so schlecht das beide module unbrauchbar sind. baue auf den funktionen die
   im hintergrund schon existieren eine intuitive bedienbare ui die responsive
@@ -4944,30 +4946,100 @@ behobenen waren keine Tabellen-Einträge, sondern rohes JSX.
   Scrollbereich, kein Bedienpunkt unter 32 px, jedes Eingabefeld hat einen
   Namen. **Gegenprobe gefahren:** gegen den Stand vor der Änderung meldet er
   fünf Befunde und geht rot.
-* **DER OFFENE TEIL — dieselbe Sonde, dieselben drei Breiten, 2026-09-13:**
+* **DIE ANDEREN BEIDEN, dieselbe Sonde, dieselben drei Breiten,
+  2026-09-13 — vorher → nachher:**
 
-  | App | Bedienpunkte unter 32 px | ragt bei 390 px hinaus | Felder ohne Namen |
-  |---|---:|---:|---:|
-  | `multicam-planner` | 13–23 von 18–30 | 9 Elemente | 0 |
-  | `light-planner` | 23–26 von 52 | 44 Elemente, Rumpf 890 px | 1 |
-  | `cable-planner` | nicht gemessen | nicht gemessen | nicht gemessen |
+  | | multicam vorher | multicam nachher | light vorher | light nachher |
+  |---|---:|---:|---:|---:|
+  | Bedienpunkte unter 32 px | 22 | **0** | 24 | **0** |
+  | ragt bei 390 px hinaus | 9 Elemente | **0** | 8 Elemente bis 628 px | **0** |
+  | Eingabefelder ohne Namen | 1 | **0** | 1 | **0** |
+  | Menü-Klappen, davon sichtbar | 5 von 5 | **5 von 5** | **0 von 4** | **5 von 5** |
 
-  Der `cable-planner` fiel aus der Messung, weil sein `dist/` das
-  Electron-Layout trägt (`renderer/index.html` statt einer Wurzel-Datei) —
-  das ist eine Eigenschaft des Laufs und keine Auskunft über die App. Er
-  führt als einziger bereits `mobil:check` und misst damit die Fensterbreite
-  selbst.
-* **Warum die drei nicht in diesem Zug mit erledigt wurden.** suite#231 nennt
-  zwei Module, und ein PR, der still fünf umbaut, ist für den Eigentümer nicht
-  mehr prüfbar. Sie stehen deshalb NICHT in der Liste von `bedienbar:check`:
-  ein Wächter, der auf Vorrat rot ist, wird abgeschaltet — und dann misst er
-  auch die beiden nicht mehr, die er könnte.
-* **Nächster Schritt.** Dieselben Bausteine in `multicam-planner` und
-  `light-planner` einziehen (`--ziel`, das 8-px-Raster, `.block`, `.feld`,
-  Kartenmodus unter 700 px), dann die beiden in `APPS` von
-  `scripts/bedienbar.mjs` nachtragen. Für den `cable-planner` zuerst klären,
-  ob `bedienbar:check` sein `dist/renderer` bedienen soll oder ob
-  `mobil:check` die Frage schon beantwortet.
+* **Im `light-planner` lag ein Regress, den kein Wächter gesehen hat.**
+  `light#125` gab `.tb-menubar` ein `overflow: hidden`, damit die Kopfzeile
+  nicht umbricht. Die Klappe ist ein `position: absolute`-Kind genau dieser
+  Leiste — dasselbe `hidden` schnitt sie mit ab. **Gemessen bei 1440 px: die
+  Datei-Klappe ist 250 × 505 px groß und davon 250 × 0 px sichtbar.** Vier
+  Menüs, kein einziges ging auf; im Bildschirmfoto sieht man nur den aktiven
+  Titel und darunter nichts. Dasselbe `hidden` verschluckte „Hilfe", den
+  fünften Titel — auch auf dem Schreibtisch.
+
+  Beide Regeln sind für sich richtig. Der Schaden entsteht erst aus ihrem
+  Zusammentreffen im Layout, und genau das sieht kein Wächter, der Quelltext
+  liest. Die Klappen hängen jetzt in beiden Apps am **Fenster**
+  (`position: fixed`, Koordinaten aus dem Rechteck des Titels, nach dem
+  Einhängen an den Rand geklemmt); damit darf die Leiste rollen, klemmen oder
+  schrumpfen, ohne dass das Menü etwas davon merkt.
+
+* **Und ein `@media`-Block, der nie gewirkt hat.** `light#124` sagte zu:
+  „unter 980 px zeigt der Umschalter nur noch seine Sinnbilder." Der Block
+  stand VOR der Grundregel `.tb-modeswitch button { font-size: 13px }` —
+  gleiches Gewicht (0,1,1), und bei Gleichstand gewinnt die spätere. Die
+  Zusage ist nie eingetreten: der 2D-Plan-Knopf war im 390-px-Fenster 111 px
+  breit statt 36. Ein `@media`-Block, der nichts tut, sieht im Quelltext
+  genauso aus wie einer, der wirkt.
+
+* **Der Wächter misst seit diesem Zug fünf Dinge statt drei.** Zu „ragt
+  hinaus", „unter 32 px" und „Feld ohne Namen" kamen:
+
+  1. **Jede Menü-Klappe geht sichtbar auf.** Der Lauf öffnet jeden Titel
+     (`[aria-haspopup="menu"]`) und misst die Klappe (`[role="menu"]`) gegen
+     alles, was sie abschneiden könnte. Das Fenster darf deckeln, ein Vorfahr
+     nicht.
+  2. **Kein Bedienpunkt liegt unter einem anderen Element.** Gemessen mit
+     `elementFromPoint` auf der Mitte: was der Browser träfe, wenn jemand
+     klickt. Im `light-planner` lag der Ansichts-Umschalter bei 390 px über
+     den fünf Menütiteln — nichts ragte hinaus, nichts war zu klein, jedes
+     Feld hatte einen Namen, und ein Klick auf „File" landete auf dem
+     Umschalter. Die drei alten Messungen waren dabei alle grün.
+
+  Ausgenommen ist, was schlicht **weggerollt** ist: liegt die Mitte außerhalb
+  eines rollenden Vorfahren, ist der Knopf nicht verdeckt, sondern eine
+  Rollbewegung entfernt. Das ist die Lösung, die B-44 Teil 3 vorschreibt; sie
+  zu melden hieße, die Abhilfe als Fehler zu zählen.
+
+* **Zwei Fallen, die der Lauf selbst erst lernen musste** — beide stehen
+  jetzt im Kopf von `scripts/bedienbar.mjs`:
+
+  * **Der Schleier.** MultiCam und Light öffnen beim ersten Start den
+    Willkommens-Dialog aus `@avplan/onboarding-core`, und danach die
+    Erste-Schritte-Tour — **zwei** Schleier mit derselben Klasse. Ein Lauf,
+    der sie stehen lässt, misst nur sie: die Reiter dahinter sieht er nie.
+    Der erste Anlauf meldete brav „alles grün" über eine App, von der er eine
+    einzige Ansicht gesehen hatte. Der zweite räumte einen weg und meldete
+    danach dreißig Mal „der Titel ließ sich nicht anklicken" — richtig
+    gemessen, falsch verstanden.
+  * **Der langsame Klick ist kein verdeckter Knopf.** Playwright meldet
+    beides als Zeitüberschreitung. Bleibt der Lauf bei „performing click
+    action" stehen, kam der Klick AN und die App rechnet — der
+    Render-Umschalter des Light-Planners baut eine fotorealistische Szene
+    auf, und das dauert länger als drei Sekunden. Der Lauf unterscheidet das
+    jetzt und behauptet nicht mehr, da läge etwas darüber.
+
+* **Gegenprobe.** Gegen den Stand vor diesem Zug meldet der erweiterte Lauf
+  **57 Befunde** und geht rot — darunter alle fünf abgeschnittenen Klappen
+  des Light-Planners und die 22 zu kleinen Bedienpunkte des MultiCam. Danach:
+  4 Apps, 69 Ansichten, 1242 Bedienpunkte, 42 Menü-Klappen, kein Befund.
+
+* **Eine Abweichung der vendorierten Fassung, benannt statt versteckt.** Die
+  Suite-Kopie des `light-planner` führt in der Kopfzeile zwei Knöpfe mehr
+  (Geräteliste, Export); im eigenständigen Repo sind sie seit `light#125`
+  Menüpunkte. Unter 820 px zeigen dort deshalb ALLE `.tb-btn` nur noch ihr
+  Sinnbild, und die rechte Gruppe darf rollen. Ohne das sprengte sie in einem
+  390-px-Fenster die Zeile auf 448 px und drückte die Menütitel auf null
+  Breite. Die Angleichung der beiden Kopfzeilen ist Vendorier-Arbeit und
+  steht noch aus.
+
+* **Was offen bleibt: der `cable-planner`.** Er fiel aus der Messung, weil
+  sein `dist/` das Electron-Layout trägt (`renderer/index.html` statt einer
+  Wurzel-Datei) — das ist eine Eigenschaft des Laufs und keine Auskunft über
+  die App. Er führt als einziger bereits `mobil:check` und misst damit die
+  Fensterbreite selbst. **Zu klären:** ob `bedienbar:check` sein
+  `dist/renderer` bedienen soll oder ob `mobil:check` die Frage schon
+  beantwortet. Solange das offen ist, steht er nicht in `APPS` — ein Wächter,
+  der auf Vorrat rot ist, wird abgeschaltet, und dann misst er auch die vier
+  nicht mehr, die er kann.
 
 ### B-72 · Die MITGELIEFERTEN Presets haben keine Herkunft — und der Wächter misst die andere
 

@@ -79,8 +79,13 @@ const Sidebar: React.FC<Props> = ({
       </div>
 
       <div className="sidebar-search">
+        {/* `aria-label` und nicht nur `placeholder` (B-77): der Platzhalter
+            verschwindet, sobald jemand tippt — danach ist das Feld fuer einen
+            Screenreader namenlos. Es war das einzige Feld dieser App ohne
+            Namen; `bedienbar:check` in der Suite misst genau das. */}
         <input
           type="text"
+          aria-label={t('side.searchPlaceholder', 'Search…')}
           placeholder={t('side.searchPlaceholder', 'Search…')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}

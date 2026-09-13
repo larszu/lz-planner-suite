@@ -7,9 +7,8 @@
 // hintergrund schon existieren eine intuitive bedienbare ui die responsive
 // ist."
 //
-// WARUM IM BROWSER UND NICHT AM QUELLTEXT. Die drei Zusagen dieses Laufs
-// lassen sich am Quelltext nicht pruefen, weil sie erst beim LAYOUT
-// entstehen:
+// WARUM IM BROWSER UND NICHT AM QUELLTEXT. Die Zusagen dieses Laufs lassen
+// sich am Quelltext nicht pruefen, weil sie erst beim LAYOUT entstehen:
 //
 //   * Ob etwas aus dem Fenster ragt, haengt an Polsterung, Kastenmodell und
 //     Flex-Schrumpfen zugleich. Der gemessene Ueberlauf im Lager kam aus
@@ -22,6 +21,19 @@
 //   * Ob ein Feld einen Namen hat, haengt an `<label>`, `aria-label`,
 //     `for=`/`id` und daran, welches davon der Browser tatsaechlich
 //     zuordnet.
+//   * Ob eine Menue-Klappe SICHTBAR ist, haengt daran, ob irgendein Vorfahr
+//     sie abschneidet. Beide Regeln sind fuer sich richtig; der Schaden
+//     entsteht erst aus ihrem Zusammentreffen. Genau so ging es im
+//     `light-planner` (B-77): ein `overflow: hidden`, das die Kopfzeile
+//     einzeilig halten sollte, machte aus einer 250 x 505 px grossen
+//     Datei-Klappe eine mit 250 x 0 px sichtbarer Flaeche. Vier Menues,
+//     kein einziges ging auf — monatelang, und kein Waechter sagte es.
+//   * Ob ein Knopf ERREICHBAR ist. Er kann die richtige Groesse haben, im
+//     Fenster stehen und trotzdem unter einem anderen Element liegen. Im
+//     `light-planner` lag der Ansichts-Umschalter bei 390 px ueber den
+//     Menuetiteln: ein Klick auf „File" landete auf dem Umschalter. Nichts
+//     ragte dabei hinaus — die Elemente ueberlagerten sich INNERHALB des
+//     Fensters, und keine der anderen vier Messungen sieht das.
 //
 // Ein Waechter, der dafuer Zeichenketten zaehlt, ist auf allen drei Punkten
 // gruen, waehrend die Seite kaputt ist. Das ist der Grund, warum die
@@ -31,22 +43,23 @@
 //
 // WAS DIESER LAUF NICHT MISST, und zwar ausdruecklich:
 //
-//   * Die anderen drei Planer. Sie sind heute NICHT bedienbar in diesem Sinn,
-//     und das ist gemessen und nicht vermutet (2026-09-13, dieselbe Sonde):
+//   * Der `cable-planner`. Sein `dist/` traegt das Electron-Layout
+//     (`renderer/index.html`) und nicht die Wurzel, die dieser Lauf bedient.
+//     Er steht deshalb nicht in `APPS`; der Befund steht im Backlog (B-77)
+//     und nicht in einem stillen Kommentar. Fuer sein Telefon-Verhalten gibt
+//     es `mobil:check` im eigenen Repo.
 //
-//       multicam-planner   13-23 Bedienpunkte unter 32 px; 9 Elemente
-//                          ragen bei 390 px aus dem Fenster
-//       light-planner      23-26 Bedienpunkte unter 32 px; der Rumpf ist
-//                          890 px breit in einem 390-px-Fenster, 44
-//                          Elemente ragen hinaus; 1 Feld ohne Namen
-//       cable-planner      nicht gemessen — sein `dist/` traegt das
-//                          Electron-Layout (`renderer/index.html`) und
-//                          nicht die Wurzel, die dieser Lauf bedient
+//     Die beiden anderen — `multicam-planner` und `light-planner` — standen
+//     hier bis zum 2026-09-13 mit demselben Vermerk. Sie sind jetzt drin,
+//     weil sie die Messung bestehen (B-77). Was sie vorher trennte, war
+//     nicht die Sorte Oberflaeche, sondern der Zustand:
 //
-//     Sie stehen deshalb nicht in `APPS`. Sie hier einzutragen hiesse, den
-//     Lauf rot zu machen fuer etwas, das suite#231 nicht verlangt — und ein
-//     Waechter, der auf Vorrat rot ist, wird abgeschaltet. Der Befund steht
-//     im Backlog (B-77) und nicht in einem stillen Kommentar.
+//       multicam-planner   22 Bedienpunkte unter 32 px (Zoom: 12 x 12),
+//                          9 Elemente ragten bei 390 px hinaus,
+//                          1 Feld ohne Namen
+//       light-planner      24 Bedienpunkte unter 32 px, 8 Elemente ragten
+//                          bis 628 px hinaus, 1 Feld ohne Namen, und jede
+//                          Menue-Klappe war 0 px hoch sichtbar
 //
 //   * Ob die Oberflaeche VERSTAENDLICH ist. Ein Formular kann jede Zahl
 //     dieses Laufs erfuellen und trotzdem die falschen Fragen stellen.
@@ -54,9 +67,14 @@
 //   * Die Darstellung selbst. Der Lauf misst Kanten und Hoehen, keine Farben,
 //     keine Schriftgroessen, keinen Kontrast.
 //
-//   * Was hinter einem Klick liegt, AUSSER den Reitern. Der Lauf klickt jeden
-//     Reiter der Leiste an und misst dessen Ansicht — beide Apps fuehren
-//     sieben. Ein Dialog, ein aufgeklappter Block, ein Menue: nicht gemessen.
+//   * Was hinter einem Klick liegt, AUSSER den Reitern und den Menuetiteln.
+//     Der Lauf klickt jeden Reiter der Leiste an und misst dessen Ansicht;
+//     er oeffnet jeden Menuetitel und misst, dass die Klappe sichtbar ist —
+//     aber NICHT, was darin steht. Ein Dialog, ein aufgeklappter Block, ein
+//     Untermenue: nicht gemessen.
+//
+//   * Ob ein Bedienpunkt TUT, was sein Name sagt. Der Lauf klickt, um
+//     weiterzukommen, und prueft danach Kanten und Groessen — nicht Wirkung.
 //
 //   * Die Ansichten MIT Daten. Gemessen wird ein frisches Fenster, also der
 //     Leerzustand jeder Ansicht. Dass eine volle Tabelle ebenfalls im Fenster
@@ -76,15 +94,57 @@ import { existsSync } from 'node:fs'
 import { extname, join, normalize, resolve } from 'node:path'
 
 /**
- * Die Apps unter dieser Regel — mit dem Ordner, der ihre `index.html` traegt.
+ * Die Apps unter dieser Regel.
  *
- * Nur die beiden aus suite#231. Der Kopf dieser Datei sagt, was mit den
- * anderen dreien ist und warum sie hier nicht stehen.
+ * `wurzel`   der Ordner, der ihre `index.html` traegt
+ * `reiter`   der Waehler ihrer Ansichts-Leiste — jede Ansicht wird EINZELN
+ *            gemessen. Die vier Apps nennen sie verschieden, und das ist
+ *            kein Versehen: `.reiter` ist die Leiste aus ADR-007,
+ *            `.bc-tabbar button` die Modul-Zeile des MultiCam-Planners,
+ *            `.tb-modeswitch button` der 2D/3D/Render-Umschalter des
+ *            Light-Planners. Ein gemeinsamer Name waere eine Umbenennung in
+ *            vier Repos fuer einen Waechter — das waere der Schwanz, der mit
+ *            dem Hund wedelt.
+ * `wegklicken`  was VOR der Messung weg muss. MultiCam- und Light-Planner
+ *            oeffnen beim ersten Start den Willkommens-Dialog aus
+ *            `@avplan/onboarding-core` — ein Schleier ueber der ganzen
+ *            Oberflaeche. Eine Sonde, die ihn stehenlaesst, misst NUR IHN:
+ *            die Reiter dahinter sieht sie nie, und jeder Klick landet auf
+ *            dem Schleier. Der erste Anlauf dieses Laufs tat genau das und
+ *            meldete brav „alles gruen" ueber eine App, von der er eine
+ *            einzige Ansicht gesehen hatte.
+ *
+ *            `.avob-x` und nicht `[title="Close"]`: der Titel ist UEBERSETZT.
+ *            Im Light-Planner steht dort „Schliessen", und ein Waehler, der
+ *            nur auf Englisch trifft, macht den Lauf von der Sprache des
+ *            Browsers abhaengig — also von etwas, das mit Bedienbarkeit
+ *            nichts zu tun hat.
+ *
+ *            Nur die VENDORIERTEN Fassungen tragen ihn: die eigenstaendigen
+ *            Repos kennen das Paket nicht. Wer diese Sonde dort laufen
+ *            laesst, braucht den Eintrag nicht — ein Klick ins Leere kostet
+ *            vier Sekunden und meldet nichts.
+ *
+ * Der Kopf dieser Datei sagt, warum der `cable-planner` fehlt.
  */
 const APPS = [
-  { id: 'inventory-planner', wurzel: 'apps/inventory-planner/dist' },
-  { id: 'larszu-facility-planner', wurzel: 'apps/larszu-facility-planner/dist' },
+  { id: 'inventory-planner', wurzel: 'apps/inventory-planner/dist', reiter: '.reiter' },
+  { id: 'larszu-facility-planner', wurzel: 'apps/larszu-facility-planner/dist', reiter: '.reiter' },
+  { id: 'multicam-planner', wurzel: 'apps/multicam-planner/dist', reiter: '.bc-tabbar button', wegklicken: ['.avob-x'] },
+  { id: 'light-planner', wurzel: 'apps/light-planner/dist', reiter: '.tb-modeswitch button', wegklicken: ['.avob-x'] },
 ]
+
+/**
+ * Menue-Titel und Klappe — in allen vier Apps DIESELBEN zwei Merkmale.
+ *
+ * Nicht die Klassennamen (`.menue-klappe`, `.tb-dropdown`, eine
+ * Tailwind-Kette): die sind je Repo andere. `aria-haspopup="menu"` und
+ * `role="menu"` stehen dagegen ueberall, weil sie nicht Gestaltung sind,
+ * sondern Bedeutung — und wer sie weglaesst, hat schon dadurch ein Menue
+ * gebaut, das ein Screenreader nicht als Menue ansagt.
+ */
+const MENUE_TITEL = '[aria-haspopup="menu"]'
+const MENUE_KLAPPE = '[role="menu"]'
 
 /**
  * Drei Breiten und kein Durchlauf dazwischen: Telefon, Tablet, Schreibtisch.
@@ -179,6 +239,53 @@ const messen = () => {
     }
   }
 
+  /**
+   * VERDECKT: der Knopf ist da, hat die richtige Groesse, steht im Fenster —
+   * und ein anderes Element liegt darueber.
+   *
+   * Gemessen wird mit `elementFromPoint` auf der Mitte: was der Browser dort
+   * traefe, wenn jemand klickt. Getroffen werden darf das Element selbst,
+   * eines seiner Kinder (ein Sinnbild im Knopf) oder ein Vorfahr (ein
+   * `label`, das das Feld umschliesst) — alles andere liegt dazwischen.
+   *
+   * DER ANLASS: im `light-planner` lag der Ansichts-Umschalter bei 390 px
+   * ueber den fuenf Menuetiteln. Nichts ragte hinaus, nichts war zu klein,
+   * jedes Feld hatte einen Namen — und ein Klick auf „File" landete auf dem
+   * Umschalter. Die vier anderen Messungen dieses Laufs waren alle gruen.
+   *
+   * AUSGENOMMEN ist, was schlicht WEGGEROLLT ist: liegt die Mitte ausserhalb
+   * des Fensters oder ausserhalb eines rollenden Vorfahren, ist der Knopf
+   * nicht verdeckt, sondern eine Rollbewegung entfernt. Genau das ist die
+   * Loesung, die B-44 Teil 3 vorschreibt; sie hier zu melden hiesse, die
+   * Abhilfe als Fehler zu zaehlen.
+   */
+  const sichtbarAmPunkt = (el) => {
+    const r = el.getBoundingClientRect()
+    const x = Math.round(r.left + r.width / 2)
+    const y = Math.round(r.top + r.height / 2)
+    if (x < 0 || y < 0 || x >= win || y >= window.innerHeight) return true
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const o = getComputedStyle(a)
+      if (o.overflowX === 'visible' && o.overflowY === 'visible') continue
+      const ar = a.getBoundingClientRect()
+      if (x < ar.left || x > ar.right || y < ar.top || y > ar.bottom) return true
+    }
+    const treffer = document.elementFromPoint(x, y)
+    if (!treffer) return true
+    return el.contains(treffer) || treffer.contains(el)
+  }
+
+  const verdeckt = []
+  for (const el of document.querySelectorAll('button, select, input, textarea, summary, [role=button]')) {
+    const r = el.getBoundingClientRect()
+    if (!r.width || !r.height) continue
+    if (el.type === 'hidden') continue
+    if (!sichtbarAmPunkt(el)) {
+      const wort = (el.textContent || el.getAttribute('aria-label') || el.getAttribute('title') || '').trim()
+      verdeckt.push(`${el.tagName.toLowerCase()} "${wort.slice(0, 24)}"`)
+    }
+  }
+
   const ohneNamen = []
   for (const el of document.querySelectorAll('input:not([type=hidden]), select, textarea')) {
     const r = el.getBoundingClientRect()
@@ -198,12 +305,93 @@ const messen = () => {
     klein,
     bedienpunkte,
     ohneNamen,
+    verdeckt: [...new Set(verdeckt)],
   }
 }
+
+/**
+ * Die Sichtbarkeit EINES Elements, gegen alles was es abschneiden koennte.
+ *
+ * Laeuft im Fenster und bekommt den Waehler herein, weil die Klappe erst nach
+ * dem Klick existiert.
+ *
+ * `position: fixed` ist der Sonderfall, und zwar der wichtige: so ein Element
+ * wird vom Ueberlauf seiner Vorfahren NICHT beschnitten (nur von einem
+ * transformierten Vorfahren, den keine der vier Apps hat). Wer das mitzaehlt,
+ * meldet eine offene Klappe als 0 px hoch — beim ersten Anlauf dieses Laufs
+ * genau so passiert, und das waere ein Fehlalarm gewesen, der die echte
+ * Messung in Verruf bringt.
+ */
+const klappenMass = (wahl) => {
+  const el = document.querySelector(wahl)
+  if (!el) return { fehlt: true }
+  const b = el.getBoundingClientRect()
+  const o = { top: b.top, bottom: b.bottom, left: b.left, right: b.right }
+  if (getComputedStyle(el).position !== 'fixed') {
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const cs = getComputedStyle(a)
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue
+      const ar = a.getBoundingClientRect()
+      o.top = Math.max(o.top, ar.top)
+      o.bottom = Math.min(o.bottom, ar.bottom)
+      o.left = Math.max(o.left, ar.left)
+      o.right = Math.min(o.right, ar.right)
+    }
+  }
+  o.top = Math.max(o.top, 0)
+  o.left = Math.max(o.left, 0)
+  o.bottom = Math.min(o.bottom, window.innerHeight)
+  o.right = Math.min(o.right, window.innerWidth)
+  return {
+    voll: { w: Math.round(b.width), h: Math.round(b.height) },
+    sichtbar: { w: Math.round(Math.max(0, o.right - o.left)), h: Math.round(Math.max(0, o.bottom - o.top)) },
+    fenster: { w: window.innerWidth, h: window.innerHeight },
+  }
+}
+
+/**
+ * Warum ein Klick nicht durchkam — und die Antwort NICHT geraten.
+ *
+ * Playwright meldet beides als Zeitueberschreitung, aber es sind zwei
+ * verschiedene Befunde, und nur einer davon ist ein Bedienbarkeits-Fehler:
+ *
+ *   * „intercepts pointer events" heisst, ein anderes Element liegt darueber.
+ *     Der Knopf ist da, und ein Klick darauf trifft etwas anderes.
+ *   * Bleibt der Lauf dagegen bei „performing click action" stehen, kam der
+ *     Klick AN und die App rechnet. Genau das tut der Render-Umschalter des
+ *     Light-Planners: er baut eine fotorealistische Szene auf, und das
+ *     dauert laenger als drei Sekunden.
+ *
+ * Der erste Anlauf schrieb beides als „etwas liegt darueber" — eine
+ * Behauptung, die im zweiten Fall schlicht falsch ist. Ein Waechter, der die
+ * Ursache raet, schickt den naechsten auf die Suche nach einem Element, das
+ * es nicht gibt.
+ */
+const klickGrund = (e) => {
+  const text = String(e)
+  if (text.includes('intercepts pointer events')) {
+    const wer = text.split('\n').find((l) => l.includes('intercepts pointer events'))
+    return `etwas liegt darueber — ${(wer ?? '').trim().replace(/^-\s*/, '').slice(0, 120)}`
+  }
+  if (text.includes('performing click action')) return 'der Klick kam an, aber die App kam nicht zurueck'
+  return text.split('\n')[0].slice(0, 120)
+}
+
+/**
+ * Wie lange ein Klick dauern DARF.
+ *
+ * 15 Sekunden und nicht drei: eine Ansicht, die eine 3D-Szene aufbaut,
+ * braucht laenger als eine, die eine Tabelle zeichnet. Das ist eine Frage der
+ * Rechenzeit und keine der Bedienbarkeit — dieser Lauf misst Kanten, Groessen
+ * und Erreichbarkeit, nicht Geschwindigkeit. Wer hier Geschwindigkeit messen
+ * will, braucht eine eigene Zahl und eine eigene Begruendung.
+ */
+const KLICK_GEDULD = 15000
 
 const fehler = []
 let geprueft = 0
 let bedienpunkteGesamt = 0
+let klappenGesamt = 0
 
 /**
  * Einen Browser finden, ohne einen mitzuliefern.
@@ -277,14 +465,75 @@ for (const app of APPS) {
     await seite.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'networkidle' })
     await seite.waitForTimeout(400)
 
+    // Erst wegraeumen, was ueber allem liegt — sonst misst der Lauf den
+    // Schleier und nicht die App (siehe `wegklicken` oben).
+    //
+    // SOLANGE einer da ist, nicht einmal: der Willkommens-Dialog fuehrt zu
+    // einer Erste-Schritte-Tour, und die ist ein ZWEITER Schleier mit
+    // derselben Klasse. Ein einzelner Klick raeumte den ersten weg und
+    // meldete danach dreissig Mal „der Titel liess sich nicht anklicken" —
+    // richtig gemessen, falsch verstanden. Die Obergrenze verhindert eine
+    // Endlosschleife, falls ein Dialog sich selbst neu oeffnet.
+    for (const wahl of app.wegklicken ?? []) {
+      for (let runde = 0; runde < 4; runde++) {
+        if (!(await seite.$(wahl))) break
+        let ging = true
+        await seite.click(wahl, { timeout: 4000 }).catch(() => { ging = false })
+        await seite.waitForTimeout(300)
+        if (!ging) {
+          fehler.push(`${app.id} bei ${breite} px: ${wahl} liess sich nicht anklicken — der Startbildschirm bleibt stehen und verdeckt die Messung`)
+          break
+        }
+      }
+      if (await seite.$(wahl)) {
+        fehler.push(`${app.id} bei ${breite} px: nach vier Klicks auf ${wahl} liegt immer noch ein Schleier ueber der App`)
+      }
+    }
+
+    // ── Die Menue-Klappen, EINMAL je Breite ────────────────────────────────
+    //
+    // Sie haengen an der Kopfzeile und nicht an der Ansicht; sie je Reiter
+    // erneut zu oeffnen kostet Zeit und misst dasselbe.
+    const menueTitel = await seite.$$(MENUE_TITEL)
+    for (let i = 0; i < menueTitel.length; i++) {
+      const frisch = await seite.$$(MENUE_TITEL)
+      if (!frisch[i]) continue
+      const name = ((await frisch[i].textContent()) ?? '').trim() || `#${i}`
+      let grund = null
+      await frisch[i].click({ timeout: KLICK_GEDULD }).catch((e) => { grund = klickGrund(e) })
+      if (grund) {
+        fehler.push(`${app.id} · Menue „${name}" bei ${breite} px: der Titel liess sich nicht anklicken — ${grund}`)
+        continue
+      }
+      await seite.waitForTimeout(200)
+      const k = await seite.evaluate(klappenMass, MENUE_KLAPPE)
+      if (k.fehlt) {
+        fehler.push(`${app.id} · Menue „${name}" bei ${breite} px: der Klick oeffnet keine Klappe`)
+      } else {
+        // Das Fenster DARF deckeln — ein Vorfahr nicht. Deshalb wird gegen
+        // das Kleinere von beidem geprueft und nicht gegen die volle Groesse.
+        const sollH = Math.min(k.voll.h, k.fenster.h)
+        const sollW = Math.min(k.voll.w, k.fenster.w)
+        if (k.sichtbar.h < sollH - 2 || k.sichtbar.w < sollW - 2) {
+          fehler.push(
+            `${app.id} · Menue „${name}" bei ${breite} px: die Klappe ist ${k.voll.w}x${k.voll.h} px gross, ` +
+              `davon sichtbar ${k.sichtbar.w}x${k.sichtbar.h} px — ein Vorfahr schneidet sie ab`,
+          )
+        }
+      }
+      klappenGesamt++
+      await seite.keyboard.press('Escape')
+      await seite.waitForTimeout(150)
+    }
+
     // JEDER Reiter, nicht nur der beim Laden offene. Genau dort lag der
     // Unterschied: im Lager hatten vier der sieben Ansichten eigene
     // Stilregeln und drei gar keine — wer nur die erste misst, misst je nach
     // App entweder das Beste oder das Schlechteste und nie beides.
-    const reiter = await seite.$$('.reiter')
+    const reiter = await seite.$$(app.reiter)
     const wieviele = Math.max(1, reiter.length)
     if (!reiter.length) {
-      fehler.push(`${app.id} bei ${breite} px: keine Reiterleiste gefunden — die Sonde sieht nur eine Ansicht statt sieben`)
+      fehler.push(`${app.id} bei ${breite} px: keine Ansichts-Leiste gefunden (${app.reiter}) — die Sonde sieht eine Ansicht statt aller`)
     }
 
     for (let i = 0; i < wieviele; i++) {
@@ -292,9 +541,15 @@ for (const app of APPS) {
       if (reiter.length) {
         // Neu abfragen: der Klick baut den Inhalt neu, und die alten Griffe
         // zeigen danach auf Knoten, die es nicht mehr gibt.
-        const knoepfe = await seite.$$('.reiter')
-        titel = ((await knoepfe[i].textContent()) ?? '').trim()
-        await knoepfe[i].click()
+        const knoepfe = await seite.$$(app.reiter)
+        if (!knoepfe[i]) continue
+        titel = ((await knoepfe[i].textContent()) ?? (await knoepfe[i].getAttribute('aria-label')) ?? `#${i}`).trim() || `#${i}`
+        let grund = null
+        await knoepfe[i].click({ timeout: KLICK_GEDULD }).catch((e) => { grund = klickGrund(e) })
+        if (grund) {
+          fehler.push(`${app.id} · Ansicht „${titel}" bei ${breite} px: der Reiter liess sich nicht anklicken — ${grund}`)
+          continue
+        }
         await seite.waitForTimeout(250)
       }
       const m = await seite.evaluate(messen)
@@ -315,6 +570,9 @@ for (const app of APPS) {
       if (m.ohneNamen.length) {
         fehler.push(`${wo}: ${m.ohneNamen.length} Eingabefeld(er) ohne Namen — ${m.ohneNamen.slice(0, 3).join(' · ')}`)
       }
+      if (m.verdeckt.length) {
+        fehler.push(`${wo}: ${m.verdeckt.length} Bedienpunkt(e) liegen unter einem anderen Element — ${m.verdeckt.slice(0, 3).join(' · ')}`)
+      }
     }
     if (abstuerze.length) fehler.push(`${app.id} bei ${breite} px: die Seite wirft — ${abstuerze[0]}`)
     await ctx.close()
@@ -331,11 +589,13 @@ if (fehler.length) {
 }
 
 console.log(
-  `OK bedienbar: ${APPS.length} App(s), jeder Reiter einzeln, in ${BREITEN.join('/')} px — nichts ragt aus dem Fenster, ` +
-    `alle ${bedienpunkteGesamt} gefundenen Bedienpunkte mindestens ${ZIEL} px hoch, jedes Eingabefeld hat einen Namen (${geprueft} Ansichten gemessen).`,
+  `OK bedienbar: ${APPS.length} App(s), jede Ansicht einzeln, in ${BREITEN.join('/')} px — nichts ragt aus dem Fenster, ` +
+    `alle ${bedienpunkteGesamt} gefundenen Bedienpunkte mindestens ${ZIEL} px hoch und keiner davon unter einem anderen Element, ` +
+    `jedes Eingabefeld hat einen Namen, und alle ${klappenGesamt} Menue-Klappen gehen sichtbar auf (${geprueft} Ansichten gemessen).`,
 )
 console.log(
-  'NICHT gemessen: die anderen drei Planer (multicam und light fallen heute durch, cable-planner traegt ein anderes dist-Layout — Zahlen im Kopf dieser Datei, Eintrag B-77), ' +
-    'ob die Oberflaeche VERSTAENDLICH ist, Farbe und Kontrast, die Ansichten MIT Daten (dieser Lauf sieht ihren Leerzustand), ' +
-    'und alles hinter einem Klick ausser den Reitern — ein Dialog, ein aufgeklappter Block, ein Menue.',
+  'NICHT gemessen: der cable-planner (sein dist traegt das Electron-Layout — Eintrag B-77; fuer sein Telefon-Verhalten gibt es mobil:check im eigenen Repo), ' +
+    'ob die Oberflaeche VERSTAENDLICH ist, ob ein Bedienpunkt TUT was sein Name sagt, Farbe und Kontrast, ' +
+    'die Ansichten MIT Daten (dieser Lauf sieht ihren Leerzustand), und was IN einer Klappe steht — ' +
+    'gemessen ist, dass sie aufgeht und sichtbar ist, nicht ihr Inhalt.',
 )

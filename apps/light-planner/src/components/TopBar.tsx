@@ -257,11 +257,25 @@ const TopBar: React.FC<Props> = (p) => {
           onChange={(e) => { const f = e.target.files?.[0]; if (f) p.onUploadFloorPlan(f); e.target.value = ''; }} />
 
         <span className="tb-div" />
-        <button className="tb-btn" onClick={p.onOpenSchedule}><Icon name="schedule" size={15} />{t('topbar.deviceList', 'Device list')}</button>
-        <button className="tb-btn" onClick={() => p.onExport('png')}><Icon name="export" size={15} />{t('tool.export', 'Export')}</button>
-        {/* Eingebettet stellt die Shell Speichern bereit. */}
+        {/* `title` UND `aria-label` (B-77): unter 820 px blendet die Stilvorlage
+            die Beschriftung jedes `.tb-btn` aus, damit die Leiste auf ein
+            Telefon passt. Ohne beides waeren die Knoepfe danach namenlos.
+            Diese zwei gibt es nur in der Suite-Fassung — im eigenstaendigen
+            Repo sind sie seit `light#125` Menuepunkte. */}
+        <button className="tb-btn" onClick={p.onOpenSchedule}
+          title={t('topbar.deviceList', 'Device list')} aria-label={t('topbar.deviceList', 'Device list')}><Icon name="schedule" size={15} />{t('topbar.deviceList', 'Device list')}</button>
+        <button className="tb-btn" onClick={() => p.onExport('png')}
+          title={t('tool.export', 'Export')} aria-label={t('tool.export', 'Export')}><Icon name="export" size={15} />{t('tool.export', 'Export')}</button>
+        {/* Eingebettet stellt die Shell Speichern bereit.
+
+            `title` UND `aria-label` wie beim Umschalter daneben: unter 820 px
+            blendet die Stilvorlage die Beschriftung aus (B-77), damit die
+            Leiste auf einem Telefon ueberhaupt aufgeht. Ohne beides waere der
+            Knopf danach namenlos — und ausgerechnet dieser ist der eine, den
+            man mehrmals je Sitzung braucht. */}
         {!isEmbedded && (
-          <button className="tb-btn primary" onClick={p.onSave}><Icon name="save" size={15} />{t('topbar.save', 'Save')}</button>
+        <button className="tb-btn primary" onClick={p.onSave}
+          title={t('topbar.save', 'Save')} aria-label={t('topbar.save', 'Save')}><Icon name="save" size={15} />{t('topbar.save', 'Save')}</button>
         )}
 
         {/* RECHTS AUSSEN, als LETZTER Bedienpunkt der Zeile — dieselbe Stelle
