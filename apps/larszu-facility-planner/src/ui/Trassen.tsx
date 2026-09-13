@@ -22,6 +22,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
+import { Anlegen, Feld } from './Formular'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { wegFrei } from '../domain/gebaeudeAuskunft'
 import type { Belegung } from '../domain/modell'
@@ -77,78 +79,85 @@ export function Trassen() {
 
   return (
     <section>
-      <div className="leiste">
-        <input
-          value={bezeichnung}
-          onChange={(e) => setBezeichnung(e.target.value)}
-          placeholder={uebersetze('routes.name.placeholder', 'Name (e.g. conduit stage–control room)')}
-          aria-label={uebersetze('routes.name', 'Name')}
-        />
-        <select value={von} onChange={(e) => setVon(e.target.value)} aria-label={uebersetze('routes.from.aria', 'From room')}>
-          <option value="">{uebersetze('routes.from', 'from …')}</option>
-          {raeume.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-        <select value={nach} onChange={(e) => setNach(e.target.value)} aria-label={uebersetze('routes.to.aria', 'To room')}>
-          <option value="">{uebersetze('routes.to', 'to …')}</option>
-          {raeume.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={belegung}
-          onChange={(e) => setBelegung(e.target.value as Belegung)}
-          aria-label={uebersetze('routes.load', 'Occupancy')}
-        >
-          {BELEGUNGEN.map((b) => (
-            <option key={b} value={b}>
-              {BELEGUNG_TEXT[b]}
-            </option>
-          ))}
-        </select>
-        <input
-          value={hinweis}
-          onChange={(e) => setHinweis(e.target.value)}
-          placeholder={uebersetze('routes.note.placeholder', 'What is already in there?')}
-          aria-label={uebersetze('routes.note', 'Note')}
-        />
-        <button
-          type="button"
-          disabled={!anlegbar}
-          onClick={() => {
-            trasseAnlegen({
-              bezeichnung: bezeichnung.trim(),
-              vonRaumId: von,
-              nachRaumId: nach,
-              belegung,
-              hinweis: hinweis.trim() || undefined,
-            })
-            setBezeichnung('')
-            setHinweis('')
-          }}
-        >
+      <Anlegen
+        titel={uebersetze('routes.create.head', 'Add a cable route')}
+        leer={trassen.length === 0}
+        onAbsenden={() => {
+          if (!anlegbar) return
+          trasseAnlegen({
+            bezeichnung: bezeichnung.trim(),
+            vonRaumId: von,
+            nachRaumId: nach,
+            belegung,
+            hinweis: hinweis.trim() || undefined,
+          })
+          setBezeichnung('')
+          setHinweis('')
+        }}
+      >
+        <Feld name={uebersetze('routes.name', 'Name')}>
+          <input
+            value={bezeichnung}
+            onChange={(e) => setBezeichnung(e.target.value)}
+            placeholder={uebersetze('routes.name.placeholder', 'Name (e.g. conduit stage–control room)')}
+          />
+        </Feld>
+        <Feld name={uebersetze('routes.from.aria', 'From room')}>
+          <select value={von} onChange={(e) => setVon(e.target.value)}>
+            <option value="">{uebersetze('routes.from', 'from …')}</option>
+            {raeume.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </Feld>
+        <Feld name={uebersetze('routes.to.aria', 'To room')}>
+          <select value={nach} onChange={(e) => setNach(e.target.value)}>
+            <option value="">{uebersetze('routes.to', 'to …')}</option>
+            {raeume.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </Feld>
+        <Feld name={uebersetze('routes.load', 'Occupancy')}>
+          <select value={belegung} onChange={(e) => setBelegung(e.target.value as Belegung)}>
+            {BELEGUNGEN.map((b) => (
+              <option key={b} value={b}>
+                {BELEGUNG_TEXT[b]}
+              </option>
+            ))}
+          </select>
+        </Feld>
+        <Feld name={uebersetze('routes.note', 'Note')}>
+          <input
+            value={hinweis}
+            onChange={(e) => setHinweis(e.target.value)}
+            placeholder={uebersetze('routes.note.placeholder', 'What is already in there?')}
+          />
+        </Feld>
+        <button type="submit" className="knopf-primaer" disabled={!anlegbar}>
           {uebersetze('routes.add', 'Add route')}
         </button>
-      </div>
+      </Anlegen>
 
       {raeume.length < 2 && (
-        <p className="leer">
-          {uebersetze(
-            'routes.needRooms',
-            'A route connects two rooms. Create at least two rooms under "Connection points" first.',
-          )}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+            {uebersetze(
+              'routes.needRooms',
+              'A route connects two rooms. Create at least two rooms under "Connection points" first.',
+            )}
+          </p>
+        </div>
       )}
 
       {trassen.length === 0 ? (
         <p className="leer">{uebersetze('routes.empty', 'No route recorded yet.')}</p>
       ) : (
-        <div className="tabelle-rahmen">
+        <TabelleRahmen>
         <table>
           <thead>
             <tr>
@@ -182,7 +191,7 @@ export function Trassen() {
             ))}
           </tbody>
         </table>
-        </div>
+        </TabelleRahmen>
       )}
     </section>
   )

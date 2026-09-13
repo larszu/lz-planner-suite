@@ -34,18 +34,79 @@
   --signal: #D6402E;                    /* Tally-Rot — Fokusring, laufender Vorgang */
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 14px;
+
+  /* ── Das Bedien-Grundmass (suite#231) ────────────────────────────────
+   *
+   * `--ziel` ist die Mindesthoehe eines Bedienpunkts. 32 px und nicht die
+   * 24, die vorher einzeln an den Dialogen standen: 24 px ist die UNTERE
+   * Schranke aus WCAG 2.2 SC 2.5.8 („Target Size (Minimum)"), 44 px die
+   * Empfehlung aus SC 2.5.5. Wer ein Gebaeude begeht, traegt ein Tablet und
+   * eine Taschenlampe; dort ist die Empfehlung naeher an der Wahrheit als
+   * die Schranke. 32 liegt auf dem 8-px-Raster und ist dieselbe Zahl, mit
+   * der in ADR-007 eine eingeklappte Spalte stehenbleibt.
+   *
+   * Gemessen VOR dieser Aenderung, im Browser auf 1440 px: 13 Bedienpunkte
+   * unter 32 px. `ui:check` misst es nach.
+   *
+   * Dieselben Werte stehen im `inventory-planner`. Das ist keine Doppelung
+   * aus Bequemlichkeit: beide Repos laufen auch ALLEIN und koennen kein
+   * gemeinsames Paket laden — dieselbe Lage wie bei den 40 px der Kopfzeile,
+   * die `chrome-parity.mjs` in der Suite deshalb je Repo nachmisst. */
+  --ziel: 32px;
+  --steg-1: 4px;
+  --steg-2: 8px;
+  --steg-3: 12px;
+  --steg-4: 16px;
+  --steg-5: 24px;
+  --steg-6: 32px;
+}
+
+/* `border-box` fehlte in diesem Stilblatt ganz. Als `*`-Regel und nicht an
+ * den betroffenen Stellen: die naechste Klasse mit Polsterung und Breite
+ * entstuende sonst mit demselben Fehler. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
+  /* Waagerecht wird in dieser App nie die SEITE geschoben, sondern immer nur
+     ein Bereich, der es ausdruecklich darf (`.tabelle-rahmen`,
+     `.reiter-leiste`). Das ist die Zusage, die `ui:check` misst. */
+  overflow-x: hidden;
 }
 
+/* Die App ist eine SPALTE ueber die volle Fensterhoehe und kein zentriertes
+ * Blatt mehr (suite#231) — Kopfzeile oben, Reiter darunter, Arbeitsflaeche
+ * dazwischen, Statusleiste unten (ADR-007 Abschnitt 6). Nur der INHALT
+ * bekommt seine Satzbreite.
+ *
+ * `100dvh` und nicht `100vh`: auf dem Telefon ist die Adresszeile mal da und
+ * mal weg, und `vh` rechnet immer mit dem grossen Zustand — die Statusleiste
+ * laege dann unter dem Bildschirmrand. */
 .app {
-  max-width: 1100px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.inhalt {
+  flex: 1;
+  width: 100%;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--steg-3) var(--steg-4) var(--steg-6);
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .inhalt {
+    padding: var(--steg-2) var(--steg-2) var(--steg-5);
+  }
 }
 
 /* ── Die Datei-Knoepfe im Kopf (Issue #2) ───────────────────────────────
@@ -106,7 +167,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 24px;
+  min-height: var(--ziel);
   padding: 0 8px;
   background: var(--erhoben);
   border: 1px solid transparent;
@@ -129,7 +190,7 @@ body {
   border: none;
   color: var(--text);
   padding: 0 8px;
-  min-height: 28px;
+  min-height: var(--ziel);
   cursor: pointer;
   font: inherit;
 }
@@ -155,8 +216,8 @@ body {
   border: none;
   color: var(--text);
   text-align: left;
-  padding: 6px 12px;
-  min-height: 28px;
+  padding: 0 12px;
+  min-height: var(--ziel);
   cursor: pointer;
   font: inherit;
 }
@@ -165,11 +226,20 @@ body {
 .menue-punkt:disabled { color: var(--leise); cursor: not-allowed; }
 .menue-trenner { height: 1px; margin: 4px 0; background: var(--rand); }
 
+/* Die Leiste SCROLLT waagerecht, statt aus dem Fenster zu laufen. Gemessen
+ * auf 390 px: der Rumpf war 601 px breit, drei Reiter standen jenseits des
+ * Randes, und die ganze Seite liess sich seitlich schieben. `flex: none` an
+ * den Knoepfen ist der Punkt: ohne das schrumpfen sie stattdessen, und dann
+ * steht „Connection points" zweizeilig in 60 px. */
 .reiter-leiste {
   display: flex;
-  gap: 4px;
-  padding: 6px 12px 0;
+  gap: var(--steg-1);
+  padding: var(--steg-2) var(--steg-3) 0;
   border-bottom: 1px solid var(--rand);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  flex: none;
 }
 
 .versteckt { display: none; }
@@ -215,8 +285,8 @@ body {
   color: var(--leise);
   font-size: 1.2rem;
   line-height: 1;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: var(--ziel);
+  min-height: var(--ziel);
   cursor: pointer;
 }
 
@@ -238,8 +308,8 @@ body {
   background: var(--erhoben);
   border: 1px solid var(--rand);
   color: var(--text);
-  padding: 4px 12px;
-  min-height: 28px;
+  padding: 0 var(--steg-3);
+  min-height: var(--ziel);
   cursor: pointer;
   font: inherit;
 }
@@ -279,65 +349,368 @@ body {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * DIE BEDIEN-BAUSTEINE (suite#231)
+ *
+ * DER BEFUND. Sieben Ansichten — Anschlusspunkte, Grundriss, Verteilung,
+ * Trassen, Schaltstellen, Steuerung, Maengel — und im Stilblatt gab es fuer
+ * KEINE davon etwas ausser `.leiste` und einer Tabelle. Sechs der sieben
+ * begannen im Markup mit derselben Zeile `<div className="leiste">`, und
+ * dahinter standen zwei bis vier nackte Browser-Felder ohne Beschriftung,
+ * mit einem Platzhalter als einziger Auskunft darueber, was hineingehoert.
+ * Der Grundriss ist die einzige Ansicht mit eigenen Regeln, und die
+ * betreffen das Bild, nicht die Bedienung.
+ *
+ * Nutzer-Meldung (suite#231): „aktuell ist die Ui so schlecht das beide
+ * module unbrauchbar sind."
+ *
+ * DAZU EIN ECHTER DEFEKT. `.marke` war zweimal vergeben: einmal fuer den
+ * Gebaeudenamen in der Kopfzeile, einmal fuer die Beschriftung eines Punktes
+ * auf dem Grundriss. Die zweite Regel steht weiter unten und gewann —
+ * der App-Name lag als absolut positioniertes Kaestchen mit Rahmen ueber dem
+ * Datei-Menue (gemessen: 37 px Ueberlappung) und nahm wegen
+ * `pointer-events: none` keine Klicks an. Die Grundriss-Marke heisst jetzt
+ * `.plan-marke`.
+ *
+ * DIE BAUSTEINE SIND WORTGLEICH DIE DES `inventory-planner`. Beide Repos
+ * laufen auch ALLEIN und koennen kein gemeinsames Paket laden — dieselbe
+ * Lage wie bei den 40 px der Kopfzeile, die `chrome-parity.mjs` in der Suite
+ * deshalb je Repo nachmisst statt sie zu teilen. Wer hier eine Regel
+ * aendert, aendert sie dort mit; `ui:check` misst in beiden dasselbe.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Reiter ──────────────────────────────────────────────────────────────
+ *
+ * Die Leiste SCROLLT waagerecht, statt aus dem Fenster zu laufen. Gemessen
+ * auf 390 px: der Rumpf war 601 px breit, drei Reiter standen jenseits des
+ * Randes, und die ganze Seite liess sich seitlich schieben. Das ist derselbe
+ * Fehler, den `mobil:check` im Cable-Planner seit B-44 Teil 3 verbietet —
+ * nur hatte ihn hier niemand gemessen.
+ *
+ * `flex: none` an den Knoepfen ist der Punkt: ohne das schrumpfen sie
+ * stattdessen, und dann steht „Connection points" zweizeilig in 60 px. */
+.reiter-leiste {
+  display: flex;
+  gap: var(--steg-1);
+  padding: var(--steg-2) var(--steg-3) 0;
+  border-bottom: 1px solid var(--rand);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  flex: none;
+}
+
 .reiter {
   background: none;
   border: 1px solid transparent;
+  border-bottom: none;
   color: var(--leise);
-  padding: 0.25rem 0.75rem;
+  padding: 0 var(--steg-3);
+  min-height: var(--ziel);
+  white-space: nowrap;
+  flex: none;
   cursor: pointer;
+  font: inherit;
 }
+
+.reiter:hover { color: var(--text); }
 
 .reiter.aktiv {
   /* Der gewaehlte Reiter ist die erhobene Flaeche, nicht dieselbe wie die
-     Karten darunter — sonst haette „hier bin ich" keine eigene Stufe und
+     Bloecke darunter — sonst haette „hier bin ich" keine eigene Stufe und
      `--erhoben` waere ein Token, das niemand benutzt. */
   background: var(--erhoben);
   border-color: var(--rand);
   color: var(--text);
 }
 
+/* Die Frage des Reiters — „Was ist da, wieviel, und wo liegt es?". Sie ist
+   die Ueberschrift der Ansicht und stand vorher als grauer Absatz ohne
+   Gewicht darunter. */
 .frage {
   color: var(--leise);
-  margin: 0.5rem 0 1rem;
+  margin: 0 0 var(--steg-4);
+  font-size: 0.95rem;
 }
 
-.leiste {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-}
-
+/* ── Bedienpunkte ────────────────────────────────────────────────────────
+ *
+ * EINE Regel fuer alle vier Arten, und sie traegt `--ziel`. Vorher stand hier
+ * gar keine Hoehe: jedes Feld und jeder Knopf hatte die, die der Browser ihm
+ * aus `padding: 0.25rem` gab (gemessen: 25 px). */
 input,
 select,
-button {
+button,
+textarea {
   background: var(--flaeche);
   border: 1px solid var(--rand);
   color: var(--text);
-  padding: 0.25rem 0.5rem;
+  padding: 0 var(--steg-2);
+  min-height: var(--ziel);
   font: inherit;
+  max-width: 100%;
+}
+
+textarea {
+  padding: var(--steg-2);
+  line-height: 1.45;
 }
 
 button {
+  padding: 0 var(--steg-3);
   cursor: pointer;
+}
+
+button:hover:not(:disabled) { background: var(--erhoben); }
+
+button:disabled {
+  color: var(--leise);
+  cursor: default;
 }
 
 button.still {
   background: none;
+  border-color: transparent;
   color: var(--leise);
 }
 
-.schmal {
-  width: 5rem;
+button.still:hover { border-color: var(--rand); color: var(--text); }
+
+/* Der Primaerknopf traegt den roten Punkt aus ADR-007 Abschnitt 4 — er macht
+   sichtbar, WELCHER der eine ist. Der Punkt ist eckig: „der Tally-Punkt ist
+   der Satzpunkt der Hausschrift, kein Kreis" (Abschnitt 3). */
+.knopf-primaer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--steg-2);
+  background: var(--erhoben);
+  border-color: var(--rand);
+  color: var(--text);
+  font-weight: 600;
 }
 
-/* Breite Inhalte scrollen in ihrem eigenen Bereich statt die Seite zu
-   sprengen — dieselbe Regel wie im Cable-Planner (B-44 Teil 3). */
-.tabelle-rahmen {
-  overflow-x: auto;
+.knopf-primaer::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--signal);
+  flex: none;
+}
+
+.knopf-primaer:disabled::before { background: var(--leise); }
+
+/* Sichtbarer Fokus auf jedem Bedienpunkt. Vorher gab es nur den Ring des
+   Browsers, und der ist auf der dunklen Flaeche kaum zu sehen. */
+:where(input, select, button, textarea, a):focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+
+/* ── Block: die Flaeche mit Kopflinie ────────────────────────────────────
+ *
+ * Die Kopflinie aus ADR-007 Abschnitt 3 — „Kicker in Versalien, darunter
+ * eine durchgehende Linie ... Eine pro Flaeche". Sie stand in diesem Repo
+ * bisher nur an den Dialogen. */
+.block {
   border: 1px solid var(--rand);
-  margin-bottom: 1rem;
+  background: var(--flaeche);
+  padding: var(--steg-3) var(--steg-4) var(--steg-4);
+  margin: 0 0 var(--steg-4);
+}
+
+.block > h2,
+.block > h3 {
+  margin: 0 0 var(--steg-3);
+  padding-bottom: var(--steg-2);
+  border-bottom: 1px solid var(--rand);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--leise);
+}
+
+/* Ein Block, der sich aufklappen laesst — „Neu anlegen" steht nicht jedem im
+   Weg, der nur nachsehen will, was da ist. */
+.block > summary {
+  cursor: pointer;
+  list-style: none;
+  margin: 0 0 var(--steg-2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--leise);
+  min-height: var(--ziel);
+  display: flex;
+  align-items: center;
+  gap: var(--steg-2);
+}
+
+.block > summary::-webkit-details-marker { display: none; }
+
+.block > summary::before {
+  content: '+';
+  color: var(--signal);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.block[open] > summary {
+  padding-bottom: var(--steg-2);
+  border-bottom: 1px solid var(--rand);
+  margin-bottom: var(--steg-3);
+}
+
+.block[open] > summary::before { content: '\2212'; }
+
+/* ── Feldzeile und Beschriftung ──────────────────────────────────────────
+ *
+ * JEDES Feld traegt seine Beschriftung UEBER sich und nicht im Platzhalter.
+ * Ein Platzhalter verschwindet beim Tippen — wer ein Formular halb ausgefuellt
+ * verlaesst und zurueckkommt, sieht dann Werte ohne Fragen. Gemessen in
+ * `Anschlusspunkte`: zwei Felder, beide nur mit Platzhalter.
+ *
+ * `min-width: 0` an `.feld` ist kein Zierrat: ohne das weigern sich
+ * Flex-Kinder zu schrumpfen, und dann sprengt die Zeile auf dem Telefon den
+ * Rand — genau der Ueberlauf, gegen den `ui:check` steht. */
+.zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--steg-3);
+  align-items: flex-end;
+}
+
+.zeile > button { flex: none; }
+
+.feld,
+.zeile label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--steg-1);
+  color: var(--leise);
+  font-size: 0.85rem;
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.feld > input,
+.feld > select,
+.zeile label > input,
+.zeile label > select {
+  color: var(--text);
+  min-width: 0;
+  width: 100%;
+}
+
+/* Ein schmales Feld ist schmal, aber nie schmaler als seine Beschriftung.
+   `5rem` stand hier als feste Breite und schnitt „Quantity" ab.
+
+   `.zeile .schmal` und nicht `.schmal`: die Regel darueber trifft
+   `.zeile label` und hat damit zwei Gewichte gegen eines — eine
+   Klassenregel allein verliert gegen sie, egal wie weit unten sie steht.
+   Gemessen: das Mengenfeld lief in der Stufe davor ueber die halbe Zeile. */
+.zeile .schmal,
+.zeile .feld.schmal { flex: 0 0 7rem; }
+.schmal > input,
+input.schmal,
+select.schmal { width: 100%; }
+
+/* Ein Datei-Feld sieht nirgends aus wie ein Knopf. Das Label IST der Knopf,
+   das Feld darin ist unsichtbar — sonst steht ein „Durchsuchen…" neben einem
+   Text, der nicht dazu passt. */
+.datei-knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--steg-2);
+  padding: 0 var(--steg-3);
+  min-height: var(--ziel);
+  border: 1px solid var(--rand);
+  background: var(--flaeche);
+  cursor: pointer;
+  flex: none;
+}
+
+.datei-knopf:hover { background: var(--erhoben); }
+.datei-knopf input[type='file'] { display: none; }
+
+/* ── Spalten und Kacheln ─────────────────────────────────────────────────
+ *
+ * `auto-fit`/`minmax` statt fester Spaltenzahl: das Raster entscheidet selbst,
+ * wieviele Spalten in die Breite passen, und braucht dafuer keinen
+ * Umbruchpunkt. Die beiden `@media (max-width: 900px)`-Bloecke, die vorher
+ * `.inventur .spalten` und `.werte .spalten` einzeln zurueckstellten, fallen
+ * damit weg. */
+.spalten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  gap: var(--steg-5);
+  margin: 0 0 var(--steg-4);
+}
+
+.kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  gap: var(--steg-3);
+  margin: 0 0 var(--steg-4);
+}
+
+.kachel {
+  border: 1px solid var(--rand);
+  background: var(--flaeche);
+  padding: var(--steg-3) var(--steg-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--steg-1);
+  min-width: 0;
+}
+
+.kachel strong {
+  font-size: 1.35rem;
+  font-weight: 600;
+  /* Eine lange Zahl bricht, statt die Kachel zu sprengen. */
+  overflow-wrap: anywhere;
+}
+
+.kachel span {
+  color: var(--leise);
+  font-size: 0.85rem;
+}
+
+/* Nur was zu tun ist, traegt Farbe. Eine Kachel, die immer warnt, liest nach
+   einer Woche niemand mehr — dann faellt der Tag nicht mehr auf, an dem sie
+   es zu Recht tut. */
+.kachel.achtung { border-color: var(--warn); }
+.kachel.achtung strong { color: var(--warn); }
+
+/* ── Werkzeugleiste ueber einer Liste ────────────────────────────────────
+ *
+ * Suche links, Zaehler rechts. Der Zaehler stand vorher direkt neben dem
+ * Suchfeld und sah aus wie zu ihm gehoerig; er gehoert zur LISTE. */
+.leiste {
+  display: flex;
+  gap: var(--steg-2);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--steg-3);
+}
+
+.leiste > input[type='search'],
+.leiste > input:not(.schmal) { flex: 1 1 16rem; min-width: 0; }
+.leiste .zaehler { margin-left: auto; }
+
+/* ── Tabellen ────────────────────────────────────────────────────────────
+ *
+ * Der Kopf KLEBT. Eine Anschlussliste ist lang; wer bis Zeile achtzig
+ * gescrollt hat, weiss sonst nicht mehr, welche Spalte der Kreis ist.
+ *
+ * Der Rahmen scrollt in sich, statt die Seite zu sprengen (B-44 Teil 3). */
+.tabelle-rahmen {
+  overflow: auto;
+  max-height: min(70vh, 46rem);
+  border: 1px solid var(--rand);
+  background: var(--flaeche);
+  margin-bottom: var(--steg-4);
 }
 
 table {
@@ -347,62 +720,192 @@ table {
 
 caption {
   text-align: left;
-  padding: 0.5rem;
+  padding: var(--steg-2);
   color: var(--leise);
 }
 
 th,
 td {
   text-align: left;
-  padding: 0.35rem 0.6rem;
+  padding: var(--steg-2) var(--steg-3);
   border-bottom: 1px solid var(--rand);
-  white-space: nowrap;
+  vertical-align: middle;
 }
 
 th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--erhoben);
   color: var(--leise);
-  font-weight: 400;
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.rechts {
-  text-align: right;
+/* Zebra macht eine breite Zeile ueber die ganze Breite lesbar. `color-mix`
+   statt eines eigenen Tokens: der Ton muss in BEIDEN Themen derselbe
+   Abstand zur Flaeche sein, und ein fester Wert waere das in einem von
+   beiden nicht. */
+tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--erhoben) 40%, transparent);
 }
 
-.leise {
+tbody tr:hover td { background: var(--erhoben); }
+
+.rechts { text-align: right; }
+.warnung td { color: var(--warn); }
+
+/* Ein Feld IN einer Zelle fuellt die Spalte nicht aus. Ohne diese Regel zieht
+   `width: 100%` aus `.schmal` die Mengen- und Ziel-Felder auf die volle
+   Spaltenbreite — gemessen 200 px fuer eine zweistellige Zahl, und die Spalte
+   daneben wird dafuer gestaucht. `ch` und nicht `px`: die Breite haengt an der
+   Ziffer, nicht an einer geratenen Zahl.
+
+   Im Kartenmodus (unter 700 px) gilt sie nicht: dort steht das Feld allein in
+   seiner Zeile und darf die Breite nehmen. */
+td input.schmal,
+td select.schmal { width: 7ch; }
+
+td input[type='number'] { width: 8ch; text-align: right; }
+td select { max-width: 100%; }
+
+/* ── Liste als Karten, wenn die Tabelle nicht mehr passt ─────────────────
+ *
+ * Unter 700 px wird jede Zeile zu einer Karte und jede Zelle traegt ihren
+ * Spaltennamen vor sich — das Markup bleibt eine Tabelle, die Darstellung
+ * nicht. Ohne das steht im Telefon eine achtspaltige Tabelle in einem
+ * Scrollfenster von 390 px, und man sieht nie Name und Kreis zugleich.
+ *
+ * Die Ansicht liefert den Spaltennamen als `data-spalte` an der Zelle. Wo
+ * sie das nicht tut, faellt die Karte auf reine Werte zurueck — lesbar,
+ * nur ohne Beschriftung. */
+@media (max-width: 700px) {
+  .tabelle-rahmen { max-height: none; border: none; background: none; }
+  .tabelle-rahmen thead { display: none; }
+  .tabelle-rahmen table,
+  .tabelle-rahmen tbody,
+  .tabelle-rahmen tr,
+  .tabelle-rahmen td { display: block; width: auto; }
+
+  .tabelle-rahmen tr {
+    border: 1px solid var(--rand);
+    background: var(--flaeche);
+    margin-bottom: var(--steg-2);
+    padding: var(--steg-2);
+  }
+
+  .tabelle-rahmen td {
+    border: none;
+    padding: var(--steg-1) 0;
+    display: flex;
+    gap: var(--steg-3);
+    align-items: center;
+    text-align: left;
+  }
+
+  .tabelle-rahmen td::before {
+    content: attr(data-spalte);
+    flex: 0 0 40%;
+    color: var(--leise);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .tabelle-rahmen td:empty { display: none; }
+  /* In der Karte steht das Feld allein in seiner Zeile und darf die Breite
+     nehmen — die Regel aus dem Tabellenmodus gilt hier nicht. */
+  .tabelle-rahmen td input,
+  .tabelle-rahmen td select { width: 100%; text-align: left; }
+  .tabelle-rahmen tbody tr:nth-child(even) td,
+  .tabelle-rahmen tbody tr:hover td { background: none; }
+}
+
+/* ── Text ────────────────────────────────────────────────────────────────
+ *
+ * EINE Regel fuer die drei Textarten statt vier Kopien mit 46rem und 52rem
+ * im Wechsel. `60ch` ist eine Zeilenlaenge und keine Kastenbreite: sie haengt
+ * an der Schriftgroesse und bleibt auch dann richtig, wenn jemand die
+ * Schrift des Browsers hochstellt. */
+.leer,
+.hinweis,
+p.warnung {
+  max-width: 60ch;
+  line-height: 1.55;
+  margin: var(--steg-2) 0;
+}
+
+.leer,
+.hinweis { color: var(--leise); }
+p.warnung { color: var(--warn); }
+
+.leise { color: var(--leise); margin: 2px 0; }
+.zaehler { color: var(--leise); white-space: nowrap; }
+
+/* Ein Leerzustand, der auf einer eigenen Flaeche steht statt als grauer Satz
+   im Nichts. Er ist das Erste, was jemand in einer frischen Installation
+   sieht — und war vorher das Einzige. */
+.leer-flaeche {
+  border: 1px dashed var(--rand);
+  padding: var(--steg-6) var(--steg-4);
+  text-align: center;
+}
+
+.leer-flaeche .leer { margin-inline: auto; }
+
+/* ── Statusleiste ────────────────────────────────────────────────────────
+ *
+ * ADR-007 Abschnitt 6: „Meldungen links · Zaehler rechts", 24 px.
+ *
+ * Der ADR nahm dieses Repo bis zum 2026-09-13 ausdruecklich aus: „fuehren
+ * Reiter ohne Zeichenbereich — dort waere sie eine leere Zeile". Beide
+ * Haelften stimmten nicht: dieses Repo HAT einen Zeichenbereich (der
+ * Grundriss), und leer waere der Zaehler auch sonst nicht — jede der sieben
+ * Ansichten hat eine Zahl, die sie ohnehin berechnet. Was der ADR verbietet,
+ * steht auch jetzt nicht darin — keine Ampel, keine Bewertung, nur
+ * Ableitbares. */
+.statusleiste {
+  display: flex;
+  align-items: center;
+  gap: var(--steg-3);
+  min-height: 24px;
+  padding: 0 var(--steg-3);
+  flex: none;
+  background: var(--flaeche);
+  border-top: 1px solid var(--rand);
   color: var(--leise);
+  font-size: 0.8rem;
 }
 
-.zaehler {
-  color: var(--leise);
-}
+.statusleiste .rechts { margin-left: auto; }
 
-.warnung td {
-  color: var(--warn);
-}
 
-.leer {
-  color: var(--leise);
-  max-width: 46rem;
-  line-height: 1.5;
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+ * WAS EINE ANSICHT WIRKLICH NUR FUER SICH BRAUCHT
+ * ═══════════════════════════════════════════════════════════════════════ */
 
 /* Ein gescheiterter Schreibvorgang steht oben und faellt auf. */
 .fehler {
   border: 1px solid var(--warn);
-  padding: 0.5rem 0.75rem;
+  padding: var(--steg-2) var(--steg-3);
   color: var(--warn);
-  max-width: 46rem;
+  max-width: 60ch;
+  margin: 0 0 var(--steg-3);
 }
 
-/* Der Grundriss-Hintergrund (Issue #1). Das Feld behaelt seine Breite auch
-   ohne Bild: die Lagen stehen in Metern und bleiben setzbar, wenn der Scan auf
-   diesem Rechner fehlt. */
+/* ── Grundriss ───────────────────────────────────────────────────────────
+ *
+ * Das Feld behaelt seine Breite auch ohne Bild: die Lagen stehen in Metern
+ * und bleiben setzbar, wenn der Scan auf diesem Rechner fehlt (Issue #1). */
 .grundriss-feld {
   position: relative;
   border: 1px solid var(--rand);
   background: var(--flaeche);
   min-height: 18rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--steg-4);
   padding: 0;
   overflow: hidden;
 }
@@ -417,24 +920,27 @@ th {
   width: 100%;
 }
 
-.grundriss-feld > .leer {
-  padding: 1rem;
-}
+.grundriss-feld > .leer { padding: var(--steg-4); }
 
 /* Die Marke sitzt MIT IHRER MITTE auf der Lage — ohne die Verschiebung zeigte
-   ihre linke obere Ecke auf den Punkt, und der Punkt laege daneben. */
-.marke {
+ * ihre linke obere Ecke auf den Punkt, und der Punkt laege daneben.
+ *
+ * `.plan-marke` und nicht `.marke`: unter dem alten Namen traf diese Regel
+ * auch den Gebaeudenamen in der Kopfzeile und machte ihn zu einem absolut
+ * positionierten Kaestchen ueber dem Datei-Menue. Siehe den Kopf des
+ * Bausteine-Abschnitts. */
+.plan-marke {
   position: absolute;
   transform: translate(-50%, -50%);
   background: var(--bg);
   border: 1px solid var(--leise);
-  padding: 0.1rem 0.5rem;
+  padding: 2px var(--steg-2);
   font-size: 0.85em;
   white-space: nowrap;
   pointer-events: none;
 }
 
-.marke.gewaehlt {
+.plan-marke.gewaehlt {
   border-color: var(--warn);
   color: var(--warn);
 }

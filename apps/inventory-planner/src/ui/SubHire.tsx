@@ -16,6 +16,7 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
 import { useInventoryStore } from '../domain/store/inventoryStore'
 import { ownershipLabel, isForeign, overdueSubhire, ownershipNote } from '../domain/lib/ownership'
 
@@ -48,7 +49,7 @@ export function SubHire() {
       </p>
 
       {faellig.length > 0 && (
-        <div className="tabelle-rahmen">
+        <TabelleRahmen>
           <table>
             <caption>{t('subhire.dueTable', 'Back — overdue or without a date')}</caption>
             <thead>
@@ -78,10 +79,10 @@ export function SubHire() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TabelleRahmen>
       )}
 
-      <div className="tabelle-rahmen">
+      <TabelleRahmen>
         <table>
           <caption>{t('subhire.allTable', 'All foreign material')}</caption>
           <thead>
@@ -104,7 +105,7 @@ export function SubHire() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TabelleRahmen>
     </section>
   )
 }

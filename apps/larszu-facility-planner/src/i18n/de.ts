@@ -109,6 +109,10 @@ export const de: Record<string, string> = {
   'dist.kind.cabinet': 'Schaltschrank',
   'dist.kind.sub': 'Unterverteilung',
   'dist.new.aria': 'Bezeichnung der Verteilung',
+  // suite#231 — jede Eintrage-Stelle steht jetzt in einem Block mit
+  // Ueberschrift statt als nackte Feldzeile.
+  'dist.create.head': 'Verteilung anlegen',
+  'dist.circuit.head': 'Stromkreis anlegen',
   'dist.new.placeholder': 'Neuer Schaltschrank / neue Unterverteilung',
   'dist.rcd.placeholder': 'RCD (leer = nicht angegeben)',
   'dist.table.boards': 'Verteilungen',
@@ -184,6 +188,7 @@ export const de: Record<string, string> = {
   'points.kind.feed': 'Einspeisung',
   'points.kind.outlet': 'Dose',
   'points.new.aria': 'Bezeichnung des Anschlusspunkts',
+  'points.create.head': 'Anschlusspunkt anlegen',
   'points.new.placeholder': 'Neuer Anschlusspunkt',
   'points.rcd.aria': 'RCD-Typ von {name}',
   'points.room.default': 'Raum 1',
@@ -271,6 +276,20 @@ export const de: Record<string, string> = {
   'tab.distribution.q': 'Welche Kreise hängen zusammen — und woran?',
   'tab.floorPlan': 'Grundriss',
   'tab.floorPlan.q': 'Wo im Raum sitzt dieser Punkt — nicht nur in welchem?',
+  // ── Statusleiste (suite#231, ADR-007 Abschnitt 6) ──────────────────────
+  // Je Reiter eine Zahl aus dem Modell. Nichts davon wertet.
+  'status.points': '{n} Anschlusspunkte · {r} Raeume',
+  'status.floorPlan': '{n} von {all} Punkten verortet',
+  'status.distribution': '{n} Verteilungen · {c} Stromkreise',
+  'status.routes': '{n} Trassen',
+  'status.switchPoints': '{n} Schaltstellen',
+  'status.control': '{n} Steuerklinken',
+  'status.defects': '{n} Maengel gemeldet',
+  'defects.create.head': 'Mangel melden',
+  'switches.create.head': 'Schaltstelle anlegen',
+  'control.create.head': 'Steuerklinke freigeben',
+  'routes.create.head': 'Trasse anlegen',
+
   'tab.points': 'Anschlusspunkte',
   'tab.points.q': 'Was gibt dieser Punkt her, wo ist er, und ist er frei?',
   'tab.routes': 'Trassen',

@@ -235,9 +235,18 @@ Von aussen nach innen:
 
   Gemessen wird die Leiste je Repo (`kopfzeile:check`), nicht in der Suite:
   sie ist eine Zahl im Stilblatt und ein Element im Markup, beides steht in
-  der App. `inventory-planner` und `larszu-facility-planner` fuehren Reiter
-  ohne Zeichenbereich — dort waere sie eine leere Zeile, also gilt die Regel
-  fuer sie nicht.
+  der App.
+
+  > **Korrigiert am 2026-09-13 (suite#231).** Hier stand: „`inventory-planner`
+  > und `larszu-facility-planner` fuehren Reiter ohne Zeichenbereich — dort
+  > waere sie eine leere Zeile, also gilt die Regel fuer sie nicht." Beide
+  > Haelften des Satzes waren falsch. Der `larszu-facility-planner` HAT einen
+  > Zeichenbereich — der Grundriss, seit Issue #1. Und leer waere die Leiste
+  > auch sonst nicht: jede der sieben Ansichten beider Apps fuehrt eine Zahl,
+  > die sie ohnehin berechnet (Artikel, Lagerplaetze, Ausgabescheine,
+  > Anschlusspunkte, Kreise, Klinken, Maengel). Beide fuehren die Leiste
+  > jetzt; was dieser Abschnitt verbietet — Ampel, Bewertung, Komplexitaet —
+  > steht in keiner der vierzehn Zeilen.
 
 - **Die Seitenleisten klappen ueberall gleich ein** (ergaenzt am 2026-09-11).
   Der Rahmen stand hier von Anfang an; der GRIFF nicht — und genau der ist,

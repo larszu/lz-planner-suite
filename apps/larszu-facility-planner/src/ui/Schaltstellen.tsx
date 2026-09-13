@@ -25,6 +25,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
+import { Anlegen, Feld } from './Formular'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { geschaltetVon } from '../domain/gebaeudeAuskunft'
 import type { Schalterbauart } from '../domain/modell'
@@ -91,61 +93,64 @@ export function Schaltstellen() {
 
   return (
     <section>
-      <div className="leiste">
-        <input
-          value={bezeichnung}
-          onChange={(e) => setBezeichnung(e.target.value)}
-          placeholder={t('switches.name.placeholder', 'Name (e.g. switch stage left)')}
-          aria-label={t('common.name', 'Name')}
-        />
-        <select value={raumId} onChange={(e) => setRaumId(e.target.value)} aria-label={t('common.room', 'Room')}>
-          <option value="">{t('switches.room.none', 'Room …')}</option>
-          {gebaeude.raeume.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={bauart}
-          onChange={(e) => setBauart(e.target.value as Schalterbauart)}
-          aria-label={t('switches.type', 'Type')}
-        >
-          {BAUARTEN.map((b) => (
-            <option key={b} value={b}>
-              {BAUART_TEXT[b]}
-            </option>
-          ))}
-        </select>
-        <input
-          value={hinweis}
-          onChange={(e) => setHinweis(e.target.value)}
-          placeholder={t('switches.note.placeholder', 'Note (e.g. switches off from 22:00)')}
-          aria-label={t('common.note', 'Note')}
-        />
-        <button
-          type="button"
-          disabled={!anlegbar}
-          onClick={() => {
-            schaltstelleAnlegen({
-              bezeichnung: bezeichnung.trim(),
-              raumId,
-              bauart,
-              schaltetPunkte: [],
-              hinweis: hinweis.trim() || undefined,
-            })
-            setBezeichnung('')
-            setHinweis('')
-          }}
-        >
+      <Anlegen
+        titel={t('switches.create.head', 'Add a switch point')}
+        leer={gebaeude.schaltstellen.length === 0}
+        onAbsenden={() => {
+          if (!anlegbar) return
+          schaltstelleAnlegen({
+            bezeichnung: bezeichnung.trim(),
+            raumId,
+            bauart,
+            schaltetPunkte: [],
+            hinweis: hinweis.trim() || undefined,
+          })
+          setBezeichnung('')
+          setHinweis('')
+        }}
+      >
+        <Feld name={t('common.name', 'Name')}>
+          <input
+            value={bezeichnung}
+            onChange={(e) => setBezeichnung(e.target.value)}
+            placeholder={t('switches.name.placeholder', 'Name (e.g. switch stage left)')}
+          />
+        </Feld>
+        <Feld name={t('common.room', 'Room')}>
+          <select value={raumId} onChange={(e) => setRaumId(e.target.value)}>
+            <option value="">{t('switches.room.none', 'Room …')}</option>
+            {gebaeude.raeume.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </Feld>
+        <Feld name={t('switches.type', 'Type')}>
+          <select value={bauart} onChange={(e) => setBauart(e.target.value as Schalterbauart)}>
+            {BAUARTEN.map((b) => (
+              <option key={b} value={b}>
+                {BAUART_TEXT[b]}
+              </option>
+            ))}
+          </select>
+        </Feld>
+        <Feld name={t('common.note', 'Note')}>
+          <input
+            value={hinweis}
+            onChange={(e) => setHinweis(e.target.value)}
+            placeholder={t('switches.note.placeholder', 'Note (e.g. switches off from 22:00)')}
+          />
+        </Feld>
+        <button type="submit" className="knopf-primaer" disabled={!anlegbar}>
           {t('switches.add', 'Add switch point')}
         </button>
-      </div>
+      </Anlegen>
 
       {stellen.length === 0 ? (
         <p className="leer">{t('switches.empty', 'No switch point recorded yet.')}</p>
       ) : (
-        <div className="tabelle-rahmen">
+        <TabelleRahmen>
         <table>
           <thead>
             <tr>
@@ -203,17 +208,19 @@ export function Schaltstellen() {
             ))}
           </tbody>
         </table>
-        </div>
+        </TabelleRahmen>
       )}
 
       <h3>{t('switches.origin.title', 'Per connection point: how do we know?')}</h3>
-      <p className="leer">
-        {t(
-          'switches.origin.hint',
-          'Four answers, not two. "Unknown" does not mean "no" — that is the difference that counts on site.',
-        )}
-      </p>
-      <div className="tabelle-rahmen">
+      <div className="leer-flaeche">
+        <p className="leer">
+          {t(
+            'switches.origin.hint',
+            'Four answers, not two. "Unknown" does not mean "no" — that is the difference that counts on site.',
+          )}
+        </p>
+      </div>
+      <TabelleRahmen>
       <table>
         <thead>
           <tr>
@@ -244,7 +251,7 @@ export function Schaltstellen() {
           })}
         </tbody>
       </table>
-      </div>
+      </TabelleRahmen>
     </section>
   )
 }

@@ -4899,6 +4899,76 @@ ausserhalb des Spalten-Abschnitts. Und die 82 deutschen Zeichenketten in
 Konstanten-Tabellen aus dem Absatz oben bleiben offen; die drei hier
 behobenen waren keine Tabellen-Einträge, sondern rohes JSX.
 
+### B-77 · Lager und Gebäude waren unbedienbar — und drei weitere Apps sind es noch
+
+* **Status:** für `inventory-planner` und `larszu-facility-planner`
+  **erledigt** (suite#231, 2026-09-13, gemessen im Browser). Für
+  `multicam-planner` und `light-planner` **offen**, mit Zahlen.
+* **Woher der Eintrag kommt.** Nutzer-Meldung suite#231: „aktuell ist die Ui
+  so schlecht das beide module unbrauchbar sind. baue auf den funktionen die
+  im hintergrund schon existieren eine intuitive bedienbare ui die responsive
+  ist."
+* **Die Meldung stimmte, und der Grund war nicht fehlende Arbeit, sondern
+  eine Lücke im Stilblatt.** Im Lager trugen VIER der sieben Ansichten eigene,
+  gleichlautende Regelblöcke mit eigenem Präfix (`.inventur`, `.eingang`,
+  `.bericht`, `.werte`) — vier Abschriften derselben fünf Formen (Block,
+  Feldzeile, Beschriftung, Bedienpunkt, Kachel). Die übrigen DREI hatten
+  keinen Präfix und bekamen deshalb **nichts davon**: `Bestand`,
+  `Ausgabescheine`, `Sub-Hire`. `Bestand` ist die Ansicht, die beim Start
+  offen steht. Im Gebäude gab es gar keine: sechs der sieben Ansichten
+  begannen im Markup mit derselben Zeile `<div className="leiste">` und
+  dahinter standen nackte Browser-Felder.
+
+  Das Stilblatt sagte es selbst und tat es trotzdem: über `.eingang` stand
+  „Erbt die Blöcke der Bericht-Ansicht" — es erbte nichts, es war eine
+  Abschrift.
+* **Gemessen im Browser (2026-09-13), vorher → nachher:**
+
+  | | Lager vorher | Lager nachher | Gebäude vorher | Gebäude nachher |
+  |---|---:|---:|---:|---:|
+  | Bedienpunkte unter 32 px (1440 px) | 14 | **0** | 13 | **0** |
+  | Rumpfbreite in einem 390-px-Fenster | 587 px | **390 px** | 601 px | **390 px** |
+  | Eingabefelder ohne sichtbaren Namen | alle in 3 Ansichten | **0** | alle in 6 Ansichten | **0** |
+* **Ein echter Defekt kam dazu.** Im `larszu-facility-planner` war `.marke`
+  zweimal vergeben: der Gebäudename in der Kopfzeile und die Beschriftung
+  eines Punktes auf dem Grundriss. Die zweite Regel steht weiter unten und
+  gewann — der App-Name lag als absolut positioniertes Kästchen über dem
+  Datei-Menü (gemessen: 37 px Überlappung) und nahm wegen
+  `pointer-events: none` keine Klicks an. Die Grundriss-Marke heisst jetzt
+  `.plan-marke`.
+* **Warum das drei Monate niemandem auffiel.** Kein Wächter der Suite sieht
+  einen Knopf. `chrome:parity` misst das MARKUP (welche Menüs, in welcher
+  Folge), `ui:smoke` misst, dass die Suite STARTET. Beide waren auf dieser
+  Oberfläche grün. `bedienbar:check` (neu, suite#231) misst deshalb im
+  echten Browser bei 390/768/1440 px: nichts ragt aus dem Fenster ohne
+  Scrollbereich, kein Bedienpunkt unter 32 px, jedes Eingabefeld hat einen
+  Namen. **Gegenprobe gefahren:** gegen den Stand vor der Änderung meldet er
+  fünf Befunde und geht rot.
+* **DER OFFENE TEIL — dieselbe Sonde, dieselben drei Breiten, 2026-09-13:**
+
+  | App | Bedienpunkte unter 32 px | ragt bei 390 px hinaus | Felder ohne Namen |
+  |---|---:|---:|---:|
+  | `multicam-planner` | 13–23 von 18–30 | 9 Elemente | 0 |
+  | `light-planner` | 23–26 von 52 | 44 Elemente, Rumpf 890 px | 1 |
+  | `cable-planner` | nicht gemessen | nicht gemessen | nicht gemessen |
+
+  Der `cable-planner` fiel aus der Messung, weil sein `dist/` das
+  Electron-Layout trägt (`renderer/index.html` statt einer Wurzel-Datei) —
+  das ist eine Eigenschaft des Laufs und keine Auskunft über die App. Er
+  führt als einziger bereits `mobil:check` und misst damit die Fensterbreite
+  selbst.
+* **Warum die drei nicht in diesem Zug mit erledigt wurden.** suite#231 nennt
+  zwei Module, und ein PR, der still fünf umbaut, ist für den Eigentümer nicht
+  mehr prüfbar. Sie stehen deshalb NICHT in der Liste von `bedienbar:check`:
+  ein Wächter, der auf Vorrat rot ist, wird abgeschaltet — und dann misst er
+  auch die beiden nicht mehr, die er könnte.
+* **Nächster Schritt.** Dieselben Bausteine in `multicam-planner` und
+  `light-planner` einziehen (`--ziel`, das 8-px-Raster, `.block`, `.feld`,
+  Kartenmodus unter 700 px), dann die beiden in `APPS` von
+  `scripts/bedienbar.mjs` nachtragen. Für den `cable-planner` zuerst klären,
+  ob `bedienbar:check` sein `dist/renderer` bedienen soll oder ob
+  `mobil:check` die Frage schon beantwortet.
+
 ### B-72 · Die MITGELIEFERTEN Presets haben keine Herkunft — und der Wächter misst die andere
 
 * **Status:** offen, und der offene Teil ist eine EIGENTÜMER-FRAGE, keine

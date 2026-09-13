@@ -41,6 +41,7 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
 import { ocrHindernisText, sprachdatenDa, tesseractErkenner } from '../lib/belegOcr'
 import { useInventoryStore } from '../domain/store/inventoryStore'
 import { lesen, buchbar, type EingangsEigentum } from '../domain/lib/wareneingang'
@@ -237,7 +238,7 @@ export function Wareneingang() {
                   )
               : t('receiving.allReadable', 'Every line is readable.')}
           </p>
-          <div className="tabelle-rahmen">
+          <TabelleRahmen>
             <table>
               <thead>
                 <tr>
@@ -271,7 +272,7 @@ export function Wareneingang() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TabelleRahmen>
 
           <div className="zeile">
             <label>

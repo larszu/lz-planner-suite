@@ -14,6 +14,7 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo } from 'react'
 import { useT, locale } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
 import { useCheckoutStore } from '../domain/store/checkoutStore'
 import { openCheckouts, overdueCheckouts } from '../domain/lib/containerCheckout'
 
@@ -63,7 +64,7 @@ export function Ausgabescheine() {
           all: records.length,
         })}
       </p>
-      <div className="tabelle-rahmen">
+      <TabelleRahmen>
         <table>
           <thead>
             <tr>
@@ -94,7 +95,7 @@ export function Ausgabescheine() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TabelleRahmen>
     </section>
   )
 }

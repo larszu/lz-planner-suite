@@ -15,6 +15,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
+import { Anlegen, Feld } from './Formular'
 import { bauformText } from './beschriftungen'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { belastbarkeit, einspeisung, ort, verfuegbarkeit } from '../domain/vertrag'
@@ -78,35 +80,43 @@ export function Anschlusspunkte() {
 
   return (
     <section>
-      <div className="leiste">
-        <input
-          value={bezeichnung}
-          onChange={(e) => setBezeichnung(e.target.value)}
-          placeholder={t('points.new.placeholder', 'New connection point')}
-          aria-label={t('points.new.aria', 'Name of the connection point')}
-        />
-        {gebaeude.raeume.length === 0 && (
+      <Anlegen
+        titel={t('points.create.head', 'Add a connection point')}
+        leer={gebaeude.punkte.length === 0}
+        onAbsenden={raumAnlegenUndPunkt}
+      >
+        <Feld name={t('points.new.aria', 'Name of the connection point')}>
           <input
-            value={raumName}
-            onChange={(e) => setRaumName(e.target.value)}
-            placeholder={t('points.room.placeholder', 'Room (created along with it)')}
-            aria-label={t('common.room', 'Room')}
+            value={bezeichnung}
+            onChange={(e) => setBezeichnung(e.target.value)}
+            placeholder={t('points.new.placeholder', 'New connection point')}
           />
+        </Feld>
+        {gebaeude.raeume.length === 0 && (
+          <Feld name={t('common.room', 'Room')}>
+            <input
+              value={raumName}
+              onChange={(e) => setRaumName(e.target.value)}
+              placeholder={t('points.room.placeholder', 'Room (created along with it)')}
+            />
+          </Feld>
         )}
-        <button type="button" onClick={raumAnlegenUndPunkt}>
+        <button type="submit" className="knopf-primaer" disabled={!bezeichnung.trim()}>
           {t('common.add', 'Add')}
         </button>
-      </div>
+      </Anlegen>
 
       {gebaeude.punkte.length === 0 ? (
-        <p className="leer">
-          {t(
-            'points.empty',
-            'No connection point yet. A point is anything the rig draws power from — the feed at the cabinet as much as the outlet in the wall. Both carry the same fields, because a plan needs to know the same things about both.',
-          )}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+              {t(
+                'points.empty',
+                'No connection point yet. A point is anything the rig draws power from — the feed at the cabinet as much as the outlet in the wall. Both carry the same fields, because a plan needs to know the same things about both.',
+              )}
+          </p>
+        </div>
       ) : (
-        <div className="tabelle-rahmen">
+        <TabelleRahmen>
           <table>
             <thead>
               <tr>
@@ -235,7 +245,7 @@ export function Anschlusspunkte() {
               })}
             </tbody>
           </table>
-        </div>
+        </TabelleRahmen>
       )}
     </section>
   )

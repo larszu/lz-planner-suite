@@ -13,6 +13,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
+import { Anlegen, Feld } from './Formular'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { kreisGeschwister } from '../domain/vertrag'
 
@@ -29,72 +31,79 @@ export function Verteilung() {
 
   return (
     <section>
-      <div className="leiste">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('dist.new.placeholder', 'New switchgear cabinet / sub-distribution board')}
-          aria-label={t('dist.new.aria', 'Name of the distribution board')}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            const b = name.trim()
-            if (!b) return
-            const raumId = gebaeude.raeume[0]?.id ?? ''
-            verteilungAnlegen({ bezeichnung: b, raumId, art: 'schaltschrank' })
-            setName('')
-          }}
-        >
+      <Anlegen
+        titel={t('dist.create.head', 'Add a distribution board')}
+        leer={gebaeude.verteilungen.length === 0}
+        onAbsenden={() => {
+          const b = name.trim()
+          if (!b) return
+          const raumId = gebaeude.raeume[0]?.id ?? ''
+          verteilungAnlegen({ bezeichnung: b, raumId, art: 'schaltschrank' })
+          setName('')
+        }}
+      >
+        <Feld name={t('dist.new.aria', 'Name of the distribution board')}>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('dist.new.placeholder', 'New switchgear cabinet / sub-distribution board')}
+          />
+        </Feld>
+        <button type="submit" className="knopf-primaer" disabled={!name.trim()}>
           {t('common.add', 'Add')}
         </button>
-      </div>
+      </Anlegen>
 
       {gebaeude.verteilungen.length > 0 && (
-        <div className="leiste">
-          <input
-            value={kreisName}
-            onChange={(e) => setKreisName(e.target.value)}
-            placeholder={t('dist.circuit.placeholder', 'New circuit')}
-            aria-label={t('dist.circuit.aria', 'Name of the circuit')}
-          />
-          <input
-            value={rcd}
-            onChange={(e) => setRcd(e.target.value)}
-            placeholder={t('dist.rcd.placeholder', 'RCD (empty = not stated)')}
-            aria-label="RCD"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              const b = kreisName.trim()
-              if (!b) return
-              kreisAnlegen({
-                bezeichnung: b,
-                verteilungId: gebaeude.verteilungen[0].id,
-                // Leer heisst „nicht angegeben" und wird nicht zu einer leeren
-                // Zeichenkette: die waere ein RCD mit dem Namen „".
-                ...(rcd.trim() ? { rcdId: rcd.trim() } : {}),
-              })
-              setKreisName('')
-              setRcd('')
-            }}
-          >
+        <Anlegen
+          titel={t('dist.circuit.head', 'Add a circuit')}
+          leer={gebaeude.stromkreise.length === 0}
+          onAbsenden={() => {
+            const b = kreisName.trim()
+            if (!b) return
+            kreisAnlegen({
+              bezeichnung: b,
+              verteilungId: gebaeude.verteilungen[0].id,
+              // Leer heisst „nicht angegeben" und wird nicht zu einer leeren
+              // Zeichenkette: die waere ein RCD mit dem Namen „".
+              ...(rcd.trim() ? { rcdId: rcd.trim() } : {}),
+            })
+            setKreisName('')
+            setRcd('')
+          }}
+        >
+          <Feld name={t('dist.circuit.aria', 'Name of the circuit')}>
+            <input
+              value={kreisName}
+              onChange={(e) => setKreisName(e.target.value)}
+              placeholder={t('dist.circuit.placeholder', 'New circuit')}
+            />
+          </Feld>
+          <Feld name="RCD">
+            <input
+              value={rcd}
+              onChange={(e) => setRcd(e.target.value)}
+              placeholder={t('dist.rcd.placeholder', 'RCD (empty = not stated)')}
+            />
+          </Feld>
+          <button type="submit" className="knopf-primaer" disabled={!kreisName.trim()}>
             {t('dist.circuit.add', 'Add circuit')}
           </button>
-        </div>
+        </Anlegen>
       )}
 
       {gebaeude.verteilungen.length === 0 ? (
-        <p className="leer">
-          {t(
-            'dist.empty',
-            'No distribution board yet. A switchgear cabinet is where the building\'s circuits begin — and the reason why two outlets in different rooms can go dead together.',
-          )}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+            {t(
+              'dist.empty',
+              'No distribution board yet. A switchgear cabinet is where the building\'s circuits begin — and the reason why two outlets in different rooms can go dead together.',
+            )}
+          </p>
+        </div>
       ) : (
         <>
-          <div className="tabelle-rahmen">
+          <TabelleRahmen>
             <table>
               <caption>{t('dist.table.boards', 'Distribution boards')}</caption>
               <thead>
@@ -120,9 +129,9 @@ export function Verteilung() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TabelleRahmen>
 
-          <div className="tabelle-rahmen">
+          <TabelleRahmen>
             <table>
               <caption>{t('dist.table.together', 'What goes dead together?')}</caption>
               <thead>
@@ -161,7 +170,7 @@ export function Verteilung() {
                 })}
               </tbody>
             </table>
-          </div>
+          </TabelleRahmen>
         </>
       )}
     </section>

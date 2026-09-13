@@ -552,8 +552,13 @@ export function App() {
   // dazwischen war nicht mehr zu erkennen.
   const plannerMounted =
     mounted[moduleId] && (!!MODULE_BY_ID[moduleId]?.planner || !!MODULE_BY_ID[moduleId]?.runtime)
-  /** Gibt es auf diesem Modul ueberhaupt eine Bibliotheks-Spalte? */
-  const bibliothekMoeglich = !plannerMounted && moduleId !== 'overview'
+  /** Gibt es auf diesem Modul ueberhaupt eine Bibliotheks-Spalte?
+   *
+   *  `board` steht seit suite#232 mit in der Ausnahme: seine Karten-Liste war
+   *  ohne Funktion und ist weg. Ohne diese Zeile bliebe die Spalte samt
+   *  Reiterzeile und Suchfeld stehen und waere leer — eine leere Spalte sagt
+   *  „hier ist nichts gefunden worden", und das waere gelogen. */
+  const bibliothekMoeglich = !plannerMounted && moduleId !== 'overview' && moduleId !== 'board'
 
   // Adressen der vier Laufzeit-Anwendungen. Bedienungs-Einstellung, kein
   // Projektinhalt -- siehe `shell/runtimeHosts.ts`.

@@ -163,6 +163,20 @@ export const chrome: Record<string, string> = {
   'chrome.runtime.retry': 'Search again',
   'chrome.runtime.changeAddress': 'Change address',
   'chrome.runtime.openNewTab': 'Open in a new tab',
+  // Lokaler Start der vier Laufzeit-Anwendungen (suite#233). Die Saetze sind
+  // ganze Saetze und keine zusammengesetzten Stuecke: die Wortstellung gehoert
+  // zur Sprache, die Platzhalter kommen ueber format().
+  'chrome.runtime.startHere': 'Start it here',
+  'chrome.runtime.repoDir': 'Directory of the {repo} repository',
+  'chrome.runtime.startLocal': 'Start locally',
+  'chrome.runtime.stop': 'Stop',
+  'chrome.runtime.running': 'Running (PID {pid}) — the interface will appear shortly.',
+  'chrome.runtime.exited': 'Exited (code {code}).',
+  'chrome.runtime.startNoPath': 'Please enter the directory of the repository.',
+  'chrome.runtime.startNoDir': 'The directory {dir} does not exist.',
+  'chrome.runtime.startNoRepo': '{file} is missing in {dir} — that is not the {repo} repository.',
+  'chrome.runtime.startWrongRepo': '{dir} holds {found}, but {repo} was expected.',
+  'chrome.runtime.startFailed': 'Start failed: {text}',
   'chrome.settings.runtimes': 'Devices on the network',
   // E-12 — Lexware als eigene Shell-Domaene.
   'chrome.settings.lexware': 'Lexware Office',

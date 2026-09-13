@@ -31,7 +31,7 @@
 import { useState } from 'react'
 import { useT } from '../i18n'
 import { Kopfzeile } from './Kopfzeile'
-import { leeresGebaeude } from '../domain/modell'
+import { leeresGebaeude, type Gebaeude } from '../domain/modell'
 import { leseGebaeude, serialisiereGebaeude } from '../domain/gebaeudeDatei'
 import { Anschlusspunkte } from './Anschlusspunkte'
 import { Verteilung } from './Verteilung'
@@ -69,6 +69,52 @@ const reiterListe = (t: UebersetzFn): { id: Reiter; titel: string; frage: string
   { id: 'maengel', titel: t('tab.defects', 'Defects'), frage: t('tab.defects.q', 'What has somebody from outside reported about this building?') },
 ]
 
+/**
+ * Der Zaehler der Statusleiste — was in DIESER Ansicht gezaehlt wird.
+ *
+ * ADR-007 Abschnitt 6 sagt „Meldungen links · Zaehler rechts" und dazu, was
+ * dort NICHT hingehoert: „Werte, die eine Produktentscheidung waeren — eine
+ * Komplexitaet, eine Ampel, eine Bewertung". Alles hier ist eine Anzahl aus
+ * dem Modell; keine der sieben Zeilen wertet.
+ *
+ * Die Maengel zaehlen nur, WIEVIELE gemeldet wurden — nicht, wieviele davon
+ * noch offen sind. `Mangel` hat kein Feld dafuer (`modell.ts`), und eine Zahl,
+ * die es nicht gibt, wird hier nicht erfunden: „0 offen" waere die Aussage
+ * „alles erledigt", und das weiss niemand.
+ */
+const zaehler = (
+  reiter: Reiter,
+  t: UebersetzFn,
+  format: (s: string, v: Record<string, string | number>) => string,
+  g: Gebaeude,
+): string => {
+  switch (reiter) {
+    case 'grundriss':
+      return format(t('status.floorPlan', '{n} of {all} points located'), {
+        n: g.punkte.filter((p) => p.lage).length,
+        all: g.punkte.length,
+      })
+    case 'verteilung':
+      return format(t('status.distribution', '{n} distributions · {c} circuits'), {
+        n: g.verteilungen.length,
+        c: g.stromkreise.length,
+      })
+    case 'trassen':
+      return format(t('status.routes', '{n} cable routes'), { n: g.trassen.length })
+    case 'schaltstellen':
+      return format(t('status.switchPoints', '{n} switch points'), { n: g.schaltstellen.length })
+    case 'steuerung':
+      return format(t('status.control', '{n} control hooks'), { n: g.klinken.length })
+    case 'maengel':
+      return format(t('status.defects', '{n} defects reported'), { n: g.maengel.length })
+    default:
+      return format(t('status.points', '{n} connection points · {r} rooms'), {
+        n: g.punkte.length,
+        r: g.raeume.length,
+      })
+  }
+}
+
 export function App() {
   const { t, format } = useT()
   const [reiter, setReiter] = useState<Reiter>('punkte')
@@ -85,6 +131,7 @@ export function App() {
   // heraus: der Plan liest, was das Haus erklärt.
   const gebaeude = useGebaeudeStore((s) => s.gebaeude)
   const gebaeudeSetzen = useGebaeudeStore((s) => s.gebaeudeSetzen)
+  const stand = zaehler(reiter, t, format, gebaeude)
   const [dateiFehler, setDateiFehler] = useState<string | null>(null)
 
   const exportieren = (dateiname?: string) => {
@@ -148,27 +195,31 @@ export function App() {
         ))}
       </nav>
 
-      {dateiFehler && <p className="fehler">{dateiFehler}</p>}
-
-      {/* Ein gescheiterter Schreibvorgang steht OBEN und nicht im Protokoll:
-          wer ihn nicht sieht, arbeitet weiter und verliert alles beim
-          nächsten Start. */}
-      {schreibfehler && (
-        <p className="fehler">
-          {/* EIN Schlüssel, ein ganzer Satz: der Grund steht mitten drin, und
-              wo er im Satz steht, gehört zur Sprache. */}
-          {format(
-            t(
-              'file.writeFailed',
-              'The last state could not be saved: {grund}. Whatever has been entered since exists only in this window.',
-            ),
-            { grund: schreibfehler },
-          )}
-        </p>
-      )}
-
-      <p className="frage">{aktiv.frage}</p>
-      <main>
+      {/* Der Inhalt bekommt seine Satzbreite, der Rahmen nicht (suite#231).
+          Vorher trug `.app` beides — und damit endete auch die Kopfzeile bei
+          1100 px, mitten auf dem Bildschirm. */}
+      <main className="inhalt">
+        {/* Die beiden Fehlermeldungen stehen IM Inhalt und nicht zwischen
+            Reitern und Inhalt: dort saessen sie ausserhalb der Satzbreite
+            und begaennen 96 px weiter links als alles, worauf sie sich
+            beziehen. Oben bleiben sie trotzdem — wer einen gescheiterten
+            Schreibvorgang nicht sieht, arbeitet weiter und verliert alles
+            beim naechsten Start. */}
+        {dateiFehler && <p className="fehler">{dateiFehler}</p>}
+        {schreibfehler && (
+          <p className="fehler">
+            {/* EIN Schlüssel, ein ganzer Satz: der Grund steht mitten drin,
+                und wo er im Satz steht, gehört zur Sprache. */}
+            {format(
+              t(
+                'file.writeFailed',
+                'The last state could not be saved: {grund}. Whatever has been entered since exists only in this window.',
+              ),
+              { grund: schreibfehler },
+            )}
+          </p>
+        )}
+        <p className="frage">{aktiv.frage}</p>
         {reiter === 'punkte' && <Anschlusspunkte />}
         {reiter === 'grundriss' && <Grundriss />}
         {reiter === 'verteilung' && <Verteilung />}
@@ -177,6 +228,12 @@ export function App() {
         {reiter === 'steuerung' && <Steuerung />}
         {reiter === 'maengel' && <Maengel />}
       </main>
+      {/* Die Statusleiste des Rahmens (ADR-007 Abschnitt 6). Links steht,
+          welche Frage gerade offen ist, rechts ihre Zahl. */}
+      <footer className="statusleiste">
+        <span>{aktiv.titel}</span>
+        <span className="rechts">{stand}</span>
+      </footer>
     </div>
   )
 }

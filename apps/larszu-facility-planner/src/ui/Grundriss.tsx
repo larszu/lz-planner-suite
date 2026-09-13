@@ -33,6 +33,7 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useRef, useState } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
 import { bauformText } from './beschriftungen'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { punkteMitLage } from '../domain/gebaeudeAuskunft'
@@ -102,12 +103,14 @@ export function Grundriss() {
   if (gebaeude.raeume.length === 0) {
     return (
       <section>
-        <p className="leer">
-          {t(
-            'plan.noRoom',
-            'No room created yet. A floor plan belongs to a room — create one under "Connection points" first.',
-          )}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+            {t(
+              'plan.noRoom',
+              'No room created yet. A floor plan belongs to a room — create one under "Connection points" first.',
+            )}
+          </p>
+        </div>
       </section>
     )
   }
@@ -178,12 +181,14 @@ export function Grundriss() {
       </div>
 
       {!setzbar && (
-        <p className="leer">
-          {t(
-            'plan.noScale',
-            'Without a scale nothing is placed. A click in the image is a fraction of an image width; only "metres per image width" turns that into a length. A number guessed here would look in the plan like a statement of the building.',
-          )}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+            {t(
+              'plan.noScale',
+              'Without a scale nothing is placed. A click in the image is a fraction of an image width; only "metres per image width" turns that into a length. A number guessed here would look in the plan like a statement of the building.',
+            )}
+          </p>
+        </div>
       )}
 
       <div
@@ -199,6 +204,15 @@ export function Grundriss() {
           />
         ) : (
           <p className="leer">
+            {/* Kein `.leer-flaeche` wie sonst: dieser Satz steht IM Plan-Feld,
+                und das ist die Flaeche. Ein zweiter gestrichelter Rahmen
+                darin waere ein Kasten im Kasten.
+
+                Als JSX-Kommentar INNERHALB des Elements: `lang:check` liest
+                den Text zwischen einem schliessenden und dem naechsten
+                oeffnenden Zeichen als Oberflaeche, und ein deutscher
+                Kommentar davor faellt dort als Fallback in der falschen
+                Sprache auf. */}
             {grundriss?.quelle
               ? t(
                   'plan.image.missing',
@@ -220,7 +234,14 @@ export function Grundriss() {
           return (
             <span
               key={p.id}
-              className={p.id === gewaehlt ? 'marke gewaehlt' : 'marke'}
+              // `plan-marke` und nicht `marke`: denselben Namen trug der
+              // Gebaeudename in der Kopfzeile (`Kopfzeile.tsx`), und diese
+              // Regel hier steht im Stilblatt WEITER UNTEN. Sie gewann
+              // damit und machte den App-Namen zu einem absolut
+              // positionierten, umrandeten Kaestchen, das ueber dem
+              // Datei-Menue lag und keine Klicks annahm (`pointer-events:
+              // none`). Gemessen auf 1440 px: 37 px Ueberlappung.
+              className={p.id === gewaehlt ? 'plan-marke gewaehlt' : 'plan-marke'}
               style={{ left: `${links * 100}%`, top: `${oben * 100}%` }}
               title={format(t('plan.marker.title', '{name} — {x} m / {y} m'), {
                 name: p.bezeichnung,
@@ -234,7 +255,7 @@ export function Grundriss() {
         })}
       </div>
 
-      <div className="tabelle-rahmen">
+      <TabelleRahmen>
         <table>
           <caption>
             {t(
@@ -299,16 +320,18 @@ export function Grundriss() {
             ))}
           </tbody>
         </table>
-      </div>
+      </TabelleRahmen>
 
       {ohneLage.length > 0 && setzbar && (
-        <p className="leer">
-          {ohneLage.length === punkteDesRaums.length
-            ? t('plan.hint.pickFirst', 'Choose a point above and click into the field to place it.')
-            : format(t('plan.hint.without', 'Still without a position: {namen}.'), {
-                namen: ohneLage.map((p) => p.bezeichnung).join(', '),
-              })}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+            {ohneLage.length === punkteDesRaums.length
+              ? t('plan.hint.pickFirst', 'Choose a point above and click into the field to place it.')
+              : format(t('plan.hint.without', 'Still without a position: {namen}.'), {
+                  namen: ohneLage.map((p) => p.bezeichnung).join(', '),
+                })}
+          </p>
+        </div>
       )}
     </section>
   )

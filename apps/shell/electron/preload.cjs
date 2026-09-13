@@ -44,6 +44,22 @@ contextBridge.exposeInMainWorld('__suiteTally', {
 
 // Projekte als Dateien (B-39.3). Wie der Tally-Weg an keine Betriebsart
 // gebunden: die Frage "wo liegt meine Show" stellt sich in beiden.
+// Die vier Laufzeit-Anwendungen lokal starten (suite#233). Diese Bruecke gibt
+// es NUR im Electron-Host — im Browser-Bau (Pages, dev server) fehlt sie, und
+// die Oberflaeche zeigt den Knopf dann gar nicht erst. Ein Knopf, der im Web
+// nichts tun kann, waere eine Attrappe.
+contextBridge.exposeInMainWorld('__suiteRuntime', {
+  start: (id, verzeichnis) => ipcRenderer.invoke('suiteHost:runtime:start', id, verzeichnis),
+  stop: (id) => ipcRenderer.invoke('suiteHost:runtime:stop', id),
+  state: (id) => ipcRenderer.invoke('suiteHost:runtime:state', id),
+  check: (id, verzeichnis) => ipcRenderer.invoke('suiteHost:runtime:check', id, verzeichnis),
+  onZustand: (fn) => {
+    const h = (_e, id, zustand) => fn(id, zustand)
+    ipcRenderer.on('suiteHost:runtime:zustand', h)
+    return () => ipcRenderer.removeListener('suiteHost:runtime:zustand', h)
+  },
+})
+
 contextBridge.exposeInMainWorld('__suiteProjectFiles', {
   save: (args) => ipcRenderer.invoke('suiteHost:project:save', args),
   open: () => ipcRenderer.invoke('suiteHost:project:open'),

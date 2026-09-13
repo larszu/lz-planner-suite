@@ -57,7 +57,39 @@ const menuButton = (label: string, icon: Parameters<typeof Icon>[0]['name']) => 
   </>
 )
 
-export function BoardCanvas({ seed, title: titleProp }: { seed: Board; title?: string }) {
+export function BoardCanvas({
+  seed,
+  title: titleProp,
+  onChange,
+}: {
+  seed: Board
+  title?: string
+  /**
+   * Das geaenderte Board zurueck an die Shell.
+   *
+   * ─── WARUM ES DAS GEBEN MUSS ────────────────────────────────────────────
+   *
+   * NUTZER-MELDUNG 2026-09-12: „Verbessere die UI von dem Board in AV Planner.
+   * Da sind nicht annaehernd alle Funktionen, die in den Docs beschrieben
+   * sind."
+   *
+   * GEMESSEN: die Funktionen SIND da — neun Kartenarten, Spalten,
+   * Unterboards, Verbindungen, drei Vorlagen, Suche, Markdown- und
+   * PDF-Ausgabe. Nur hielt diese Komponente ihren ganzen Baum in `useState`
+   * und gab ihn nie heraus. Damit:
+   *
+   *   * war jede Karte beim naechsten Tab-Wechsel weg (die Komponente wird
+   *     ausgehaengt, der Zustand mit ihr),
+   *   * zeigte die Statusleiste unten weiter „0 Karten" — sie liest
+   *     `project.show.board`, und dort stand der Ausgangswert,
+   *   * zeigte die Eigenschaften-Leiste rechts dieselbe Null,
+   *   * und das gespeicherte Projekt trug nichts davon.
+   *
+   * Eine Arbeitsflaeche, die ihre Arbeit vergisst, sieht aus wie eine
+   * Arbeitsflaeche ohne Funktionen. Das war der Befund.
+   */
+  onChange?: (board: Board) => void
+}) {
   const t = useT()
   const title = titleProp ?? t('board.title', 'Kreativ-Board')
   const CARD_META = cardMeta(t)
@@ -83,6 +115,40 @@ export function BoardCanvas({ seed, title: titleProp }: { seed: Board; title?: s
   const crumbs = useMemo(() => crumbTitles(root, path, title), [root, path, title])
 
   const mutate = useCallback((fn: (b: Board) => Board) => setRoot((r) => updateBoardAtPath(r, path, fn)), [path])
+
+  // ─── DAS BOARD WANDERT INS PROJEKT ──────────────────────────────────────
+  //
+  // Gesammelt statt sofort: `updateShow` in der Shell legt jeden Aufruf in
+  // die Projekt-Historie. Ohne die Sammelfrist haette das Ziehen EINER Karte
+  // ueber die Flaeche ein paar Dutzend Undo-Schritte hinterlassen, und der
+  // erste Strg+Z haette die Karte um drei Pixel zurueckgeschoben.
+  //
+  // Zurueckgeschrieben wird nur, was sich WIRKLICH geaendert hat — gemessen
+  // am Inhalt, nicht an der Zahl der Durchlaeufe.
+  //
+  // Der erste Anlauf zaehlte Durchlaeufe („beim ersten nichts tun") und ging
+  // schief, und zwar sichtbar: im Entwicklungsmodus haengt React jeden Effekt
+  // einmal aus und wieder ein. Beim zweiten Einhaengen stand der Zaehler
+  // schon auf „nicht mehr der erste", der Effekt schrieb den unveraenderten
+  // Ausgangswert zurueck — und die Kopfzeile sprang auf „Ungespeichert",
+  // sobald jemand den Board-Reiter auch nur ansah. Gemessen im Browser am
+  // 2026-09-13.
+  //
+  // Ein Inhaltsvergleich kennt diesen Unterschied nicht: derselbe Inhalt
+  // schreibt nicht, egal wie oft der Effekt laeuft. Er kostet ein
+  // JSON.stringify je Aenderung auf einem Baum, der in eine Projektdatei
+  // passt — das faellt gegen die 500-ms-Sammelfrist nicht ins Gewicht.
+  const zuletztGeschrieben = useRef<string>(JSON.stringify(seed))
+  useEffect(() => {
+    if (!onChange) return
+    const jetzt = JSON.stringify(root)
+    if (jetzt === zuletztGeschrieben.current) return
+    const uhr = setTimeout(() => {
+      zuletztGeschrieben.current = jetzt
+      onChange(root)
+    }, 500)
+    return () => clearTimeout(uhr)
+  }, [root, onChange, seed])
 
   const toBoard = useCallback((clientX: number, clientY: number): Point => {
     const rect = boardRef.current?.getBoundingClientRect()

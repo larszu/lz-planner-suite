@@ -14,6 +14,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
+import { Anlegen, Feld } from './Formular'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 import { steuerklinken } from '../domain/vertrag'
 import { adresseMehrdeutig } from '../domain/gebaeudeAuskunft'
@@ -42,83 +44,78 @@ export function Steuerung() {
 
   return (
     <section>
-      <div className="leiste">
-        <select
-          value={system}
-          onChange={(e) => setSystem(e.target.value as Steuersystem)}
-          aria-label={t('control.system', 'System')}
-        >
-          {SYSTEME.map((s) => (
-            <option key={s} value={s}>
-              {s.toUpperCase()}
-            </option>
-          ))}
-        </select>
-        <input
-          value={adresse}
-          onChange={(e) => setAdresse(e.target.value)}
-          placeholder={t('control.address', 'Address')}
-          aria-label={t('control.address', 'Address')}
-        />
-        {brauchtAdressart && (
-          <select
-            value={adressart}
-            onChange={(e) => setAdressart(e.target.value as Adressart)}
-            aria-label={t('control.addressKind', 'Address kind')}
-          >
-            {/* Die Kennungen `kurz`/`gruppe`/`broadcast` bleiben, was sie
-                sind — Werte im Datensatz. Übersetzt wird, was davor steht. */}
-            <option value="kurz">{t('control.kind.short', 'Short address — one ballast')}</option>
-            <option value="gruppe">{t('control.kind.group', 'Group — everything in this group')}</option>
-            <option value="broadcast">{t('control.kind.broadcast', 'Broadcast — EVERYTHING on the bus')}</option>
+      <Anlegen
+        titel={t('control.create.head', 'Release a control hook')}
+        leer={gebaeude.klinken.length === 0}
+        onAbsenden={() => {
+          const a = adresse.trim()
+          const b = bedeutung.trim()
+          // Beides verlangt: eine Adresse ohne Bedeutung ist eine Nummer,
+          // die jemand schaltet, ohne zu wissen, was passiert.
+          if (!a || !b) return
+          klinkeAnlegen({
+            system,
+            adresse: a,
+            richtung,
+            bedeutung: b,
+            ...(brauchtAdressart ? { adressart } : {}),
+          })
+          setAdresse('')
+          setBedeutung('')
+        }}
+      >
+        <Feld name={t('control.system', 'System')} schmal>
+          <select value={system} onChange={(e) => setSystem(e.target.value as Steuersystem)}>
+            {SYSTEME.map((s) => (
+              <option key={s} value={s}>
+                {s.toUpperCase()}
+              </option>
+            ))}
           </select>
+        </Feld>
+        <Feld name={t('control.address', 'Address')} schmal>
+          <input value={adresse} onChange={(e) => setAdresse(e.target.value)} />
+        </Feld>
+        {brauchtAdressart && (
+          <Feld name={t('control.addressKind', 'Address kind')}>
+            <select value={adressart} onChange={(e) => setAdressart(e.target.value as Adressart)}>
+              {/* Die Kennungen `kurz`/`gruppe`/`broadcast` bleiben, was sie
+                  sind — Werte im Datensatz. Übersetzt wird, was davor steht. */}
+              <option value="kurz">{t('control.kind.short', 'Short address — one ballast')}</option>
+              <option value="gruppe">{t('control.kind.group', 'Group — everything in this group')}</option>
+              <option value="broadcast">{t('control.kind.broadcast', 'Broadcast — EVERYTHING on the bus')}</option>
+            </select>
+          </Feld>
         )}
-        <select
-          value={richtung}
-          onChange={(e) => setRichtung(e.target.value as 'lesen' | 'schalten')}
-          aria-label={t('control.direction', 'Direction')}
-        >
-          <option value="schalten">{t('control.direction.write', 'switch')}</option>
-          <option value="lesen">{t('control.direction.read', 'read')}</option>
-        </select>
-        <input
-          value={bedeutung}
-          onChange={(e) => setBedeutung(e.target.value)}
-          placeholder={t('control.meaning.placeholder', 'What happens when it is used')}
-          aria-label={t('control.meaning', 'Meaning')}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            const a = adresse.trim()
-            const b = bedeutung.trim()
-            // Beides verlangt: eine Adresse ohne Bedeutung ist eine Nummer,
-            // die jemand schaltet, ohne zu wissen, was passiert.
-            if (!a || !b) return
-            klinkeAnlegen({
-              system,
-              adresse: a,
-              richtung,
-              bedeutung: b,
-              ...(brauchtAdressart ? { adressart } : {}),
-            })
-            setAdresse('')
-            setBedeutung('')
-          }}
-        >
+        <Feld name={t('control.direction', 'Direction')} schmal>
+          <select value={richtung} onChange={(e) => setRichtung(e.target.value as 'lesen' | 'schalten')}>
+            <option value="schalten">{t('control.direction.write', 'switch')}</option>
+            <option value="lesen">{t('control.direction.read', 'read')}</option>
+          </select>
+        </Feld>
+        <Feld name={t('control.meaning', 'Meaning')}>
+          <input
+            value={bedeutung}
+            onChange={(e) => setBedeutung(e.target.value)}
+            placeholder={t('control.meaning.placeholder', 'What happens when it is used')}
+          />
+        </Feld>
+        <button type="submit" className="knopf-primaer" disabled={!adresse.trim() || !bedeutung.trim()}>
           {t('control.release', 'Release')}
         </button>
-      </div>
+      </Anlegen>
 
       {klinken.length === 0 ? (
-        <p className="leer">
-          {t(
-            'control.empty',
-            'No hook released. As long as nothing stands here, the show must not address the building control — and that is the right default: an address nobody has described is not a release.',
-          )}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+            {t(
+              'control.empty',
+              'No hook released. As long as nothing stands here, the show must not address the building control — and that is the right default: an address nobody has described is not a release.',
+            )}
+          </p>
+        </div>
       ) : (
-        <div className="tabelle-rahmen">
+        <TabelleRahmen>
           <table>
             <caption>
               {t(
@@ -166,7 +163,7 @@ export function Steuerung() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TabelleRahmen>
       )}
     </section>
   )

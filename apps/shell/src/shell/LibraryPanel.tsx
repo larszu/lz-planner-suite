@@ -16,8 +16,6 @@ interface LibGroup {
   entries: LibEntry[]
 }
 
-const cardLabel = (type: string, t: TFunc): string => t(`panels.lib.board.type.${type}`, type)
-
 /**
  * Bibliothek aus den *echten* Projektdaten des aktiven Moduls ableiten — keine
  * erfundenen Katalog-Einträge mehr. Einträge mit `id` sind wählbar und treiben
@@ -40,14 +38,22 @@ const deriveGroups = (module: ModuleId, project: SuiteProject | null, t: TFunc):
       return [
         { group: t('panels.lib.licht.title', 'Fixtures'), entries: project.fixtures.map((f) => ({ id: f.id, name: f.name, sub: join(f.model, f.purpose) })) },
       ].filter((g) => g.entries.length > 0)
-    case 'board':
-      return [
-        { group: t('panels.lib.board.cards', 'Karten'), entries: project.show.board.cards.map((c) => ({
-          id: c.id,
-          name: c.title || c.text?.slice(0, 40) || cardLabel(c.type, t),
-          sub: cardLabel(c.type, t),
-        })) },
-      ].filter((g) => g.entries.length > 0)
+    // ─── DAS BOARD HAT KEINE BIBLIOTHEK MEHR ─────────────────────────────
+    //
+    // NUTZER-MELDUNG (suite#232): „Die linke Seitenleiste mit den ‚Karten‘ ist
+    // ohne Funktion und kann entfernt werden."
+    //
+    // Zutreffend, und zwar aus zwei Gruenden gleichzeitig. Sie las
+    // `project.show.board` — und das BoardCanvas schrieb dorthin nie zurueck,
+    // also stand da immer der Ausgangswert und nie das, was auf der Flaeche
+    // lag. Und ihr Klick setzte die Auswahl der Shell, die das BoardCanvas
+    // nicht liest: es fuehrt seine eigene.
+    //
+    // Das Zurueckschreiben ist mit derselben Aenderung repariert. Diese Liste
+    // bleibt trotzdem draussen: sie waere dann eine zweite, schlechtere Sicht
+    // auf dieselben Karten, direkt neben der Flaeche, auf der sie liegen.
+    // Was sie sonst noch anbot, steht laengst dort — die Vorlagen im
+    // Vorlagen-Menue, das Suchen im Suchfeld der Werkzeugleiste.
     default:
       return []
   }

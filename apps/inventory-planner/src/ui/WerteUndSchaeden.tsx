@@ -95,6 +95,7 @@ import type { Frist, FristArt } from '../domain/types/inventory'
 import { EINGEBAUTE_FRIST_ARTEN } from '../domain/types/inventory'
 import { toCsv, type CsvTable } from '../lib/csv'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
 
 /** Eine Tabelle als CSV herunterladen. Vier Knöpfe brauchen dasselbe. */
 const csvLaden = (tabelle: CsvTable, name: string) => {
@@ -287,7 +288,7 @@ export function WerteUndSchaeden() {
                 })}
               </p>
             ) : (
-              <div className="tabelle-rahmen">
+              <TabelleRahmen>
                 <table>
                   <thead>
                     <tr>
@@ -347,7 +348,7 @@ export function WerteUndSchaeden() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TabelleRahmen>
             )}
 
             {/* ── Frist eintragen ─────────────────────────────────────── */}

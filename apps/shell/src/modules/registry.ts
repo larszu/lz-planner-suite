@@ -147,7 +147,13 @@ export const MODULES: ModuleDef[] = [
     hotkey: '7',
     accent: 'var(--mod-board)',
     dataModule: 'board',
-    libraryTabs: ['Karten', 'Vorlagen'],
+    // Keine Bibliotheks-Reiter mehr (suite#232). Hier standen „Karten" und
+    // „Vorlagen": die Karten-Liste war eine tote Zweitsicht, und einen
+    // Vorlagen-Reiter gab es nie — die Vorlagen sitzen im Vorlagen-Menue der
+    // Board-Werkzeugleiste. Ein Versprechen in der Registry, das die
+    // Oberflaeche nicht einloest, ist genau die Form, die suite#100 schon
+    // einmal fuer die Tab-Leiste ausgeraeumt hat.
+    libraryTabs: [],
     eyebrow: 'Board · Kreativ',
   },
 ]

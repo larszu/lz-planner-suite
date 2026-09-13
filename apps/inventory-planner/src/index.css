@@ -34,18 +34,96 @@
   --signal: #D6402E;                    /* Tally-Rot — Fokusring, laufender Vorgang */
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 14px;
+
+  /* ── Das Bedien-Grundmass (suite#231) ────────────────────────────────
+   *
+   * `--ziel` ist die Mindesthoehe eines Bedienpunkts. 32 px und nicht die
+   * 24, die vorher an sieben Stellen einzeln standen: 24 px ist die UNTERE
+   * Schranke aus WCAG 2.2 SC 2.5.8 („Target Size (Minimum)"), 44 px die
+   * Empfehlung aus SC 2.5.5. Wer im Lager steht, hat ein Tablet in der einen
+   * und ein Kabel in der anderen Hand; dort ist die Empfehlung naeher an der
+   * Wahrheit als die Schranke. 32 liegt auf dem 8-px-Raster und ist dieselbe
+   * Zahl, mit der in ADR-007 eine eingeklappte Spalte stehenbleibt — zwei
+   * Masse fuer dasselbe waeren eines zuviel.
+   *
+   * Gemessen VOR dieser Aenderung, im Browser auf 1440 px: 14 Bedienpunkte
+   * unter 32 px im Lager, 13 im Gebaeude. `ui:check` misst es nach.
+   *
+   * Daneben das 8-px-Raster aus ADR-007 Abschnitt 3. Vorher rechnete jede
+   * Ansicht in `rem` mit eigenen Zwischenschritten (0.2 / 0.25 / 0.35 / 0.6
+   * / 0.75 / 0.9) — sieben Abstaende, die keiner Regel folgten und sich
+   * zwischen zwei Ansichten um zwei Pixel unterschieden. */
+  --ziel: 32px;
+  --steg-1: 4px;
+  --steg-2: 8px;
+  --steg-3: 12px;
+  --steg-4: 16px;
+  --steg-5: 24px;
+  --steg-6: 32px;
+}
+
+/* `border-box` fehlte in diesem Stilblatt ganz — und das war kein
+ * Schoenheitsfehler, sondern der Grund fuer einen gemessenen Ueberlauf:
+ * `.inhalt` traegt `width: 100%` UND eine Polsterung, und im
+ * Vorgabe-Kastenmodell addiert der Browser beides. In einem 1100-px-Fenster
+ * war der Inhalt 1132 px breit, und die Seite liess sich seitlich schieben.
+ *
+ * Als `*`-Regel und nicht an den betroffenen Stellen: die naechste Klasse
+ * mit Polsterung und Breite entsteht sonst mit demselben Fehler. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
+  /* Waagerecht wird in dieser App nie die SEITE geschoben, sondern immer nur
+     ein Bereich, der es ausdruecklich darf (`.tabelle-rahmen`,
+     `.reiter-leiste`). Das ist die Zusage, die `ui:check` misst. */
+  overflow-x: hidden;
 }
 
+/* Die App ist eine SPALTE ueber die volle Fensterhoehe und kein zentriertes
+ * Blatt mehr (suite#231).
+ *
+ * Hier stand `max-width: 1100px; margin: 0 auto; padding: 1rem` — und damit
+ * war die ganze Anwendung ein Dokument: Kopfzeile, Reiter und Inhalt
+ * schwammen als ein Block in der Mitte, die Kopflinie endete mitten im Bild,
+ * und unten stand nichts. Gemessen auf 1440 px lief die Kopfzeile bis
+ * 1270 px und hoerte dann auf, obwohl der Bildschirm weiterging.
+ *
+ * Jetzt traegt die Spalte den Rahmen aus ADR-007 Abschnitt 6 — Kopfzeile
+ * oben, Reiter darunter, Arbeitsflaeche dazwischen, Statusleiste unten — und
+ * nur der INHALT bekommt seine Satzbreite (`.inhalt`). Das ist der
+ * Unterschied zwischen einem Fenster und einem Blatt Papier.
+ *
+ * `100dvh` und nicht `100vh`: auf dem Telefon ist die Adresszeile mal da und
+ * mal weg, und `vh` rechnet immer mit dem grossen Zustand — die Statusleiste
+ * laege dann unter dem Bildschirmrand. */
 .app {
-  max-width: 1100px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Die Satzbreite gilt fuer den Inhalt, nicht fuer den Rahmen. 1280 px ist die
+ * Obergrenze aus ADR-007 Abschnitt 3. */
+.inhalt {
+  flex: 1;
+  width: 100%;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--steg-3) var(--steg-4) var(--steg-6);
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .inhalt {
+    padding: var(--steg-2) var(--steg-2) var(--steg-5);
+  }
 }
 
 /* ── Kopfzeile, Menue, Einstellungen ─────────────────────────────────────
@@ -88,7 +166,10 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 24px;
+  /* `--ziel` wie ueberall sonst. 24 px stand hier als eigene Zahl und machte
+     den Einstellungen-Knopf zum kleinsten Bedienpunkt der Kopfzeile. Die
+     40 px der Zeile bleiben davon unberuehrt — 32 passt hinein. */
+  min-height: var(--ziel);
   padding: 0 8px;
   background: var(--erhoben);
   border: 1px solid transparent;
@@ -111,7 +192,7 @@ body {
   border: none;
   color: var(--text);
   padding: 0 8px;
-  min-height: 28px;
+  min-height: var(--ziel);
   cursor: pointer;
   font: inherit;
 }
@@ -137,24 +218,15 @@ body {
   border: none;
   color: var(--text);
   text-align: left;
-  padding: 6px 12px;
-  min-height: 28px;
+  padding: 0 12px;
+  min-height: var(--ziel);
   cursor: pointer;
   font: inherit;
 }
 
 .menue-punkt:hover:not(:disabled) { background: var(--erhoben); }
 .menue-punkt:disabled { color: var(--leise); cursor: not-allowed; }
-.menue-trenner { height: 1px; margin: 4px 0; background: var(--rand); }
-
-.reiter-leiste {
-  display: flex;
-  gap: 4px;
-  padding: 6px 12px 0;
-  border-bottom: 1px solid var(--rand);
-}
-
-.versteckt { display: none; }
+.menue-trenner { height: 1px; margin: 4px 0; background: var(--rand); }.versteckt { display: none; }
 
 /* Dialoge sind FLAECHEN, keine Karten: kein Radius, kein Schatten,
  * Kopflinie oben, Aktionen unten rechts (ADR-007 Abschnitt 6). */
@@ -197,8 +269,11 @@ body {
   color: var(--leise);
   font-size: 1.2rem;
   line-height: 1;
-  min-width: 24px;
-  min-height: 24px;
+  /* `--ziel` und nicht 24 px: das Kreuz ist der Knopf, den jemand mit dem
+     Daumen sucht, waehrend er den Dialog schon nicht mehr will. Es war der
+     kleinste Bedienpunkt der ganzen App. */
+  min-width: var(--ziel);
+  min-height: var(--ziel);
   cursor: pointer;
 }
 
@@ -220,15 +295,14 @@ body {
   background: var(--erhoben);
   border: 1px solid var(--rand);
   color: var(--text);
-  padding: 4px 12px;
-  min-height: 28px;
+  padding: 0 var(--steg-3);
+  min-height: var(--ziel);
   cursor: pointer;
   font: inherit;
 }
 
 .wahl { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; cursor: pointer; }
 .wahl em { display: block; font-style: normal; font-size: 0.8rem; color: var(--leise); }
-.leise { color: var(--leise); margin: 2px 0; }
 
 /* ── Helles Thema ────────────────────────────────────────────────────────
  *
@@ -259,67 +333,374 @@ body {
     --text: #132040;
     --leise: #5A6B82;
   }
+}/* ═══════════════════════════════════════════════════════════════════════════
+ * DIE BEDIEN-BAUSTEINE (suite#231)
+ *
+ * DER BEFUND, DER DIESEN ABSCHNITT NOETIG MACHT. Bis hierher gab es keine
+ * gemeinsamen Bausteine, sondern VIER Kopien derselben fuenf Formen, je eine
+ * pro Ansicht mit eigenem Praefix:
+ *
+ *   `.block`      4x  (`.inventur .schritt`, `.eingang .block`,
+ *                      `.bericht .block`, `.werte .block`)
+ *   `.zeile`      4x  (`.inventur`, `.eingang`, `.bericht`, `.werte`)
+ *   `label`       4x  — dieselben vier
+ *   Bedienpunkte  4x  (`input`/`select`/`button`, jedes Mal mit `min-height:
+ *                      24px` neu hingeschrieben)
+ *   `.kachel`     2x  (`.bericht`, `.werte`)
+ *
+ * Das Stilblatt sagte es selbst und tat es trotzdem: ueber `.eingang` stand
+ * „Erbt die Bloecke der Bericht-Ansicht" und ueber `.werte` dasselbe — beide
+ * erbten nichts, sie waren Abschriften. Und ueber `.werte .kennzahlen` stand
+ * offen „die Regeln dafuer erbt `.werte` ueber `.kennzahlen`/`.kachel`
+ * nicht, also stehen sie hier".
+ *
+ * DIE FOLGE WAR NICHT DRIFT, SONDERN EIN LOCH. Vier Ansichten hatten ein
+ * Praefix — `Inventur`, `Wareneingang`, `Bericht`, `Werte & Schaeden`. Die
+ * uebrigen DREI hatten keines: `Bestand`, `Ausgabescheine`, `Sub-Hire`. Sie
+ * bekamen damit nichts von alledem: keine Bloecke, keine Feldzeilen, keine
+ * Beschriftungen, keine Kacheln. Uebrig blieb ein Stapel nackter
+ * Browser-Felder — und `Bestand` ist die Ansicht, die beim Start offen ist.
+ *
+ * Nutzer-Meldung (suite#231): „aktuell ist die Ui so schlecht das beide
+ * module unbrauchbar sind."
+ *
+ * Die Bausteine stehen deshalb jetzt EINMAL und ohne Praefix. Was eine
+ * Ansicht wirklich nur fuer sich braucht, steht weiter unten unter ihrem
+ * Namen — und das ist danach wenig.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Reiter ──────────────────────────────────────────────────────────────
+ *
+ * Die Leiste SCROLLT waagerecht, statt aus dem Fenster zu laufen. Gemessen
+ * auf 390 px: der Rumpf war 587 px breit, drei Reiter standen jenseits des
+ * Randes, und die ganze Seite liess sich seitlich schieben. Das ist derselbe
+ * Fehler, den `mobil:check` im Cable-Planner seit B-44 Teil 3 verbietet —
+ * nur hatte ihn hier niemand gemessen.
+ *
+ * `flex: none` an den Knoepfen ist der Punkt: ohne das schrumpfen sie
+ * stattdessen, und dann steht „Checkout notes" zweizeilig in 60 px. */
+.reiter-leiste {
+  display: flex;
+  gap: var(--steg-1);
+  padding: var(--steg-2) var(--steg-3) 0;
+  border-bottom: 1px solid var(--rand);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  flex: none;
 }
 
 .reiter {
   background: none;
   border: 1px solid transparent;
+  border-bottom: none;
   color: var(--leise);
-  padding: 0.25rem 0.75rem;
+  padding: 0 var(--steg-3);
+  min-height: var(--ziel);
+  white-space: nowrap;
+  flex: none;
   cursor: pointer;
+  font: inherit;
 }
+
+.reiter:hover { color: var(--text); }
 
 .reiter.aktiv {
   /* Der gewaehlte Reiter ist die erhobene Flaeche, nicht dieselbe wie die
-     Karten darunter — sonst haette „hier bin ich" keine eigene Stufe und
+     Bloecke darunter — sonst haette „hier bin ich" keine eigene Stufe und
      `--erhoben` waere ein Token, das niemand benutzt. */
   background: var(--erhoben);
   border-color: var(--rand);
   color: var(--text);
 }
 
+/* Die Frage des Reiters — „Was ist da, wieviel, und wo liegt es?". Sie ist
+   die Ueberschrift der Ansicht und stand vorher als grauer Absatz ohne
+   Gewicht darunter. */
 .frage {
   color: var(--leise);
-  margin: 0.5rem 0 1rem;
+  margin: 0 0 var(--steg-4);
+  font-size: 0.95rem;
 }
 
-.leiste {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-}
-
+/* ── Bedienpunkte ────────────────────────────────────────────────────────
+ *
+ * EINE Regel fuer alle vier Arten, und sie traegt `--ziel`. Vorher stand
+ * `min-height: 24px` viermal einzeln und fuer `.leiste` gar nicht — dort
+ * hatte das Feld die Hoehe, die der Browser ihm gab (gemessen: 25 px). */
 input,
 select,
-button {
+button,
+textarea {
   background: var(--flaeche);
   border: 1px solid var(--rand);
   color: var(--text);
-  padding: 0.25rem 0.5rem;
+  padding: 0 var(--steg-2);
+  min-height: var(--ziel);
   font: inherit;
+  max-width: 100%;
+}
+
+textarea {
+  padding: var(--steg-2);
+  line-height: 1.45;
 }
 
 button {
+  padding: 0 var(--steg-3);
   cursor: pointer;
+}
+
+button:hover:not(:disabled) { background: var(--erhoben); }
+
+button:disabled {
+  color: var(--leise);
+  cursor: default;
 }
 
 button.still {
   background: none;
+  border-color: transparent;
   color: var(--leise);
 }
 
-.schmal {
-  width: 5rem;
+button.still:hover { border-color: var(--rand); color: var(--text); }
+
+/* Der Primaerknopf traegt den roten Punkt aus ADR-007 Abschnitt 4 — er macht
+   sichtbar, WELCHER der eine ist. Der Punkt ist eckig: „der Tally-Punkt ist
+   der Satzpunkt der Hausschrift, kein Kreis" (Abschnitt 3). */
+.knopf-primaer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--steg-2);
+  background: var(--erhoben);
+  border-color: var(--rand);
+  color: var(--text);
+  font-weight: 600;
 }
 
-/* Breite Inhalte scrollen in ihrem eigenen Bereich statt die Seite zu
-   sprengen — dieselbe Regel wie im Cable-Planner (B-44 Teil 3). */
-.tabelle-rahmen {
-  overflow-x: auto;
+.knopf-primaer::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--signal);
+  flex: none;
+}
+
+.knopf-primaer:disabled::before { background: var(--leise); }
+
+/* Sichtbarer Fokus auf jedem Bedienpunkt. Vorher gab es nur den Ring des
+   Browsers, und der ist auf der dunklen Flaeche kaum zu sehen. */
+:where(input, select, button, textarea, a):focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+
+/* ── Block: die Flaeche mit Kopflinie ────────────────────────────────────
+ *
+ * Die Kopflinie aus ADR-007 Abschnitt 3 — „Kicker in Versalien, darunter
+ * eine durchgehende Linie ... Eine pro Flaeche". Sie stand in diesem Repo
+ * bisher nur an den Dialogen. */
+.block {
   border: 1px solid var(--rand);
-  margin-bottom: 1rem;
+  background: var(--flaeche);
+  padding: var(--steg-3) var(--steg-4) var(--steg-4);
+  margin: 0 0 var(--steg-4);
+}
+
+.block > h2,
+.block > h3 {
+  margin: 0 0 var(--steg-3);
+  padding-bottom: var(--steg-2);
+  border-bottom: 1px solid var(--rand);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--leise);
+}
+
+/* Ein Block, der sich aufklappen laesst — „Neu anlegen" steht nicht jedem im
+   Weg, der nur nachsehen will, was da ist. */
+.block > summary {
+  cursor: pointer;
+  list-style: none;
+  margin: 0 0 var(--steg-2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--leise);
+  min-height: var(--ziel);
+  display: flex;
+  align-items: center;
+  gap: var(--steg-2);
+}
+
+.block > summary::-webkit-details-marker { display: none; }
+
+.block > summary::before {
+  content: '+';
+  color: var(--signal);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.block[open] > summary {
+  padding-bottom: var(--steg-2);
+  border-bottom: 1px solid var(--rand);
+  margin-bottom: var(--steg-3);
+}
+
+.block[open] > summary::before { content: '\2212'; }
+
+/* ── Feldzeile und Beschriftung ──────────────────────────────────────────
+ *
+ * JEDES Feld traegt seine Beschriftung UEBER sich und nicht im Platzhalter.
+ * Ein Platzhalter verschwindet beim Tippen — wer ein Formular halb ausgefuellt
+ * verlaesst und zurueckkommt, sieht dann Werte ohne Fragen. Gemessen im
+ * `Bestand`: vier Felder, alle nur mit Platzhalter.
+ *
+ * `min-width: 0` an `.feld` ist kein Zierrat: ohne das weigern sich
+ * Flex-Kinder zu schrumpfen, und dann sprengt die Zeile auf dem Telefon den
+ * Rand — genau der Ueberlauf, gegen den `ui:check` steht. */
+.zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--steg-3);
+  align-items: flex-end;
+}
+
+.zeile > button { flex: none; }
+
+.feld,
+.zeile label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--steg-1);
+  color: var(--leise);
+  font-size: 0.85rem;
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.feld > input,
+.feld > select,
+.zeile label > input,
+.zeile label > select {
+  color: var(--text);
+  min-width: 0;
+  width: 100%;
+}
+
+/* Ein schmales Feld ist schmal, aber nie schmaler als seine Beschriftung.
+   `5rem` stand hier als feste Breite und schnitt „Quantity" ab.
+
+   `.zeile .schmal` und nicht `.schmal`: die Regel darueber trifft
+   `.zeile label` und hat damit zwei Gewichte gegen eines — eine
+   Klassenregel allein verliert gegen sie, egal wie weit unten sie steht.
+   Gemessen: das Mengenfeld lief in der Stufe davor ueber die halbe Zeile. */
+.zeile .schmal,
+.zeile .feld.schmal { flex: 0 0 7rem; }
+.schmal > input,
+input.schmal,
+select.schmal { width: 100%; }
+
+/* Ein Datei-Feld sieht nirgends aus wie ein Knopf. Das Label IST der Knopf,
+   das Feld darin ist unsichtbar — sonst steht ein „Durchsuchen…" neben einem
+   Text, der nicht dazu passt. */
+.datei-knopf {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--steg-2);
+  padding: 0 var(--steg-3);
+  min-height: var(--ziel);
+  border: 1px solid var(--rand);
+  background: var(--flaeche);
+  cursor: pointer;
+  flex: none;
+}
+
+.datei-knopf:hover { background: var(--erhoben); }
+.datei-knopf input[type='file'] { display: none; }
+
+/* ── Spalten und Kacheln ─────────────────────────────────────────────────
+ *
+ * `auto-fit`/`minmax` statt fester Spaltenzahl: das Raster entscheidet selbst,
+ * wieviele Spalten in die Breite passen, und braucht dafuer keinen
+ * Umbruchpunkt. Die beiden `@media (max-width: 900px)`-Bloecke, die vorher
+ * `.inventur .spalten` und `.werte .spalten` einzeln zurueckstellten, fallen
+ * damit weg. */
+.spalten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  gap: var(--steg-5);
+  margin: 0 0 var(--steg-4);
+}
+
+.kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  gap: var(--steg-3);
+  margin: 0 0 var(--steg-4);
+}
+
+.kachel {
+  border: 1px solid var(--rand);
+  background: var(--flaeche);
+  padding: var(--steg-3) var(--steg-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--steg-1);
+  min-width: 0;
+}
+
+.kachel strong {
+  font-size: 1.35rem;
+  font-weight: 600;
+  /* Eine lange Zahl bricht, statt die Kachel zu sprengen. */
+  overflow-wrap: anywhere;
+}
+
+.kachel span {
+  color: var(--leise);
+  font-size: 0.85rem;
+}
+
+/* Nur was zu tun ist, traegt Farbe. Eine Kachel, die immer warnt, liest nach
+   einer Woche niemand mehr — dann faellt der Tag nicht mehr auf, an dem sie
+   es zu Recht tut. */
+.kachel.achtung { border-color: var(--warn); }
+.kachel.achtung strong { color: var(--warn); }
+
+/* ── Werkzeugleiste ueber einer Liste ────────────────────────────────────
+ *
+ * Suche links, Zaehler rechts. Der Zaehler stand vorher direkt neben dem
+ * Suchfeld und sah aus wie zu ihm gehoerig; er gehoert zur LISTE. */
+.leiste {
+  display: flex;
+  gap: var(--steg-2);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--steg-3);
+}
+
+.leiste > input[type='search'],
+.leiste > input:not(.schmal) { flex: 1 1 16rem; min-width: 0; }
+.leiste .zaehler { margin-left: auto; }
+
+/* ── Tabellen ────────────────────────────────────────────────────────────
+ *
+ * Der Kopf KLEBT. Eine Bestandsliste ist lang; wer bis Zeile achtzig
+ * gescrollt hat, weiss sonst nicht mehr, welche Spalte die Menge ist.
+ *
+ * Der Rahmen scrollt in sich, statt die Seite zu sprengen (B-44 Teil 3). */
+.tabelle-rahmen {
+  overflow: auto;
+  max-height: min(70vh, 46rem);
+  border: 1px solid var(--rand);
+  background: var(--flaeche);
+  margin-bottom: var(--steg-4);
 }
 
 table {
@@ -329,139 +710,183 @@ table {
 
 caption {
   text-align: left;
-  padding: 0.5rem;
+  padding: var(--steg-2);
   color: var(--leise);
 }
 
 th,
 td {
   text-align: left;
-  padding: 0.35rem 0.6rem;
+  padding: var(--steg-2) var(--steg-3);
   border-bottom: 1px solid var(--rand);
-  white-space: nowrap;
+  vertical-align: middle;
 }
 
 th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--erhoben);
   color: var(--leise);
-  font-weight: 400;
-}
-
-.rechts {
-  text-align: right;
-}
-
-.leise {
-  color: var(--leise);
-}
-
-.zaehler {
-  color: var(--leise);
-}
-
-.warnung td {
-  color: var(--warn);
-}
-
-.leer {
-  color: var(--leise);
-  max-width: 46rem;
-  line-height: 1.5;
-}
-
-/* ── Inventur (B-65) ───────────────────────────────────────────────────────
-   Zwei Schritte untereinander, dann zwei Spalten nebeneinander: was hier
-   liegen soll und was erfasst wurde. Die Spalten brechen unter 900 px
-   untereinander — im Lager steht jemand mit einem Tablet vor dem Regal, und
-   eine Tabelle, die dort seitlich wegläuft, ist unbedienbar (dieselbe Regel
-   wie B-44 Teil 3 im Kabel-Planer).
-
-   Keine Rundungen, keine Schatten (ADR-007). Die Trefferflächen der Knöpfe
-   bleiben bei den 24 px, die WCAG 2.2 SC 2.5.8 nennt — hier über `padding`,
-   weil es Textknöpfe sind. */
-.inventur .schritt {
-  border: 1px solid var(--rand);
-  padding: 0.75rem 1rem;
-  margin: 1rem 0;
-}
-
-.inventur .schritt h2,
-.inventur .schritt h3 {
-  font-size: 0.95rem;
   font-weight: 600;
-  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.inventur .zeile {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
+/* Zebra macht eine breite Zeile ueber die ganze Breite lesbar. `color-mix`
+   statt eines eigenen Tokens: der Ton muss in BEIDEN Themen derselbe
+   Abstand zur Flaeche sein, und ein fester Wert waere das in einem von
+   beiden nicht. */
+tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--erhoben) 40%, transparent);
 }
 
-.inventur label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  color: var(--leise);
-  font-size: 0.85rem;
-}
+tbody tr:hover td { background: var(--erhoben); }
 
-.inventur input,
-.inventur select {
-  background: var(--flaeche);
-  border: 1px solid var(--rand);
-  color: var(--text);
-  padding: 0.4rem 0.6rem;
-  min-height: 24px;
-  font: inherit;
-}
+.rechts { text-align: right; }
+.warnung td { color: var(--warn); }
 
-.inventur button {
-  background: var(--flaeche);
-  border: 1px solid var(--rand);
-  color: var(--text);
-  padding: 0.4rem 0.9rem;
-  min-height: 24px;
-  font: inherit;
-  cursor: pointer;
-}
+/* Ein Feld IN einer Zelle fuellt die Spalte nicht aus. Ohne diese Regel zieht
+   `width: 100%` aus `.schmal` die Mengen- und Ziel-Felder auf die volle
+   Spaltenbreite — gemessen 200 px fuer eine zweistellige Zahl, und die Spalte
+   daneben wird dafuer gestaucht. `ch` und nicht `px`: die Breite haengt an der
+   Ziffer, nicht an einer geratenen Zahl.
 
-.inventur button:disabled {
-  color: var(--leise);
-  cursor: default;
-}
+   Im Kartenmodus (unter 700 px) gilt sie nicht: dort steht das Feld allein in
+   seiner Zeile und darf die Breite nehmen. */
+td input.schmal,
+td select.schmal { width: 7ch; }
 
-.inventur .ohne-scan {
-  margin-top: 0.75rem;
-}
+td input[type='number'] { width: 8ch; text-align: right; }
+td select { max-width: 100%; }
 
-/* Der Warnhinweis ist ein Absatz, nicht eine Tabellenzelle — `.warnung td`
-   weiter oben trifft ihn nicht, und ohne diese Regel stünde er unauffällig
-   im Fliesstext. Genau diese Meldung soll aber auffallen: sie kommt, bevor
-   jemand hundert Objekte am falschen Ort verbucht. */
-.inventur p.warnung {
-  color: var(--warn);
-  max-width: 46rem;
-  line-height: 1.5;
-}
+/* ── Liste als Karten, wenn die Tabelle nicht mehr passt ─────────────────
+ *
+ * Unter 700 px wird jede Zeile zu einer Karte und jede Zelle traegt ihren
+ * Spaltennamen vor sich — das Markup bleibt eine Tabelle, die Darstellung
+ * nicht. Ohne das steht im Telefon eine achtspaltige Tabelle in einem
+ * Scrollfenster von 390 px, und man sieht nie Modell und Menge zugleich.
+ *
+ * Die Ansicht liefert den Spaltennamen als `data-spalte` an der Zelle. Wo
+ * sie das nicht tut, faellt die Karte auf reine Werte zurueck — lesbar,
+ * nur ohne Beschriftung. */
+@media (max-width: 700px) {
+  .tabelle-rahmen { max-height: none; border: none; background: none; }
+  .tabelle-rahmen thead { display: none; }
+  .tabelle-rahmen table,
+  .tabelle-rahmen tbody,
+  .tabelle-rahmen tr,
+  .tabelle-rahmen td { display: block; width: auto; }
 
-.inventur .hinweis {
-  color: var(--leise);
-  max-width: 46rem;
-  line-height: 1.5;
-}
-
-.inventur .spalten {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin: 1rem 0;
-}
-
-@media (max-width: 900px) {
-  .inventur .spalten {
-    grid-template-columns: 1fr;
+  .tabelle-rahmen tr {
+    border: 1px solid var(--rand);
+    background: var(--flaeche);
+    margin-bottom: var(--steg-2);
+    padding: var(--steg-2);
   }
+
+  .tabelle-rahmen td {
+    border: none;
+    padding: var(--steg-1) 0;
+    display: flex;
+    gap: var(--steg-3);
+    align-items: center;
+    text-align: left;
+  }
+
+  .tabelle-rahmen td::before {
+    content: attr(data-spalte);
+    flex: 0 0 40%;
+    color: var(--leise);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .tabelle-rahmen td:empty { display: none; }
+  /* In der Karte steht das Feld allein in seiner Zeile und darf die Breite
+     nehmen — die Regel aus dem Tabellenmodus gilt hier nicht. */
+  .tabelle-rahmen td input,
+  .tabelle-rahmen td select { width: 100%; text-align: left; }
+  .tabelle-rahmen tbody tr:nth-child(even) td,
+  .tabelle-rahmen tbody tr:hover td { background: none; }
+}
+
+/* ── Text ────────────────────────────────────────────────────────────────
+ *
+ * EINE Regel fuer die drei Textarten statt vier Kopien mit 46rem und 52rem
+ * im Wechsel. `60ch` ist eine Zeilenlaenge und keine Kastenbreite: sie haengt
+ * an der Schriftgroesse und bleibt auch dann richtig, wenn jemand die
+ * Schrift des Browsers hochstellt. */
+.leer,
+.hinweis,
+p.warnung {
+  max-width: 60ch;
+  line-height: 1.55;
+  margin: var(--steg-2) 0;
+}
+
+.leer,
+.hinweis { color: var(--leise); }
+p.warnung { color: var(--warn); }
+
+.leise { color: var(--leise); margin: 2px 0; }
+.zaehler { color: var(--leise); white-space: nowrap; }
+
+/* Ein Leerzustand, der auf einer eigenen Flaeche steht statt als grauer Satz
+   im Nichts. Er ist das Erste, was jemand in einer frischen Installation
+   sieht — und war vorher das Einzige. */
+.leer-flaeche {
+  border: 1px dashed var(--rand);
+  padding: var(--steg-6) var(--steg-4);
+  text-align: center;
+}
+
+.leer-flaeche .leer { margin-inline: auto; }
+
+/* ── Statusleiste ────────────────────────────────────────────────────────
+ *
+ * ADR-007 Abschnitt 6: „Meldungen links · Zaehler rechts", 24 px.
+ *
+ * Der ADR nahm dieses Repo bis zum 2026-09-13 ausdruecklich aus: „fuehren
+ * Reiter ohne Zeichenbereich — dort waere sie eine leere Zeile". Der Grund
+ * ist weggefallen, nicht die Regel: der Zaehler ist genau nicht leer, jede
+ * der sieben Ansichten hat eine Zahl, die sie ohnehin berechnet. Und was
+ * der ADR verbietet, steht auch jetzt nicht darin — keine Ampel, keine
+ * Bewertung, nur Ableitbares. */
+.statusleiste {
+  display: flex;
+  align-items: center;
+  gap: var(--steg-3);
+  min-height: 24px;
+  padding: 0 var(--steg-3);
+  flex: none;
+  background: var(--flaeche);
+  border-top: 1px solid var(--rand);
+  color: var(--leise);
+  font-size: 0.8rem;
+}
+
+.statusleiste .rechts { margin-left: auto; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * WAS EINE ANSICHT WIRKLICH NUR FUER SICH BRAUCHT
+ *
+ * Alles Uebrige steht oben und gilt fuer alle sieben. Was hier steht, hat
+ * einen Grund, der genau in dieser Ansicht liegt — meist eine Farbregel fuer
+ * einen Zustand, den es anderswo nicht gibt.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Inventur ────────────────────────────────────────────────────────────── */
+
+/* Die Ergebnis-Arten. Nur zwei bekommen Farbe: „am falschen Ort" und „nicht
+   im Bestand" sind die beiden, wegen denen jemand hinterher etwas tut. Alles
+   einzufaerben hiesse, nichts hervorzuheben. */
+.inventur tr.ergebnis-wrong-place td,
+.inventur tr.ergebnis-not-in-inventory td {
+  color: var(--warn);
 }
 
 .inventur .abhaken,
@@ -474,452 +899,115 @@ th {
 .inventur .abhaken li {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.2rem 0;
+  gap: var(--steg-2);
+  padding: var(--steg-1) 0;
   border-bottom: 1px solid var(--rand);
 }
 
-.inventur .abhaken li.erledigt span {
-  color: var(--leise);
-}
+.inventur .abhaken li.erledigt span { color: var(--leise); }
+.inventur .abhaken em { color: var(--leise); font-style: normal; }
+.inventur .fehlt li { padding: var(--steg-1) 0; color: var(--warn); }
+.inventur .ohne-scan { margin-top: var(--steg-3); }
 
-.inventur .abhaken em {
-  color: var(--leise);
-  font-style: normal;
-}
-
-.inventur .fehlt li {
-  padding: 0.25rem 0;
-  color: var(--warn);
-}
-
-/* Die Ergebnis-Arten. Nur zwei bekommen Farbe: „am falschen Ort" und „nicht
-   im Bestand" sind die beiden, wegen denen jemand hinterher etwas tut. Alles
-   einzufärben hiesse, nichts hervorzuheben. */
-.inventur tr.ergebnis-wrong-place td,
-.inventur tr.ergebnis-not-in-inventory td {
-  color: var(--warn);
-}
-
-/* ── Wareneingang (B-65, siebte und letzte Zeile) ──────────────────────────
-   Erbt die Bloecke der Bericht-Ansicht. Eigene Regeln braucht nur das
-   Beleg-Feld und die unlesbare Zeile — sie ist das Einzige, was der Mensch
-   JETZT beheben muss, und traegt als Einzige Farbe. */
-.eingang textarea {
-  width: 100%;
-  min-height: 8rem;
-  background: var(--flaeche);
-  border: 1px solid var(--rand);
-  color: var(--text);
-  padding: 0.5rem 0.6rem;
-  font: inherit;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.eingang .block {
-  border: 1px solid var(--rand);
-  padding: 0.75rem 1rem;
-  margin: 1rem 0;
-}
-
-.eingang .block h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0 0 0.6rem;
-}
-
-/* Ein Datei-Feld sieht nirgends aus wie ein Knopf. Das Label IST der
-   Knopf, das Feld darin ist unsichtbar — sonst steht im Wareneingang ein
-   "Durchsuchen…" neben einem Text, der nicht dazu passt. */
-.eingang .datei-knopf {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid var(--rand);
-  cursor: pointer;
-}
-.eingang .datei-knopf input[type='file'] {
-  display: none;
-}
-
-.eingang .zeile {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-  margin-top: 0.75rem;
-}
-
-.eingang label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  color: var(--leise);
-  font-size: 0.85rem;
-}
-
-.eingang select,
-.eingang input,
-.eingang button {
-  background: var(--flaeche);
-  border: 1px solid var(--rand);
-  color: var(--text);
-  padding: 0.4rem 0.6rem;
-  min-height: 24px;
-  font: inherit;
-}
-
-.eingang button {
-  padding: 0.4rem 0.9rem;
-  cursor: pointer;
-}
-
-.eingang button:disabled {
-  color: var(--leise);
-  cursor: default;
-}
-
-.eingang p.warnung {
-  color: var(--warn);
-  max-width: 52rem;
-  line-height: 1.5;
-}
-
-.eingang .hinweis {
-  color: var(--leise);
-  max-width: 52rem;
-  line-height: 1.5;
-}
-
-.eingang tr.lage-unlesbar td {
-  color: var(--warn);
-}
-
-/* ── Kamera-Sucher (B-65, sechste Zeile) ───────────────────────────────────
-   Der Sucher steht auch ohne Strom im Baum (`srcObject` braucht ein
+/* Der Sucher steht auch ohne Strom im Baum (`srcObject` braucht ein
    gemountetes Element) und ist dann eingeklappt statt entfernt — ein
    schwarzes Rechteck ueber der halben Seite waere eine Kamera, die laeuft,
    und genau das tut sie dann nicht. */
-.inventur .kamera {
-  margin: 0.75rem 0;
-}
+.inventur .kamera { margin: var(--steg-3) 0; }
 
 .inventur .sucher {
   display: block;
   width: 100%;
   max-width: 22rem;
-  margin-top: 0.5rem;
+  margin-top: var(--steg-2);
   background: #000;
   border: 1px solid var(--rand);
 }
 
-.inventur .sucher.aus {
-  display: none;
+.inventur .sucher.aus { display: none; }
+
+/* ── Wareneingang ────────────────────────────────────────────────────────── */
+
+.eingang textarea {
+  width: 100%;
+  min-height: 8rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* ── Bericht (B-65, zweite Zeile) ──────────────────────────────────────────
-   Kacheln oben, Aufschlüsselungen als Raster darunter, Packliste und
-   Austausch als eigene Blöcke. Dieselben Regeln wie in der Inventur: keine
-   Rundungen, keine Schatten (ADR-007), Trefferflächen bei 24 px, und unter
-   900 px brechen die Spalten untereinander. */
-.bericht .kennzahlen {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: 0.75rem;
-  margin: 1rem 0 0.5rem;
-}
+/* Die unlesbare Zeile ist das Einzige, was der Mensch JETZT beheben muss,
+   und traegt als Einzige Farbe. */
+.eingang tr.lage-unlesbar td { color: var(--warn); }
 
-.bericht .kachel {
-  border: 1px solid var(--rand);
-  padding: 0.75rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.bericht .kachel strong {
-  font-size: 1.35rem;
-  font-weight: 600;
-}
-
-.bericht .kachel span {
-  color: var(--leise);
-  font-size: 0.85rem;
-}
-
-.bericht .block {
-  border: 1px solid var(--rand);
-  padding: 0.75rem 1rem;
-  margin: 1rem 0;
-}
-
-.bericht .block h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0 0 0.6rem;
-}
-
-.bericht .spalten {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-  gap: 1rem;
-  margin: 1rem 0;
-}
-
-.bericht .zeile {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-}
-
-.bericht label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  color: var(--leise);
-  font-size: 0.85rem;
-}
-
-.bericht select,
-.bericht input[type='file'] {
-  background: var(--flaeche);
-  border: 1px solid var(--rand);
-  color: var(--text);
-  padding: 0.4rem 0.6rem;
-  min-height: 24px;
-  font: inherit;
-}
-
-.bericht button {
-  background: var(--flaeche);
-  border: 1px solid var(--rand);
-  color: var(--text);
-  padding: 0.4rem 0.9rem;
-  min-height: 24px;
-  font: inherit;
-  cursor: pointer;
-}
-
-.bericht button:disabled {
-  color: var(--leise);
-  cursor: default;
-}
-
-/* Wie in der Inventur: `.warnung td` weiter oben trifft einen Absatz nicht,
-   und genau dieser soll auffallen — er sagt, worauf die Tagesmiete daneben
-   NICHT beruht. */
-.bericht p.warnung {
-  color: var(--warn);
-  max-width: 52rem;
-  line-height: 1.5;
-}
-
-.bericht .hinweis {
-  color: var(--leise);
-  max-width: 52rem;
-  line-height: 1.5;
-}
+/* ── Bericht ─────────────────────────────────────────────────────────────── */
 
 .bericht .abgewiesen {
-  margin: 0.3rem 0 0;
-  padding-left: 1.1rem;
+  margin: var(--steg-1) 0 0;
+  padding-left: var(--steg-4);
   color: var(--warn);
 }
 
-.bericht .abgewiesen em {
-  color: var(--leise);
-  font-style: normal;
-}
-
-/* ── „Unter Ziel" (B-65, vierte Zeile) ─────────────────────────────────────
-   Nur zwei Farbregeln, und beide nur, wenn wirklich etwas zu tun ist. Eine
-   Kachel, die immer rot ist, liest nach einer Woche niemand mehr — dann
-   faellt der Tag nicht mehr auf, an dem sie es zu Recht ist. */
-.bericht .kachel.achtung {
-  border-color: var(--warn);
-}
-
-.bericht .kachel.achtung strong {
-  color: var(--warn);
-}
+.bericht .abgewiesen em { color: var(--leise); font-style: normal; }
 
 /* Drei Stufen und nur ZWEI Regeln: `unter` traegt die Warnfarbe, `ok` ist
    gedaempft, `knapp` bleibt in der normalen Schrift genau dazwischen stehen.
    „Steht genau auf dem Ziel" ist kein Fehler, sondern eine Vorwarnung — sie
-   ebenfalls einzufaerben hiesse, nichts hervorzuheben. Dieselbe Regel wie
-   bei den Inventur-Ergebnissen weiter oben. */
-.bericht tr.lage-unter td {
-  color: var(--warn);
-}
+   ebenfalls einzufaerben hiesse, nichts hervorzuheben. */
+.bericht tr.lage-unter td { color: var(--warn); }
+.bericht tr.lage-ok td { color: var(--leise); }
 
-.bericht tr.lage-ok td {
-  color: var(--leise);
-}
+/* ── Werte & Schaeden ────────────────────────────────────────────────────── */
 
-/* ── Werte & Schäden (B-65, dritte Zeile) ──────────────────────────────────
-   Erbt die Blöcke der Bericht-Ansicht; eigene Regeln braucht nur, was es
-   dort nicht gibt: die Summen-Reihe (eine Kachel je Währung — zwei
-   nebeneinander sind kein Fehler, sondern die einzige ehrliche Antwort ohne
-   hinterlegten Kurs) und die Zeile einer Einheit ohne Wert. */
-.werte .block {
-  border: 1px solid var(--rand);
-  padding: 0.75rem 1rem;
-  margin: 1rem 0;
-}
-
-.werte .block h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0 0 0.6rem;
-}
-
+/* Eine Kachel je Waehrung — zwei nebeneinander sind kein Fehler, sondern die
+   einzige ehrliche Antwort ohne hinterlegten Kurs. */
 .werte .summen {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 0.6rem;
+  gap: var(--steg-3);
+  margin-bottom: var(--steg-2);
 }
 
-.werte .kachel {
-  border: 1px solid var(--rand);
-  padding: 0.6rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
+.werte .summen .kachel strong { font-size: 1.2rem; }
 
-.werte .kachel strong {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.werte .kachel span {
-  color: var(--leise);
-  font-size: 0.85rem;
-}
-
-/* ── Eigene Fristarten ──────────────────────────────────────────────────
-   Ein aufklappbarer Unterblock: die Liste ist Stammdatenpflege und steht
+/* Ein aufklappbarer Unterblock: die Liste ist Stammdatenpflege und steht
    nicht jedem im Weg, der nur einen Termin eintragen will. */
 .werte .unterblock {
-  margin-top: 12px;
+  margin-top: var(--steg-3);
   border: 1px solid var(--rand);
-  padding: 8px 10px;
+  padding: var(--steg-2) var(--steg-3);
 }
+
 .werte .unterblock > summary {
   cursor: pointer;
   font-weight: 600;
+  min-height: var(--ziel);
+  display: flex;
+  align-items: center;
 }
+
 .werte .artenliste {
   list-style: none;
-  margin: 8px 0;
+  margin: var(--steg-2) 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--steg-1);
 }
+
 .werte .artenliste li {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--steg-2);
 }
 
-.werte .zeile {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-  margin: 0.6rem 0;
-}
+/* Dieselbe Regel wie bei „Unter Ziel": nur was zu tun ist, traegt Farbe.
+   `faellig` bleibt in der normalen Schrift — es ist eine Vorwarnung und kein
+   Fehler, und beides gleich einzufaerben hiesse, nichts hervorzuheben. */
+.werte tr.lage-ueberfaellig td { color: var(--warn); }
 
-.werte label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  color: var(--leise);
-  font-size: 0.85rem;
-}
-
-.werte select {
-  background: var(--flaeche);
-  border: 1px solid var(--rand);
-  color: var(--text);
-  padding: 0.4rem 0.6rem;
-  min-height: 24px;
-  font: inherit;
-}
-
-.werte button {
-  background: var(--flaeche);
-  border: 1px solid var(--rand);
-  color: var(--text);
-  padding: 0.4rem 0.9rem;
-  min-height: 24px;
-  font: inherit;
-  cursor: pointer;
-}
-
-.werte .spalten {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 1.5rem;
-}
-
-@media (max-width: 900px) {
-  .werte .spalten {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ── Fristen-Ampel (B-65, fuenfte Zeile) ───────────────────────────────────
-   Dieselbe Regel wie bei „Unter Ziel": nur was zu tun ist, traegt Farbe.
-   `faellig` bleibt in der normalen Schrift — es ist eine Vorwarnung und
-   kein Fehler, und beides gleich einzufaerben hiesse, nichts
-   hervorzuheben. Die Kacheln stehen im Raster der Bericht-Ansicht; die
-   Regeln dafuer erbt `.werte` ueber `.kennzahlen`/`.kachel` nicht, also
-   stehen sie hier. */
-.werte .kennzahlen {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: 0.75rem;
-  margin: 0.5rem 0;
-}
-
-.werte .kachel.achtung {
-  border-color: var(--warn);
-}
-
-.werte .kachel.achtung strong {
-  color: var(--warn);
-}
-
-.werte tr.lage-ueberfaellig td {
-  color: var(--warn);
-}
-
-.werte p.warnung {
-  color: var(--warn);
-  max-width: 52rem;
-  line-height: 1.5;
-}
-
-.werte .hinweis {
-  color: var(--leise);
-  max-width: 52rem;
-  line-height: 1.5;
-}
-
-.werte em {
-  color: var(--leise);
-  font-style: normal;
-}
+.werte em { color: var(--leise); font-style: normal; }
 
 /* Eine Einheit ohne hinterlegten Wert geht in keine Summe ein. Sie steht
    deshalb sichtbar anders da — nicht ausgegraut (sie ist nicht weniger
    vorhanden), sondern in der Warnfarbe der fehlenden Angabe. */
-.werte tr.ohne-wert td {
-  color: var(--warn);
-}
+.werte tr.ohne-wert td { color: var(--warn); }

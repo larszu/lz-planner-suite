@@ -147,6 +147,26 @@ ipcMain.handle('suiteHost:project:open', (e) =>
 // Lexware als eigene Shell-Domaene (E-12) -- siehe `lexware.cjs`. Der Beleg-Weg
 // lief vorher ueber den eingebetteten Planer und war dort in jeder
 // ausgelieferten Konfiguration durchtrennt (B-19).
+// Die vier Laufzeit-Anwendungen lokal starten (suite#233) -- siehe
+// `runtimeStart.cjs`. Nur hier moeglich: einen Prozess startet der
+// Hauptprozess, nicht der Renderer.
+const runtimeStart = require('./runtimeStart.cjs')
+const meldeZustand = (id, zustand) => {
+  for (const w of BrowserWindow.getAllWindows()) {
+    if (!w.isDestroyed()) w.webContents.send('suiteHost:runtime:zustand', id, zustand)
+  }
+}
+ipcMain.handle('suiteHost:runtime:start', (_e, id, verzeichnis) =>
+  runtimeStart.starte(String(id), String(verzeichnis ?? ''), meldeZustand),
+)
+ipcMain.handle('suiteHost:runtime:stop', (_e, id) => runtimeStart.beende(String(id)))
+ipcMain.handle('suiteHost:runtime:state', (_e, id) => runtimeStart.zustand(String(id)))
+ipcMain.handle('suiteHost:runtime:check', (_e, id, verzeichnis) =>
+  runtimeStart.passendesVerzeichnis(String(id), String(verzeichnis ?? '')),
+)
+// Kein verwaister Server auf dem Port, wenn jemand die Suite schliesst.
+app.on('before-quit', () => runtimeStart.beendeAlle())
+
 const lexware = require('./lexware.cjs')
 ipcMain.handle('suiteHost:lexware:ping', () => lexware.ping())
 ipcMain.handle('suiteHost:lexware:create', (_e, doc) => lexware.createDocument(doc))

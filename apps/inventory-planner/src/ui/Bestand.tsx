@@ -33,6 +33,7 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react'
 import { useT } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
 import { useInventoryStore } from '../domain/store/inventoryStore'
 import { nodePathLabel } from '../domain/lib/storageTree'
 import { ownershipLabel } from '../domain/lib/ownership'
@@ -72,9 +73,57 @@ export function Bestand() {
   }
 
   return (
-    <section>
+    <section className="bestand">
+      {/*
+        ANLEGEN IST EIN FORMULAR UND KEINE ZEILE MIT DREI KAESTEN (suite#231).
+
+        Hier standen zwei `.leiste`-Zeilen hintereinander: Suchfeld und
+        Zaehler in der einen, Modellname, Menge und „Create" in der anderen.
+        Beide sahen gleich aus, und die zweite war die einzige Stelle der
+        ganzen Ansicht, an der etwas ENTSTEHT. Wer das Lager zum ersten Mal
+        oeffnete, sah vier Kaesten ohne Beschriftung und musste raten, welche
+        zusammengehoeren.
+
+        Jetzt ist das Anlegen ein `<details>`-Block mit Kopflinie: er ist
+        offen, solange nichts im Bestand ist (dann ist es das Einzige, was zu
+        tun ist), und zugeklappt, sobald etwas dasteht — dann will man meist
+        nachsehen und nicht anlegen. `key` erzwingt das beim Wechsel von leer
+        auf nicht-leer: `open` ist ein Anfangswert, den React sonst nicht
+        nachzieht.
+
+        Und es ist ein `<form>`: die Eingabetaste legt an. Vorher musste man
+        zur Maus greifen, um ein Wort einzutragen.
+      */}
+      <details className="block" open={items.length === 0} key={items.length === 0 ? 'leer' : 'voll'}>
+        <summary>{t('stock.create.head', 'Add to stock')}</summary>
+        <form
+          className="zeile"
+          onSubmit={(e) => {
+            e.preventDefault()
+            anlegen()
+          }}
+        >
+          <label className="feld">
+            {t('stock.newModel.aria', 'Model designation')}
+            <input
+              value={modell}
+              onChange={(e) => setModell(e.target.value)}
+              placeholder={t('stock.newModel', 'New model')}
+            />
+          </label>
+          <label className="feld schmal">
+            {t('stock.col.qty', 'Qty')}
+            <input value={menge} onChange={(e) => setMenge(e.target.value)} type="number" min="1" />
+          </label>
+          <button type="submit" className="knopf-primaer" disabled={!modell.trim()}>
+            {t('stock.create', 'Create')}
+          </button>
+        </form>
+      </details>
+
       <div className="leiste">
         <input
+          type="search"
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
           placeholder={t('stock.search', 'Search — model, manufacturer, supplier, location')}
@@ -85,35 +134,38 @@ export function Bestand() {
         </span>
       </div>
 
-      <div className="leiste">
-        <input
-          value={modell}
-          onChange={(e) => setModell(e.target.value)}
-          placeholder={t('stock.newModel', 'New model')}
-          aria-label={t('stock.newModel.aria', 'Model designation')}
-        />
-        <input
-          value={menge}
-          onChange={(e) => setMenge(e.target.value)}
-          type="number"
-          min="1"
-          aria-label={t('stock.col.qty', 'Qty')}
-          className="schmal"
-        />
-        <button type="button" onClick={anlegen}>
-          {t('stock.create', 'Create')}
-        </button>
-      </div>
-
       {items.length === 0 ? (
-        <p className="leer">
-          {t(
-            'stock.empty',
-            'Nothing in stock yet. Create something — or read in an existing stock file; the format is the same across the tools.',
-          )}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+            {t(
+              'stock.empty',
+              'Nothing in stock yet. Create something — or read in an existing stock file; the format is the same across the tools.',
+            )}
+          </p>
+        </div>
+      ) : gefiltert.length === 0 ? (
+        <div className="leer-flaeche">
+          {/* Ein Suchbegriff ohne Treffer ist etwas anderes als ein leeres
+              Lager, und vorher sagte die Ansicht dazu gar nichts: die Tabelle
+              stand einfach ohne Zeilen da.
+
+              Als JSX-Kommentar INNERHALB des Elements und nicht als `//`
+              davor: `lang:check` liest den Text zwischen einem
+              schliessenden und dem naechsten oeffnenden Zeichen als
+              Oberflaeche, und ein deutscher Kommentar an dieser Stelle
+              faellt dort als Fallback in der falschen Sprache auf. */}
+          <p className="leer">
+            {format(t('stock.noHit', 'Nothing matches "{q}". {all} models are in stock.'), {
+              q: suche.trim(),
+              all: items.length,
+            })}
+          </p>
+          <button type="button" onClick={() => setSuche('')}>
+            {t('stock.clearSearch', 'Clear the search')}
+          </button>
+        </div>
       ) : (
-        <div className="tabelle-rahmen">
+        <TabelleRahmen>
           <table>
             <thead>
               <tr>
@@ -136,12 +188,12 @@ export function Bestand() {
             <tbody>
               {gefiltert.map((i) => (
                 <tr key={i.id}>
-                  <td>
+                  <td data-spalte={t('stock.col.model', 'Model')}>
                     {i.model}
                     {i.manufacturer ? <span className="leise"> · {i.manufacturer}</span> : null}
                   </td>
-                  <td>{i.category ?? ''}</td>
-                  <td className="rechts">
+                  <td data-spalte={t('stock.col.category', 'Category')}>{i.category ?? ''}</td>
+                  <td className="rechts" data-spalte={t('stock.col.qty', 'Qty')}>
                     <input
                       type="number"
                       min="0"
@@ -154,7 +206,7 @@ export function Bestand() {
                       className="schmal"
                     />
                   </td>
-                  <td className="rechts">
+                  <td className="rechts" data-spalte={t('stock.col.target', 'Target')}>
                     {/*
                       LEER IST EIN WERT, und zwar ein anderer als 0. Leer
                       heisst „niemand hat fuer diesen Artikel entschieden,
@@ -189,7 +241,7 @@ export function Bestand() {
                       className="schmal"
                     />
                   </td>
-                  <td>
+                  <td data-spalte={t('stock.col.ownership', 'Ownership')}>
                     <select
                       value={i.ownership ?? ''}
                       onChange={(e) =>
@@ -210,8 +262,10 @@ export function Bestand() {
                       ))}
                     </select>
                   </td>
-                  <td>{nodePathLabel(nodes, i.locationId) || (i.stockLocation ?? '')}</td>
-                  <td>{i.supplier ?? ''}</td>
+                  <td data-spalte={t('stock.col.location', 'Location')}>
+                    {nodePathLabel(nodes, i.locationId) || (i.stockLocation ?? '')}
+                  </td>
+                  <td data-spalte={t('stock.col.supplier', 'Supplier')}>{i.supplier ?? ''}</td>
                   <td>
                     <button type="button" onClick={() => removeItem(i.id)} className="still">
                       {t('stock.remove', 'Remove')}
@@ -221,7 +275,7 @@ export function Bestand() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TabelleRahmen>
       )}
 
       {items.length > 0 && (

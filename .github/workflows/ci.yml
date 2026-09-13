@@ -222,6 +222,13 @@ jobs:
       # --workspaces` laeuft im Haupt-Job, und der hat keinen Browser.
       - name: Cable-Planner bleibt auf dem Telefon im Fenster
         run: npm run mobil:check --workspace cable-planner
+      # Ebenfalls im selben Job und aus demselben Grund: `build:planners` hat
+      # die `dist/`-Ordner von Lager und Gebaeude schon erzeugt, und der Lauf
+      # braucht dieselbe Sorte Browser wie die Zeile darueber. Er misst, was
+      # suite#231 meldet — dass die beiden Module unbedienbar sind — und zwar
+      # im Fenster und nicht am Quelltext.
+      - name: Lager und Gebaeude sind bedienbar
+        run: npm run bedienbar:check
       - name: Screenshots bei Fehlschlag
         if: failure()
         uses: actions/upload-artifact@v6

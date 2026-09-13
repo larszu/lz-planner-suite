@@ -237,6 +237,11 @@ export const de: Record<string, string> = {
   'stock.col.target': 'Ziel',
   'stock.countOf': '{shown} von {all}',
   'stock.create': 'Anlegen',
+  // suite#231 — der Bestand hat jetzt einen eigenen Anlege-Block und einen
+  // eigenen Zustand fuer „Suche ohne Treffer".
+  'stock.create.head': 'In den Bestand aufnehmen',
+  'stock.noHit': 'Nichts passt zu „{q}". Im Bestand stehen {all} Modelle.',
+  'stock.clearSearch': 'Suche zuruecksetzen',
   'stock.empty':
     'Noch nichts im Bestand. Anlegen — oder eine vorhandene Lagerdatei einlesen; das Format ist zwischen den Werkzeugen dasselbe.',
   'stock.newModel': 'Neues Modell',
@@ -410,6 +415,13 @@ export const de: Record<string, string> = {
   'tab.receiving.q': 'Was ist gekommen — und was macht das mit dem Bestand?',
   'tab.report': 'Bericht',
   'tab.report.q': 'Was steckt drin — und wie kommt es hier raus?',
+  // ── Statusleiste (suite#231, ADR-007 Abschnitt 6) ──────────────────────
+  // Je Reiter eine Zahl. Nichts davon wertet — es sind Anzahlen.
+  'status.stock': '{n} Modelle · {p} Lagerplaetze',
+  'status.checkouts': '{n} Ausgabescheine · {out} noch draussen',
+  'status.subhire': '{n} Positionen gehoeren uns nicht',
+  'status.units': '{n} serialisierte Einheiten',
+
   'tab.stock': 'Bestand',
   'tab.stock.q': 'Was ist da, wieviel, und wo liegt es?',
   'tab.subhire': 'Sub-Hire',

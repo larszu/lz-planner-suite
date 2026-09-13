@@ -39,7 +39,8 @@
     "actions:check": "node scripts/actions-node-runtime.mjs",
     "ui:smoke": "node scripts/suite-smoke.mjs",
     "vertrag:parity": "node scripts/facility-vertrag-parity.mjs",
-    "chrome:parity": "node scripts/chrome-parity.mjs"
+    "chrome:parity": "node scripts/chrome-parity.mjs",
+    "bedienbar:check": "node scripts/bedienbar.mjs"
   },
   "devDependencies": {
     "minimatch": "^10.2.5",

@@ -84,6 +84,7 @@ import { fristenLage } from '../domain/lib/fristen'
 import { useCheckoutStore } from '../domain/store/checkoutStore'
 import { toCsv } from '../lib/csv'
 import { useT, locale } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
 import type { ImportReport } from '../domain/store/inventoryStore'
 
 /**
@@ -389,7 +390,7 @@ export function Bericht() {
                   )
                 : ''}
             </p>
-            <div className="tabelle-rahmen">
+            <TabelleRahmen>
               <table>
                 <thead>
                   <tr>
@@ -423,7 +424,7 @@ export function Bericht() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TabelleRahmen>
             <div className="zeile">
               <button
                 type="button"

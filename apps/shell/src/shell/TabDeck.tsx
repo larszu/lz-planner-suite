@@ -118,6 +118,9 @@ export function TabDeck({
             key={project ? project.meta.name : 'scratch'}
             seed={project ? project.show.board : emptyBoard()}
             title={project ? format(t('chrome.tabdeck.boardTitle', '{name} — Board'), { name: project.meta.name }) : t('chrome.tabdeck.creativeBoard', 'Kreativ-Board')}
+            // Ohne Projekt gibt es nichts, worin das Board leben koennte —
+            // dann bleibt es der Notizzettel, der es vorher ueberall war.
+            onChange={project && onUpdateShow ? (board) => onUpdateShow((s) => ({ ...s, board })) : undefined}
           />
         </div>
       ) : (

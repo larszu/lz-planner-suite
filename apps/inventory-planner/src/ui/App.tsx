@@ -24,6 +24,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useState } from 'react'
 import { useT } from '../i18n'
+import { useInventoryStore } from '../domain/store/inventoryStore'
+import { useCheckoutStore } from '../domain/store/checkoutStore'
 import { Kopfzeile } from './Kopfzeile'
 import { Bestand } from './Bestand'
 import { Ausgabescheine } from './Ausgabescheine'
@@ -53,11 +55,64 @@ const reiterListe = (t: UebersetzFn): { id: Reiter; titel: string; frage: string
   { id: 'subhire', titel: t('tab.subhire', 'Sub-hire'), frage: t('tab.subhire.q', 'What is not ours — and when must it go back?') },
 ]
 
+/**
+ * Der Zaehler der Statusleiste — was in DIESER Ansicht gezaehlt wird.
+ *
+ * ADR-007 Abschnitt 6 sagt „Meldungen links · Zaehler rechts" und dazu, was
+ * dort NICHT hingehoert: „Werte, die eine Produktentscheidung waeren — eine
+ * Komplexitaet, eine Ampel, eine Bewertung". Alles hier ist eine Anzahl, die
+ * die Ansicht ohnehin berechnet; keine der sieben Zeilen wertet.
+ *
+ * Je Reiter eine eigene Zahl und nicht eine feste fuer die ganze App: wer im
+ * Sub-Hire steht, will wissen, wieviel fremdes Material im Haus ist, nicht
+ * wieviele Artikel es insgesamt gibt.
+ */
+const zaehler = (
+  reiter: Reiter,
+  t: UebersetzFn,
+  format: (s: string, v: Record<string, string | number>) => string,
+  zahlen: { artikel: number; plaetze: number; einheiten: number; scheine: number; draussen: number; fremd: number },
+): string => {
+  switch (reiter) {
+    case 'ausgabe':
+      return format(t('status.checkouts', '{n} checkout notes · {out} still out'), {
+        n: zahlen.scheine,
+        out: zahlen.draussen,
+      })
+    case 'subhire':
+      return format(t('status.subhire', '{n} items not ours'), { n: zahlen.fremd })
+    case 'werte':
+      return format(t('status.units', '{n} serialised units'), { n: zahlen.einheiten })
+    default:
+      return format(t('status.stock', '{n} models · {p} storage places'), {
+        n: zahlen.artikel,
+        p: zahlen.plaetze,
+      })
+  }
+}
+
 export function App() {
-  const { t } = useT()
+  const { t, format } = useT()
   const [reiter, setReiter] = useState<Reiter>('bestand')
   const REITER = reiterListe(t)
   const aktiv = REITER.find((r) => r.id === reiter)!
+
+  // Aus dem Store gelesen und nicht durchgereicht: die Statusleiste zeigt den
+  // Stand, nicht den Stand von vorhin. Eine Ansicht, die eine Zahl als Prop
+  // bekaeme, muesste sie weiterreichen — und die naechste, die es vergisst,
+  // zeigt schweigend eine alte.
+  const items = useInventoryStore((s) => s.items)
+  const nodes = useInventoryStore((s) => s.nodes)
+  const units = useInventoryStore((s) => s.units)
+  const records = useCheckoutStore((s) => s.records)
+  const stand = zaehler(reiter, t, format, {
+    artikel: items.length,
+    plaetze: nodes.length,
+    einheiten: units.length,
+    scheine: records.length,
+    draussen: records.filter((r) => !r.in).length,
+    fremd: items.filter((i) => i.ownership === 'subhire').length,
+  })
 
   return (
     <div className="app">
@@ -80,8 +135,11 @@ export function App() {
           </button>
         ))}
       </nav>
-      <p className="frage">{aktiv.frage}</p>
-      <main>
+      {/* Der Inhalt bekommt seine Satzbreite, der Rahmen nicht (suite#231).
+          Vorher trug `.app` beides — und damit endete auch die Kopfzeile bei
+          1100 px, mitten auf dem Bildschirm. */}
+      <main className="inhalt">
+        <p className="frage">{aktiv.frage}</p>
         {reiter === 'bestand' && <Bestand />}
         {reiter === 'eingang' && <Wareneingang />}
         {reiter === 'inventur' && <Inventur />}
@@ -90,6 +148,12 @@ export function App() {
         {reiter === 'werte' && <WerteUndSchaeden />}
         {reiter === 'subhire' && <SubHire />}
       </main>
+      {/* Die Statusleiste des Rahmens (ADR-007 Abschnitt 6). Links steht,
+          welche Frage gerade offen ist, rechts ihre Zahl. */}
+      <footer className="statusleiste">
+        <span>{aktiv.titel}</span>
+        <span className="rechts">{stand}</span>
+      </footer>
     </div>
   )
 }

@@ -14,6 +14,8 @@
 // ───────────────────────────────────────────────────────────────────────────
 import { useMemo, useState } from 'react'
 import { useT, locale } from '../i18n'
+import { TabelleRahmen } from './TabelleRahmen'
+import { Anlegen, Feld } from './Formular'
 import { useGebaeudeStore } from '../domain/store/gebaeudeStore'
 
 /**
@@ -78,57 +80,63 @@ export function Maengel() {
 
   return (
     <section>
-      <div className="leiste">
-        <select value={ziel} onChange={(e) => setZiel(e.target.value)} aria-label={t('defects.target.aria', 'Affected object')}>
-          <option value="">{t('defects.target.none', '— choose an object —')}</option>
-          {ziele.map((z) => (
-            <option key={z.id} value={z.id}>
-              {z.name}
-            </option>
-          ))}
-        </select>
-        <input
-          value={befund}
-          onChange={(e) => setBefund(e.target.value)}
-          placeholder={t('defects.finding.placeholder', 'What was noticed')}
-          aria-label={t('defects.finding', 'Finding')}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            // Der Übersetzer geht MIT in den Vertrag: der Grund einer
-            // Ablehnung erscheint in der Oberfläche und ist deshalb ihre
-            // Sprache, nicht die des Moduls.
-            const grund = mangelEintragen(
-              {
-                hausObjektId: ziel,
-                befund,
-                gemeldetAm: new Date().toISOString(),
-              },
-              t,
-            )
-            setAbgelehnt(grund)
-            if (!grund) {
-              setBefund('')
-              setZiel('')
-            }
-          }}
-        >
+      <Anlegen
+        titel={t('defects.create.head', 'Report a defect')}
+        leer={gebaeude.maengel.length === 0}
+        onAbsenden={() => {
+          // Der Übersetzer geht MIT in den Vertrag: der Grund einer Ablehnung
+          // erscheint in der Oberfläche und ist deshalb ihre Sprache, nicht
+          // die des Moduls.
+          const grund = mangelEintragen(
+            {
+              hausObjektId: ziel,
+              befund,
+              gemeldetAm: new Date().toISOString(),
+            },
+            t,
+          )
+          setAbgelehnt(grund)
+          if (!grund) {
+            setBefund('')
+            setZiel('')
+          }
+        }}
+      >
+        <Feld name={t('defects.target.aria', 'Affected object')}>
+          <select value={ziel} onChange={(e) => setZiel(e.target.value)}>
+            <option value="">{t('defects.target.none', '— choose an object —')}</option>
+            {ziele.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.name}
+              </option>
+            ))}
+          </select>
+        </Feld>
+        <Feld name={t('defects.finding', 'Finding')}>
+          <input
+            value={befund}
+            onChange={(e) => setBefund(e.target.value)}
+            placeholder={t('defects.finding.placeholder', 'What was noticed')}
+          />
+        </Feld>
+        <button type="submit" className="knopf-primaer" disabled={!ziel || !befund.trim()}>
           {t('defects.report', 'Report')}
         </button>
-      </div>
+      </Anlegen>
 
       {abgelehnt && <p className="fehler">{abgelehnt}</p>}
 
       {gebaeude.maengel.length === 0 ? (
-        <p className="leer">
-          {t(
-            'defects.empty',
-            'No defect reported. What is missing here is not an assurance — it only means nobody has entered anything.',
-          )}
-        </p>
+        <div className="leer-flaeche">
+          <p className="leer">
+            {t(
+              'defects.empty',
+              'No defect reported. What is missing here is not an assurance — it only means nobody has entered anything.',
+            )}
+          </p>
+        </div>
       ) : (
-        <div className="tabelle-rahmen">
+        <TabelleRahmen>
           <table>
             <thead>
               <tr>
@@ -149,7 +157,7 @@ export function Maengel() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TabelleRahmen>
       )}
     </section>
   )
