@@ -5090,14 +5090,48 @@ behobenen waren keine Tabellen-Einträge, sondern rohes JSX.
   Titel antippt, den er sieht, merkt davon nichts; wer ihn über die Tastatur
   erreicht, öffnet ins Leere.
 
-* **Was jetzt wirklich offen bleibt.** Die VIER Laufzeit-Module (`tally-pi`,
-  `sony-camera-bridge`, `Broadcast-intercom`, `pi-media-station`) und die
-  Suite-Shell selbst. Die vier haben kein statisches `dist/`, sondern je
-  einen eigenen Server — sie zu messen heißt, sie zu starten, und das ist
-  eine andere Sorte Lauf. Die Shell misst dieser Lauf nicht, weil er die
-  `dist/`-Ordner direkt ausliefert und damit jede App für sich sieht. Beides
-  steht im Kopf von `scripts/bedienbar.mjs` und in seiner Schlusszeile,
-  nicht in einem stillen Kommentar.
+* **Was jetzt wirklich offen bleibt — und was davon schon gemessen ist.**
+  Hier stand bis zum 2026-09-15, die vier Laufzeit-Module hätten „kein
+  statisches `dist/`, sondern je einen eigenen Server". **Für zwei von
+  ihnen stimmte das nicht**, und das ist genau die Defektform, gegen die
+  dieser Eintrag geschrieben ist: eine Begründung, die nie nachgesehen hat.
+
+  | | baut ein statisches `dist/`? | gemessen |
+  |---|---|---|
+  | `sony-camera-bridge` (`packages/web-rcp`) | **ja** | **ja**, 2026-09-15 |
+  | `Broadcast-intercom` (`apps/web`) | **ja** | **ja**, 2026-09-15 |
+  | `tally-pi` | nein — Flask/`guide_server.py` | nein |
+  | `pi-media-station` | nein — Flask, serverseitig | nein |
+
+  Der wirkliche Grund, warum `bedienbar:check` sie nicht sieht, ist ein
+  anderer und einfacherer: **die Suite vendoriert sie nicht.** Sie sind als
+  Laufzeit-Module verdrahtet (Adresse + `RuntimeFrame`), nicht als
+  `apps/<name>/dist`. Der Lauf kann nur ausliefern, was im Baum liegt.
+
+  **Gemessen mit derselben Sonde, gegen ihre eigenen `dist/`-Ordner:**
+
+  | | Befund | behoben in |
+  |---|---|---|
+  | `sony-camera-bridge` | Ansichts-Umschalter 25 px, „+ Camera" 29 px; dazu 13 deutsche Beschriftungen, die `lang:check` nicht sah | `sony#26` |
+  | `Broadcast-intercom` | Eingabefeld 31 px, „Create"/„Browse" 29 px, ein Feld ohne Namen | `intercom#20` |
+
+  Nachher: 2 Apps, 18 Ansichten, 132 Bedienpunkte, kein Befund.
+
+* **OFFENE SCHULD, benannt statt verschwiegen: die beiden haben keinen
+  STEHENDEN Bedienbarkeits-Wächter.** Gemessen wurde einmal, von Hand, mit
+  einer Kopie von `bedienbar.mjs` im Kritzelverzeichnis. Nichts hält das
+  Ergebnis fest: wer dort morgen einen 25-px-Knopf einbaut, merkt es nicht.
+
+  Was dafür nötig wäre: `playwright-core` als devDependency in beiden Repos,
+  ein CI-Schritt, der einen Browser einrichtet, und der Lauf selbst. Das ist
+  keine Zeile, sondern Infrastruktur in zwei Repos — deshalb steht es hier
+  als Eintrag und nicht als stiller Verzicht. Die Zahlen oben sind die
+  Grundlinie, gegen die ein solcher Lauf antreten müsste.
+
+  Die beiden Python-Module und die Suite-Shell bleiben davon unberührt: sie
+  zu messen heißt, sie zu STARTEN, und das ist eine andere Sorte Lauf.
+  Alles davon steht im Kopf von `scripts/bedienbar.mjs` und in seiner
+  Schlusszeile, nicht in einem stillen Kommentar.
 
 ### B-72 · Die MITGELIEFERTEN Presets haben keine Herkunft — und der Wächter misst die andere
 

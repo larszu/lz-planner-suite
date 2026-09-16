@@ -44,9 +44,27 @@
 // WAS DIESER LAUF NICHT MISST, und zwar ausdruecklich:
 //
 //   * Die vier LAUFZEIT-Module (`tally-pi`, `sony-camera-bridge`,
-//     `Broadcast-intercom`, `pi-media-station`). Sie haben kein statisches
-//     `dist/`, das dieser Lauf ausliefern koennte, sondern je einen eigenen
-//     Server — und den zu starten ist eine andere Sorte Pruefung als diese.
+//     `Broadcast-intercom`, `pi-media-station`). Hier stand, sie haetten
+//     „kein statisches dist, sondern je einen eigenen Server". FUER ZWEI VON
+//     IHNEN STIMMTE DAS NICHT, und das ist genau die Sorte Begruendung,
+//     gegen die dieser Lauf geschrieben ist — eine, die nie nachgesehen hat:
+//
+//       sony-camera-bridge  packages/web-rcp/dist   eine statische SPA
+//       Broadcast-intercom  apps/web/dist           eine statische SPA
+//       tally-pi            Flask, serverseitig
+//       pi-media-station    Flask, serverseitig
+//
+//     Der wirkliche Grund ist einfacher: DIE SUITE VENDORIERT SIE NICHT.
+//     Sie haengen als Laufzeit-Module an einer Adresse und nicht als
+//     `apps/<name>/dist`; dieser Lauf kann nur ausliefern, was im Baum
+//     liegt. Die beiden Python-Module muesste man ausserdem STARTEN, und
+//     das ist eine andere Sorte Pruefung als diese.
+//
+//     Die beiden SPAs sind am 2026-09-15 mit genau dieser Sonde gegen ihre
+//     eigenen `dist`-Ordner gemessen worden — und beide hatten Befunde
+//     (`sony#26`, `intercom#20`). Einen STEHENDEN Waechter haben sie
+//     trotzdem nicht; das steht als offene Schuld in B-77 und nicht in
+//     einem stillen Kommentar.
 //
 //   * Die SUITE-SHELL selbst. Gemessen sind die eingebetteten Planer, nicht
 //     der Rahmen um sie. Wer den Rahmen misst, braucht einen Lauf, der die
@@ -675,9 +693,11 @@ console.log(
     `jedes Eingabefeld hat einen Namen, und alle ${klappenGesamt} Menue-Klappen gehen sichtbar auf (${geprueft} Ansichten gemessen).`,
 )
 console.log(
-  'NICHT gemessen: die vier Laufzeit-Module (tally-pi, sony-camera-bridge, Broadcast-intercom, pi-media-station) — ' +
-    'sie haben kein statisches dist, das dieser Lauf ausliefern koennte, sondern je einen eigenen Server; ' +
-    'die Suite-Shell selbst (dieser Lauf misst die eingebetteten Planer, nicht den Rahmen um sie); ' +
+  'NICHT gemessen: die vier Laufzeit-Module — die Suite VENDORIERT sie nicht, sie haengen an einer Adresse, ' +
+    'und dieser Lauf kann nur ausliefern, was im Baum liegt. sony-camera-bridge und Broadcast-intercom bauen ' +
+    'sehr wohl ein statisches dist und sind am 2026-09-15 in ihren eigenen Repos gemessen worden (B-77); ' +
+    'tally-pi und pi-media-station rendern serverseitig (Flask) und muessten dafuer gestartet werden. ' +
+    'Die Suite-Shell selbst (dieser Lauf misst die eingebetteten Planer, nicht den Rahmen um sie); ' +
     'ob die Oberflaeche VERSTAENDLICH ist, ob ein Bedienpunkt TUT was sein Name sagt, Farbe und Kontrast, ' +
     'die Ansichten MIT Daten (dieser Lauf sieht ihren Leerzustand), und was IN einer Klappe steht — ' +
     'gemessen ist, dass sie aufgeht und sichtbar ist, nicht ihr Inhalt.',
