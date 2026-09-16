@@ -175,6 +175,27 @@ describe('Die npm-Geraete starten ueber ihren eigenen Starter', () => {
     }
   })
 
+  it('auch die Python-Geraete nehmen auf Windows ihren .bat — mit --server', () => {
+    // GEMESSEN wird hier der Quelltext und nicht der Lauf: dieser Container
+    // ist Linux, und die Windows-Zweige der Rezepte werden nie ausgefuehrt.
+    // Genau deshalb steht es hier — ein Zweig, den keine Messung erreicht,
+    // veraltet lautlos.
+    //
+    // `python run-local.py` war auf Windows ein Fehlgriff: der Interpreter
+    // heisst dort meist `py`, und ein Windows ohne Store-Alias hat gar kein
+    // `python` im PATH. `--server` ist die zweite Haelfte: ohne ihn oeffnen
+    // beide Skripte einen Browser und enden mit `pause` — ein Aufrufer, der
+    // auf das Ende des Fensters wartet, wartet auf einen Tastendruck.
+    const quelle = lies('electron/runtimeStart.cjs')
+    for (const zeile of [
+      "WINDOWS ? ['/c', 'run_windows.bat', '--server'] : ['run-local.py']",
+      "WINDOWS ? ['/c', 'run_windows.bat', '--server'] : ['run-local.sh']",
+    ]) {
+      expect(quelle).toContain(zeile)
+    }
+    expect(quelle).not.toMatch(/WINDOWS \? 'python'/)
+  })
+
   it('das Beenden geht an die ganze Gruppe, nicht nur an das Starter-Skript', () => {
     // `bash dev.sh` startet `npm`, das startet `concurrently`, das startet
     // `tsx` und `vite`. Ein SIGTERM an das `bash` laesst die Enkel auf ihren

@@ -126,8 +126,8 @@ export const RUNTIMES: RuntimeDef[] = [
     defaultHost: 'localhost',
     defaultPort: 8080,
     path: '/',
-    was: 'ATEM-Tally-Lampen, Browser-Tally und GPIO-Taster — auf einem Raspberry Pi oder lokal.',
-    start: 'Im Repo `tally-pi`: `python3 run-local.py` (Port 8080, `--port` aendert ihn). Ohne Pi laeuft alles ausser den GPIO-Lampen; `--demo` schaltet Beispieldaten dazu.',
+    was: 'ATEM-Tally-Lampen, Browser-Tally und GPIO-Taster — auf einem Raspberry Pi, oder lokal auf Linux, macOS und Windows.',
+    start: 'Im Repo `tally-pi`: `python3 run-local.py` (Windows: `run_windows.bat`) — Port 8080, `--port` aendert ihn. Ohne Pi laeuft alles ausser GPIO; `--demo` schaltet Beispieldaten dazu, `--numato` gibt echte Ein-/Ausgaenge ueber ein Numato-USB-Modul (der einzige GPIO-Weg auf Windows und macOS).',
     presets: [
       { label: 'Lokal', host: 'localhost', port: 8080, was: 'run-local.py auf diesem Rechner' },
       { label: 'Pi im Netz', host: 'tally-pi.local', port: 8080, was: 'guide_server auf dem Raspberry Pi' },
@@ -187,7 +187,7 @@ export const RUNTIMES: RuntimeDef[] = [
     defaultHost: 'localhost',
     defaultPort: 5000,
     path: '/',
-    was: 'Sensor-gesteuerte Medien-Station mit Web-Admin und Display-Modus — auf einem Pi oder lokal.',
+    was: 'Sensor-gesteuerte Medien-Station mit Web-Admin und Display-Modus. Bespielt auf einem gewoehnlichen Rechner auch dessen eigene und angeschlossene Bildschirme.',
     start: 'Im Repo `pi-media-station`: `./run-local.sh` (Linux/macOS) bzw. `run_windows.bat` (Windows). Ohne Sensor-Hardware laeuft der Web-Admin vollstaendig; andere Geraete im selben Netz erreichen ihn unter der IP dieses Rechners.',
     presets: [
       { label: 'Lokal', host: 'localhost', port: 5000, was: 'run-local.sh auf diesem Rechner' },

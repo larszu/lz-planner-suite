@@ -87,9 +87,20 @@ const WINDOWS = process.platform === 'win32'
 const REZEPTE = {
   tally: {
     repo: 'tally-pi',
-    marker: ['run-local.py'],
-    programm: WINDOWS ? 'python' : 'python3',
-    argumente: ['run-local.py'],
+    // Auf Windows der Starter des Repos, nicht `python run-local.py`: der
+    // Interpreter heisst dort meist `py`, und ein Windows ohne Store-Alias
+    // hat gar kein `python` im PATH — genau das setzte diese Zeile ab.
+    // `run_windows.bat` sucht ihn (erst `py`, dann `python`), installiert
+    // `pyserial` nach — ohne die gibt es dort KEIN GPIO, weil ein
+    // Numato-USB-Modul der einzige Weg ohne 40-poligen Stecker ist — und
+    // reicht alle Schalter durch.
+    //
+    // `--server` ist kein Schmuck: ohne ihn oeffnet das Skript einen
+    // Browser und endet mit `pause`, und ein Aufrufer, der auf das Ende des
+    // Fensters wartet, wartet auf einen Tastendruck.
+    marker: WINDOWS ? ['run-local.py', 'run_windows.bat'] : ['run-local.py'],
+    programm: WINDOWS ? 'cmd.exe' : 'python3',
+    argumente: WINDOWS ? ['/c', 'run_windows.bat', '--server'] : ['run-local.py'],
   },
   kamera: {
     repo: 'sony-camera-bridge',
@@ -108,12 +119,18 @@ const REZEPTE = {
   medien: {
     repo: 'pi-media-station',
     marker: WINDOWS ? ['run_windows.bat', 'main.py'] : ['run-local.sh', 'main.py'],
-    // `run_windows.bat` und nicht `python main.py`: das Skript sucht den
-    // Interpreter (`py`, dann `python`), legt bei Bedarf die virtuelle
-    // Umgebung an und installiert die Abhaengigkeiten. `python main.py` auf
-    // einem frischen Klon faellt ueber `flask`.
+    // `run_windows.bat --server` und nicht `python main.py`: das Skript
+    // sucht den Interpreter (`py`, dann `python`), legt bei Bedarf die
+    // virtuelle Umgebung an und installiert die Abhaengigkeiten.
+    // `python main.py` auf einem frischen Klon faellt ueber `flask`.
+    //
+    // `--server` haelt den Prozess im VORDERGRUND. Die alte Fassung des
+    // Skripts startete `main.py` mit `start "" /min`, also abgekoppelt: der
+    // Stopp-Knopf meldete „beendet", und der Server lief weiter und belegte
+    // beim naechsten Start den Port. Das `pause` am Ende war dasselbe
+    // Problem von der anderen Seite.
     programm: WINDOWS ? 'cmd.exe' : 'bash',
-    argumente: WINDOWS ? ['/c', 'run_windows.bat'] : ['run-local.sh'],
+    argumente: WINDOWS ? ['/c', 'run_windows.bat', '--server'] : ['run-local.sh'],
   },
 }
 
