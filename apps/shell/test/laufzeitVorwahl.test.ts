@@ -72,10 +72,18 @@ describe('Laufzeit-Anwendungen — lokal starten ist der Normalfall', () => {
     // Je Anwendung: die Datei, die der Starttext meint. Fehlt das Nachbar-Repo
     // (frischer Klon, CI ohne Geschwister), wird uebersprungen statt geraten —
     // dieselbe Bauform wie beim Port-Beleg in `modulErreichbarkeit`.
+    //
+    // SEIT 2026-09-15 stehen bei Kamerapult und Intercom die STARTER der
+    // Repos und nicht mehr `npm run dev`. Gemessen an einem frischen Klon
+    // beider Repos war `npm run dev` dort ein Fehlschlag mit EXIT=127
+    // (`concurrently: not found`, `tsx: not found`) — die Werkzeuge liegen in
+    // `node_modules/.bin`, und der Starter installiert sie nach. Der Beleg
+    // ist deshalb jetzt die Starter-Datei selbst: sie muss es geben, und der
+    // Text muss sie nennen.
     const belege: Record<string, { datei: string; imText: string }> = {
       tally: { datei: 'tally-pi/run-local.py', imText: 'run-local.py' },
-      kamera: { datei: 'sony-camera-bridge/package.json', imText: 'npm run dev' },
-      intercom: { datei: 'Broadcast-intercom/package.json', imText: 'npm run dev' },
+      kamera: { datei: 'sony-camera-bridge/dev.sh', imText: './dev.sh' },
+      intercom: { datei: 'Broadcast-intercom/dev.sh', imText: './dev.sh' },
       medien: { datei: 'pi-media-station/run-local.sh', imText: 'run-local.sh' },
     }
     let geprueft = 0
@@ -90,6 +98,18 @@ describe('Laufzeit-Anwendungen — lokal starten ist der Normalfall', () => {
       if (b.datei.endsWith('package.json')) {
         const skripte = JSON.parse(readFileSync(pfad, 'utf8')).scripts ?? {}
         expect(skripte.dev, `${b.datei} hat kein "dev"-Skript mehr`).toBeTruthy()
+      }
+      if (b.datei.endsWith('dev.sh')) {
+        // Der Starter muss die Abhaengigkeiten nachziehen — DAS ist der
+        // Unterschied zu `npm run dev`, und ohne ihn ist der Wechsel
+        // hierher folgenlos. Und sein Windows-Gegenstueck muss es geben,
+        // sonst startet der Knopf dort ins Leere.
+        const quelle = readFileSync(pfad, 'utf8')
+        expect(quelle, `${b.datei} installiert nicht nach`).toContain('npm install')
+        expect(
+          existsSync(pfad.replace(/dev\.sh$/, 'dev.ps1')),
+          `${b.datei}: das Windows-Gegenstueck dev.ps1 fehlt`,
+        ).toBe(true)
       }
     }
     // Ausgesprochen, statt stillschweigend: wieviel dieser Lauf wirklich

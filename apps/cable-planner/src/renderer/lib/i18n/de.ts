@@ -707,7 +707,6 @@ export const de: Dict = {
   'app.viewer.desktopOnly': 'Der Viewer-Export braucht die Desktop-App.',
   // 2026-09-10 — suite-eigene Stelle: der Viewer-Export haengt hier am
   // Desktop-Wirt, und die Meldung dazu stand roh auf Deutsch (#837).
-  'app.viewerExport.desktopOnly': 'Der Viewer-Export braucht die Desktop-App.',
   'app.viewerExport.failTitle': 'Viewer-Export fehlgeschlagen',
   'app.viewerExport.okBody':
     'Sende sie an deine Reviewer/Helfer. Beim Öffnen werden sie nach ihrem Namen gefragt — Anmerkungen sind dann automatisch attributiert.',

@@ -176,7 +176,7 @@ const DROP_ART: Record<LoadDropKind, [key: string, de: string]> = {
   'equipment-circuit': ['app.loadReport.equipmentCircuit', 'Circuit role of a device'],
   'equipment-adapter': ['app.loadReport.equipmentAdapter', 'Adapter details of a device'],
   'farbnorm': ['app.loadReport.farbnorm', 'Colour standard without a stated origin'],
-  'anschlussListe': ['app.loadReport.anschlussListe', 'Adernbündel'],
+  'anschlussListe': ['app.loadReport.anschlussListe', 'Wire bundle'],
   'ader': ['app.loadReport.ader', 'Conductor details of a cable'],
   'senkenprofil': ['app.loadReport.senkenprofil', 'Sink profile without a stated origin'],
   'pattern-check': ['app.loadReport.patternCheck', 'Visual check from the test-pattern walk'],
@@ -229,6 +229,13 @@ export default function App() {
   const portConflict = useProjectStore((state) => state.portConflict)
   const resolvePortConflictByReplace = useProjectStore((state) => state.resolvePortConflictByReplace)
   const cancelPortConflict = useProjectStore((state) => state.cancelPortConflict)
+  /**
+   * Ist die Modul-Frage schon beantwortet? (#864)
+   *
+   * Sie steht hier, weil die ERSTSTART-DIALOGE EINE REIHENFOLGE BRAUCHEN und
+   * nicht drei gleichzeitige Schleier. Siehe unten bei `OnboardingTour`.
+   */
+  const onboardingDone = useSettingsStore((state) => state.onboardingDone)
   const hasToken = useSettingsStore((state) => state.hasToken)
   const setHasToken = useSettingsStore((state) => state.setHasToken)
   const propertiesCollapsed = useUiStore((state) => state.propertiesCollapsed)
@@ -940,7 +947,7 @@ export default function App() {
   // Planner und werden beim ersten Mal nach ihrem Namen gefragt.
   const handleExportViewer = async () => {
     if (!hasDesktopBridge) {
-      await infoDialog(t('app.viewerExport.desktopOnly', 'Exporting a viewer file needs the desktop app.'), {
+      await infoDialog(t('app.viewer.desktopOnly', 'Exporting a viewer file needs the desktop app.'), {
         tone: 'warning',
       })
       return
@@ -1418,7 +1425,23 @@ export default function App() {
         open={rentmanCableExport.open}
         onClose={closeRentmanCableExport}
       />
-      <OnboardingTour open={tourOpen} onClose={() => setTourOpen(false)} />
+      {/* DREI ERSTSTART-DIALOGE, EINE REIHENFOLGE (#864).
+          Beim ersten Start oeffneten sich bis hierher alle drei gleichzeitig:
+          die Tour nach 400 ms, der Willkommens-Dialog und die Modul-Frage.
+          Gemessen mit `bedienbar:check` (1440 px): zwei `.avob-overlay`
+          uebereinander, der Schliessen-Knopf des unteren nicht anklickbar
+          (Zeitueberschreitung, „intercepts pointer events"), 61 Bedienpunkte
+          unter einem anderen Element.
+
+          Die Reihenfolge ergibt sich aus dem, was sie verlangen: der
+          Willkommens-Dialog fragt „welches Projekt?" und blockiert die
+          Arbeit; die Modul-Frage ist eine Umfrage; die Tour zeigt, wo was
+          liegt, und ist das am wenigsten Dringende. Also: Willkommen →
+          Umfrage → Tour, jede wartet auf die vorige. */}
+      <OnboardingTour
+        open={tourOpen && !welcomeOpen && onboardingDone}
+        onClose={() => setTourOpen(false)}
+      />
       <WelcomeDialog
         open={welcomeOpen}
         onNew={() => setMetaDialog({ mode: 'new' })}
@@ -1458,7 +1481,17 @@ export default function App() {
       <AboutDialog />
       <PatchListDialog />
       <InstallationDocsDialog />
-      <ModuleOnboardingDialog />
+      {/* NACH dem Willkommens-Dialog, nicht daneben (#864).
+          Gemessen bei 390 px: beide standen gleichzeitig offen, sichtbar
+          uebereinander, und der Schleier der Modul-Frage nahm die Klicks
+          entgegen, die dem Schliessen-Knopf des Willkommens-Dialogs galten —
+          `bedienbar:check` in der Suite kam an der App gar nicht mehr vorbei.
+
+          Die Reihenfolge ist keine Geschmacksfrage: der Willkommens-Dialog
+          fragt „welches Projekt?" und blockiert die Arbeit, die Modul-Frage
+          fragt „wofuer nutzt du die App?" und ist eine Umfrage. Die Umfrage
+          wartet. */}
+      {!welcomeOpen && <ModuleOnboardingDialog />}
       <BandwidthCalculatorDialog />
       <PowerCalculatorDialog />
       <RecordingStorageCalculatorDialog />

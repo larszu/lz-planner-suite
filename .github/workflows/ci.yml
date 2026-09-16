@@ -226,11 +226,22 @@ jobs:
       # die `dist/`-Ordner aller Planer schon erzeugt, und der Lauf braucht
       # dieselbe Sorte Browser wie die Zeile darueber. Er misst, was suite#231
       # meldete — dass Module unbedienbar sind — und zwar im Fenster und nicht
-      # am Quelltext. Seit B-77 deckt er VIER Apps ab (Lager, Gebaeude,
-      # MultiCam, Light) und fuenf Zusagen: nichts ragt hinaus, kein
-      # Bedienpunkt unter 32 px, keiner unter einem anderen Element, jedes
-      # Feld hat einen Namen, jede Menue-Klappe geht sichtbar auf.
-      - name: Alle vier Browser-Planer sind bedienbar
+      # am Quelltext. Seit B-77 deckt er ALLE FUENF Browser-Planer ab (Lager,
+      # Gebaeude, MultiCam, Light, Cable) und fuenf Zusagen: nichts ragt
+      # hinaus, kein Bedienpunkt unter 32 px, keiner unter einem anderen
+      # Element, jedes Feld hat einen Namen, jede Menue-Klappe geht sichtbar
+      # auf.
+      #
+      # Die Zeile darueber bleibt trotzdem stehen, obwohl beide jetzt den
+      # cable-planner messen: `mobil:check` fragt etwas anderes. Er prueft ein
+      # 390-px-Fenster MIT FINGERBEDIENUNG und in BEIDEN Sprachen darauf, dass
+      # sich das Dokument nicht schieben laesst (`overflow: hidden`,
+      # `overscroll-behavior: none`, `touch-action` am Plan) — das ist die
+      # Frage „verrutscht die Seite unter dem Daumen". `bedienbar:check` fragt
+      # „ist jeder Bedienpunkt gross genug, sichtbar und frei". Zwei Fragen,
+      # zwei Laeufe; wer einen davon streicht, verliert die Antwort und nicht
+      # nur die Laufzeit.
+      - name: Alle fuenf Browser-Planer sind bedienbar
         run: npm run bedienbar:check
       - name: Screenshots bei Fehlschlag
         if: failure()

@@ -43,16 +43,20 @@
 //
 // WAS DIESER LAUF NICHT MISST, und zwar ausdruecklich:
 //
-//   * Der `cable-planner`. Sein `dist/` traegt das Electron-Layout
-//     (`renderer/index.html`) und nicht die Wurzel, die dieser Lauf bedient.
-//     Er steht deshalb nicht in `APPS`; der Befund steht im Backlog (B-77)
-//     und nicht in einem stillen Kommentar. Fuer sein Telefon-Verhalten gibt
-//     es `mobil:check` im eigenen Repo.
+//   * Die vier LAUFZEIT-Module (`tally-pi`, `sony-camera-bridge`,
+//     `Broadcast-intercom`, `pi-media-station`). Sie haben kein statisches
+//     `dist/`, das dieser Lauf ausliefern koennte, sondern je einen eigenen
+//     Server — und den zu starten ist eine andere Sorte Pruefung als diese.
 //
-//     Die beiden anderen — `multicam-planner` und `light-planner` — standen
-//     hier bis zum 2026-09-13 mit demselben Vermerk. Sie sind jetzt drin,
-//     weil sie die Messung bestehen (B-77). Was sie vorher trennte, war
-//     nicht die Sorte Oberflaeche, sondern der Zustand:
+//   * Die SUITE-SHELL selbst. Gemessen sind die eingebetteten Planer, nicht
+//     der Rahmen um sie. Wer den Rahmen misst, braucht einen Lauf, der die
+//     Shell startet; dieser hier liefert die `dist/`-Ordner direkt aus und
+//     sieht deshalb jede App fuer sich.
+//
+//     ALLE FUENF BROWSER-PLANER SIND DRIN (Stand 2026-09-13). Drei davon
+//     standen hier zeitweise mit einem Vermerk „nicht gemessen" — und ein
+//     solcher Vermerk ist immer ein Befund und nie eine Eigenschaft. Was sie
+//     vom Lauf trennte, war der Zustand, nicht die Sorte Oberflaeche:
 //
 //       multicam-planner   22 Bedienpunkte unter 32 px (Zoom: 12 x 12),
 //                          9 Elemente ragten bei 390 px hinaus,
@@ -60,6 +64,14 @@
 //       light-planner      24 Bedienpunkte unter 32 px, 8 Elemente ragten
 //                          bis 628 px hinaus, 1 Feld ohne Namen, und jede
 //                          Menue-Klappe war 0 px hoch sichtbar
+//       cable-planner      sein `dist/` legt die Seite nach
+//                          `dist/renderer/index.html` statt in die Wurzel —
+//                          das war die ganze Huerde, und sie kostete einen
+//                          Eintrag `wurzel: 'apps/cable-planner/dist/renderer'`.
+//                          Dahinter lagen zwei Erststart-Dialoge
+//                          uebereinander, deren oberer die Klicks des
+//                          unteren annahm (cable#864/#865): der Lauf kam an
+//                          der App gar nicht vorbei.
 //
 //   * Ob die Oberflaeche VERSTAENDLICH ist. Ein Formular kann jede Zahl
 //     dieses Laufs erfuellen und trotzdem die falschen Fragen stellen.
@@ -103,9 +115,10 @@ import { extname, join, normalize, resolve } from 'node:path'
  *            `.bc-tabbar button` die Modul-Zeile des MultiCam-Planners,
  *            `.tb-modeswitch button` der 2D/3D/Render-Umschalter des
  *            Light-Planners. Ein gemeinsamer Name waere eine Umbenennung in
- *            vier Repos fuer einen Waechter — das waere der Schwanz, der mit
- *            dem Hund wedelt.
- * `wegklicken`  was VOR der Messung weg muss. MultiCam- und Light-Planner
+ *            fuenf Repos fuer einen Waechter — das waere der Schwanz, der mit
+ *            dem Hund wedelt. `null` heisst: diese App hat keine solche
+ *            Leiste, ihre eine Ansicht wird einmal gemessen.
+ * `wegklicken`  was VOR der Messung weg muss. Drei der fuenf Planer
  *            oeffnen beim ersten Start den Willkommens-Dialog aus
  *            `@avplan/onboarding-core` — ein Schleier ueber der ganzen
  *            Oberflaeche. Eine Sonde, die ihn stehenlaesst, misst NUR IHN:
@@ -125,13 +138,36 @@ import { extname, join, normalize, resolve } from 'node:path'
  *            laesst, braucht den Eintrag nicht — ein Klick ins Leere kostet
  *            vier Sekunden und meldet nichts.
  *
- * Der Kopf dieser Datei sagt, warum der `cable-planner` fehlt.
+ * `wurzel` ist beim `cable-planner` `dist/renderer` und nicht `dist`: er
+ * baut fuer Electron, und dort ist die Wurzel der Ordner des
+ * Renderer-Prozesses. Der Kopf dieser Datei sagt, was ausserhalb
+ * dieses Laufs liegt.
  */
 const APPS = [
   { id: 'inventory-planner', wurzel: 'apps/inventory-planner/dist', reiter: '.reiter' },
   { id: 'larszu-facility-planner', wurzel: 'apps/larszu-facility-planner/dist', reiter: '.reiter' },
   { id: 'multicam-planner', wurzel: 'apps/multicam-planner/dist', reiter: '.bc-tabbar button', wegklicken: ['.avob-x'] },
   { id: 'light-planner', wurzel: 'apps/light-planner/dist', reiter: '.tb-modeswitch button', wegklicken: ['.avob-x'] },
+  {
+    id: 'cable-planner',
+    // `dist/renderer` und nicht `dist`: diese App ist die einzige mit einem
+    // Electron-Bau, und der legt Renderer und Main nebeneinander. Bis B-77
+    // stand hier deshalb gar nichts — „sein dist traegt ein anderes Layout"
+    // war aber eine Auskunft ueber DIESEN LAUF und keine ueber die App. Ein
+    // Ordner tiefer bedient, und sie laeuft.
+    wurzel: 'apps/cable-planner/dist/renderer',
+    // Diese App fuehrt keine Reiterleiste: sie hat EINE Arbeitsflaeche mit
+    // Seitenspalten. Gemessen wird deshalb die eine Ansicht — und das ist
+    // hier kein Verlust, sondern die Bauart.
+    reiter: null,
+    // ZWEI Schleier, zwei Bauarten: der Willkommens-Dialog dieser App ist
+    // ihr eigener (`ModalShell`, also `.cp-modal-panel`), die
+    // Erste-Schritte-Tour kommt aus `@avplan/onboarding-core` (`.avob-x`).
+    // Der Waehler fuer den ersten ist STRUKTURELL und nicht der
+    // `aria-label` — der ist uebersetzt, und ein Lauf, der nur auf Englisch
+    // trifft, haengt an der Sprache des Browsers statt an der Bedienbarkeit.
+    wegklicken: ['.cp-modal-panel .cp-panel-head button', '.avob-x'],
+  },
 ]
 
 /**
@@ -474,19 +510,60 @@ for (const app of APPS) {
     // meldete danach dreissig Mal „der Titel liess sich nicht anklicken" —
     // richtig gemessen, falsch verstanden. Die Obergrenze verhindert eine
     // Endlosschleife, falls ein Dialog sich selbst neu oeffnet.
-    for (const wahl of app.wegklicken ?? []) {
-      for (let runde = 0; runde < 4; runde++) {
-        if (!(await seite.$(wahl))) break
-        let ging = true
-        await seite.click(wahl, { timeout: 4000 }).catch(() => { ging = false })
-        await seite.waitForTimeout(300)
-        if (!ging) {
-          fehler.push(`${app.id} bei ${breite} px: ${wahl} liess sich nicht anklicken — der Startbildschirm bleibt stehen und verdeckt die Messung`)
-          break
+    // WEGRAEUMEN, SOLANGE ETWAS DA IST — und zwar rundenweise ueber ALLE
+    // Waehler, nicht einer nach dem anderen.
+    //
+    // Die Schleier kommen nacheinander und nicht gleichzeitig: der
+    // Willkommens-Dialog schliesst, und ERST DANN haengt die
+    // Erste-Schritte-Tour sich ein. Wer je Waehler einmal durchlaeuft, sucht
+    // die Tour, waehrend sie noch nicht da ist, findet nichts, geht weiter —
+    // und stolpert danach ueber sie. Genau das ist hier passiert: sieben
+    // Menuetitel, alle „etwas liegt darueber", alle derselbe `.avob-overlay`.
+    //
+    // Die Obergrenze verhindert eine Endlosschleife, falls ein Dialog sich
+    // selbst neu oeffnet.
+    for (let runde = 0; runde < 6; runde++) {
+      let getan = false
+      for (const wahl of app.wegklicken ?? []) {
+        if (!(await seite.$(wahl))) continue
+        // ERST MESSEN, DANN WEGRAEUMEN (B-77).
+        //
+        // Der Willkommens-Dialog ist der ERSTE Bildschirm, den ein neuer
+        // Nutzer sieht — und der Lauf klickte ihn weg, ohne ihn je
+        // anzusehen. Gemessen, als er einmal hinsah: der Schliessen-Knopf
+        // war 21 x 23 px gross, der kleinste Bedienpunkt der ganzen Suite.
+        //
+        // Ein Waechter, der sein Messobjekt beiseiteraeumt, um an das
+        // dahinter zu kommen, ist auf dem Beiseitegeraeumten blind.
+        const d = await seite.evaluate(messen)
+        geprueft++
+        bedienpunkteGesamt += d.bedienpunkte
+        const wo = `${app.id} · Startbildschirm (${runde + 1}.) bei ${breite} px`
+        if (d.klein.length) {
+          fehler.push(`${wo}: ${d.klein.length} Bedienpunkt(e) unter ${ZIEL} px — ${d.klein.slice(0, 3).join(' · ')}`)
         }
+        if (d.raus.length) {
+          fehler.push(`${wo}: ${d.raus.length} Element(e) ragen hinaus, ohne in einem Scrollbereich zu stehen — ${d.raus.slice(0, 3).join(' · ')}`)
+        }
+        if (d.ohneNamen.length) {
+          fehler.push(`${wo}: ${d.ohneNamen.length} Eingabefeld(er) ohne Namen — ${d.ohneNamen.slice(0, 3).join(' · ')}`)
+        }
+        let grund = null
+        await seite.click(wahl, { timeout: KLICK_GEDULD }).catch((e) => { grund = klickGrund(e) })
+        if (grund) {
+          fehler.push(`${app.id} bei ${breite} px: ${wahl} liess sich nicht anklicken — ${grund}; der Startbildschirm bleibt stehen und verdeckt die Messung`)
+        }
+        getan = true
+        await seite.waitForTimeout(400)
       }
+      if (!getan) break
+      // Nach der letzten Schliessung noch einmal Luft holen: der naechste
+      // Dialog haengt sich erst im folgenden Durchlauf ein.
+      await seite.waitForTimeout(300)
+    }
+    for (const wahl of app.wegklicken ?? []) {
       if (await seite.$(wahl)) {
-        fehler.push(`${app.id} bei ${breite} px: nach vier Klicks auf ${wahl} liegt immer noch ein Schleier ueber der App`)
+        fehler.push(`${app.id} bei ${breite} px: nach sechs Runden liegt immer noch ein Schleier ueber der App (${wahl})`)
       }
     }
 
@@ -530,9 +607,13 @@ for (const app of APPS) {
     // Unterschied: im Lager hatten vier der sieben Ansichten eigene
     // Stilregeln und drei gar keine — wer nur die erste misst, misst je nach
     // App entweder das Beste oder das Schlechteste und nie beides.
-    const reiter = await seite.$$(app.reiter)
+    const reiter = app.reiter ? await seite.$$(app.reiter) : []
     const wieviele = Math.max(1, reiter.length)
-    if (!reiter.length) {
+    // `reiter: null` heisst „diese App hat keine" und ist eine ANGABE, kein
+    // Versehen. Fehlt die Leiste dagegen, obwohl ein Waehler dasteht, hat
+    // sich etwas geaendert und der Lauf misst eine Ansicht statt aller —
+    // das ist ein Befund.
+    if (app.reiter && !reiter.length) {
       fehler.push(`${app.id} bei ${breite} px: keine Ansichts-Leiste gefunden (${app.reiter}) — die Sonde sieht eine Ansicht statt aller`)
     }
 
@@ -594,7 +675,9 @@ console.log(
     `jedes Eingabefeld hat einen Namen, und alle ${klappenGesamt} Menue-Klappen gehen sichtbar auf (${geprueft} Ansichten gemessen).`,
 )
 console.log(
-  'NICHT gemessen: der cable-planner (sein dist traegt das Electron-Layout — Eintrag B-77; fuer sein Telefon-Verhalten gibt es mobil:check im eigenen Repo), ' +
+  'NICHT gemessen: die vier Laufzeit-Module (tally-pi, sony-camera-bridge, Broadcast-intercom, pi-media-station) — ' +
+    'sie haben kein statisches dist, das dieser Lauf ausliefern koennte, sondern je einen eigenen Server; ' +
+    'die Suite-Shell selbst (dieser Lauf misst die eingebetteten Planer, nicht den Rahmen um sie); ' +
     'ob die Oberflaeche VERSTAENDLICH ist, ob ein Bedienpunkt TUT was sein Name sagt, Farbe und Kontrast, ' +
     'die Ansichten MIT Daten (dieser Lauf sieht ihren Leerzustand), und was IN einer Klappe steht — ' +
     'gemessen ist, dass sie aufgeht und sichtbar ist, nicht ihr Inhalt.',

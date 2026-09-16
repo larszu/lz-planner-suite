@@ -100,11 +100,12 @@ describe('Das Verzeichnis wird geprueft, nicht geglaubt', () => {
   })
 
   it('ein package.json mit fremdem Namen startet nichts', () => {
-    // Der gefaehrlichste Fall: die Marker-Datei IST da (jedes Node-Projekt hat
-    // ein package.json), und ohne den Namensabgleich liefe `npm run dev` in
+    // Der gefaehrlichste Fall: die Marker-Dateien SIND da (jedes Node-Projekt
+    // hat ein package.json), und ohne den Namensabgleich liefe der Starter in
     // irgendeinem fremden Projekt.
     const fremd = join(tmp, 'fremd')
     mkdirSync(fremd, { recursive: true })
+    for (const datei of start.REZEPTE.kamera.marker) writeFileSync(join(fremd, datei), '')
     writeFileSync(join(fremd, 'package.json'), JSON.stringify({ name: 'irgendwas-anderes' }))
     const r = start.passendesVerzeichnis('kamera', fremd)
     expect(r.ok).toBe(false)
@@ -112,11 +113,76 @@ describe('Das Verzeichnis wird geprueft, nicht geglaubt', () => {
     expect(r.gefunden).toBe('irgendwas-anderes')
   })
 
+  it('ein Repo ohne seinen Starter startet nichts', () => {
+    // SEIT 2026-09-15 ist der Starter des Repos selbst ein Marker — der Knopf
+    // ruft `dev.sh` bzw. `dev.ps1` und nicht mehr `npm run dev`. Fehlt die
+    // Datei, ist es entweder ein alter Stand oder das falsche Verzeichnis;
+    // beides muss VOR dem `spawn` auffallen und nicht als „command not found"
+    // in der Ausgabe.
+    const ohne = join(tmp, 'ohne-starter')
+    mkdirSync(ohne, { recursive: true })
+    writeFileSync(join(ohne, 'package.json'), JSON.stringify({ name: 'sony-camera-bridge' }))
+    const r = start.passendesVerzeichnis('kamera', ohne)
+    expect(r.ok).toBe(false)
+    expect(r.grund).toBe('kein-repo')
+    expect(r.fehlt).toBe(process.platform === 'win32' ? 'dev.ps1' : 'dev.sh')
+  })
+
   it('das richtige Verzeichnis geht durch', () => {
     const echt = join(tmp, 'sony-camera-bridge')
     mkdirSync(echt, { recursive: true })
+    for (const datei of start.REZEPTE.kamera.marker) writeFileSync(join(echt, datei), '')
     writeFileSync(join(echt, 'package.json'), JSON.stringify({ name: 'sony-camera-bridge' }))
     expect(start.passendesVerzeichnis('kamera', echt)).toMatchObject({ ok: true })
+  })
+})
+
+// ───────────────────────────────────────────────────────────────────────────
+// DER STARTER DES REPOS UND NICHT `npm run dev` (2026-09-15)
+//
+// NUTZER-MELDUNG: „intercom und kamerapult muss auch lokal laufen im av
+// planner."
+//
+// GEMESSEN an einem frischen Klon beider Repos, mit genau dem Befehl, der
+// hier bis dahin stand:
+//
+//   Broadcast-intercom   sh: 1: concurrently: not found        EXIT=127
+//   sony-camera-bridge   sh: 1: tsx: not found / sh -c vite    EXIT=127
+//
+// Beide Repos bringen einen Starter mit, der nachinstalliert und den
+// hardwarefreien Weg waehlt. Dieser Block haelt fest, dass der Knopf IHN
+// ruft — sonst faellt das beim naechsten Umbau still zurueck, und der
+// Ausfall sieht wieder aus wie „geht halt nicht".
+// ───────────────────────────────────────────────────────────────────────────
+describe('Die npm-Geraete starten ueber ihren eigenen Starter', () => {
+  const starterDatei = process.platform === 'win32' ? 'dev.ps1' : 'dev.sh'
+
+  it('Kamerapult und Intercom rufen dev.sh bzw. dev.ps1', () => {
+    for (const id of ['kamera', 'intercom']) {
+      const rezept = start.REZEPTE[id]
+      expect(rezept.argumente.join(' ')).toContain(starterDatei)
+      // Und die Datei ist zugleich Marker: wer sie nicht hat, wird nicht
+      // gestartet.
+      expect(rezept.marker).toContain(starterDatei)
+    }
+  })
+
+  it('und nicht mehr `npm run dev` — der Fall, der gemessen fehlschlug', () => {
+    for (const id of ['kamera', 'intercom']) {
+      const rezept = start.REZEPTE[id]
+      const befehl = `${rezept.programm} ${rezept.argumente.join(' ')}`
+      expect(befehl).not.toMatch(/npm(\.cmd)?\s+run\s+dev\b/)
+    }
+  })
+
+  it('das Beenden geht an die ganze Gruppe, nicht nur an das Starter-Skript', () => {
+    // `bash dev.sh` startet `npm`, das startet `concurrently`, das startet
+    // `tsx` und `vite`. Ein SIGTERM an das `bash` laesst die Enkel auf ihren
+    // Ports sitzen, und der naechste Start laeuft in „address in use".
+    const quelle = lies('electron/runtimeStart.cjs')
+    expect(quelle).toContain('detached: !WINDOWS')
+    expect(quelle).toContain('process.kill(-pid')
+    expect(quelle).toContain('taskkill')
   })
 })
 

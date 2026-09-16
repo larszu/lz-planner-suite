@@ -48,6 +48,27 @@
 //   intercom        `apps/web/vite.config` server.port = 5200  ← die BEDIENUNG
 //   media-station   `main.py`              config web_port, Vorgabe 5000
 //
+// UND DER START-BEFEHL WAR FALSCH — nicht im Wortlaut, sondern in der Wahl.
+// Hier stand fuer Kamerapult und Intercom `npm run dev`, und genau das setzte
+// der Start-Knopf ab. GEMESSEN am 2026-09-15 an einem frischen Klon beider
+// Repos:
+//
+//   Broadcast-intercom   sh: 1: concurrently: not found        EXIT=127
+//   sony-camera-bridge   sh: 1: tsx: not found / sh -c vite    EXIT=127
+//
+// `concurrently`, `tsx` und `vite` liegen in `node_modules/.bin`. Wer eines
+// der Repos frisch klont und auf „Lokal starten" drueckt, bekommt diese Zeile
+// und sonst nichts. Die anderen beiden Geraete waren nicht betroffen, und das
+// ist kein Zufall: sie sind Python und brauchen kein `node_modules` — genau
+// die zwei npm-Geraete hat der Nutzer gemeldet („intercom und kamerapult muss
+// auch lokal laufen im av planner", 2026-09-15).
+//
+// Beide Repos bringen einen eigenen Starter mit (`dev.sh` / `dev.ps1`), und
+// der installiert nach, waehlt den hardwarefreien Weg (Demo-Kamera,
+// `MOCK_DEVICES=1`) und raeumt beim Beenden auf. Der Knopf ruft jetzt IHN —
+// und der Satz hier nennt denselben Befehl, sonst faellt
+// `test/laufzeitStart.test.ts`.
+//
 // DER INTERCOM-PORT WAR FALSCH, und der Guard hat es nicht gemerkt, weil er
 // denselben Fehler machte: hier stand 4001, und der Guard las
 // `apps/server/src/index.ts`, wo 4001 auch wirklich steht. Nur ist 4001 der
@@ -127,7 +148,7 @@ export const RUNTIMES: RuntimeDef[] = [
     defaultPort: 3700,
     path: '/',
     was: 'RCP-Paintpult und PTZ-Panel; der Befehlsbus spricht die nativen Protokolle der Kameras.',
-    start: 'Im Repo `sony-camera-bridge`: `npm run dev` startet Bridge (9700) und Web-RCP (3700) zusammen. Ohne Kameras im Netz steht das Pult da und meldet keine Verbindung — das ist der richtige Zustand, keine Attrappe.',
+    start: 'Im Repo `sony-camera-bridge`: `./dev.sh` (Windows: `.\\dev.ps1`) startet Bruecke (9700) und Web-RCP (3700) zusammen und installiert fehlende Abhaengigkeiten. Ohne Kameras im Netz: im Reiter „Demo (no camera)" verbinden — dann laesst sich das Pult vollstaendig bedienen.',
     presets: [
       { label: 'Lokal', host: 'localhost', port: 3700, was: 'npm run dev auf diesem Rechner' },
     ],
@@ -147,7 +168,7 @@ export const RUNTIMES: RuntimeDef[] = [
     defaultPort: 5200,
     path: '/',
     was: 'Browser-Intercom mit Partylines, Direktrufen und System-Kanaelen.',
-    start: 'Im Repo `Broadcast-intercom`: `npm run dev` startet Kern (4001) und Bedienung (5200). `npm run dev:mock` erzeugt dazu simulierte Beltpacks — dann laesst sich das ganze Intercom ohne ein einziges Geraet durchspielen.',
+    start: 'Im Repo `Broadcast-intercom`: `./dev.sh` (Windows: `.\\dev.ps1`) startet Kern (4001) und Bedienung (5200) mit simulierten Beltpacks und installiert fehlende Abhaengigkeiten — dann laesst sich das ganze Intercom ohne ein einziges Geraet durchspielen. `./dev.sh --no-mock` laesst die Simulation weg.',
     presets: [
       { label: 'Lokal', host: 'localhost', port: 5200, was: 'npm run dev auf diesem Rechner' },
     ],
@@ -167,7 +188,7 @@ export const RUNTIMES: RuntimeDef[] = [
     defaultPort: 5000,
     path: '/',
     was: 'Sensor-gesteuerte Medien-Station mit Web-Admin und Display-Modus — auf einem Pi oder lokal.',
-    start: 'Im Repo `pi-media-station`: `./run-local.sh` (Linux/macOS). Ohne Sensor-Hardware laeuft der Web-Admin vollstaendig; andere Geraete im selben Netz erreichen ihn unter der IP dieses Rechners.',
+    start: 'Im Repo `pi-media-station`: `./run-local.sh` (Linux/macOS) bzw. `run_windows.bat` (Windows). Ohne Sensor-Hardware laeuft der Web-Admin vollstaendig; andere Geraete im selben Netz erreichen ihn unter der IP dieses Rechners.',
     presets: [
       { label: 'Lokal', host: 'localhost', port: 5000, was: 'run-local.sh auf diesem Rechner' },
       { label: 'Pi im Netz', host: 'faces.local', port: 5000, was: 'Web-Admin auf dem Raspberry Pi' },

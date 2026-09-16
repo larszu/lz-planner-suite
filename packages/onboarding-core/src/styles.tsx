@@ -96,6 +96,30 @@ export const AVOB_CSS = `
 .avob-x:focus-visible, .avob-action:focus-visible, .avob-ghost:focus-visible, .avob-btn:focus-visible {
   outline: 2px solid var(--avob-accent, #3b82f6); outline-offset: 1px;
 }
+/* B-77 — EIN BEDIENPUNKT IST 32 PX. Auch hier.
+ *
+ * Gemessen (2026-09-13, 390/768/1440 px): Schliessen 21 x 23 px, Zurueck 58 x
+ * 31, Weiter 56 x 31, Spaeter entscheiden 80 x 26. Der Schliessen-Knopf ist
+ * der kleinste Bedienpunkt der ganzen Suite — und dieser Dialog ist der
+ * ERSTE Bildschirm, den ein neuer Nutzer sieht.
+ *
+ * Die vier Planer haben die Zahl inzwischen als globale Regel in ihrem
+ * eigenen Stilblatt, und weil der Dialog in ihrem DOM steht, erbt er sie
+ * dort. Das ist aber ihre Regel und nicht seine: wer dieses Paket in einer
+ * Anwendung ohne diese Regel einsetzt, bekaeme wieder 21 px. Ein Baustein,
+ * der seine Zusage nur einhaelt, solange der Einsatzort sie mitbringt, hat
+ * keine.
+ *
+ * Kein min-width auf .avob-action: die Aktionskarten sind breite Kacheln mit
+ * Titel und Beschreibung, sie waren nie zu schmal. (Keine Backticks in
+ * diesem Block — er steht IN einem Template-Literal und wuerde es
+ * beenden.) */
+.avob-x, .avob-btn, .avob-ghost, .avob-action {
+  min-height: 32px;
+}
+.avob-x, .avob-btn, .avob-ghost {
+  min-width: 32px;
+}
 @media (prefers-reduced-motion: reduce) {
   .avob-action { transition: none; }
 }

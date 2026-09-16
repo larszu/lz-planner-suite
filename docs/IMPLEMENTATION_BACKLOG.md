@@ -4899,13 +4899,15 @@ ausserhalb des Spalten-Abschnitts. Und die 82 deutschen Zeichenketten in
 Konstanten-Tabellen aus dem Absatz oben bleiben offen; die drei hier
 behobenen waren keine Tabellen-Einträge, sondern rohes JSX.
 
-### B-77 · Vier Planer waren unbedienbar — gemessen, behoben, und der Wächter misst jetzt mit
+### B-77 · Fünf Planer waren unbedienbar — gemessen, behoben, und der Wächter misst jetzt mit
 
-* **Status:** **ERLEDIGT** für alle vier Browser-Planer.
+* **Status:** **ERLEDIGT** für alle fünf Browser-Planer.
   `inventory-planner` und `larszu-facility-planner` in suite#231,
-  `multicam-planner` in `multicam#136` und `light-planner` in `light#127`
-  (alle 2026-09-13, alle im Browser gemessen). Offen bleibt allein der
-  `cable-planner` — und zwar ausdrücklich, siehe unten.
+  `multicam-planner` in `multicam#136`, `light-planner` in `light#127`,
+  `cable-planner` in `cable#862` (32-px-Regel, rollende Menü-Gruppe),
+  `cable#865` (drei Erststart-Dialoge in eine Reihenfolge, Layers-Menü ohne
+  Maus schließbar, Fenster-Klappe nicht mehr abgeschnitten, Breiten-Deckel
+  der Menü-Klappe) — alle 2026-09-13, alle im Browser gemessen.
 * **Woher der Eintrag kommt.** Nutzer-Meldung suite#231: „aktuell ist die Ui
   so schlecht das beide module unbrauchbar sind. baue auf den funktionen die
   im hintergrund schon existieren eine intuitive bedienbare ui die responsive
@@ -5019,8 +5021,11 @@ behobenen waren keine Tabellen-Einträge, sondern rohes JSX.
 
 * **Gegenprobe.** Gegen den Stand vor diesem Zug meldet der erweiterte Lauf
   **57 Befunde** und geht rot — darunter alle fünf abgeschnittenen Klappen
-  des Light-Planners und die 22 zu kleinen Bedienpunkte des MultiCam. Danach:
-  4 Apps, 69 Ansichten, 1242 Bedienpunkte, 42 Menü-Klappen, kein Befund.
+  des Light-Planners und die 22 zu kleinen Bedienpunkte des MultiCam. Danach
+  (mit dem `cable-planner` als fünfter App): **5 Apps, 90 Ansichten, 2202
+  Bedienpunkte, 64 Menü-Klappen, kein Befund.** Die Zahlen stiegen um 21
+  Ansichten und 960 Bedienpunkte, weil eine App dazukam, die vorher als
+  „nicht messbar" geführt wurde.
 
 * **Eine Abweichung der vendorierten Fassung, benannt statt versteckt.** Die
   Suite-Kopie des `light-planner` führt in der Kopfzeile zwei Knöpfe mehr
@@ -5031,15 +5036,68 @@ behobenen waren keine Tabellen-Einträge, sondern rohes JSX.
   Breite. Die Angleichung der beiden Kopfzeilen ist Vendorier-Arbeit und
   steht noch aus.
 
-* **Was offen bleibt: der `cable-planner`.** Er fiel aus der Messung, weil
+* **Der `cable-planner` ist jetzt drin — und die Ausrede war eine Zeile
+  Konfiguration.** Hier stand bis zuletzt, er falle „aus der Messung, weil
   sein `dist/` das Electron-Layout trägt (`renderer/index.html` statt einer
-  Wurzel-Datei) — das ist eine Eigenschaft des Laufs und keine Auskunft über
-  die App. Er führt als einziger bereits `mobil:check` und misst damit die
-  Fensterbreite selbst. **Zu klären:** ob `bedienbar:check` sein
-  `dist/renderer` bedienen soll oder ob `mobil:check` die Frage schon
-  beantwortet. Solange das offen ist, steht er nicht in `APPS` — ein Wächter,
-  der auf Vorrat rot ist, wird abgeschaltet, und dann misst er auch die vier
-  nicht mehr, die er kann.
+  Wurzel-Datei)". Das stimmte und es war trotzdem kein Grund: die Hürde war
+  der Pfad, den die Sonde ausliefert, und sie kostete
+  `wurzel: 'apps/cable-planner/dist/renderer'`. **Ein „nicht gemessen" ist
+  immer ein Befund und nie eine Eigenschaft** — es hatte sich hier als
+  Eigenschaft ausgegeben, und das ist die teuerste Sorte grün: der Wächter
+  hörte auf zu suchen, und niemand merkte es, weil er dabei nicht rot wurde.
+
+  **Was dahinter lag, gemessen bei 1440 px:**
+
+  | | vorher | nachher |
+  |---|---:|---:|
+  | Schleier nach vier Klicks auf `.avob-x` | liegt noch da | **weg** |
+  | Menü „File ▾" anklickbar | nein (`.avob-overlay` intercepts pointer events) | **ja** |
+  | Bedienpunkte unter einem anderen Element | 68 | **0** |
+  | gemessene Bedienpunkte der App | 0 (der Lauf kam nicht vorbei) | **43 / 45 / 86** (390/768/1440 px) |
+
+  Drei Erststart-Dialoge öffneten gleichzeitig: der Willkommens-Dialog
+  („welches Projekt?"), die Modul-Umfrage („wofür nutzt du die App?") und
+  nach 400 ms die Tour. Der Schleier der Umfrage lag ÜBER dem
+  Willkommens-Dialog und nahm dessen Klicks entgegen. Die Reihenfolge ist
+  keine Geschmacksfrage: der Willkommens-Dialog blockiert die Arbeit, die
+  Umfrage ist eine Umfrage, die Tour zeigt, wo was liegt. Also Willkommen →
+  Umfrage → Tour, jede wartet auf die vorige.
+
+* **Ein halber Deckel ist ein Befund, den nur eine Sprache zeigt.** Die
+  Menü-Klappe des `cable-planner` war seit 2026-09-07 in der HÖHE gedeckelt
+  (`max-h-[calc(100vh-3.5rem)]`), in der BREITE nicht. Das Werkzeuge-Menü ist
+  mit deutschen Beschriftungen **421 px** breit; ein Telefon im Hochformat
+  hat 390. **39 px hingen rechts heraus, und dort stehen die
+  Tastenkürzel.** Auf Englisch passte es zufällig — ein Wächter, der nur in
+  einer Sprache misst, hätte das nie gesehen. `mobil:check` im eigenen Repo
+  ist genau deshalb zweisprachig; `bedienbar:check` fand es, weil er die
+  Klappe ÖFFNET und nachmisst statt Klassenlisten zu lesen.
+
+* **Und die Klappe hängt jetzt in drei Apps am selben Haken.** Fünfundzwanzig
+  Zeilen Mechanik (ankern, nach dem Einhängen klemmen, beim Rollen
+  nachführen, bei Größenänderung schließen) standen im `cable-planner`
+  zweimal und im `light-planner` und `multicam-planner` je einmal ab — vier
+  Abschriften derselben Sache, also vier Stellen, an denen jemand später eine
+  davon anfasst. Im `cable-planner` sind die beiden jetzt
+  `hooks/useKlappeAmFenster.ts`: der eine Ort, an dem die Zahl `8` für den
+  Rand steht und an dem entschieden ist, was beim Rollen passiert.
+
+  **Rollen führt nach, Größe schließt** — und das ist gemessen, nicht
+  gewählt. Der erste Anlauf schloss bei beidem. Liegt ein Menütitel außerhalb
+  der rollenden Leiste, rollt ein Klick sie erst dorthin, und das
+  Rollereignis kommt NACH dem Klick: die Klappe ging auf und sofort wieder zu
+  (`multicam-planner` bei 390 px, `klappen=0 menubar.scrollLeft=21`). Wer den
+  Titel antippt, den er sieht, merkt davon nichts; wer ihn über die Tastatur
+  erreicht, öffnet ins Leere.
+
+* **Was jetzt wirklich offen bleibt.** Die VIER Laufzeit-Module (`tally-pi`,
+  `sony-camera-bridge`, `Broadcast-intercom`, `pi-media-station`) und die
+  Suite-Shell selbst. Die vier haben kein statisches `dist/`, sondern je
+  einen eigenen Server — sie zu messen heißt, sie zu starten, und das ist
+  eine andere Sorte Lauf. Die Shell misst dieser Lauf nicht, weil er die
+  `dist/`-Ordner direkt ausliefert und damit jede App für sich sieht. Beides
+  steht im Kopf von `scripts/bedienbar.mjs` und in seiner Schlusszeile,
+  nicht in einem stillen Kommentar.
 
 ### B-72 · Die MITGELIEFERTEN Presets haben keine Herkunft — und der Wächter misst die andere
 

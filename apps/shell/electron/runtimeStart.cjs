@@ -42,6 +42,48 @@ const WINDOWS = process.platform === 'win32'
  * gegeneinander: zwei Orte fuer denselben Befehl driften, und dann startet
  * der Knopf etwas anderes, als danebensteht.
  */
+/**
+ * ─── DER STARTER DES REPOS, NICHT `npm run dev` ──────────────────────────
+ *
+ * NUTZER-MELDUNG 2026-09-15: „intercom und kamerapult muss auch lokal laufen
+ * im av planner."
+ *
+ * Bis hierher stand hier `npm run dev`. GEMESSEN am 2026-09-15 an einem
+ * frischen Klon beider Repos, mit genau diesem Befehl:
+ *
+ *   Broadcast-intercom   sh: 1: concurrently: not found        EXIT=127
+ *   sony-camera-bridge   sh: 1: tsx: not found / sh -c vite    EXIT=127
+ *
+ * `concurrently`, `tsx` und `vite` liegen in `node_modules/.bin`. Wer eines
+ * der Repos frisch klont und auf „Lokal starten" drueckt, bekommt diese
+ * Zeile und sonst nichts. Die beiden anderen Geraete waren nicht betroffen,
+ * und das ist kein Zufall: `tally-pi` und `pi-media-station` sind Python und
+ * brauchen kein `node_modules`. Genau die zwei npm-Geraete hat der Nutzer
+ * gemeldet.
+ *
+ * Jedes Repo bringt einen eigenen Starter mit, und der tut, was `npm run
+ * dev` nicht tut:
+ *
+ *   * fehlende Abhaengigkeiten nachinstallieren,
+ *   * den HARDWAREFREIEN Weg waehlen — die Demo-Kamera im Kamerapult,
+ *     `MOCK_DEVICES=1` im Intercom. Ohne das kommt die Oberflaeche leer hoch
+ *     und jeder Regler ist inert; wer aus dem Planungsfenster darauf
+ *     schaut, sieht eine tote App und keinen Hinweis, warum,
+ *   * die Node-Fassung pruefen, bevor der Abbruch irgendwo im Bundling
+ *     passiert,
+ *   * beim Beenden aufraeumen (die Bruecke des Kamerapults bliebe sonst auf
+ *     Port 9700 liegen und der naechste Start scheiterte daran).
+ *
+ * Diese Datei ruft deshalb den Starter auf und baut seine Arbeit nicht nach.
+ * Ein zweiter Ort, der dasselbe zu tun versucht, driftet vom ersten weg —
+ * und das ist genau der Grund, warum `npm run dev` hier stand: es SAH aus
+ * wie der Startbefehl.
+ *
+ * WINDOWS bekommt `powershell -File dev.ps1` und nicht `npm.cmd`. Beide
+ * `.ps1` sind mit diesem Zug entstanden bzw. nachgezogen worden;
+ * `-ExecutionPolicy Bypass` gilt nur fuer DIESEN Aufruf und aendert nichts
+ * an der Einstellung des Rechners.
+ */
 const REZEPTE = {
   tally: {
     repo: 'tally-pi',
@@ -51,23 +93,27 @@ const REZEPTE = {
   },
   kamera: {
     repo: 'sony-camera-bridge',
-    marker: ['package.json'],
+    marker: ['package.json', WINDOWS ? 'dev.ps1' : 'dev.sh'],
     paketName: 'sony-camera-bridge',
-    programm: WINDOWS ? 'npm.cmd' : 'npm',
-    argumente: ['run', 'dev'],
+    programm: WINDOWS ? 'powershell' : 'bash',
+    argumente: WINDOWS ? ['-ExecutionPolicy', 'Bypass', '-File', 'dev.ps1'] : ['dev.sh'],
   },
   intercom: {
     repo: 'Broadcast-intercom',
-    marker: ['package.json'],
+    marker: ['package.json', WINDOWS ? 'dev.ps1' : 'dev.sh'],
     paketName: 'broadcast-intercom',
-    programm: WINDOWS ? 'npm.cmd' : 'npm',
-    argumente: ['run', 'dev'],
+    programm: WINDOWS ? 'powershell' : 'bash',
+    argumente: WINDOWS ? ['-ExecutionPolicy', 'Bypass', '-File', 'dev.ps1'] : ['dev.sh'],
   },
   medien: {
     repo: 'pi-media-station',
-    marker: ['run-local.sh', 'main.py'],
-    programm: WINDOWS ? 'python' : 'bash',
-    argumente: WINDOWS ? ['main.py'] : ['run-local.sh'],
+    marker: WINDOWS ? ['run_windows.bat', 'main.py'] : ['run-local.sh', 'main.py'],
+    // `run_windows.bat` und nicht `python main.py`: das Skript sucht den
+    // Interpreter (`py`, dann `python`), legt bei Bedarf die virtuelle
+    // Umgebung an und installiert die Abhaengigkeiten. `python main.py` auf
+    // einem frischen Klon faellt ueber `flask`.
+    programm: WINDOWS ? 'cmd.exe' : 'bash',
+    argumente: WINDOWS ? ['/c', 'run_windows.bat'] : ['run-local.sh'],
   },
 }
 
@@ -117,10 +163,26 @@ function starte(id, verzeichnis, melde) {
     kind = spawn(r.programm, r.argumente, {
       cwd: verzeichnis,
       shell: false,
-      // Der Prozess haengt am Fenster: schliesst jemand die Suite, soll kein
-      // verwaister Server auf dem Port sitzen bleiben und den naechsten Start
-      // blockieren.
-      detached: false,
+      // EIGENE PROZESSGRUPPE (nur POSIX), damit `beende` die ganze Kette
+      // erwischt.
+      //
+      // Hier stand `detached: false` mit der Begruendung, der Prozess haenge
+      // dann am Fenster und hinterlasse keinen verwaisten Server. Das war
+      // genau verkehrt herum gedacht: `detached` bestimmt die PROZESSGRUPPE,
+      // nicht die Lebensdauer. Was wir starten, ist eine Kette —
+      //
+      //     bash dev.sh → npm run dev:mock → concurrently → tsx + vite
+      //
+      // — und ein SIGTERM an das `bash` beendet nur das `bash`. Die Enkel
+      // liefen weiter und sassen auf 4001/5200 bzw. 3700/9700, sodass der
+      // naechste Start in „address in use" lief. Der Kommentar versprach
+      // also das Gegenteil dessen, was die Zeile bewirkte.
+      //
+      // Mit einer eigenen Gruppe geht das Signal an `-pid`, also an alle
+      // darin. Dass beim Schliessen der Suite nichts stehenbleibt, leistet
+      // `beendeAlle()` an `before-quit` (`main.cjs`) — das ist die Stelle,
+      // an der diese Zusage hingehoert, und dort stand sie schon.
+      detached: !WINDOWS,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
   } catch (e) {
@@ -156,13 +218,31 @@ function starte(id, verzeichnis, melde) {
 function beende(id) {
   const p = laufend.get(id)
   if (!p) return { ok: true, laeuft: false }
+  const pid = p.kind.pid
   try {
-    // SIGTERM und nicht SIGKILL: ein Entwicklungsserver raeumt dabei seinen
-    // Port ab. Mit SIGKILL bliebe er belegt, und der naechste Start liefe in
-    // „address in use".
-    p.kind.kill('SIGTERM')
+    if (WINDOWS) {
+      // Windows kennt keine Prozessgruppen in diesem Sinn. `taskkill /T`
+      // nimmt den Baum unter der PID mit — ohne das bliebe unter
+      // `powershell -File dev.ps1` alles darunter stehen.
+      spawn('taskkill', ['/PID', String(pid), '/T', '/F'], { shell: false, stdio: 'ignore' })
+    } else if (pid) {
+      // SIGTERM und nicht SIGKILL: ein Entwicklungsserver raeumt dabei seinen
+      // Port ab. Mit SIGKILL bliebe er belegt, und der naechste Start liefe in
+      // „address in use".
+      //
+      // An die GRUPPE (`-pid`) und nicht an den einen Prozess: gestartet wird
+      // ein Starter-Skript, das seinerseits startet. Ein Signal an das Skript
+      // laesst dessen Enkel auf ihren Ports sitzen.
+      process.kill(-pid, 'SIGTERM')
+    }
   } catch {
-    /* schon weg */
+    // Die Gruppe kann schon weg sein — oder es gab nie eine (wenn `spawn`
+    // fehlschlug). Dann bleibt der direkte Weg.
+    try {
+      p.kind.kill('SIGTERM')
+    } catch {
+      /* schon weg */
+    }
   }
   return { ok: true, laeuft: false }
 }
