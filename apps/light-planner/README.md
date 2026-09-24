@@ -53,8 +53,24 @@ It is **not** a replacement for Vectorworks, or Capture. It's the tool you reach
 - Not a replacement for a real photometric study — close enough for a sketch
 
 ### 🎚️ A fixture & gel library
-- Source Fours, PARs, Fresnels, LED panels and a few moving heads
+- **84 fixtures from 17 brands** — Source Fours, PARs, Fresnels, LED panels,
+  moving heads (ETC, Robe, Martin, Chauvet Professional, Elation, Ayrton, Cameo,
+  Clay Paky, ADJ, GLP, SGM, Astera, Aputure, ARRI, Robert Juliat,
+  Mole-Richardson, ColorKinetics)
 - Current Elation LED range built in — KL Fresnel 8 FC, KL Panel, KL Profile FC, KL PAR FC, Fuze, …
+- **50 of them now carry a manufacturer datasheet link** (`manufacturerUrl`).
+  Before 2026-09-24 not a single one did: the library held wattages, lumens, beam
+  angles and measured lux values, and no evidence for any of them — a number
+  nobody had checked looked exactly like one that had been. The 34 without a link
+  are named in the field's own comment; seven of them are `Generic` shapes
+  (1 kW Fresnel, PAR64) that have no manufacturer and therefore no datasheet.
+  A guessed address would be worse than the gap.
+- **Every fixture carries a stable device-type GUID** (`src/core/geraetetypIds.ts`,
+  generated). `shopOrder.ts` used to say it plainly: whether the Source Four in
+  the plan is the same article as the one in the store "is a claim this model
+  cannot prove — it comes down to comparing strings". Now it can. A fixture
+  handed to the cable planner resolves there to its catalogue entry. Regenerate
+  from the cable planner with `npm run katalog:uebernahme`.
 - LEE & Rosco CTO / CTB / frost gels
 - Add your own custom fixture — or **let the AI pull the specs from a datasheet** (paste the text, it fills the photometric/beam/power fields and shows where each value came from so you can check it)
 

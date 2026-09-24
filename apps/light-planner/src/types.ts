@@ -108,6 +108,28 @@ export interface Fixture {
   id: string;
   name: string;
   manufacturer: string;
+  /**
+   * Datenblatt-/Hersteller-URL als Herkunftsbeleg der Daten.
+   *
+   * ─── WARUM DAS FELD 2026-09-24 DAZUKAM ──────────────────────────────────
+   *
+   * Diese Bibliothek trug Wattzahlen, Lumen, Abstrahlwinkel und gemessene
+   * Lux-Werte — und fuer keinen einzigen davon einen Beleg. Die Zahl im
+   * Katalog sah damit genauso aus wie eine, die jemand nachgesehen hat.
+   *
+   * Aufgefallen ist es bei der Uebernahme in den Kabel-Planer: dessen
+   * `catalogueEvidence` rechnet die Beleg-Abdeckung aus und haette 84
+   * unbelegte Eintraege gemeldet. Dieselbe Vokabel wie dort
+   * (`manufacturerUrl`), damit ein Geraet, das zwischen den Apps wandert,
+   * den Beleg nicht an der Grenze verliert.
+   *
+   * Fehlt das Feld, ist das eine AUSSAGE und keine Nachlaessigkeit: fuer die
+   * generischen Bauformen (`Generic` 1-kW-Fresnel, PAR64) gibt es kein
+   * Datenblatt, und bei den uebrigen ist die Herstellerseite aus der
+   * Arbeitsumgebung nicht erreichbar gewesen. Eine geratene Adresse waere
+   * schlimmer als keine.
+   */
+  manufacturerUrl?: string;
   category: FixtureCategory;
   wattage: number;
   lumens: number;
