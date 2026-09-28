@@ -48,33 +48,40 @@ describe('die Tabelle deckt die Bibliothek ab', () => {
 
 describe('der Beleg reist mit', () => {
   /**
-   * GEPRUEFT WIRD `datasheetUrl`, NICHT `manufacturerUrl`.
+   * ZWEI FELDER, UND SIE SIND NICHT DASSELBE.
    *
-   * Dieser Block stand zuerst auf `manufacturerUrl` und zaehlte 50 — ein Feld,
-   * das mit diesem Commit eingefuehrt worden waere und auf Produktseiten zeigte.
-   * Zwischenzeitlich hat `main` dieselbe Luecke selbst geschlossen, und zwar
-   * besser: `datasheetUrl` zeigt auf das PDF, nicht auf die Produktseite, und es
-   * sind 69 statt 50. Zwei Felder fuer denselben Beleg waeren Laerm, und das
-   * schwaechere von beiden zu behalten waere Eitelkeit — also ist
-   * `manufacturerUrl` hier ganz herausgefallen.
+   *   `datasheetUrl`     das PDF mit der Tabelle — der staerkere Beleg.
+   *   `manufacturerUrl`  die Produktseite — was ein Mensch aufmacht, und der
+   *                      Name, unter dem der Kabel-Planer Belege fuehrt.
    *
-   * Was von diesem Commit bleibt, ist die IDENTITAET (`geraetetypIds.ts`): die
-   * hat `main` nicht.
+   * Hier stand zweimal nur eines von beiden. Erst `manufacturerUrl` allein
+   * (50 von 84), dann `datasheetUrl` allein (74 von 84) — beide Male wurde ein
+   * Beleg weggeworfen, den es gab. Ein Feld, das mal ein PDF und mal eine
+   * Produktseite enthaelt, sagt dem Leser ohnehin nicht, was er bekommt.
+   *
+   * Die Werte kommen aus `larszu/light-planner` (Upstream); diese Kopie wird
+   * von dort synchronisiert, nicht hier gepflegt.
    */
-  it('die Bibliothek ist belegt — und es ist gezaehlt', () => {
-    // Vor dem 2026-09-24 trug KEIN einziger Eintrag einen Beleg. Die Zahl steht
-    // hier, damit sie nicht lautlos wieder sinkt; steigt sie, faellt diese Zeile
-    // und wird nachgezogen.
-    const mit = fixtureLibrary.filter((f) => f.datasheetUrl).length;
-    expect(mit).toBe(69);
+  it('die Bibliothek ist belegt — und beide Zahlen stehen hier', () => {
+    // Vor dem 2026-09-24 trug KEIN einziger Eintrag einen Beleg.
     expect(fixtureLibrary.length).toBe(84);
+    expect(fixtureLibrary.filter((f) => f.datasheetUrl).length).toBe(74);
+    expect(fixtureLibrary.filter((f) => f.manufacturerUrl).length).toBe(48);
   });
 
-  it('die generischen Bauformen tragen bewusst keinen', () => {
+  it('zehn tragen gar keinen — sieben generisch, drei ohne Produktseite', () => {
+    const ohne = fixtureLibrary
+      .filter((f) => !f.datasheetUrl && !f.manufacturerUrl)
+      .map((f) => f.id);
+    expect(ohne.length).toBe(10);
     // Ein 1-kW-Stufenlinsenscheinwerfer ohne Hersteller hat kein Datenblatt.
-    // Ihm eines anzudichten waere schlimmer als die Luecke.
-    const generisch = fixtureLibrary.filter((f) => f.manufacturer === 'Generic');
-    expect(generisch.filter((f) => f.datasheetUrl)).toEqual([]);
+    expect(fixtureLibrary.filter((f) => f.manufacturer === 'Generic').length).toBe(7);
+    // Und drei, deren Produktseite es nicht mehr gibt — nachgesehen am
+    // 2026-09-28. Bei Chauvet ist der Katalogname falsch (R2E / R2X Spot),
+    // und das ist der eigentliche Befund; er steht im Guard des Upstreams.
+    expect(ohne).toEqual(
+      expect.arrayContaining(['cameo-opus-h5', 'claypaky-mythos2', 'chauvet-rogue-r2-spot']),
+    );
   });
 });
 
