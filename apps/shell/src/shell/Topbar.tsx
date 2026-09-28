@@ -217,7 +217,7 @@ export function Topbar({
         {/* Signet ohne Tally-Punkt: Rot steht nach ADR-007 nur am Fokusring,
             am primaeren Knopf und am Live-Zustand -- ein Punkt hier waere das
             zweite Rot neben jedem primaeren Knopf der Arbeitsflaeche. */}
-        <img src={theme === 'dark' ? signetOffwhite : signetNavy} alt="" className="h-8 w-auto" />
+        <img src={theme === 'dark' ? signetOffwhite : signetNavy} alt="" className="hidden h-8 w-auto sm:block" />
         <span className="whitespace-nowrap text-[15px] font-bold tracking-tight text-av-text">LZ Planner Suite</span>
       </div>
 
