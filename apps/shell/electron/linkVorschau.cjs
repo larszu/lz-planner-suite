@@ -63,7 +63,7 @@ async function hole(url) {
         cache: 'no-store',
         headers: {
           // Ehrlich sagen, wer fragt, und was gebraucht wird.
-          'user-agent': 'AV-Planner-Suite (Link-Vorschau)',
+          'user-agent': 'LZ-Planner-Suite (Link-Vorschau)',
           accept: 'text/html,application/xhtml+xml',
         },
       })

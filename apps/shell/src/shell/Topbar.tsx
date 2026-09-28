@@ -15,6 +15,10 @@ import {
 import type { SuiteProject } from '../data/project'
 import { useT } from '../i18n'
 import { APP_VERSION } from '../version'
+import hauptlogoNavy from '../assets/brand/lzm_hauptlogo_navy.svg'
+import hauptlogoOffwhite from '../assets/brand/lzm_hauptlogo_offwhite.svg'
+import signetNavy from '../assets/brand/lzm_signet_navy.svg'
+import signetOffwhite from '../assets/brand/lzm_signet_offwhite.svg'
 
 function ProjectPicker({
   project,
@@ -112,11 +116,17 @@ function ShortcutsModal({ open, onClose }: { open: boolean; onClose: () => void 
  * Die Version kommt aus `package.json` ueber das Vite-Define und ist hier
  * NICHT hingeschrieben.
  */
-function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AboutModal({ open, onClose, theme }: { open: boolean; onClose: () => void; theme: ResolvedTheme }) {
   const t = useT()
   return (
-    <Modal open={open} onClose={onClose} title={t('chrome.topbar.about.title', 'Über die AV-Planner-Suite')} size="sm">
+    <Modal open={open} onClose={onClose} title={t('chrome.topbar.about.title', 'Über die LZ Planner Suite')} size="sm">
       <div className="flex flex-col gap-2">
+        <img
+          src={theme === 'dark' ? hauptlogoOffwhite : hauptlogoNavy}
+          alt="Lars Zumpe Medienproduktion"
+          className="my-3 w-40 self-start"
+        />
+        <p className="text-[15px] font-bold text-av-text">LZ Planner Suite</p>
         <p className="text-[13px] text-av-text-secondary">
           {t(
             'chrome.topbar.about.body',
@@ -124,6 +134,7 @@ function AboutModal({ open, onClose }: { open: boolean; onClose: () => void }) {
           )}
         </p>
         <p className="av-num text-[13px] text-av-text-faint">v{APP_VERSION}</p>
+        <p className="text-[13px] text-av-text-faint">Lars Zumpe Medienproduktion</p>
       </div>
     </Modal>
   )
@@ -202,12 +213,12 @@ export function Topbar({
   // eigene Inline-Hoehe hier waere die zweite Zahl fuer dieselbe Regel.
   return (
     <header className="av-topbar">
-      <div className="flex items-center gap-2 pr-1">
-        <span
-          className="grid h-6 w-6 place-items-center"
-          style={{ background: 'var(--av-accent)', color: 'var(--av-accent-text)' }}
-        />
-        <span className="whitespace-nowrap text-[15px] font-bold tracking-tight text-av-text">AV Planner Suite</span>
+      <div className="flex items-center gap-4 pr-1">
+        {/* Signet ohne Tally-Punkt: Rot steht nach ADR-007 nur am Fokusring,
+            am primaeren Knopf und am Live-Zustand -- ein Punkt hier waere das
+            zweite Rot neben jedem primaeren Knopf der Arbeitsflaeche. */}
+        <img src={theme === 'dark' ? signetOffwhite : signetNavy} alt="" className="h-8 w-auto" />
+        <span className="whitespace-nowrap text-[15px] font-bold tracking-tight text-av-text">LZ Planner Suite</span>
       </div>
 
       {/* Mobile-Überlaufmenü (unter md, wo die Menüleiste ausgeblendet ist) */}
@@ -363,7 +374,7 @@ export function Topbar({
       </div>
 
       <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} theme={theme} />
       <input
         ref={fileInputRef}
         type="file"

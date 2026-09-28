@@ -26,7 +26,7 @@ const fs = require('node:fs/promises')
 const path = require('node:path')
 
 const FILTER = [
-  { name: 'AV-Planner-Suite-Projekt', extensions: ['avsuite.json', 'json'] },
+  { name: 'LZ-Planner-Suite-Projekt', extensions: ['avsuite.json', 'json'] },
 ]
 
 /** Ein Dateiname, den ein Betriebssystem annimmt. */

@@ -1,6 +1,6 @@
 name: Release Suite
 
-# Baut die AV-Planner-Suite (apps/shell als Electron-App) und hängt die
+# Baut die LZ Planner Suite (apps/shell als Electron-App) und hängt die
 # Installer an das GitHub-Release des Tags. Wie beim Cable Planner: Windows
 # .exe (NSIS + portable) und macOS .dmg fuer Intel (x64) und Apple Silicon
 # (arm64). Cross-Building macOS von Windows kann electron-builder nicht — daher

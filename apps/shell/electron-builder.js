@@ -1,4 +1,4 @@
-// electron-builder-Konfiguration der AV Planner Suite.
+// electron-builder-Konfiguration der LZ Planner Suite.
 //
 // Verpackt das gebündelte Vite-Ergebnis (dist/), den Electron-Hauptprozess
 // (electron/), die mitgelieferten Planer-Renderer (planners/) und die
@@ -15,14 +15,14 @@
 // Der alte Satz war nicht bloß veraltet — er war die Begründung dafür, ein
 // fehlendes Paket nicht zu vermuten. `npm run deps:check` prüft die Liste
 // jetzt gegen die Quellen, statt sie hier zu behaupten.
-//
-// Kein eigenes App-Icon: ohne `icon` nutzt electron-builder das Standard-
-// Electron-Icon, statt an einem fehlenden .icns/.ico abzubrechen.
 const year = new Date().getFullYear()
 
 export default {
   appId: 'net.avplanner.suite',
-  productName: 'AV Planner Suite',
+  // productName bestimmt auch app.getPath('userData'); main.cjs haelt den
+  // alten Ordner „AV Planner Suite" fest, sonst stuende der Nutzer nach dem
+  // Update vor leerer Bibliothek und leeren Einstellungen.
+  productName: 'LZ Planner Suite',
   copyright: `Copyright © ${year} Lars Zumpe`,
   // Publish-Provider MUSS gesetzt sein: electron-builder erzeugt fuer NSIS/DMG
   // die Update-Manifeste (latest*.yml) und liest dabei publish.provider. Ohne
@@ -76,6 +76,7 @@ export default {
     output: 'release',
   },
   mac: {
+    icon: 'build/icon.png',
     category: 'public.app-category.productivity',
     // Universal-Build (arm64 + x64 in einer .app): läuft auf Apple Silicon
     // nativ — kein Rosetta, keine „Intel-App"-Warnung auf neuen macOS-Versionen
@@ -154,6 +155,7 @@ export default {
     gatekeeperAssess: false,
   },
   win: {
+    icon: 'build/icon.ico',
     target: [
       { target: 'nsis', arch: 'x64' },
       { target: 'portable', arch: 'x64' },

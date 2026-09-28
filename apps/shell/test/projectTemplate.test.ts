@@ -298,14 +298,14 @@ describe('Vorlagendatei', () => {
     // TypeError beim Lesen von `template.name`. Ein Test, der jeden Fehler
     // annimmt, prueft die Absicht nicht.
     const projektDatei = JSON.stringify({ format: 'avplanner-suite', version: 1, project: gelaufeneShow() })
-    expect(() => parseTemplate(projektDatei)).toThrow('Keine Vorlagendatei der AV Planner Suite')
+    expect(() => parseTemplate(projektDatei)).toThrow('Keine Vorlagendatei der LZ Planner Suite')
   })
 
   it('weist Unsinn zurueck', () => {
     expect(() => parseTemplate('nicht json')).toThrow()
     expect(() => parseTemplate('null')).toThrow()
     expect(() => parseTemplate(JSON.stringify({ format: 'avplanner-suite-template', version: 1 }))).toThrow(
-      'Keine Vorlagendatei der AV Planner Suite',
+      'Keine Vorlagendatei der LZ Planner Suite',
     )
     expect(() =>
       parseTemplate(JSON.stringify({ format: 'avplanner-suite-template', version: 1, template: { name: 'X' } })),

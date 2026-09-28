@@ -1,4 +1,6 @@
-<h1 align="center">🎬 AV Planner Suite</h1>
+<p align="center"><img src="apps/shell/build/icon.png" alt="" width="96" /></p>
+
+<h1 align="center">LZ Planner Suite</h1>
 
 <p align="center">
   <b>One workspace for the whole show</b> — broadcast cable planning, multi-camera &amp; lens design,<br />
@@ -20,14 +22,14 @@
 <!-- DOWNLOAD CTA — always points at the newest GitHub release (installers auto-built in CI) -->
 <p align="center">
   <a href="https://github.com/larszu/av-planner-suite/releases/latest">
-    <img src="https://img.shields.io/badge/⬇%20Download%20for%20macOS%20%26%20Windows-863bff?style=for-the-badge&logo=github&logoColor=white" alt="Download AV Planner Suite for macOS and Windows" height="42" />
+    <img src="https://img.shields.io/badge/⬇%20Download%20for%20macOS%20%26%20Windows-863bff?style=for-the-badge&logo=github&logoColor=white" alt="Download LZ Planner Suite for macOS and Windows" height="42" />
   </a>
   <br />
   <sub>Kostenlos nutzbar, proprietär lizenziert · <code>.dmg</code> (Apple Silicon + Intel) and <code>.exe</code> installers attached to every release</sub>
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="AV Planner Suite – Projekt-Dashboard mit Signal-, Kamera- und Licht-Plan, Tagesablauf, Crew und Budget" />
+  <img src="docs/screenshot.png" alt="LZ Planner Suite – Projekt-Dashboard mit Signal-, Kamera- und Licht-Plan, Tagesablauf, Crew und Budget" />
 </p>
 
 ---
@@ -49,11 +51,14 @@ Measured 2026-09-09: **published** — the `deploy` job ran and succeeded.
 ---
 ## ✨ Overview
 
-**AV Planner Suite** brings three broadcast/event planning tools under one roof: a **cable
+**LZ Planner Suite** brings three broadcast/event planning tools under one roof: a **cable
 planner** for SDI signal flow, a **camera planner** for coverage and lenses, and a **lighting
 planner** for stage and event rigs. A shared **shell** ties them together — one module rail, one
 command palette, one theme — while each planner stays a self-contained app embedded as an
 isolated iframe module.
+
+The header starts with the Lars Zumpe Medienproduktion signet „lz" (without the tally point — red stays with the primary button); *Help → About* shows
+the main logo, the app name, its version and the company.
 
 It is a **monorepo** built with **npm workspaces**: four apps plus a set of shared packages
 (design system, inventory model, onboarding, Lexware Office billing). Everything is
@@ -108,18 +113,18 @@ join from a browser on the same network with nothing to install. Nothing travels
 you do not own, and the window is gone the moment it is closed. Cards merge per card, the
 younger edit wins, and deletions leave a tombstone so they do not come back.
 
-### ⚡ Cable Planner — *Signal*
+### ⚡ LZ Cable Planner — *Signal*
 Node-based editor for **broadcast cabling** — SDI signal flow, ATEM multiviewer layouts and
 Blackmagic Videohub routing, with a bill of materials and per-device patch sheets.
 **React 19 · React Flow · three.js · Electron.**
 
-### 🎥 MultiCam Planner — *Cameras*
+### 🎥 LZ Multicam Planner — *Cameras*
 Broadcast **camera &amp; lens** planner — FOV/DoF calculators, 2D and 3D venue planning and a
 dynamic camera preview. **React · Konva · three.js · Electron.**
 
-### 💡 Light Planner — *Light*
+### 💡 LZ Light Planner — *Light*
 **Lighting design** for stage and event — a 2D plan plus a 3D/render preview, sharing a venue
-exchange format with the MultiCam Planner. **React · three.js · Electron.**
+exchange format with the LZ Multicam Planner. **React · three.js · Electron.**
 
 ---
 
@@ -169,9 +174,9 @@ npm install
 npm run build:packages
 
 # 3. Run a planner in development
-npm run dev:cable        # Cable Planner  (Vite + Electron)
-npm run dev:multicam     # MultiCam Planner
-npm run dev:light        # Light Planner
+npm run dev:cable        # LZ Cable Planner  (Vite + Electron)
+npm run dev:multicam     # LZ Multicam Planner
+npm run dev:light        # LZ Light Planner
 
 # 4. Run the shell (embeds the planners as iframes)
 npm run dev --workspace @avplan/shell    # → http://localhost:5180
@@ -290,6 +295,15 @@ npm run build --workspace @avplan/shell
 npm run dist:app --workspace @avplan/shell   # → apps/shell/release/
 ```
 
+Installer names follow the product name: `LZ Planner Suite-<version>-universal.dmg`,
+`LZ Planner Suite-<version>-x64.exe` (NSIS) and `LZ Planner Suite-<version>-portable.exe`
+(GitHub shows the spaces as dots). The app icon is `apps/shell/build/icon.svg`
+(`icon.png` for macOS, `icon.ico` for Windows); favicon, touch icon and web manifest
+sit in `apps/shell/public/`.
+
+Settings, library and recent projects stay in the user-data folder `AV Planner Suite`
+from before the rename — `electron/main.cjs` pins it in the packaged app, so updating keeps them.
+
 The individual planners keep their own desktop builds (`npm run dist` in each app).
 
 ---
@@ -330,7 +344,7 @@ Built and maintained by **Lars Zumpe**.
 
 ## ❤️ Support / Donate
 
-If the AV Planner Suite saves you time on your next show, consider buying me a coffee:
+If the LZ Planner Suite saves you time on your next show, consider buying me a coffee:
 
 <p>
   <a href="https://paypal.me/larszumpe">

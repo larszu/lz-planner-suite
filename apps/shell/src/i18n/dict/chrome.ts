@@ -34,7 +34,7 @@ export const chrome: Record<string, string> = {
   'chrome.topbar.help.search': 'Search & commands',
   'chrome.topbar.help.shortcuts': 'Keyboard shortcuts…',
   'chrome.topbar.help.about': 'About the suite…',
-  'chrome.topbar.about.title': 'About the AV Planner suite',
+  'chrome.topbar.about.title': 'About LZ Planner Suite',
   'chrome.topbar.about.body':
     'One workplace for planning a show: signal flow, cameras, lighting, stock and building — as modules over a shared project.',
   'chrome.topbar.fileReadError': 'Could not read file.',

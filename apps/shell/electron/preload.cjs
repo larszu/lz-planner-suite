@@ -1,4 +1,4 @@
-// Preload der AV Planner Suite.
+// Preload der LZ Planner Suite.
 //
 // Reicht der Renderer-Shell die Paket-URLs der drei mitverpackten Planer-
 // Renderer durch. Der Hauptprozess liefert diese über die privilegierten

@@ -97,11 +97,11 @@ function wertLabel(value: unknown): string {
  */
 const APP_LABEL = {
   shell: ['seed.writer.shell', 'die Suite'],
-  cameras: ['seed.writer.cameras', 'der Kamera-Planer'],
-  fixtures: ['seed.writer.fixtures', 'der Licht-Planer'],
-  signal: ['seed.writer.signal', 'der Kabel-Planer'],
-  lager: ['seed.writer.lager', 'das Lager'],
-  gebaeude: ['seed.writer.gebaeude', 'das Gebäude'],
+  cameras: ['seed.writer.cameras', 'der LZ Multicam Planner'],
+  fixtures: ['seed.writer.fixtures', 'der LZ Light Planner'],
+  signal: ['seed.writer.signal', 'der LZ Cable Planner'],
+  lager: ['seed.writer.lager', 'der LZ Inventory Planner'],
+  gebaeude: ['seed.writer.gebaeude', 'der LZ Facility Planner'],
 } satisfies Record<SeedWriter, [string, string]>
 
 const appLabel = (t: (k: string, de: string) => string, by: SeedWriter) => t(...APP_LABEL[by])

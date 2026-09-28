@@ -246,7 +246,7 @@ export function parseTemplate(text: string): SuiteTemplate {
   if (!raw || typeof raw !== 'object') throw new Error('Ungültige Vorlagendatei')
   const file = raw as Partial<TemplateFile>
   if (file.format !== TEMPLATE_FORMAT || !file.template) {
-    throw new Error('Keine Vorlagendatei der AV Planner Suite')
+    throw new Error('Keine Vorlagendatei der LZ Planner Suite')
   }
   const t = file.template
   if (typeof t.name !== 'string' || !t.project || typeof t.project.meta?.name !== 'string') {

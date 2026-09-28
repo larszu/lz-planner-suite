@@ -1,4 +1,4 @@
-# AV Planner Clipper
+# LZ Planner Clipper
 
 Schickt die Seite, die gerade offen ist, auf ein Board der Suite.
 

@@ -195,7 +195,7 @@ function appLabelAus(t: (k: string, d: string) => string, d: SeedDomain): string
   // „aus dem Kabel-Planer": nach „aus" steht der Dativ. Eigene Schluessel,
   // weil die Nominativ-Form (`seed.writer.*`) im Konflikt-Streifen gebraucht
   // wird und ein Schluessel mit zwei Faellen im Deutschen nicht geht.
-  if (d === 'cameras') return t('seed.from.cameras', 'dem Kamera-Planer')
-  if (d === 'fixtures') return t('seed.from.fixtures', 'dem Licht-Planer')
-  return t('seed.from.signal', 'dem Kabel-Planer')
+  if (d === 'cameras') return t('seed.from.cameras', 'dem LZ Multicam Planner')
+  if (d === 'fixtures') return t('seed.from.fixtures', 'dem LZ Light Planner')
+  return t('seed.from.signal', 'dem LZ Cable Planner')
 }

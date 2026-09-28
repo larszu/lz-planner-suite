@@ -35,7 +35,7 @@ export type SuiteAppSettings = Record<AppModuleId, AppSettings>
  */
 export const APP_SETTINGS_SCHEMA: Record<AppModuleId, { note: string; controls: SettingControl[] }> = {
   signal: {
-    note: 'Cable Planner',
+    note: 'LZ Cable Planner',
     controls: [
       {
         key: 'cableColorMode',
@@ -75,7 +75,7 @@ export const APP_SETTINGS_SCHEMA: Record<AppModuleId, { note: string; controls: 
     ],
   },
   cameras: {
-    note: 'MultiCam Planner',
+    note: 'LZ Multicam Planner',
     controls: [
       { key: 'showAllFov', label: 'FOV aller Kameras', kind: 'toggle' },
       {
@@ -104,7 +104,7 @@ export const APP_SETTINGS_SCHEMA: Record<AppModuleId, { note: string; controls: 
     ],
   },
   licht: {
-    note: 'Light Planner',
+    note: 'LZ Light Planner',
     controls: [
       {
         key: 'mode',

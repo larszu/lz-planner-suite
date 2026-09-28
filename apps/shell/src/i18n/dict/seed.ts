@@ -32,9 +32,9 @@ export const seed: Record<string, string> = {
   'seed.handoff.dismissAll': 'Keep all here',
   'seed.handoff.header': 'Reported by {quelle}: {was}',
   'seed.handoff.countPlanners': 'Reports from {n} planners',
-  'seed.from.cameras': 'the camera planner',
-  'seed.from.fixtures': 'the lighting planner',
-  'seed.from.signal': 'the cabling planner',
+  'seed.from.cameras': 'LZ Multicam Planner',
+  'seed.from.fixtures': 'LZ Light Planner',
+  'seed.from.signal': 'LZ Cable Planner',
 
   // ── Die Kamera aus dem Signalplan, die im Kameraplan fehlt
   //    (Nutzer-Auftrag 2026-09-19) ──
@@ -47,9 +47,11 @@ export const seed: Record<string, string> = {
   'seed.kamera.toast': '{name} created in the camera plan',
 
   'seed.writer.shell': 'the suite',
-  'seed.writer.cameras': 'the camera planner',
-  'seed.writer.fixtures': 'the lighting planner',
-  'seed.writer.signal': 'the cabling planner',
+  'seed.writer.cameras': 'LZ Multicam Planner',
+  'seed.writer.fixtures': 'LZ Light Planner',
+  'seed.writer.signal': 'LZ Cable Planner',
+  'seed.writer.lager': 'LZ Inventory Planner',
+  'seed.writer.gebaeude': 'LZ Facility Planner',
 
   'seed.field.name': 'Venue',
   'seed.field.widthM': 'Hall width',

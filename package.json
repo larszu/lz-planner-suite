@@ -2,7 +2,7 @@
   "name": "av-planner-suite",
   "private": true,
   "version": "1.0.0",
-  "description": "AV Planner Suite — Monorepo fuer cable-planner, multicam-planner und light-planner plus geteilte Pakete",
+  "description": "LZ Planner Suite — Monorepo fuer cable-planner, multicam-planner und light-planner plus geteilte Pakete",
   "author": {
     "name": "Lars Zumpe",
     "email": "lars@zumpe.dev"

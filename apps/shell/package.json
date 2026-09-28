@@ -2,7 +2,7 @@
   "name": "@avplan/shell",
   "private": true,
   "version": "1.0.0",
-  "description": "Gemeinsame App-Shell der AV Planner Suite — vereint Signal (cable), Kameras (multicam) und Licht (light) unter einer Oberfläche",
+  "description": "Gemeinsame App-Shell der LZ Planner Suite — vereint Signal (cable), Kameras (multicam) und Licht (light) unter einer Oberfläche",
   "author": "Lars Zumpe",
   "repository": {
     "type": "git",

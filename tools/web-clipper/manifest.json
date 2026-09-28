@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AV-Planner Clipper",
+  "name": "LZ Planner Clipper",
   "version": "1.0.0",
-  "description": "Send the page you are looking at to a board in the AV Planner Suite.",
+  "description": "Send the page you are looking at to a board in the LZ Planner Suite.",
   "permissions": ["activeTab", "scripting", "storage"],
   "action": { "default_popup": "popup.html", "default_title": "To the board" },
   "icons": {},

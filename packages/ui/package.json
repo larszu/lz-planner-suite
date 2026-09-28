@@ -2,7 +2,7 @@
   "name": "@avplan/ui",
   "private": true,
   "version": "1.0.0",
-  "description": "Geteiltes Design-System der AV Planner Suite: Theme-Tokens, zugaengliche UI-Primitive, Command-Palette, Modul-Leiste und Shell-Bridge",
+  "description": "Geteiltes Design-System der LZ Planner Suite: Theme-Tokens, zugaengliche UI-Primitive, Command-Palette, Modul-Leiste und Shell-Bridge",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

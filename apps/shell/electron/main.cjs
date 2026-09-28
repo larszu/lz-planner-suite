@@ -1,4 +1,4 @@
-// Electron-Hauptprozess der AV Planner Suite (Desktop-Verpackung).
+// Electron-Hauptprozess der LZ Planner Suite (Desktop-Verpackung).
 //
 // Die Shell ist eine gebündelte Web-App (dist/), die die drei echten Planer als
 // iframe-Module einbettet. Damit die *echten* Planer-Renderer im Desktop-Build
@@ -12,6 +12,15 @@
 // unter der Assets, dynamische Imports und Worker sauber auflösen.
 const { app, BrowserWindow, shell, protocol, net, ipcMain, WebContentsView } = require('electron')
 const path = require('node:path')
+
+// userData leitet Electron aus dem productName ab. Seit der Umbenennung in
+// „LZ Planner Suite" zeigte er sonst auf einen leeren Ordner: Bibliothek,
+// zuletzt geoeffnete Projekte und Einstellungen waeren weg. Muss vor jedem
+// require stehen, das getPath('userData') auswertet. Nur gepackt: im Dev-
+// Lauf heisst der Ordner nach dem npm-Namen und hatte nie den alten Namen.
+const USER_DATA_ORDNER = 'AV Planner Suite'
+if (app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), USER_DATA_ORDNER))
+
 const { pathToFileURL } = require('node:url')
 
 // Nativer Cable-Modus (experimentell, opt-in): echte Cable-Software mit IPC in
@@ -71,7 +80,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 680,
     backgroundColor: '#0b0d12',
-    title: 'AV Planner Suite',
+    title: 'LZ Planner Suite',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

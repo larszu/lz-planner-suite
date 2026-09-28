@@ -77,7 +77,7 @@ export function NativeSignalRegion() {
     <div
       ref={ref}
       className="h-full w-full overflow-hidden rounded-av-card border border-av-border bg-av-surface-3"
-      aria-label="Cable Planner (nativ)"
+      aria-label="LZ Cable Planner (nativ)"
     />
   )
 }
