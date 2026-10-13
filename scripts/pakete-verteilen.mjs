@@ -35,6 +35,10 @@ export const ZIELE = {
     'light-planner': 'src/avplan/floorplan',
     'multicam-planner': 'src/avplan/floorplan',
   },
+  scene3d: {
+    'light-planner': 'src/avplan/scene3d',
+    'multicam-planner': 'src/avplan/scene3d',
+  },
 }
 
 const args = process.argv.slice(2)

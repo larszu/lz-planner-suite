@@ -1,0 +1,33 @@
+{
+  "name": "@avplan/scene3d",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Fotorealistische 3D-Bausteine fuer alle Planer, ohne React: Render-Pipeline mit Qualitaetsstufen, Tonemapping, Umgebungslicht, AO, Bloom, Dunst-Lichtkegel, prozedurale Oberflaechen, Menschen und Publikum, Tribuenen, LED-Waende",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "three": ">=0.185.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.0",
+    "three": "^0.185.0",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "license": "UNLICENSED"
+}
