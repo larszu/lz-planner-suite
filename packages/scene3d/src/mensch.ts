@@ -99,6 +99,30 @@ function glied(a: V, b: V, r: number, auf: Aufloesung, teil: number | ((p: THREE
   return g
 }
 
+/**
+ * Konisches Glied mit Kugelgelenken an beiden Enden — Oberschenkel sind
+ * oben dicker als am Knie. Nur im feinen Detail; im Publikum reicht die
+ * Kapsel, und die Gelenkkugeln kosten Dreiecke.
+ */
+function konisch(a: V, b: V, ra: number, rb: number, auf: Aufloesung, teil: number): THREE.BufferGeometry[] {
+  const va = new THREE.Vector3(...a)
+  const vb = new THREE.Vector3(...b)
+  const richtung = vb.clone().sub(va)
+  const l = Math.max(0.01, richtung.length())
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), richtung.normalize())
+  const rohr = new THREE.CylinderGeometry(rb, ra, l, auf.rund, 1, true)
+  mitTeil(rohr, teil)
+  rohr.applyQuaternion(q)
+  rohr.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2)
+  const kugel = (p: V, r: number) => {
+    const k = new THREE.SphereGeometry(r, auf.rund, Math.max(4, auf.rund / 2))
+    mitTeil(k, teil)
+    k.translate(...p)
+    return k
+  }
+  return [rohr, kugel(a, ra), kugel(b, rb)]
+}
+
 function rumpf(j: Gelenke, auf: Aufloesung): THREE.BufferGeometry {
   const unten = new THREE.Vector3(...j.huefte)
   const oben = new THREE.Vector3(...j.hals)
@@ -120,6 +144,13 @@ function kopf(j: Gelenke, auf: Aufloesung, detail: Detail): THREE.BufferGeometry
   g.translate(...j.kopf)
   const teile = [g, glied(j.hals, [j.kopf[0], j.kopf[1] - 0.07, j.kopf[2] - 0.01], 0.048, auf, TEIL.haut)]
   if (detail === 'hoch') {
+    // Haar als eigene, etwas groessere Kappe: Volumen statt aufgemalter Farbe.
+    const haar = new THREE.SphereGeometry(0.104, auf.kopfB, auf.kopfH, 0, Math.PI * 2, 0, Math.PI * 0.55)
+    haar.scale(0.88, 1.08, 1.04)
+    haar.rotateX(-0.25)
+    mitTeil(haar, TEIL.haar)
+    haar.translate(j.kopf[0], j.kopf[1] + 0.012, j.kopf[2] - 0.012)
+    teile.push(haar)
     const nase = new THREE.SphereGeometry(0.017, 8, 6)
     nase.scale(0.8, 1.3, 1)
     mitTeil(nase, TEIL.haut)
@@ -165,11 +196,19 @@ export function menschGeometrie(pose: Pose, detail: Detail = 'niedrig'): THREE.B
   const teile: THREE.BufferGeometry[] = [rumpf(j, auf), ...kopf(j, auf, detail)]
   for (const links of [true, false]) {
     const s = seite(j, links)
-    teile.push(glied(s.hueftL, s.knieL, 0.072, auf, TEIL.unten))
-    teile.push(glied(s.knieL, s.knoechelL, 0.055, auf, TEIL.unten))
-    teile.push(glied(s.knoechelL, s.zehL, 0.042, auf, TEIL.schuh))
-    teile.push(glied(s.schulterL, s.ellbogenL, 0.05, auf, TEIL.oben))
-    teile.push(glied(s.ellbogenL, s.handL, 0.04, auf, TEIL.unterarm))
+    if (detail === 'hoch') {
+      teile.push(...konisch(s.hueftL, s.knieL, 0.085, 0.056, auf, TEIL.unten))
+      teile.push(...konisch(s.knieL, s.knoechelL, 0.054, 0.036, auf, TEIL.unten))
+      teile.push(glied(s.knoechelL, s.zehL, 0.042, auf, TEIL.schuh))
+      teile.push(...konisch(s.schulterL, s.ellbogenL, 0.054, 0.04, auf, TEIL.oben))
+      teile.push(...konisch(s.ellbogenL, s.handL, 0.039, 0.028, auf, TEIL.unterarm))
+    } else {
+      teile.push(glied(s.hueftL, s.knieL, 0.072, auf, TEIL.unten))
+      teile.push(glied(s.knieL, s.knoechelL, 0.055, auf, TEIL.unten))
+      teile.push(glied(s.knoechelL, s.zehL, 0.042, auf, TEIL.schuh))
+      teile.push(glied(s.schulterL, s.ellbogenL, 0.05, auf, TEIL.oben))
+      teile.push(glied(s.ellbogenL, s.handL, 0.04, auf, TEIL.unterarm))
+    }
     if (detail === 'hoch') {
       const hand = new THREE.SphereGeometry(0.045, 10, 8)
       hand.scale(0.55, 1, 0.9)
