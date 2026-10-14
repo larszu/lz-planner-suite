@@ -197,4 +197,12 @@ describe('Licht und Wand', () => {
     expect(m.map).toBeNull()
     expect(m.roughness).toBeGreaterThan(0.5)
   })
+
+  it('Wandoberflaechen: Molton ist dunkler als Putz', () => {
+    const putz = oberflaechenMaterial('plaster').color.getHSL({ h: 0, s: 0, l: 0 }).l
+    const molton = oberflaechenMaterial('drape').color.getHSL({ h: 0, s: 0, l: 0 }).l
+    expect(putz).toBeGreaterThan(0.6)
+    expect(molton).toBeLessThan(0.1)
+    expect(oberflaechenMaterial('brick').roughness).toBeGreaterThan(0.5)
+  })
 })
