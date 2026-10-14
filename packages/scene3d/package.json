@@ -2,7 +2,7 @@
   "name": "@avplan/scene3d",
   "private": true,
   "version": "1.0.0",
-  "description": "Fotorealistische 3D-Bausteine fuer alle Planer, ohne React: Render-Pipeline mit Qualitaetsstufen, Tonemapping, Umgebungslicht, AO, Bloom, Dunst-Lichtkegel, prozedurale Oberflaechen, Menschen und Publikum, Tribuenen, LED-Waende, Tageszeit mit Sonnen- und Mondstand, Himmel, Wetter und Belichtung",
+  "description": "Fotorealistische 3D-Bausteine fuer alle Planer, ohne React: Render-Pipeline mit Qualitaetsstufen, Tonemapping, Umgebungslicht, AO, Bloom, Dunst-Lichtkegel, prozedurale Oberflaechen, Menschen und Publikum, Tribuenen, LED-Waende, Tageszeit mit Sonnen- und Mondstand, Himmel, Wetter und Belichtung, Kameras mit Objektiven und Halterungen",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
