@@ -44,6 +44,7 @@ export const chrome: Record<string, string> = {
   'chrome.topbar.redo': 'Redo',
   'chrome.topbar.saved': 'Saved',
   'chrome.topbar.unsaved': 'Unsaved',
+  'chrome.topbar.appearance': 'Appearance',
   'chrome.topbar.toLight': 'Switch to light theme',
   'chrome.topbar.toDark': 'Switch to dark theme',
   'chrome.topbar.settings': 'Settings',

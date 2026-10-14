@@ -59,15 +59,17 @@ export function Card({
 }) {
   return (
     <section className={`flex flex-col rounded-av-card border border-av-border bg-av-surface-1 ${className ?? ''}`}>
-      <header className="flex items-center gap-2 border-b border-av-border-muted px-3.5 py-2.5">
-        <Icon name={icon} size={14} style={{ color: 'var(--av-text-muted)' }} />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-av-text-muted">{title}</span>
+      {/* ADR-007 Abschnitt 3: Kartenkopf als Titel in Satzschreibung, getrennt
+          durch Abstand statt Linie. */}
+      <header className="flex items-center gap-2 px-4 pb-1 pt-3.5">
+        <Icon name={icon} size={15} style={{ color: 'var(--av-text-muted)' }} />
+        <span className="text-[14px] font-semibold text-av-text">{title}</span>
         {/* mr-14 lässt oben rechts Platz für die schwebenden Grid-Steuerungen
             (Ziehen/Schließen), die bei Hover/Fokus über die Kartenecke einblenden
             — sonst überdecken sie die „Bearbeiten"-Schaltfläche. */}
         {action && <span className="ml-auto mr-14">{action}</span>}
       </header>
-      <div className="flex-1 p-3.5">{children}</div>
+      <div className="flex-1 px-4 pb-4 pt-2.5">{children}</div>
     </section>
   )
 }
