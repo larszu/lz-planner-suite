@@ -13,7 +13,7 @@ Stelle.
 | # | Paket | Stand | Warum zuerst |
 | --- | --- | --- | --- |
 | 1 | `@avplan/floorplan` | **gebaut 2026-09-28** | Behebt den gemeldeten Fehler (kein Drag & Drop), vier Lader zu einem |
-| 1b | `@avplan/scene3d` | **gebaut 2026-10-13** | Fotorealistische 3D-Ansicht für multicam- und light-planner aus einer Quelle; light-planners Render-Teile (Haze-Kegel, AgX, Bloom, Personen-Lader) sind darin aufgegangen |
+| 1b | `@avplan/scene3d` | **gebaut 2026-10-13** | Fotorealistische 3D-Ansicht für multicam- und light-planner aus einer Quelle; light-planners Render-Teile (Haze-Kegel, AgX, Bloom, Personen-Lader) sind darin aufgegangen; seit 2026-10-14 Tageszeit und Himmel (`sonne.ts`, `himmel.ts`, braucht `suncalc` im Planer) |
 | 2 | `@avplan/files` | offen | Fehlerhafter Download-Anker in rund 20 Dateien (Anker nicht eingehängt, sofortiges `revokeObjectURL`) |
 | 3 | `@avplan/csv` | offen | `csv.ts` ist in cable und inventory schon zeichengleich; light schreibt nach anderen Regeln |
 | 4 | `@avplan/stamp` | offen | Drei Fassungen, Parität nur in der Suite geprüft; cable fehlen die festen Prüfwerte |
