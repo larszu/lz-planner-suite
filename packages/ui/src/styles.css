@@ -1,70 +1,81 @@
 /* ============================================================================
  * @avplan/ui — Design-System der LZ Planner Suite
  *
- * Eine Datei, ein Import: Theme-Tokens (dark/light) + die Styles aller
+ * Eine Datei, ein Import: Theme-Tokens (hell UND dunkel) + die Styles aller
  * UI-Primitive (.av-*).
  *
- * ─── DIE WERTE SIND NICHT FREI GEWAEHLT ────────────────────────────────────
+ * ─── WOHER DIE WERTE KOMMEN ────────────────────────────────────────────────
  *
- * Sie stammen aus dem Brand Guide 2.0 der Lars Zumpe Medienproduktion und
- * stehen maschinenlesbar in `src/brand.ts`; `test/brand.test.ts` haelt beide
- * Dateien zusammen, damit hier nichts abdriftet. Die Regeln dazu — auch die
- * benannten Abweichungen fuers Werkzeug — stehen in ADR-007.
+ * ADR-007 (geaendert 2026-10-13). Palette, Logo und Claim aus dem Brand
+ * Guide 2.0; Form, Tiefe und Bewegung nach heutigen UI-Standards (Skill
+ * lzm-web). Maschinenlesbar in `src/brand.ts`; `test/brand.test.ts` haelt
+ * beide Dateien zusammen.
  *
  * ─── DAS EINE, DAS MAN WISSEN MUSS ─────────────────────────────────────────
  *
- * Blau ist die Marke, ROT IST DAS SIGNAL. `--av-signal` ist kein Farbton aus
- * der Palette, sondern das Aufnahmelicht: Fokusring, EIN Punkt am primaeren
- * Knopf, Live-/Aufnahme-Zustand. Nie Flaeche, nie Text, nie Rahmen, nie
- * zweimal in einem Sichtfeld. Wer Rot als Fehlerfarbe braucht, nimmt
- * `--av-danger` — das ist ein anderer Ton und ein anderer Zweck.
+ * Flaechen sind NEUTRAL, Markenblau ist nur AKZENT (Hauptknopf, Auswahl,
+ * Fortschritt, Links — hoechstens ein Zehntel der Flaeche). ROT IST DAS
+ * SIGNAL: Fokusring, Live/REC/Tally, Claim-Punkt, Erfolgsmoment. Nie Flaeche,
+ * nie Text, nie Rahmen; der Hexwert steht genau einmal hier, in `--av-signal`.
+ * Fehlerrot ist `--av-danger`, ein anderer Ton fuer einen anderen Zweck.
  *
- * Und: keine Rundungen, keine Schatten, keine Verlaeufe. Die Radius- und
- * Schatten-Tokens gibt es weiter, damit kein Aufrufer umgebaut werden muss;
- * sie sind auf 0 bzw. `none` gesetzt. Struktur entsteht durch Linie und
- * Weissraum.
+ * Hell ist der Grundzustand; Dunkel kommt aus `prefers-color-scheme` oder aus
+ * `data-theme` auf <html>, das in beide Richtungen ueberstimmt (Auto · Hell ·
+ * Dunkel, siehe `ThemeSwitch`). Rundungen und Schatten NUR ueber die Tokens
+ * `--av-r-*` und `--av-shadow-*` — nie ein roher Pixelwert.
  * ==========================================================================*/
 
 :root {
-  /* ── Flaechen (Dark = Default; das Web ist die dunkle Anwendung) ── */
-  --av-bg: #132040;          /* Deep Navy — Grund, Hero, Footer */
-  --av-surface-1: #182948;   /* abgeleitet — Panels */
-  --av-surface-2: #1D324F;   /* Zumpe Navy — Karten, Formulare, raised */
-  --av-surface-3: #0E1930;   /* abgeleitet — versenkt: Leisten, Inputs, Rail */
-  --av-surface-4: #24405F;   /* abgeleitet — Chip-/Button-Flaeche */
-  --av-border: rgba(246, 245, 240, 0.14);
-  --av-border-muted: rgba(246, 245, 240, 0.07);
-  --av-border-strong: rgba(246, 245, 240, 0.35);
+  color-scheme: light;
 
-  --av-text: #F6F5F0;            /* Off-White */
-  --av-text-secondary: #E1ECEF;  /* Eisblau — Fliesstext auf Dunkel */
-  --av-text-muted: #8C9CB3;      /* Stahlblau — Kicker, Meta, Platzhalter */
-  --av-text-faint: #6E7F99;      /* abgeleitet — nie fuer Saetze */
+  /* ── Hell: Flaechen neutral, warmes Fast-Weiss ── */
+  --av-bg: #FAFAF8;          /* Grund */
+  --av-surface-1: #FFFFFF;   /* Flaeche: Panels, Karten */
+  --av-surface-2: #F1F1EE;   /* Flaeche 2: Felder, Toolbars, Hover */
+  --av-surface-3: #F4F4F1;   /* versenkt: Rail, Statusleiste */
+  --av-surface-4: #FFFFFF;   /* erhoben: Menues, Popover, Dialog */
+  --av-border: rgba(22, 24, 29, 0.08);
+  --av-border-strong: rgba(22, 24, 29, 0.18);
 
-  /* ── Status: NUR Meldungen. Nicht der Akzent, nicht das Signal. ── */
+  --av-text: #16181D;            /* Text stark: Titel, Bedienelemente */
+  --av-text-secondary: #2B2E35;  /* Text: Fliesstext */
+  --av-text-muted: #6A6E77;      /* gedaempft: Meta, Platzhalter */
+
+  /* ── Akzent = Markenblau ── */
+  --av-accent: #1D324F;          /* Zumpe Navy */
+  --av-accent-text: #F6F5F0;
+  --av-accent-dim: color-mix(in srgb, var(--av-accent) 10%, transparent);
+
+  /* ── Logo: nur Kit-Farben, nie an den Akzent gekoppelt ── */
+  --av-logo: #1D324F;
+
+  /* ── Schein: Hintergrund auf Start-/Leerflaechen, Weichschatten am Hauptknopf ── */
+  --av-glow-1: rgba(29, 50, 79, 0.10);
+  --av-glow-2: rgba(200, 137, 43, 0.10);
+
+  /* ── Tiefe: weich, nur zum Trennen von Ebenen ── */
+  --av-shadow-1: 0 1px 2px rgba(22, 24, 29, 0.06);
+  --av-shadow-2: 0 4px 16px rgba(22, 24, 29, 0.08);
+  --av-shadow-3: 0 16px 48px rgba(22, 24, 29, 0.14);
+
+  /* ── Modus-unabhaengig ── */
+  --av-signal: #D6402E;      /* Tally-Rot — das einzige Mal in dieser Datei */
+  --av-logo-dot: var(--av-signal);
   --av-ok: #2F7D5C;
   --av-warn: #C8892B;
   --av-danger: #B04A3F;
-  --av-ok-dim: color-mix(in srgb, var(--av-ok) 22%, transparent);
-  --av-warn-dim: color-mix(in srgb, var(--av-warn) 22%, transparent);
-  --av-danger-dim: color-mix(in srgb, var(--av-danger) 22%, transparent);
+  --av-ok-dim: color-mix(in srgb, var(--av-ok) 16%, transparent);
+  --av-warn-dim: color-mix(in srgb, var(--av-warn) 16%, transparent);
+  --av-danger-dim: color-mix(in srgb, var(--av-danger) 16%, transparent);
 
-  /* ── Das Signal ── */
-  --av-signal: #D6402E;      /* Tally-Rot */
+  /* Abgeleitete Namen — bleiben, damit kein Aufrufer bricht. */
+  --av-border-muted: var(--av-border);
+  --av-text-faint: var(--av-text-muted);
+  --av-accent-line: var(--av-border);
+  --av-glass: color-mix(in srgb, var(--av-bg) 72%, transparent);
+  --av-scrim: rgba(0, 0, 0, 0.45);
 
-  /* ── Akzent ──
-   * Frueher wechselte er mit dem Modul die Farbe: violett, cyan, amber,
-   * pink. Das war ein zweites Farbsystem neben der Marke, und es machte
-   * jede Ansicht zu einer anderen Anwendung. Das Modul erkennt man jetzt am
-   * Kicker in der Kopfzeile, nicht am Farbton — dieselbe Entscheidung, die
-   * der Guide fuer die Marke trifft: Struktur statt Buntheit.
-   * Die --mod-*-Namen bleiben, damit [data-module] nichts bricht; sie
-   * zeigen alle auf denselben Wert. */
-  --av-accent: #F6F5F0;          /* Off-White: primaerer Knopf, Auswahl */
-  --av-accent-text: #132040;     /* Navy darauf — 13:1 statt 4:1 */
-  --av-accent-dim: rgba(246, 245, 240, 0.12);
-  --av-accent-line: #8C9CB3;     /* Stahlblau: Kopflinie, Kicker */
-
+  /* Modul-Identitaet ohne Farbton: alle Modul-Akzente zeigen auf den Akzent. */
   --mod-raum: var(--av-accent);
   --mod-signal: var(--av-accent);
   --mod-cameras: var(--av-accent);
@@ -74,20 +85,29 @@
   --mod-lager: var(--av-accent);
   --mod-gebaeude: var(--av-accent);
 
-  /* ── Form: keine Rundungen, keine Schatten (Guide S. 10) ── */
-  --av-r-control: 0;
-  --av-r-card: 0;
-  --av-r-modal: 0;
-  --av-r-pill: 0;
+  /* ── Form ── */
+  --av-r-s: 6px;        /* Chips, kleine Felder */
+  --av-r-m: 10px;       /* Knoepfe, Felder */
+  --av-r-l: 20px;       /* Karten, Panels, Kacheln */
+  --av-r-xl: 24px;      /* Dialoge, Sheets */
+  --av-r-full: 999px;   /* Pills, Schalter, Avatare */
+  --av-r-control: var(--av-r-m);
+  --av-r-card: var(--av-r-l);
+  --av-r-modal: var(--av-r-xl);
+  --av-r-pill: var(--av-r-full);
 
-  --av-shadow-panel: none;
-  --av-shadow-pop: none;
-  --av-shadow-float: none;
+  --av-shadow-panel: var(--av-shadow-1);
+  --av-shadow-float: var(--av-shadow-2);
+  --av-shadow-pop: var(--av-shadow-3);
 
-  /* ── Bewegung: schnell, kurz, dann still ── */
+  /* ── Bewegung ── */
   --av-ease: cubic-bezier(.2, .8, .2, 1);
-  --av-dur: 350ms;
-  --av-dur-max: 450ms;
+  --av-ease-spring: linear(0, .5 15%, .9 30%, 1.04 45%, 1.01 65%, 1);
+  --av-dur-1: 120ms;    /* Hover, Druck */
+  --av-dur-2: 220ms;    /* Menues, Sheets */
+  --av-dur-3: 360ms;    /* Ansichtswechsel */
+  --av-dur: var(--av-dur-2);
+  --av-dur-max: 600ms;  /* nur Erfolgsmomente mit Feder-Kurve */
 
   /* ── Typo-Leiter (zwei Stufen, siehe brand.ts) ── */
   --av-fs-micro: 11px;
@@ -96,7 +116,7 @@
   --av-fs-read: 16px;
   --av-fs-title: 20px;
   --av-fs-display: 26px;
-  --av-tracking-kicker: 0.16em;
+  --av-tracking-kicker: 0.08em;
 
   /* ── 8-px-Raster ── */
   --av-space-1: 4px;
@@ -107,91 +127,90 @@
   --av-space-8: 32px;
   --av-space-12: 48px;
 
-  --av-font-sans: 'Public Sans', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+  --av-font-sans: 'Public Sans Variable', 'Public Sans', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
   --av-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 }
 
-/* ── Helles Theme ──
- * Dieselbe Palette, gedrehte Gewichtung: Print ist hell (60 % Weiss), das
- * Web dunkel (70 % Deep Navy). Schiefer ist hier der Sekundaertext — der
- * Wert, fuer den ihn der Guide misst (5,4:1 auf Weiss). */
-@media (prefers-color-scheme: light) {
-  :root {
-    --av-bg: #F6F5F0;
-    --av-surface-1: #FFFFFF;
-    --av-surface-2: #E1ECEF;
-    --av-surface-3: #ECEBE6;
-    --av-surface-4: #FFFFFF;
-    --av-border: rgba(29, 50, 79, 0.16);
-    --av-border-muted: rgba(29, 50, 79, 0.08);
-    --av-border-strong: rgba(29, 50, 79, 0.32);
-    --av-text: #1D324F;
-    --av-text-secondary: #5C6B85;
-    --av-text-muted: #8C9CB3;
-    --av-text-faint: #A7B3C4;
-    --av-accent: #1D324F;
-    --av-accent-text: #F6F5F0;
-    --av-accent-dim: rgba(29, 50, 79, 0.10);
-    --av-accent-line: #8C9CB3;
+/* ── Dunkel: Anthrazit, nicht Schwarz und nicht Navy ──
+ * Zweimal derselbe Block: einmal fuer „Auto" (System dunkel, keine Wahl
+ * gespeichert), einmal fuer die ausdrueckliche Wahl. Der Test haelt beide
+ * gleich. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --av-bg: #1E1F23;
+    --av-surface-1: #28292E;
+    --av-surface-2: #33343A;
+    --av-surface-3: #19191D;
+    --av-surface-4: #3B3C42;
+    --av-border: rgba(246, 245, 240, 0.09);
+    --av-border-strong: rgba(246, 245, 240, 0.20);
+    --av-text: #F6F5F0;
+    --av-text-secondary: #E6E6E3;
+    --av-text-muted: #A9ACB4;
+    --av-accent: #B9C7D8;
+    --av-accent-text: #132040;
+    --av-accent-dim: color-mix(in srgb, var(--av-accent) 12%, transparent);
+    --av-logo: #F6F5F0;
+    --av-glow-1: rgba(185, 199, 216, 0.16);
+    --av-glow-2: rgba(200, 137, 43, 0.10);
+    --av-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+    --av-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.40);
+    --av-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.55);
   }
 }
-:root[data-theme='light'] {
-  --av-bg: #F6F5F0;
-  --av-surface-1: #FFFFFF;
-  --av-surface-2: #E1ECEF;
-  --av-surface-3: #ECEBE6;
-  --av-surface-4: #FFFFFF;
-  --av-border: rgba(29, 50, 79, 0.16);
-  --av-border-muted: rgba(29, 50, 79, 0.08);
-  --av-border-strong: rgba(29, 50, 79, 0.32);
-  --av-text: #1D324F;
-  --av-text-secondary: #5C6B85;
-  --av-text-muted: #8C9CB3;
-  --av-text-faint: #A7B3C4;
-  --av-accent: #1D324F;
-  --av-accent-text: #F6F5F0;
-  --av-accent-dim: rgba(29, 50, 79, 0.10);
-  --av-accent-line: #8C9CB3;
-}
 :root[data-theme='dark'] {
-  --av-bg: #132040;
-  --av-surface-1: #182948;
-  --av-surface-2: #1D324F;
-  --av-surface-3: #0E1930;
-  --av-surface-4: #24405F;
-  --av-border: rgba(246, 245, 240, 0.14);
-  --av-border-muted: rgba(246, 245, 240, 0.07);
-  --av-border-strong: rgba(246, 245, 240, 0.35);
+  color-scheme: dark;
+  --av-bg: #1E1F23;
+  --av-surface-1: #28292E;
+  --av-surface-2: #33343A;
+  --av-surface-3: #19191D;
+  --av-surface-4: #3B3C42;
+  --av-border: rgba(246, 245, 240, 0.09);
+  --av-border-strong: rgba(246, 245, 240, 0.20);
   --av-text: #F6F5F0;
-  --av-text-secondary: #E1ECEF;
-  --av-text-muted: #8C9CB3;
-  --av-text-faint: #6E7F99;
-  --av-accent: #F6F5F0;
+  --av-text-secondary: #E6E6E3;
+  --av-text-muted: #A9ACB4;
+  --av-accent: #B9C7D8;
   --av-accent-text: #132040;
-  --av-accent-dim: rgba(246, 245, 240, 0.12);
-  --av-accent-line: #8C9CB3;
+  --av-accent-dim: color-mix(in srgb, var(--av-accent) 12%, transparent);
+  --av-logo: #F6F5F0;
+  --av-glow-1: rgba(185, 199, 216, 0.16);
+  --av-glow-2: rgba(200, 137, 43, 0.10);
+  --av-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --av-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.40);
+  --av-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+:root[data-theme='light'] { color-scheme: light; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --av-dur-2: 0ms; --av-dur-3: 120ms; --av-ease-spring: var(--av-ease); }
 }
 
-/* ── Kopflinie: Kicker in Versalien, darunter die Linie bis zur Satzkante ──
- * „Das Element aus der Visitenkarte 2020 — unverändert, es ist das
- * Kontinuum der Marke." Einer pro Flaeche. In der Suite ist das die
- * Kopfzeile jedes Panels und jedes Dialogs; sie traegt auch die
- * Modul-Kennung, die frueher eine Farbe war. */
+/* ── Overline: kleine Versalien (≤ 12 px) ueber einem Titel — optional ── */
 .av-kicker {
   font-size: var(--av-fs-kicker);
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: var(--av-tracking-kicker);
   color: var(--av-text-muted);
 }
+/* Frueher die Kopflinie (Stahlblau bis zur Satzkante). Seit 2026-10-13 nur
+ * noch Abstand unter einem Kopf; die Klasse bleibt fuer Aufrufer. */
 .av-headrule {
-  border-bottom: 1px solid var(--av-accent-line);
   padding-bottom: var(--av-space-2);
   margin-bottom: var(--av-space-3);
 }
 
-/* ── Tally-Punkt: das Aufnahmesignal, eckig, einer pro Sichtfeld ──
- * Er ist der Satzpunkt der Hausschrift, kein Kreis — deshalb quadratisch. */
+/* ── Hintergrundschein: nur Start- und Leerflaechen, nie hinter dem Canvas ── */
+.av-glow-bg {
+  background:
+    radial-gradient(56rem 36rem at 8% -12%, var(--av-glow-1), transparent 62%),
+    radial-gradient(44rem 30rem at 105% 4%, var(--av-glow-2), transparent 60%),
+    var(--av-bg);
+}
+
+/* ── Tally-Punkt: das Aufnahmesignal. Bleibt eckig wie das Logo. ── */
 .av-tally {
   display: inline-block;
   width: 6px;
@@ -203,8 +222,8 @@
 /* ── Reset-Ergänzungen ── */
 .av-scroll { scrollbar-width: thin; scrollbar-color: var(--av-border) transparent; }
 .av-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
-.av-scroll::-webkit-scrollbar-thumb { background: var(--av-border); border-radius: 0; border: 3px solid transparent; background-clip: content-box; }
-.av-scroll::-webkit-scrollbar-thumb:hover { background: var(--av-surface-4); background-clip: content-box; }
+.av-scroll::-webkit-scrollbar-thumb { background: var(--av-border-strong); border-radius: var(--av-r-full); border: 3px solid transparent; background-clip: content-box; }
+.av-scroll::-webkit-scrollbar-thumb:hover { background: var(--av-text-muted); background-clip: content-box; }
 
 .av-num { font-family: var(--av-font-mono); font-variant-numeric: tabular-nums; }
 
@@ -217,11 +236,11 @@
 .av-cmdk-input:focus-visible,
 .av-search-trigger:focus-visible,
 .av-toolbar-btn:focus-visible {
-  /* Der Fokusring ist Rot — 2 px, 3 px Abstand (Guide S. 17). Das ist der
-   * eine Ort, an dem das Signal ohne Zutun erscheint: wer mit der Tastatur
-   * arbeitet, soll sehen, wo er ist. */
+  /* Der Fokusring ist Rot — 2 px, 2 px Abstand. Das ist der eine Ort, an dem
+   * das Signal ohne Zutun erscheint: wer mit der Tastatur arbeitet, soll
+   * sehen, wo er ist. */
   outline: 2px solid var(--av-signal);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 /* ── Schieberegler: 24 px Trefferflaeche (WCAG 2.2 SC 2.5.8, Stufe AA) ──
@@ -245,8 +264,8 @@
  * falsche Loesung: er sprengt jede Zeile, in der ein Regler neben einer
  * Beschriftung sitzt.
  *
- * Der Griff bleibt ECKIG — ADR-007 legt „keine Rundungen" fest. Der Fokusring
- * ist eine `outline` mit Abstand, kein Schatten (auch ADR-007), und er steht
+ * Bahn und Griff sind rund (Tokens `--av-r-full`, ADR-007 seit 2026-10-13).
+ * Der Fokusring ist eine `outline` mit Abstand, kein Schatten, und er steht
  * hier ausdruecklich am Element und nicht nur an `.av-focus`: einen Regler
  * bekommt man mit der Tabulatortaste auch ohne diese Klasse.
  *
@@ -262,8 +281,9 @@ input[type="range"] {
 }
 input[type="range"]::-webkit-slider-runnable-track {
   height: 6px;
-  background: var(--av-surface-3);
+  background: var(--av-surface-2);
   border: 1px solid var(--av-border);
+  border-radius: var(--av-r-full);
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -271,8 +291,9 @@ input[type="range"]::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
   background: var(--av-accent);
-  border: 2px solid var(--av-surface-3);
-  border-radius: 0;
+  border: 2px solid var(--av-surface-1);
+  border-radius: var(--av-r-full);
+  box-shadow: var(--av-shadow-1);
   /* Der Griff sitzt auf der Bahn, nicht daneben: (6 px Bahn - 18 px Griff)
      / 2 = -6 px, plus 1 px Rahmen der Bahn. */
   margin-top: -7px;
@@ -280,58 +301,62 @@ input[type="range"]::-webkit-slider-thumb {
 }
 input[type="range"]::-moz-range-track {
   height: 6px;
-  background: var(--av-surface-3);
+  background: var(--av-surface-2);
   border: 1px solid var(--av-border);
+  border-radius: var(--av-r-full);
 }
 input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
   background: var(--av-accent);
-  border: 2px solid var(--av-surface-3);
-  border-radius: 0;
+  border: 2px solid var(--av-surface-1);
+  border-radius: var(--av-r-full);
+  box-shadow: var(--av-shadow-1);
   cursor: pointer;
 }
 input[type="range"]:focus-visible {
   outline: 2px solid var(--av-signal);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 input[type="range"]:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-/* ── Button ── */
+/* ── Button ──
+ * Primaer: Pill in Akzentfarbe mit weichem Akzentschein, EINER pro Ansicht.
+ * Sekundaer: „soft" (Akzent weich). Ghost: ohne Flaeche. Kein Outline-Knopf. */
 .av-btn {
   display: inline-flex; align-items: center; gap: 7px;
-  font: inherit; font-size: 13px; font-weight: 550; line-height: 1;
-  padding: 7px 12px; border-radius: var(--av-r-control);
-  border: 1px solid var(--av-border);
-  background: var(--av-surface-4); color: var(--av-text);
+  font: inherit; font-size: 13px; font-weight: 600; line-height: 1;
+  padding: 8px 14px; border-radius: var(--av-r-control);
+  border: 1px solid transparent;
+  background: var(--av-surface-2); color: var(--av-text);
   cursor: pointer; white-space: nowrap;
-  transition: background var(--av-dur) var(--av-ease), border-color var(--av-dur) var(--av-ease), filter var(--av-dur) var(--av-ease);
+  transition: background var(--av-dur-1) var(--av-ease), color var(--av-dur-1) var(--av-ease), box-shadow var(--av-dur-1) var(--av-ease), transform var(--av-dur-1) var(--av-ease);
 }
-.av-btn:hover { background: color-mix(in srgb, var(--av-surface-4) 82%, var(--av-text) 6%); }
+.av-btn:hover { background: color-mix(in srgb, var(--av-surface-2) 90%, var(--av-text) 10%); }
+.av-btn:active:not(:disabled) { transform: scale(.97); }
 .av-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-/* Primaerknopf: Off-White-Flaeche, Navy-Text, roter Punkt links — 13:1 statt
- * 4:1 (Weiss auf Rot). Einer pro Abschnitt; der Punkt macht sichtbar, welcher
- * es ist. */
-.av-btn[data-variant='primary'] { background: var(--av-accent); border-color: transparent; color: var(--av-accent-text); font-weight: 600; }
-.av-btn[data-variant='primary']::before { content: ''; width: 6px; height: 6px; background: var(--av-signal); flex: none; }
-.av-btn[data-variant='primary']:hover { filter: brightness(1.08); }
-/* Sekundaer: Outline Off-White 35 %, im Hover voll. */
-.av-btn[data-variant='secondary'] { background: transparent; border-color: var(--av-border-strong); color: var(--av-text); }
-.av-btn[data-variant='secondary']:hover { border-color: var(--av-text); background: transparent; }
-.av-btn[data-variant='ghost'] { background: transparent; border-color: transparent; color: var(--av-text-secondary); }
+.av-btn[data-variant='primary'] {
+  background: var(--av-accent); color: var(--av-accent-text);
+  border-radius: var(--av-r-pill);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--av-accent) 55%, transparent);
+}
+.av-btn[data-variant='primary']:hover { background: color-mix(in srgb, var(--av-accent) 90%, var(--av-text) 10%); transform: translateY(-1px); }
+.av-btn[data-variant='secondary'] { background: var(--av-accent-dim); color: var(--av-accent); }
+.av-btn[data-variant='secondary']:hover { background: color-mix(in srgb, var(--av-accent) 18%, transparent); }
+.av-btn[data-variant='ghost'] { background: transparent; color: var(--av-text-secondary); }
 .av-btn[data-variant='ghost']:hover { background: var(--av-surface-2); color: var(--av-text); }
-.av-btn[data-variant='subtle'] { background: var(--av-surface-2); border-color: var(--av-border-muted); }
-.av-btn[data-variant='subtle']:hover { border-color: var(--av-border); }
-.av-btn[data-size='sm'] { padding: 5px 9px; font-size: 12px; }
+.av-btn[data-variant='subtle'] { background: var(--av-surface-2); }
+.av-btn[data-variant='subtle']:hover { background: color-mix(in srgb, var(--av-surface-2) 90%, var(--av-text) 10%); }
+.av-btn[data-size='sm'] { padding: 6px 10px; font-size: 12px; }
 
 .av-icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: var(--av-r-control);
+  width: 32px; height: 32px; border-radius: var(--av-r-control);
   border: 1px solid transparent; background: transparent; color: var(--av-text-muted);
-  cursor: pointer; transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
+  cursor: pointer; transition: background var(--av-dur-1) var(--av-ease), color var(--av-dur-1) var(--av-ease);
 }
 .av-icon-btn:hover { background: var(--av-surface-2); color: var(--av-text); }
 .av-icon-btn[data-active='true'] { background: var(--av-accent-dim); color: var(--av-accent); }
@@ -343,19 +368,16 @@ input[type="range"]:disabled {
   background: var(--av-surface-1); border: 1px solid var(--av-border);
   border-radius: var(--av-r-card); box-shadow: var(--av-shadow-panel);
 }
-/* ADR-007 Abschnitt 3 — die KOPFLINIE. Der Panel-Kopf IST sie: Kicker in
-   Versalien, darunter die durchgehende Linie in Stahlblau bis zur rechten
-   Satzkante. „Das Element aus der Visitenkarte 2020 — unveraendert, es ist
-   das Kontinuum der Marke." Eine pro Flaeche; sie traegt auch die
-   Modul-Kennung, die frueher eine Farbe war. */
+/* ADR-007 Abschnitt 3 — der Panel-Kopf ist ein normaler Titel in
+   Satzschreibung; eine Overline (.av-kicker) darueber ist optional. Getrennt
+   wird durch Abstand, nicht durch eine Linie. */
 .av-panel-head {
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px; border-bottom: 1px solid var(--av-accent-line);
+  padding: 14px 16px 8px;
 }
 .av-panel-title {
-  font-size: var(--av-fs-kicker); font-weight: 700;
-  letter-spacing: var(--av-tracking-kicker); text-transform: uppercase;
-  color: var(--av-text-muted);
+  font-size: 14px; font-weight: 650;
+  color: var(--av-text);
 }
 .av-panel-body { flex: 1; min-height: 0; overflow: auto; }
 
@@ -363,17 +385,15 @@ input[type="range"]:disabled {
 .av-badge {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11px; font-weight: 600; line-height: 1;
-  padding: 3px 8px; border-radius: var(--av-r-pill);
-  border: 1px solid var(--av-border); color: var(--av-text-secondary);
+  padding: 4px 9px; border-radius: var(--av-r-pill);
+  border: 1px solid transparent; color: var(--av-text-secondary);
   background: var(--av-surface-2); white-space: nowrap;
 }
 .av-badge[data-tone='ok'] { color: var(--av-ok); border-color: transparent; background: var(--av-ok-dim); }
 .av-badge[data-tone='warn'] { color: var(--av-warn); border-color: transparent; background: var(--av-warn-dim); }
 .av-badge[data-tone='danger'] { color: var(--av-danger); border-color: transparent; background: var(--av-danger-dim); }
 .av-badge[data-tone='accent'] { color: var(--av-accent); border-color: transparent; background: var(--av-accent-dim); }
-/* Eckig, nicht rund: „keine Kreise ausser dem Punkt" — und der Punkt der
- * Hausschrift IST eckig. */
-.av-badge-dot { width: 6px; height: 6px; border-radius: 0; background: currentColor; }
+.av-badge-dot { width: 6px; height: 6px; border-radius: var(--av-r-full); background: currentColor; }
 
 /* ── Kbd ── */
 .av-kbd {
@@ -382,21 +402,21 @@ input[type="range"]:disabled {
   font-family: var(--av-font-mono); font-size: 11px; line-height: 1;
   color: var(--av-text-muted); background: var(--av-surface-3);
   border: 1px solid var(--av-border); border-bottom-width: 2px;
-  border-radius: 0;
+  border-radius: var(--av-r-s);
 }
 
-/* ── Tabs (Deck) ── */
-.av-tabs { display: flex; align-items: center; gap: 2px; }
+/* ── Tabs (Deck): Segment mit gleitender heller Auswahl ── */
+.av-tabs { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: var(--av-r-control); background: var(--av-surface-2); }
 .av-tab {
   display: inline-flex; align-items: center; gap: 7px;
   font: inherit; font-size: 13px; font-weight: 550;
-  padding: 7px 13px; border-radius: var(--av-r-control);
+  padding: 6px 12px; border-radius: var(--av-r-s);
   border: 1px solid transparent; background: transparent; color: var(--av-text-muted);
-  cursor: pointer; transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
+  cursor: pointer; transition: background var(--av-dur-2) var(--av-ease), color var(--av-dur-1) var(--av-ease), box-shadow var(--av-dur-2) var(--av-ease);
 }
-.av-tab:hover { background: var(--av-surface-2); color: var(--av-text-secondary); }
-.av-tab[data-active='true'] { background: var(--av-surface-2); color: var(--av-text); }
-.av-tab-dot { width: 6px; height: 6px; border-radius: 0; background: var(--av-accent); }
+.av-tab:hover { color: var(--av-text); }
+.av-tab[data-active='true'] { background: var(--av-surface-1); color: var(--av-text); box-shadow: var(--av-shadow-1); }
+.av-tab-dot { width: 6px; height: 6px; border-radius: var(--av-r-full); background: var(--av-accent); }
 .av-tab[data-active='false'] .av-tab-dot { background: var(--av-text-faint); }
 
 /* ── Modul-Leiste (Rail) ── */
@@ -407,20 +427,20 @@ input[type="range"]:disabled {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   width: 56px; flex: none;
   padding: 10px 4px; background: var(--av-surface-3);
-  border-right: 1px solid var(--av-border-muted);
+  border-right: 1px solid var(--av-border);
 }
 .av-rail-item {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  width: 48px; padding: 8px 2px 6px; border-radius: var(--av-r-card);
+  width: 48px; padding: 8px 2px 6px; border-radius: var(--av-r-control);
   border: 1px solid transparent; background: transparent;
   color: var(--av-text-muted); cursor: pointer;
-  transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
+  transition: background var(--av-dur-1) var(--av-ease), color var(--av-dur-1) var(--av-ease);
 }
-.av-rail-item:hover { background: var(--av-surface-2); color: var(--av-text-secondary); }
-.av-rail-item[data-active='true'] { color: var(--av-mod, var(--av-accent)); background: color-mix(in srgb, var(--av-mod, var(--av-accent)) 13%, transparent); }
+.av-rail-item:hover { background: var(--av-surface-2); color: var(--av-text); }
+.av-rail-item[data-active='true'] { color: var(--av-mod, var(--av-accent)); background: var(--av-accent-dim); }
 .av-rail-item[data-active='true']::before {
   content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
-  width: 3px; height: 22px; border-radius: 0; background: var(--av-mod, var(--av-accent));
+  width: 3px; height: 22px; border-radius: var(--av-r-full); background: var(--av-mod, var(--av-accent));
 }
 .av-rail-label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.01em; }
 /* Gruppen-Ueberschrift in der Rail (Planung / Betrieb). Klein und leise: sie
@@ -434,7 +454,7 @@ input[type="range"]:disabled {
   text-transform: uppercase;
   color: var(--av-text-faint);
   text-align: center;
-  border-top: 1px solid var(--av-border-muted);
+  border-top: 1px solid var(--av-border);
   margin-top: 6px;
 }
 .av-rail-group:first-child { border-top: 0; margin-top: 0; padding-top: 2px; }
@@ -448,7 +468,7 @@ input[type="range"]:disabled {
   left: 7px;
   width: 6px;
   height: 6px;
-  border-radius: 0;
+  border-radius: var(--av-r-full);
   background: var(--av-text-faint);
 }
 .av-rail-dot[data-status='on'] { background: var(--av-ok); }
@@ -463,17 +483,17 @@ input[type="range"]:disabled {
 /* ── Floating-Toolbar ── */
 .av-toolbar {
   display: inline-flex; align-items: center; gap: 3px; padding: 5px;
-  background: var(--av-surface-2); border: 1px solid var(--av-border);
-  border-radius: var(--av-r-card); box-shadow: var(--av-shadow-float);
+  background: var(--av-surface-4); border: 1px solid var(--av-border);
+  border-radius: var(--av-r-pill); box-shadow: var(--av-shadow-float);
 }
 .av-toolbar-sep { width: 1px; height: 20px; background: var(--av-border); margin: 0 3px; }
 .av-toolbar-btn {
   display: inline-flex; align-items: center; gap: 6px; justify-content: center;
   height: 30px; min-width: 30px; padding: 0 8px; border-radius: var(--av-r-control);
   border: 1px solid transparent; background: transparent; color: var(--av-text-muted);
-  cursor: pointer; font: inherit; font-size: 12.5px; transition: background var(--av-dur) var(--av-ease), color var(--av-dur) var(--av-ease);
+  cursor: pointer; font: inherit; font-size: 12.5px; transition: background var(--av-dur-1) var(--av-ease), color var(--av-dur-1) var(--av-ease);
 }
-.av-toolbar-btn:hover { background: var(--av-surface-4); color: var(--av-text); }
+.av-toolbar-btn:hover { background: var(--av-surface-2); color: var(--av-text); }
 .av-toolbar-btn[data-active='true'] { background: var(--av-accent-dim); color: var(--av-accent); }
 
 /* ── Statusleiste ── */
@@ -481,7 +501,7 @@ input[type="range"]:disabled {
 .av-statusbar {
   display: flex; align-items: center; gap: 0; height: 24px;
   padding: 0 4px; background: var(--av-surface-3);
-  border-top: 1px solid var(--av-border-muted);
+  border-top: 1px solid var(--av-border);
   font-size: 12px; color: var(--av-text-muted);
 }
 .av-status-item { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; height: 100%; }
@@ -492,12 +512,12 @@ input[type="range"]:disabled {
 .av-cmdk-overlay {
   position: fixed; inset: 0; z-index: 100;
   display: flex; align-items: flex-start; justify-content: center;
-  padding-top: 12vh; background: rgba(4, 7, 12, 0.55);
-  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  padding-top: 12vh; background: var(--av-scrim);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
 }
 .av-cmdk {
   width: 620px; max-width: 92vw; max-height: 70vh; display: flex; flex-direction: column;
-  background: var(--av-surface-1); border: 1px solid var(--av-border);
+  background: var(--av-surface-4); border: 1px solid var(--av-border);
   border-radius: var(--av-r-modal); box-shadow: var(--av-shadow-pop); overflow: hidden;
 }
 .av-cmdk-inputrow { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--av-border-muted); }
@@ -536,12 +556,12 @@ input[type="range"]:disabled {
 .av-modal-overlay {
   position: fixed; inset: 0; z-index: 90;
   display: flex; align-items: center; justify-content: center; padding: 5vh 16px;
-  background: rgba(4, 7, 12, 0.6);
-  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  background: var(--av-scrim);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
 }
 .av-modal {
   display: flex; flex-direction: column; width: 480px; max-width: 92vw; max-height: 88vh;
-  background: var(--av-surface-1); color: var(--av-text);
+  background: var(--av-surface-4); color: var(--av-text);
   border: 1px solid var(--av-border); border-radius: var(--av-r-modal);
   box-shadow: var(--av-shadow-pop); overflow: hidden;
 }
@@ -549,28 +569,28 @@ input[type="range"]:disabled {
 .av-modal[data-size='lg'] { width: 640px; }
 .av-modal-head {
   display: flex; align-items: center; gap: 10px;
-  padding: 13px 16px; border-bottom: 1px solid var(--av-border-muted);
+  padding: 18px 20px 8px;
 }
-.av-modal-title { flex: 1; margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.av-modal-title { flex: 1; margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
 .av-modal-x {
-  border: 0; background: none; padding: 4px; border-radius: 0; cursor: pointer;
+  border: 0; background: none; padding: 6px; border-radius: var(--av-r-full); cursor: pointer;
   color: var(--av-text-muted); display: inline-flex;
 }
-.av-modal-x:hover { color: var(--av-text); background: var(--av-surface-3); }
-.av-modal-body { flex: 1; min-height: 0; overflow: auto; padding: 16px; }
+.av-modal-x:hover { color: var(--av-text); background: var(--av-surface-2); }
+.av-modal-body { flex: 1; min-height: 0; overflow: auto; padding: 12px 20px 20px; }
 .av-modal-foot {
   display: flex; align-items: center; justify-content: flex-end; gap: 8px;
-  padding: 12px 16px; border-top: 1px solid var(--av-border-muted);
+  padding: 14px 20px; border-top: 1px solid var(--av-border);
 }
-.av-modal-x:focus-visible { outline: 2px solid var(--av-accent); outline-offset: 1px; }
+.av-modal-x:focus-visible { outline: 2px solid var(--av-signal); outline-offset: 2px; }
 
 /* ── Menü / Dropdown (geteilt) ── */
 .av-menu { position: relative; display: inline-flex; }
 .av-menu-panel {
   position: absolute; top: 100%; z-index: 50; margin-top: 4px; min-width: 200px;
-  padding: 5px; background: var(--av-surface-1); color: var(--av-text);
-  border: 1px solid var(--av-border); border-radius: var(--av-r-card);
-  box-shadow: var(--av-shadow-pop);
+  padding: 6px; background: var(--av-surface-4); color: var(--av-text);
+  border: 1px solid var(--av-border); border-radius: var(--av-r-control);
+  box-shadow: var(--av-shadow-2);
 }
 .av-menu-panel[data-align='left'] { left: 0; }
 .av-menu-panel[data-align='right'] { right: 0; }
@@ -588,10 +608,11 @@ input[type="range"]:disabled {
   padding: 7px 9px 3px; font-size: 10px; font-weight: 650; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--av-text-faint);
 }
-.av-menu-sep { height: 1px; margin: 4px 0; background: var(--av-border-muted); }
+.av-menu-sep { height: 1px; margin: 4px 0; background: var(--av-border); }
 
 @media (prefers-reduced-motion: reduce) {
-  .av-btn, .av-icon-btn, .av-rail-item, .av-tab, .av-toolbar-btn { transition: none; }
+  .av-btn, .av-icon-btn, .av-rail-item, .av-tab, .av-toolbar-btn, .av-theme-switch button { transition: opacity var(--av-dur-1) linear; }
+  .av-btn:active:not(:disabled), .av-btn[data-variant='primary']:hover { transform: none; }
 }
 
 
@@ -602,6 +623,31 @@ input[type="range"]:disabled {
 .av-topbar {
   display: flex; align-items: center; gap: 12px;
   height: 40px; flex: none; padding: 0 12px;
-  background: var(--av-surface-1);
-  border-bottom: 1px solid var(--av-border-muted);
+  /* backdrop-filter oeffnet einen Stapelkontext — ohne eigenen z-index
+     laegen die Menues der Kopfzeile unter spaeter positioniertem Inhalt. */
+  position: relative; z-index: 40;
+  background: var(--av-glass);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--av-border);
 }
+
+/* ── Theme-Umschalter: Auto · Hell · Dunkel ──
+   Ein Segment mit drei Zeichen in der Kopfzeile, die helle Auswahl gleitet
+   zwischen ihnen. Passt in die 40-px-Kopfzeile. */
+.av-topbar .av-btn:not([data-variant]) { background: transparent; }
+.av-topbar .av-btn:not([data-variant]):hover,
+.av-topbar .av-btn:not([data-variant])[aria-expanded='true'] { background: var(--av-surface-2); }
+
+.av-theme-switch {
+  display: inline-flex; gap: 2px; padding: 2px;
+  border-radius: var(--av-r-full); background: var(--av-surface-2);
+}
+.av-theme-switch button {
+  display: grid; place-items: center; width: 32px; height: 32px;
+  border: 0; border-radius: var(--av-r-full); background: transparent;
+  color: var(--av-text-muted); cursor: pointer;
+  transition: background var(--av-dur-2) var(--av-ease), color var(--av-dur-1) var(--av-ease), box-shadow var(--av-dur-2) var(--av-ease);
+}
+.av-theme-switch button:hover { color: var(--av-text); }
+.av-theme-switch button[aria-pressed='true'] { background: var(--av-surface-1); color: var(--av-accent); box-shadow: var(--av-shadow-1); }
+.av-theme-switch button:focus-visible { outline: 2px solid var(--av-signal); outline-offset: 2px; }

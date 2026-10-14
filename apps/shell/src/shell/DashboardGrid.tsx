@@ -157,7 +157,7 @@ function DashboardCard({
           type="button"
           aria-label={t('chrome.dash.dragAria', 'Verschieben (ziehen)')}
           title={t('chrome.dash.dragTitle', 'Ziehen zum Anordnen')}
-          className="av-focus grid h-6 w-6 cursor-grab place-items-center rounded-md border border-av-border bg-av-surface-2/90 text-av-text-muted hover:text-av-text active:cursor-grabbing"
+          className="av-focus grid h-6 w-6 cursor-grab place-items-center rounded-av-s border border-av-border bg-av-surface-2/90 text-av-text-muted hover:text-av-text active:cursor-grabbing"
           onPointerDown={() => (fromHandle.current = true)}
           onPointerUp={() => (fromHandle.current = false)}
         >
@@ -167,7 +167,7 @@ function DashboardCard({
           type="button"
           aria-label={t('chrome.dash.hideAria', 'Karte ausblenden')}
           title={t('chrome.dash.hideTitle', 'Ausblenden')}
-          className="av-focus grid h-6 w-6 place-items-center rounded-md border border-av-border bg-av-surface-2/90 text-av-text-muted hover:text-av-danger"
+          className="av-focus grid h-6 w-6 place-items-center rounded-av-s border border-av-border bg-av-surface-2/90 text-av-text-muted hover:text-av-danger"
           onClick={onClose}
         >
           <Icon name="close" size={13} />
@@ -197,7 +197,7 @@ function DashboardCard({
           const clamped = clampSpan(next)
           if (clamped !== span) onResize(clamped)
         }}
-        className="av-focus absolute bottom-1 right-1 z-10 grid h-5 w-5 cursor-nwse-resize place-items-center rounded text-av-text-faint opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+        className="av-focus absolute bottom-1 right-1 z-10 grid h-5 w-5 cursor-nwse-resize place-items-center rounded-av-s text-av-text-faint opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
         style={{ opacity: resizing ? 1 : undefined }}
       >
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">

@@ -1303,7 +1303,7 @@ export function BoardCanvas({
             {i > 0 && <Icon name="chevron-down" size={12} style={{ transform: 'rotate(-90deg)', color: 'var(--av-text-faint)' }} />}
             <button
               type="button"
-              className="av-focus rounded px-1.5 py-0.5 hover:bg-av-surface-2"
+              className="av-focus rounded-av-s px-1.5 py-0.5 hover:bg-av-surface-2"
               style={{ color: i === crumbs.length - 1 ? 'var(--av-text)' : 'var(--av-text-muted)', fontWeight: i === crumbs.length - 1 ? 600 : 400 }}
               onClick={() => goToCrumb(i)}
               aria-current={i === crumbs.length - 1 ? 'page' : undefined}
@@ -1558,7 +1558,7 @@ export function BoardCanvas({
               zwei geoeffnete Menues auf einer Flaeche sind eins zu viel. */}
           <div className="fixed inset-0 z-[190]" onPointerDown={() => setEinfuegenAn(null)} />
           <div
-            className="fixed z-[200] min-w-[9rem] border border-av-border bg-av-surface-2 py-1 shadow-none"
+            className="fixed z-[200] min-w-[9rem] border border-av-border bg-av-surface-2 py-1 rounded-av-control shadow-av-2"
             style={{ left: Math.min(einfuegenAn.sx, window.innerWidth - 170), top: Math.min(einfuegenAn.sy, window.innerHeight - 352) }}
             role="menu"
             aria-label={t('board.insert.here', 'Hier einfügen')}
@@ -1866,7 +1866,7 @@ function BoardCardView({
             </button>
           )}
           {card.type !== 'board' && card.type !== 'column' && SWATCHES.slice(0, 6).map((s) => (
-            <button key={s} type="button" className="h-4 w-4 rounded-none border border-av-border" style={{ background: s }} onClick={() => onPatch({ color: s })} aria-label={format(t('board.swatch', 'Farbe {color}'), { color: s })} />
+            <button key={s} type="button" className="h-4 w-4 rounded-av-s border border-av-border" style={{ background: s }} onClick={() => onPatch({ color: s })} aria-label={format(t('board.swatch', 'Farbe {color}'), { color: s })} />
           ))}
           {card.type === 'link' && (
             /* Die Vorschau HOLEN — ein Knopf und kein Automatismus. Ein
@@ -1926,7 +1926,7 @@ function BoardCardView({
         </div>
       )}
       {allein && (
-        <button type="button" className="absolute top-1/2 z-20 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-none border border-av-border bg-av-surface-2 text-av-accent" style={{ right: -10 }} onPointerDown={onStartConnect} aria-label={t('board.connect', 'Verbindung ziehen')}>
+        <button type="button" className="absolute top-1/2 z-20 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-av-s border border-av-border bg-av-surface-2 text-av-accent" style={{ right: -10 }} onPointerDown={onStartConnect} aria-label={t('board.connect', 'Verbindung ziehen')}>
           <Icon name="nodes" size={11} />
         </button>
       )}
@@ -1936,7 +1936,7 @@ function BoardCardView({
           laesst sich nicht besprechen. */}
       {offen > 0 && !allein && (
         <div
-          className="pointer-events-none absolute -right-1 -top-1 z-10 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold tabular-nums"
+          className="pointer-events-none absolute -right-1 -top-1 z-10 grid h-4 min-w-4 place-items-center rounded-av-pill px-1 text-[10px] font-semibold tabular-nums"
           style={{ background: 'var(--av-accent)', color: 'var(--av-accent-text)' }}
           aria-hidden="true"
         >
@@ -1977,7 +1977,7 @@ function BoardCardView({
       )}
       {allein && card.type !== 'column' && (
         <div
-          className="absolute z-20 h-3.5 w-3.5 cursor-nwse-resize rounded-sm border border-av-accent bg-av-surface-2"
+          className="absolute z-20 h-3.5 w-3.5 cursor-nwse-resize rounded-av-s border border-av-accent bg-av-surface-2"
           style={{ right: -6, bottom: -6 }}
           onPointerDown={onResizePointerDown}
           onPointerMove={onResizePointerMove}
@@ -1995,7 +1995,7 @@ function BoardTile({ card, selected, onPatch, onOpen }: { card: BoardCard; selec
   return (
     <div className="flex h-full w-full flex-col gap-1.5 border border-av-border bg-av-surface-1 p-2.5" style={{ borderColor: 'var(--av-accent)' }}>
       <div className="flex items-center gap-2">
-        <span className="grid h-7 w-7 flex-none place-items-center rounded-md" style={{ background: 'var(--av-accent-dim)', color: 'var(--av-accent)' }}><Icon name="board" size={15} /></span>
+        <span className="grid h-7 w-7 flex-none place-items-center rounded-av-s" style={{ background: 'var(--av-accent-dim)', color: 'var(--av-accent)' }}><Icon name="board" size={15} /></span>
         {selected ? (
           <input className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-av-text outline-none" value={card.title ?? ''} onChange={(e) => onPatch({ title: e.target.value })} onPointerDown={(e) => e.stopPropagation()} aria-label={t('board.subboard.title', 'Unterboard-Titel')} />
         ) : (
@@ -2102,7 +2102,7 @@ function CardBody({ card, editing, onEndEdit, onPatch, crew }: { card: BoardCard
           />
         )}
         <div className="flex min-h-0 flex-1 items-center gap-2.5 p-2.5">
-        <span className="grid h-8 w-8 flex-none place-items-center rounded-md bg-av-surface-3 text-av-accent"><Icon name="external" size={15} /></span>
+        <span className="grid h-8 w-8 flex-none place-items-center rounded-av-s bg-av-surface-3 text-av-accent"><Icon name="external" size={15} /></span>
         {editing ? (
           <span className="min-w-0 flex-1">
             <input autoFocus className="w-full bg-transparent text-[12.5px] font-semibold text-av-text outline-none" value={card.title ?? ''} onChange={(e) => onPatch({ title: e.target.value })} onBlur={onEndEdit} />
@@ -2132,7 +2132,7 @@ function CardBody({ card, editing, onEndEdit, onPatch, crew }: { card: BoardCard
         <ul className="flex flex-col gap-1">
           {card.items?.map((it, i) => (
             <li key={i} className="flex items-center gap-2 text-[12px]">
-              <button type="button" className="grid h-3.5 w-3.5 flex-none place-items-center rounded" style={{ border: it.done ? 'none' : '1.5px solid var(--av-border)', background: it.done ? 'var(--av-ok)' : 'transparent', color: 'var(--av-accent-text)' }} onClick={() => onPatch({ items: card.items?.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })} aria-label={it.done ? t('board.todo.done', 'Erledigt') : t('board.todo.open', 'Offen')}>
+              <button type="button" className="grid h-3.5 w-3.5 flex-none place-items-center rounded-av-s" style={{ border: it.done ? 'none' : '1.5px solid var(--av-border)', background: it.done ? 'var(--av-ok)' : 'transparent', color: 'var(--av-accent-text)' }} onClick={() => onPatch({ items: card.items?.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })} aria-label={it.done ? t('board.todo.done', 'Erledigt') : t('board.todo.open', 'Offen')}>
                 {it.done && <Icon name="check" size={10} />}
               </button>
               <span className={`min-w-0 flex-1 truncate ${it.done ? 'text-av-text-faint line-through' : 'text-av-text-secondary'}`}>{it.text}</span>

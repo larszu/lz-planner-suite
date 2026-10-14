@@ -1,9 +1,7 @@
 @import 'tailwindcss';
 @import '@avplan/ui/styles.css';
-@import '@fontsource/inter/400.css';
-@import '@fontsource/inter/500.css';
-@import '@fontsource/inter/600.css';
-@import '@fontsource/inter/700.css';
+/* Public Sans lokal (ADR-007 Abschnitt 2): keine Schrift aus einem CDN. */
+@import '@fontsource-variable/public-sans/index.css';
 
 /* Die av-*-Design-Tokens (aus @avplan/ui) an Tailwind-Utilities binden, damit
  * das Shell-Layout bg-av-surface-1, text-av-text, border-av-border … nutzen
@@ -27,9 +25,17 @@
   --color-av-warn: var(--av-warn);
   --color-av-danger: var(--av-danger);
 
+  --color-av-accent-dim: var(--av-accent-dim);
+
+  /* Rundungen und Schatten nur ueber Tokens (ADR-007 Abschnitt 3). */
+  --radius-av-s: var(--av-r-s);
   --radius-av-control: var(--av-r-control);
   --radius-av-card: var(--av-r-card);
   --radius-av-modal: var(--av-r-modal);
+  --radius-av-pill: var(--av-r-pill);
+  --shadow-av-1: var(--av-shadow-1);
+  --shadow-av-2: var(--av-shadow-2);
+  --shadow-av-3: var(--av-shadow-3);
 
   --font-sans: var(--av-font-sans);
   --font-mono: var(--av-font-mono);

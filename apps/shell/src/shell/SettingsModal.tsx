@@ -246,7 +246,7 @@ function SettingsBody({
                   onClick={() => setOpenId((cur) => (cur === id ? null : id))}
                 >
                   <span
-                    className="grid h-7 w-7 place-items-center rounded-md"
+                    className="grid h-7 w-7 place-items-center rounded-av-s"
                     style={{ background: `color-mix(in srgb, ${mod.accent} 16%, transparent)`, color: mod.accent }}
                   >
                     <Icon name={mod.icon} size={15} />
@@ -535,11 +535,11 @@ function Switch({
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className="av-focus relative inline-flex h-5 w-9 flex-none items-center rounded-none border border-av-border transition-colors"
+      className="av-focus relative inline-flex h-5 w-9 flex-none items-center rounded-av-pill border border-av-border transition-colors"
       style={{ background: checked ? accent : 'var(--av-surface-3)' }}
     >
       <span
-        className="inline-block h-3.5 w-3.5 rounded-none transition-transform"
+        className="inline-block h-3.5 w-3.5 rounded-av-pill transition-transform"
         style={{ background: 'var(--av-accent-text)', transform: checked ? 'translateX(17px)' : 'translateX(3px)' }}
       />
     </button>

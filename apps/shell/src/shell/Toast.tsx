@@ -32,7 +32,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMsg; onDismiss: (id: numb
   return (
     <div
       role="status"
-      className="pointer-events-auto flex items-center gap-2.5 rounded-av-control border border-av-border bg-av-surface-2 px-3.5 py-2 text-[13px] text-av-text shadow-lg"
+      className="pointer-events-auto flex items-center gap-2.5 rounded-av-control border border-av-border bg-av-surface-2 px-3.5 py-2 text-[13px] text-av-text shadow-av-2"
       style={{ borderLeft: `3px solid ${accent}` }}
     >
       <Icon name={toast.tone === 'warn' ? 'warning' : 'check'} size={15} style={{ color: accent }} />
@@ -40,7 +40,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMsg; onDismiss: (id: numb
       {toast.actionLabel && (
         <button
           type="button"
-          className="av-focus ml-1 rounded px-1.5 py-0.5 text-[12.5px] font-semibold text-av-accent hover:underline"
+          className="av-focus ml-1 rounded-av-s px-1.5 py-0.5 text-[12.5px] font-semibold text-av-accent hover:underline"
           onClick={() => {
             toast.onAction?.()
             onDismiss(toast.id)
@@ -52,7 +52,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMsg; onDismiss: (id: numb
       <button
         type="button"
         aria-label={t('chrome.toast.close', 'Schließen')}
-        className="av-focus ml-0.5 grid h-5 w-5 place-items-center rounded text-av-text-faint hover:text-av-text"
+        className="av-focus ml-0.5 grid h-5 w-5 place-items-center rounded-av-s text-av-text-faint hover:text-av-text"
         onClick={() => onDismiss(toast.id)}
       >
         <Icon name="close" size={13} />

@@ -60,7 +60,7 @@ function ModuleCards({ project, onNavigate }: { project: SuiteProject; onNavigat
             style={{ ['--mod' as string]: mod.accent }}
           >
             <div className="flex items-center gap-2">
-              <span className="grid h-7 w-7 place-items-center rounded-md" style={{ background: `color-mix(in srgb, ${mod.accent} 16%, transparent)`, color: mod.accent }}>
+              <span className="grid h-7 w-7 place-items-center rounded-av-s" style={{ background: `color-mix(in srgb, ${mod.accent} 16%, transparent)`, color: mod.accent }}>
                 <Icon name={mod.icon} size={15} />
               </span>
               <span className="text-[12.5px] font-semibold text-av-text">{t(`config.mod.${mod.id}.title`, mod.title)}</span>
@@ -99,7 +99,7 @@ function CustomizeMenu({
           className="av-focus flex flex-1 items-center gap-2 rounded-av-control py-1 text-left text-[12.5px] text-av-text"
         >
           <span
-            className="grid h-4 w-4 flex-none place-items-center rounded border"
+            className="grid h-4 w-4 flex-none place-items-center rounded-av-s border"
             style={{
               background: on ? 'var(--av-accent)' : 'transparent',
               borderColor: on ? 'var(--av-accent)' : 'var(--av-border)',
@@ -171,8 +171,10 @@ function CustomizeMenu({
 function EmptyState({ onAssign, onNavigate }: { onAssign: () => void; onNavigate: (id: ModuleId) => void }) {
   const t = useT()
   return (
+    // Hintergrundschein nur auf Start-/Leerflaechen (ADR-007 Abschnitt 1).
+    <div className="av-glow-bg min-h-full rounded-av-card px-4 pb-10">
     <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 pt-10 text-center">
-      <span className="grid h-16 w-16 place-items-center rounded-2xl bg-av-surface-2 text-av-text-muted">
+      <span className="grid h-16 w-16 place-items-center rounded-av-card bg-av-surface-2 text-av-text-muted">
         <Icon name="modules" size={30} />
       </span>
       <div>
@@ -198,7 +200,7 @@ function EmptyState({ onAssign, onNavigate }: { onAssign: () => void; onNavigate
               className="av-focus flex items-center gap-2.5 rounded-av-card border border-av-border bg-av-surface-1 p-3.5 text-left transition-colors hover:border-[color:var(--mod)]"
               style={{ ['--mod' as string]: mod.accent }}
             >
-              <span className="grid h-8 w-8 place-items-center rounded-md" style={{ background: `color-mix(in srgb, ${mod.accent} 16%, transparent)`, color: mod.accent }}>
+              <span className="grid h-8 w-8 place-items-center rounded-av-s" style={{ background: `color-mix(in srgb, ${mod.accent} 16%, transparent)`, color: mod.accent }}>
                 <Icon name={mod.icon} size={16} />
               </span>
               <span>
@@ -209,6 +211,7 @@ function EmptyState({ onAssign, onNavigate }: { onAssign: () => void; onNavigate
           ))}
         </div>
       </div>
+    </div>
     </div>
   )
 }
@@ -330,8 +333,8 @@ export function OverviewSurface({
             })}
           </p>
           <div className="mt-3 flex items-center gap-3">
-            <div className="h-1.5 w-48 overflow-hidden rounded-none bg-av-surface-3">
-              <span className="block h-full rounded-none" style={{ width: `${Math.round(show.progress * 100)}%`, background: 'var(--av-accent)' }} />
+            <div className="h-1.5 w-48 overflow-hidden rounded-av-pill bg-av-surface-3">
+              <span className="block h-full rounded-av-pill" style={{ width: `${Math.round(show.progress * 100)}%`, background: 'var(--av-accent)' }} />
             </div>
             <span className="av-num text-[12px] text-av-text-muted">{format(t('overview.header.progress', '{n}% Planung'), { n: Math.round(show.progress * 100) })}</span>
           </div>

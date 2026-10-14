@@ -524,7 +524,7 @@ export function ContactsEditor({
                 className="av-focus flex items-center gap-1.5 rounded-av-control px-1.5 py-1 text-[12px] text-av-text-secondary hover:bg-av-surface-3"
               >
                 <span
-                  className="grid h-4 w-4 flex-none place-items-center rounded border"
+                  className="grid h-4 w-4 flex-none place-items-center rounded-av-s border"
                   style={{ background: r.billTo ? 'var(--av-accent)' : 'transparent', borderColor: r.billTo ? 'var(--av-accent)' : 'var(--av-border)', color: 'var(--av-accent-text)' }}
                 >
                   {r.billTo && <Icon name="check" size={12} />}

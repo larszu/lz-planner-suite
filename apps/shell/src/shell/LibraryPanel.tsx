@@ -134,7 +134,7 @@ export function LibraryPanel({
                   const isSel = selectable && selectedId === e.id
                   const inner = (
                     <>
-                      <span className="mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-md bg-av-surface-3 text-av-text-muted">
+                      <span className="mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-av-s bg-av-surface-3 text-av-text-muted">
                         <Icon name={module.icon} size={15} />
                       </span>
                       <span className="min-w-0 flex-1">

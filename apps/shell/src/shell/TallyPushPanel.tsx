@@ -149,7 +149,7 @@ export function TallyPushPanel({ url, plannerFrame }: { url: string; plannerFram
             )}
           </div>
           {z.diff.entfaellt.length > 0 && (
-            <div className="rounded border border-av-warn/40 bg-av-warn/10 px-2 py-1.5 text-av-text-secondary">
+            <div className="rounded-av-s border border-av-warn/40 bg-av-warn/10 px-2 py-1.5 text-av-text-secondary">
               {t(
                 'chrome.tally.removalWarning',
                 'Diese Einträge stehen auf dem Pi, aber nicht im Plan — sie verschwinden beim Senden:',
@@ -158,7 +158,7 @@ export function TallyPushPanel({ url, plannerFrame }: { url: string; plannerFram
             </div>
           )}
           {z.issues.length > 0 && (
-            <div className="rounded border border-av-border-muted bg-av-surface-3 px-2 py-1.5 text-av-text-muted">
+            <div className="rounded-av-s border border-av-border-muted bg-av-surface-3 px-2 py-1.5 text-av-text-muted">
               {t('chrome.tally.issues', 'Der Plan konnte nicht alles auflösen:')}{' '}
               {z.issues.map((i) => i.message).join(' · ')}
             </div>

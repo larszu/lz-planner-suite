@@ -981,6 +981,8 @@ export function App() {
         project={project}
         theme={theme}
         onToggleTheme={toggle}
+        themePreference={preference}
+        onSetThemePreference={setPreference}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenPalette={() => setPaletteOpen(true)}
         onOpenBilling={() => setBillingOpen(true)}
@@ -1065,7 +1067,7 @@ export function App() {
         {/* Eigenschaften als Schublade unter lg (Tablet/Mobil). */}
         <button
           type="button"
-          className="av-focus fixed bottom-16 right-4 z-30 grid h-11 w-11 place-items-center rounded-none border border-av-border bg-av-surface-2 text-av-text lg:hidden"
+          className="av-focus fixed bottom-16 right-4 z-30 grid h-11 w-11 place-items-center rounded-av-pill border border-av-border bg-av-surface-2 text-av-text lg:hidden"
           onClick={() => setPropertiesOpen(true)}
           aria-label={tt('config.action.showProperties', 'Eigenschaften anzeigen')}
         >
@@ -1077,7 +1079,7 @@ export function App() {
             <aside className="relative z-10 flex h-full w-80 max-w-[85vw] flex-col border-l border-av-border-muted bg-av-surface-1">
               <button
                 type="button"
-                className="av-focus absolute right-2 top-2 z-20 grid h-7 w-7 place-items-center rounded-md text-av-text-muted hover:bg-av-surface-2 hover:text-av-text"
+                className="av-focus absolute right-2 top-2 z-20 grid h-7 w-7 place-items-center rounded-av-s text-av-text-muted hover:bg-av-surface-2 hover:text-av-text"
                 onClick={() => setPropertiesOpen(false)}
                 aria-label={tt('config.action.closeProperties', 'Eigenschaften schließen')}
               >

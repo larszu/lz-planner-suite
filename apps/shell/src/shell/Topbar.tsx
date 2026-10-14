@@ -9,8 +9,10 @@ import {
   MenuLabel,
   MenuSeparator,
   Modal,
+  ThemeSwitch,
   alertDialog,
   type ResolvedTheme,
+  type ThemePreference,
 } from '@avplan/ui'
 import type { SuiteProject } from '../data/project'
 import { useT } from '../i18n'
@@ -144,6 +146,8 @@ export function Topbar({
   project,
   theme,
   onToggleTheme,
+  themePreference,
+  onSetThemePreference,
   onOpenSettings,
   onOpenPalette,
   onOpenBilling,
@@ -164,6 +168,8 @@ export function Topbar({
   project: SuiteProject | null
   theme: ResolvedTheme
   onToggleTheme: () => void
+  themePreference: ThemePreference
+  onSetThemePreference: (p: ThemePreference) => void
   onOpenSettings: () => void
   onOpenPalette: () => void
   onOpenBilling: () => void
@@ -363,9 +369,16 @@ export function Topbar({
 
           {project && <Badge tone="ok" dot>{project.meta.saved ? t('chrome.topbar.saved', 'Gespeichert') : t('chrome.topbar.unsaved', 'Ungespeichert')}</Badge>}
 
-          <IconButton label={theme === 'dark' ? t('chrome.topbar.toLight', 'Zu hellem Theme wechseln') : t('chrome.topbar.toDark', 'Zu dunklem Theme wechseln')} onClick={onToggleTheme}>
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
-          </IconButton>
+          <ThemeSwitch
+            preference={themePreference}
+            onChange={onSetThemePreference}
+            ariaLabel={t('chrome.settings.appearance', 'Erscheinungsbild (Theme)')}
+            labels={{
+              system: t('chrome.settings.theme.system', 'System'),
+              light: t('chrome.settings.theme.light', 'Hell'),
+              dark: t('chrome.settings.theme.dark', 'Dunkel'),
+            }}
+          />
 
           <IconButton label={t('chrome.topbar.settings', 'Einstellungen')} onClick={onOpenSettings}>
             <Icon name="settings" size={17} />
