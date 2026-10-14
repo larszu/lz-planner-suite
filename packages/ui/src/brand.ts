@@ -3,155 +3,213 @@
  *
  * ─── WOHER DIE ZAHLEN KOMMEN ───────────────────────────────────────────────
  *
- * Aus dem Brand Guide 2.0 der Lars Zumpe Medienproduktion (September 2026),
- * Seiten 8 (Farbe), 9 (Typografie), 10 (Raster, Linie, Punkt), 17 (Web —
- * Farbrollen, Interaktion, Bewegung). Diese Datei ist die maschinenlesbare
- * Fassung davon; `styles.css` liest daraus, und `test/brand.test.ts` haelt
- * beide zusammen.
+ * ADR-007 (geaendert 2026-10-13). Palette, Logo und Claim aus dem Brand
+ * Guide 2.0 der Lars Zumpe Medienproduktion; Flaechen, Form, Tiefe und
+ * Bewegung nach dem Design-Vertrag Oktober 2026 (Skill lzm-web). Diese Datei
+ * ist die maschinenlesbare Fassung; `styles.css` traegt dieselben Werte, und
+ * `test/brand.test.ts` haelt beide zusammen.
  *
- * ─── WARUM ES DIESE DATEI GIBT ─────────────────────────────────────────────
+ * ─── WOFUER ───────────────────────────────────────────────────────────────
  *
- * Vier Werkzeuge, vier Farbwelten. Der Cable-Planner rechnete in Tailwind-
- * `slate`, die Shell in einem eigenen Near-Black, MultiCam in `#0f1117`,
- * Light in wieder etwas anderem — und die Modul-Akzente liefen quer durch das
- * Farbrad (violett, cyan, amber, pink). Jede App fuer sich stimmig, zusammen
- * nicht eine Anwendung. Genau das war die Meldung: „die UI ist nicht
- * konsistent."
- *
- * ─── DIE ABWEICHUNGEN, BENANNT ─────────────────────────────────────────────
- *
- * Ein Marken-Handbuch ist fuer Drucksachen und Marketing-Seiten geschrieben,
- * nicht fuer ein Werkzeug mit Tabellen und neunzehn Panels. Wo wir abweichen,
- * steht es hier und in ADR-007 — nicht stillschweigend:
- *
- *  1. FLIESSTEXT. Der Guide nennt 16–18 px fuers Web. Eine Patchliste mit
- *     achtzig Zeilen ist damit nicht bedienbar. Wir fuehren ZWEI Leitern:
- *     Werkzeugflaechen (Tabellen, Panels, Formulare) 13 px, LESEflaechen
- *     (Hinweise, leere Zustaende, Dialog-Einleitung) 16 px — der Guide-Wert.
- *     Die Grenze ist „liest man, oder arbeitet man darin".
- *  2. ABGELEITETE FLAECHEN. Der Guide gibt fuer Dunkel zwei Flaechen an
- *     (Grund, Flaeche 2). Ein Control-Surface braucht mehr Stufen: versenkt
- *     (Leisten, Eingaben) und erhoben (Chips, Knoepfe). Die beiden sind aus
- *     der Navy-Rampe abgeleitet und unten als solche gekennzeichnet.
- *  3. SCHIEFER ALS TEXT. Im Guide ist Schiefer der Sekundaertext auf WEISS
- *     (5,4:1). Auf Navy waere er unlesbar. Auf Dunkel ist die gedaempfte
- *     Stufe deshalb Stahlblau, und Schiefer kommt nur im hellen Theme vor.
+ * Fuer Code, der keine CSS-Variablen lesen kann: Canvas, Konva, Print,
+ * SVG-Export. Er waehlt die Palette nach dem aufgeloesten Theme
+ * (`paletteFor(theme)`), statt einen zweiten Satz Hexwerte zu fuehren.
  *
  * ─── WAS NICHT VERHANDELBAR IST ────────────────────────────────────────────
  *
- * Tally-Rot ist das Signal, nicht eine Farbe: Fokusring, EIN Punkt am
- * primaeren Knopf, Aufnahme-/Live-Zustand. Nie Flaeche, nie Text, nie Rahmen,
- * nie zweimal in einem Sichtfeld. Und: keine Rundungen, keine Schatten, keine
- * Verlaeufe (Guide S. 10, „Was es nicht gibt"). Struktur entsteht durch Linie
- * und Weissraum.
+ * Flaechen sind neutral, Markenblau ist nur Akzent. Tally-Rot ist das Signal,
+ * nicht eine Farbe: Fokusring, Live/REC/Tally, Claim-Punkt, Erfolgsmoment.
+ * Nie Flaeche, nie Text, nie Rahmen. Das Logo traegt nur Kit-Farben und haengt
+ * nie am Akzent.
  */
 
-/** Die Palette des Handbuchs, mit der Rolle, die ihr dort zugewiesen ist. */
+/** Die Palette des Handbuchs. */
 export const BRAND_COLORS = {
-  /** Primaerfarbe, Flaechen, Text auf Hell, Logo. */
+  /** Akzent auf Hell, Logo auf Hell. */
   zumpeNavy: '#1D324F',
-  /** Video, Bildflaechen, Tiefe — im Web der Seitengrund. */
+  /** Text auf dem hellen Akzent im Dunkelmodus. */
   deepNavy: '#132040',
-  /** Print-Hintergrund; im Dunkeln der Text und der primaere Knopf. */
+  /** Logo auf Dunkel, Text auf dem Akzent im Hellmodus. */
   offWhite: '#F6F5F0',
-  /** Ruhige Flaechen, Tabellenkoepfe, Karten; auf Dunkel der Fliesstext. */
   eisblau: '#E1ECEF',
-  /** Linien, Kicker auf Navy — nie Fliesstext. */
   stahlblau: '#8C9CB3',
-  /** Sekundaertext auf Weiss (5,4:1) — nur im hellen Theme. */
   schiefer: '#5C6B85',
   /** Das Signal. Siehe Kopfkommentar: nie Flaeche, nie Text. */
   tallyRot: '#D6402E',
 } as const
 
-/** Nur fuer Formularmeldungen (Guide S. 17, „Status"). */
+/** Nur fuer Meldungen, Badges, Validierung — in beiden Modi gleich. */
 export const BRAND_STATUS = {
   ok: '#2F7D5C',
   warn: '#C8892B',
   danger: '#B04A3F',
 } as const
 
+/** Rollen einer Palette. Hell und Dunkel fuehren dieselben Schluessel. */
+export interface ThemePalette {
+  /** Grund (Seite, Canvas-Umfeld). */
+  bg: string
+  /** Flaeche: Panels, Karten. */
+  surface: string
+  /** Flaeche 2: Felder, Toolbars, Hover. */
+  surface2: string
+  /** Erhoben: Menues, Popover, Dialog. */
+  raised: string
+  /** Versenkt: Leisten, Rail. */
+  sunken: string
+  textStrong: string
+  text: string
+  textMuted: string
+  line: string
+  lineStrong: string
+  /** Hauptknopf, Auswahl, Fortschritt, Links. */
+  accent: string
+  /** Text auf dem Akzent. */
+  onAccent: string
+  /** Akzent weich (Auswahl-Hinterlegung). */
+  accentSoft: string
+  /** Logo und Signet — nur Kit-Farben. Der Punkt ist immer `logoDot`. */
+  logo: string
+  logoDot: string
+  signal: string
+  ok: string
+  warn: string
+  danger: string
+  /** Hintergrundschein: Akzent und Gold. */
+  glow1: string
+  glow2: string
+}
+
+/** Hell: neutrales warmes Fast-Weiss, Akzent Zumpe Navy. */
+export const PALETTE_LIGHT: ThemePalette = {
+  bg: '#FAFAF8',
+  surface: '#FFFFFF',
+  surface2: '#F1F1EE',
+  raised: '#FFFFFF',
+  sunken: '#F4F4F1',
+  textStrong: '#16181D',
+  text: '#2B2E35',
+  textMuted: '#6A6E77',
+  line: 'rgba(22, 24, 29, 0.08)',
+  lineStrong: 'rgba(22, 24, 29, 0.18)',
+  accent: BRAND_COLORS.zumpeNavy,
+  onAccent: BRAND_COLORS.offWhite,
+  accentSoft: 'rgba(29, 50, 79, 0.10)',
+  logo: BRAND_COLORS.zumpeNavy,
+  logoDot: BRAND_COLORS.tallyRot,
+  signal: BRAND_COLORS.tallyRot,
+  ok: BRAND_STATUS.ok,
+  warn: BRAND_STATUS.warn,
+  danger: BRAND_STATUS.danger,
+  glow1: 'rgba(29, 50, 79, 0.10)',
+  glow2: 'rgba(200, 137, 43, 0.10)',
+}
+
+/** Dunkel: Anthrazit, nicht Schwarz und nicht Navy; Akzent helles Markenblau. */
+export const PALETTE_DARK: ThemePalette = {
+  bg: '#1E1F23',
+  surface: '#28292E',
+  surface2: '#33343A',
+  raised: '#3B3C42',
+  sunken: '#19191D',
+  textStrong: '#F6F5F0',
+  text: '#E6E6E3',
+  textMuted: '#A9ACB4',
+  line: 'rgba(246, 245, 240, 0.09)',
+  lineStrong: 'rgba(246, 245, 240, 0.20)',
+  accent: '#B9C7D8',
+  onAccent: BRAND_COLORS.deepNavy,
+  accentSoft: 'rgba(185, 199, 216, 0.12)',
+  logo: BRAND_COLORS.offWhite,
+  logoDot: BRAND_COLORS.tallyRot,
+  signal: BRAND_COLORS.tallyRot,
+  ok: BRAND_STATUS.ok,
+  warn: BRAND_STATUS.warn,
+  danger: BRAND_STATUS.danger,
+  glow1: 'rgba(185, 199, 216, 0.16)',
+  glow2: 'rgba(200, 137, 43, 0.10)',
+}
+
+/** Palette zum aufgeloesten Theme — fuer Canvas, Konva, Print, SVG. */
+export function paletteFor(theme: 'light' | 'dark'): ThemePalette {
+  return theme === 'dark' ? PALETTE_DARK : PALETTE_LIGHT
+}
+
+/** Linien je Modus (Kurzform von `PALETTE_*.line`). */
+export const BRAND_LINES = {
+  onLight: PALETTE_LIGHT.line,
+  onLightStrong: PALETTE_LIGHT.lineStrong,
+  onDark: PALETTE_DARK.line,
+  onDarkStrong: PALETTE_DARK.lineStrong,
+} as const
+
 /**
- * Aus der Navy-Rampe ABGELEITET — im Handbuch gibt es dafuer keinen Wert.
- * Versenkt liegt unter dem Grund (Leisten, Eingabefelder), erhoben darueber
- * (Chips, Knoepfe, Hover).
+ * Frueher die aus der Navy-Rampe abgeleiteten Dunkelflaechen. Der Name bleibt
+ * fuer Aufrufer; die Werte sind die Anthrazit-Stufen von `PALETTE_DARK`.
  */
 export const DERIVED_SURFACES = {
-  /** Unter dem Grund: Leisten, Rail, Eingaben. */
-  darkSunken: '#0E1930',
-  /** Zwischen Grund und Flaeche: Panels. */
-  darkPanel: '#182948',
-  /** Ueber der Flaeche: Chip, Knopf, Hover. */
-  darkRaised: '#24405F',
-  /** Gedaempfter Text auf Dunkel, unter Stahlblau. */
-  darkFaint: '#6E7F99',
-  /** Helles Theme: reine Kartenflaeche ueber Off-White. */
-  lightCard: '#FFFFFF',
-} as const
-
-/** Linien. Der Guide gibt beide Deckungen ausdruecklich an (S. 17). */
-export const BRAND_LINES = {
-  onDark: 'rgba(246, 245, 240, 0.14)',
-  onDarkStrong: 'rgba(246, 245, 240, 0.35)',
-  onLight: 'rgba(29, 50, 79, 0.16)',
-  onLightStrong: 'rgba(29, 50, 79, 0.32)',
+  darkSunken: PALETTE_DARK.sunken,
+  darkPanel: PALETTE_DARK.surface,
+  darkRaised: PALETTE_DARK.raised,
+  darkFaint: PALETTE_DARK.textMuted,
+  lightCard: PALETTE_LIGHT.surface,
 } as const
 
 /**
- * Zwei Leitern, ein Grund: siehe Abweichung 1 im Kopfkommentar.
- * Werte in Pixeln.
+ * Zwei Leitern: Werkzeugflaechen (Tabellen, Panels, Formulare) 13 px,
+ * Leseflaechen 16 px. Werte in Pixeln.
  */
 export const TYPE_SCALE = {
-  /** Kicker/Label: Bold, Versalien, weit gesperrt. Guide: 12–14 px. */
+  /** Overline/Badge: die einzige Stelle fuer Versalien (≤ 12 px). */
   kicker: 12,
-  /** Meta, Zahlen in Chips — unter dem Fliesstext, nie fuer Saetze. */
   micro: 11,
-  /** Werkzeugflaechen: Tabellen, Panels, Formulare. Abweichung 1. */
   body: 13,
-  /** Leseflaechen: Hinweise, leere Zustaende, Dialog-Einleitung. Guide-Wert. */
   read: 16,
-  /** Zwischentitel. Guide: 18–26 px. */
   title: 20,
-  /** Dialog-/Ansichtstitel. */
   display: 26,
 } as const
 
-/** Kicker sind gesperrt (Guide: +160 bis +220 /1000 em). */
-export const KICKER_TRACKING_EM = 0.16
+/** Overlines sind leicht gesperrt. */
+export const KICKER_TRACKING_EM = 0.08
 
-/** 8-px-Raster (Guide S. 10, Web). Werte in Pixeln. */
+/** 8-px-Raster. Werte in Pixeln. */
 export const SPACE = [4, 8, 12, 16, 24, 32, 48] as const
 
-/**
- * „Die Marke bewegt sich wie ein Schnitt: schnell, kurz, dann still."
- * (Guide S. 11 und S. 17.)
- */
+/** Kurz und weich; Feder-Kurve nur fuer Erfolgsmomente, hoechstens 600 ms. */
 export const MOTION = {
   easing: 'cubic-bezier(.2,.8,.2,1)',
-  durationMs: 350,
-  maxDurationMs: 450,
+  durationsMs: { fast: 120, medium: 220, slow: 360 },
+  /** Standarddauer (Menues, Sheets). */
+  durationMs: 220,
+  maxDurationMs: 600,
 } as const
 
-/** Tastatur-Fokus: 2 px Rot, 3 px Abstand (Guide S. 17). */
-export const FOCUS = { widthPx: 2, offsetPx: 3, color: BRAND_COLORS.tallyRot } as const
+/** Tastatur-Fokus: 2 px Signal, 2 px Abstand. */
+export const FOCUS = { widthPx: 2, offsetPx: 2, color: BRAND_COLORS.tallyRot } as const
 
-/**
- * Keine Rundungen (Guide S. 10). Die Namen bleiben, damit kein Aufrufer
- * umgebaut werden muss — der Wert ist ueberall null.
- */
-export const RADIUS_PX = 0
+/** Rundungen in Pixeln. Logo, Tally-Punkt und Hardware-Symbole bleiben eckig. */
+export const RADIUS = { s: 6, m: 10, l: 20, xl: 24, full: 999 } as const
 
-/** Web-Raster: 12 Spalten, max. 1280 px, 24 px Steg (Guide S. 10). */
+/** Schatten je Modus — nur zum Trennen von Ebenen. */
+export const SHADOWS = {
+  light: {
+    1: '0 1px 2px rgba(22, 24, 29, 0.06)',
+    2: '0 4px 16px rgba(22, 24, 29, 0.08)',
+    3: '0 16px 48px rgba(22, 24, 29, 0.14)',
+  },
+  dark: {
+    1: '0 1px 2px rgba(0, 0, 0, 0.30)',
+    2: '0 4px 16px rgba(0, 0, 0, 0.40)',
+    3: '0 16px 48px rgba(0, 0, 0, 0.55)',
+  },
+} as const
+
+/** Web-Raster: 12 Spalten, max. 1280 px, 24 px Steg. */
 export const GRID = { columns: 12, maxWidthPx: 1280, gutterPx: 24 } as const
 
-/**
- * Schriftfamilie. Public Sans ist SIL OFL und damit frei — bis sie als
- * WOFF2 mitgeliefert wird, gilt die Ersatzkette, die der Guide selbst als
- * „Web-Fallback" nennt (S. 9). Open Sans kommt NIRGENDS im Layout vor: sie
- * ist im Logo eine Kontur, keine Schrift.
- */
+/** Public Sans, lokal ausgeliefert; die Ersatzkette nennt der Guide selbst. */
 export const FONT_SANS =
-  "'Public Sans', system-ui, 'Segoe UI', Roboto, Arial, sans-serif"
+  "'Public Sans Variable', 'Public Sans', system-ui, 'Segoe UI', Roboto, Arial, sans-serif"
 
 /** Zahlen in Tabellen laufen tabellarisch — sonst springen die Spalten. */
 export const FONT_MONO =

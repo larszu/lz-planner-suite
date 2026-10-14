@@ -136,7 +136,7 @@ export function ProjectHubModal({
                     >
                       <span className="flex items-center gap-2">
                         <span className="truncate text-[13.5px] font-semibold text-av-text">{p.name}</span>
-                        {isCurrent && <span className="rounded bg-av-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-av-accent">{t('hub.current', 'geöffnet')}</span>}
+                        {isCurrent && <span className="rounded-av-s bg-av-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-av-accent">{t('hub.current', 'geöffnet')}</span>}
                       </span>
                       <span className="truncate text-[11.5px] text-av-text-muted">{[p.venue, fmtDate(p.savedAt)].filter(Boolean).join(' · ')}</span>
                     </button>

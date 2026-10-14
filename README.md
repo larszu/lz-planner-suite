@@ -77,8 +77,9 @@ It is a **monorepo** built with **npm workspaces**: four apps plus a set of shar
 The common workspace (`apps/shell`) that hosts all three planners: a module rail with number
 hotkeys (Overview / Signal / Cameras / Light / Board), a topbar with a **⌘K command palette**,
 a tab deck with a floating toolbar, context-aware **library** and **properties** panels, a
-project overview dashboard, a Milanote-style creative **board**, and a shared Dark/Light theme
-with per-module accents. Embeds the planners as isolated iframe modules and speaks to them over
+project overview dashboard, a Milanote-style creative **board**, and a shared light and dark
+mode with a visible **Auto · Light · Dark** switch in the topbar (Auto follows the system, the
+choice is remembered). Embeds the planners as isolated iframe modules and speaks to them over
 a small postMessage bridge. **React 19 · Vite · Tailwind.**
 
 The board plays as a film, exports one as a real video file, records a voice-over that travels
@@ -132,7 +133,7 @@ exchange format with the LZ Multicam Planner. **React · three.js · Electron.**
 
 | Package | What it provides |
 | --- | --- |
-| **@avplan/ui** | Design system: theme tokens (Dark/Light + per-module accents), accessible primitives (Button, Modal, Menu, Badge, Tabs, Kbd), `ModuleRail`, `CommandPalette`, theme-aware imperative dialogs, and the `embed` bridge (postMessage theme/settings/history sync for embedded planners). Also the `suite-seed` and `deckungsAmpel`, the one mapping from the inventory's answer to a coverage light that every planner can use. |
+| **@avplan/ui** | Design system: theme tokens for light and dark mode, `ThemeSwitch` (Auto · Light · Dark), palettes for canvas/print (`paletteFor(theme)`), accessible primitives (Button, Modal, Menu, Badge, Tabs, Kbd), `ModuleRail`, `CommandPalette`, theme-aware imperative dialogs, and the `embed` bridge (postMessage theme/settings/history sync for embedded planners). Also the `suite-seed` and `deckungsAmpel`, the one mapping from the inventory's answer to a coverage light that every planner can use. |
 | **@avplan/inventory-core** | Shared inventory domain model + the portable `avplan-inventory` wire format (`serializeInventory`/`parseInventory`/`resolveInventoryCode`). The wire contract is frozen by a test — deliberate format changes require bumping `INVENTORY_FORMAT_VERSION`. |
 | **@avplan/onboarding-core** | Suite-wide onboarding: `WelcomeDialog` + `TourDialog` + `createOnboardingState` (seen-flags with injectable storage and legacy-key migration) + de/en strings. All apps render the same dialog look. |
 | **@avplan/crew-core** | **Crew & Geld** (ADR-006): rates, hours, bookings, expenses, receipts. It knows no plan model -- measured, not asserted: `plan-grenze-check` refuses any import out of the package and any identifier that belongs to the plan. That the cut was clean is itself a measurement: the domain had no imports at all, because it never hung on the cable graph. Step 2 of the three ADR-006 prescribes; the own repo (step 3) waits until a second operator *writes* the domain instead of only reading it. The shell's crew card is a second *reader* (booking states, `bookingConflicts`). |
@@ -140,6 +141,15 @@ exchange format with the LZ Multicam Planner. **React · three.js · Electron.**
 | **@avplan/lexware-core** | Neutral billing model (`BillingDoc`) mapped to Lexware Office (lexoffice) **quotation/invoice** payloads — net/gross/§19 tax, discounts, totals — plus a REST client with injectable `fetch` and line-item derivation from inventory and budget. |
 | **@avplan/floorplan** | Floor plans for every planner: load a plan file by picker **or drag & drop** (images, PDF via an injected pdf.js renderer), downscale to 3000 px, two-point and four-corner (homography) scale, and the shared `venue-exchange` schema — including the optional room fields (ceiling height, floor material, wall material, seating blocks seated or standing with rows, rise and occupancy, video walls) and the seat layout they produce. The first package that also reaches the **standalone** planners: `npm run pakete:verteilen` copies it into each repo under `…/avplan/floorplan/` with a SHA-256 manifest, and each planner's own CI refuses an edited copy ([ADR-015](docs/decisions/ADR-015-pakete-erreichen-die-planer.md), plan in [`docs/gemeinsame-pakete.md`](docs/gemeinsame-pakete.md)). |
 | **@avplan/scene3d** | Photoreal 3D building blocks for every planner, plain three.js without React: render pipeline with quality tiers (Auto/High/Low, Auto lowers once on sustained low frame rate), AgX/ACES tone mapping, environment light from a computed RoomEnvironment (no download), GTAO ambient occlusion, bloom on emissives, depth of field from focal length, aperture and focus distance, haze beams (raymarched, from light-planner, now with drifting non-uniform haze), backdrop dome and fog, procedural PBR surfaces (concrete, wood, carpet, turf, tiles, stage deck, seats; for walls also plaster, brick and black drape), people built from joint tables (standing, seated, hands raised) instanced by the ten thousand with clothing, size and posture variation, seats and tribune risers, LED walls with pixel raster, truss and fixtures, and the GLB person loader for planners that bring their own model. Copied into multicam- and light-planner like `floorplan`. |
+
+### Design
+
+The look is set once, in [ADR-007](docs/decisions/ADR-007-oberflaechen-regeln.md) (changed
+2026-10-13), and lives in `@avplan/ui`: neutral surfaces (warm off-white in light mode,
+anthracite in dark mode), brand blue only as the accent, Tally red only as a signal (focus ring,
+live/REC), soft corners and quiet shadows through `--av-r-*` / `--av-shadow-*` tokens, Public
+Sans shipped locally. `packages/ui/test/brand.test.ts` checks both modes against
+`src/brand.ts`.
 
 ---
 

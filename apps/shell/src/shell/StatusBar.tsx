@@ -41,7 +41,7 @@ export function StatusBar({
           <button
             type="button"
             aria-label={t('chrome.status.zoomOut', 'Verkleinern')}
-            className="av-focus grid h-4 w-4 place-items-center rounded hover:bg-av-surface-3"
+            className="av-focus grid h-4 w-4 place-items-center rounded-av-s hover:bg-av-surface-3"
             onClick={() => onZoom(zoom - 10)}
           >
             <Icon name="close" size={9} style={{ transform: 'rotate(45deg)' }} />
@@ -49,7 +49,7 @@ export function StatusBar({
           <button
             type="button"
             title={t('chrome.status.zoomReset', 'Auf 100 % zurücksetzen')}
-            className="av-focus av-num rounded px-1 hover:bg-av-surface-3"
+            className="av-focus av-num rounded-av-s px-1 hover:bg-av-surface-3"
             onClick={() => onZoom(100)}
           >
             {format(t('chrome.status.zoom', 'Zoom {zoom} %'), { zoom })}
@@ -57,7 +57,7 @@ export function StatusBar({
           <button
             type="button"
             aria-label={t('chrome.status.zoomIn', 'Vergrößern')}
-            className="av-focus grid h-4 w-4 place-items-center rounded hover:bg-av-surface-3"
+            className="av-focus grid h-4 w-4 place-items-center rounded-av-s hover:bg-av-surface-3"
             onClick={() => onZoom(zoom + 10)}
           >
             <Icon name="plus" size={10} />

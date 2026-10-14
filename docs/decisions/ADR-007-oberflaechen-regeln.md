@@ -1,14 +1,15 @@
 # ADR-007 — Die Oberflaechen-Regeln der Suite
 
-**Status:** angenommen · 2026-09-07
+**Status:** angenommen · 2026-09-07 · geändert 2026-10-13
 **Gilt fuer:** alle zehn Repos (av-planner-suite, cable-planner,
 multicam-planner, light-planner, inventory-planner, larszu-facility-planner,
 Broadcast-intercom, tally-pi, sony-camera-bridge, pi-media-station)
 **Erweitert:** 2026-09-11 um `inventory-planner` und `larszu-facility-planner`
 — siehe Stufe 6 unten
-**Quelle der Werte:** Brand Guide 2.0 der Lars Zumpe Medienproduktion,
-September 2026 — Seiten 8 (Farbe), 9 (Typografie), 10 (Raster, Linie, Punkt),
-11 (Bewegung), 17 (Web: Farbrollen, Interaktion)
+**Quelle der Werte:** Logo, Palette, Schrift und Claim aus dem Brand Guide 2.0
+der Lars Zumpe Medienproduktion (September 2026); Flaechen, Form, Tiefe,
+Bewegung und Hell/Dunkel nach dem Design-Vertrag Oktober 2026 (Skill
+`lzm-web`)
 **Maschinenlesbar:** `packages/ui/src/brand.ts` · `packages/ui/src/styles.css`
 **Gehalten von:** `packages/ui/test/brand.test.ts`
 
@@ -20,17 +21,22 @@ September 2026 — Seiten 8 (Farbe), 9 (Typografie), 10 (Raster, Linie, Punkt),
 > die im av planner suite zusammenlaufen gelten, damit es einheitlich ist.
 > schriftgrößen, tasten, standort des menüs, etc. lass sich auch von meinem CI
 > inspirieren"
+> — 2026-09-07
 
-Vier Werkzeuge, vier Farbwelten. Der Cable-Planner rechnete in Tailwinds
-`slate`, die Shell in einem eigenen Near-Black, MultiCam in `#0f1117`, Light
-in wieder etwas anderem. Die Modul-Akzente liefen quer durch das Farbrad:
-Raum grau, Signal violett, Kameras cyan, Licht amber, Board pink. Jede App
-fuer sich stimmig — zusammen nicht eine Anwendung, sondern vier.
+> „mein lzm design und web skill führen zu nicht modernen UI Designs … mein
+> logo ist mir schon noch wichtig, aber modernes einfachers UI ist mir
+> wichtig"
+>
+> „muss nicht zwingend blau sein. blau nur als akzent"
+>
+> „es muss immer dark und light mode geben und nen bisschen was modernens"
+> — 2026-10-13
 
-Dazu kam, dass es **keine Instanz gab, die haette widersprechen koennen**.
-Jede App hatte ihre eigene Token-Datei, jede war in sich schluessig, und
-keine wusste von den anderen. Ein Handbuch als PDF haette daran nichts
-geaendert: Regeln, die nur in einem Dokument stehen, driften.
+Vier Werkzeuge, vier Farbwelten: Tailwinds `slate`, ein eigenes Near-Black,
+`#0f1117`, dazu Modul-Akzente quer durch das Farbrad. Jede App fuer sich
+stimmig — zusammen nicht eine Anwendung. Und es gab **keine Instanz, die
+haette widersprechen koennen**: jede App hatte ihre eigene Token-Datei.
+Regeln, die nur in einem Dokument stehen, driften.
 
 ---
 
@@ -40,105 +46,139 @@ geaendert: Regeln, die nur in einem Dokument stehen, driften.
 
 | Fassung | Datei | Wofuer |
 |---|---|---|
-| Werte | `packages/ui/src/brand.ts` | fuer Code, der keine CSS-Variablen lesen kann: Canvas, Print, SVG-Export, Konva |
+| Werte | `packages/ui/src/brand.ts` | fuer Code, der keine CSS-Variablen lesen kann: Canvas, Print, SVG-Export, Konva — `paletteFor(theme)` liefert Hell oder Dunkel |
 | Laufzeit | `packages/ui/src/styles.css` | fuer alles, was im DOM gerendert wird |
 | Begruendung | dieses ADR | fuer den, der in einem Jahr eine Ausnahme erwaegt |
 
-`packages/ui/test/brand.test.ts` prueft, dass die drei dasselbe sagen. Er
-prueft nicht, ob die Werte huebsch sind — das entscheidet das Handbuch. Er
-prueft, dass es nur **eine** Antwort gibt.
+`packages/ui/test/brand.test.ts` prueft, dass die drei dasselbe sagen — in
+beiden Modi. Er prueft nicht, ob die Werte huebsch sind; er prueft, dass es
+nur **eine** Antwort gibt.
+
+### Was sich am 13.10.2026 geändert hat
+
+Die erste Fassung uebertrug die Print-Regeln des Handbuchs woertlich auf die
+Oberflaeche: Navy-Flaechen, kein Radius, kein Schatten, Kopflinie an jedem
+Panel, roter Punkt am Primaerknopf. Das Ergebnis war markentreu und wirkte
+alt. Seither gilt: **die Marke steckt im Logo, im blauen Akzent und im Ton**
+— Flaechen sind neutral, Formen weich, Hell und Dunkel gleichwertig. Logo,
+Palette, Schrift, Signal-Regel, Rahmen und Menueort sind geblieben.
 
 ---
 
-## 1. Farbe — Blau ist die Marke, Rot ist das Signal
+## 1. Farbe — neutral traegt, Blau akzentuiert, Rot ist das Signal
 
-| Rolle | Wert | Einsatz |
-|---|---|---|
-| Grund | `#132040` Deep Navy | Seitenhintergrund, Canvas, Fusszeile |
-| Flaeche | `#1D324F` Zumpe Navy | Karten, Formulare, Wechselabschnitte |
-| Panel | `#182948` *abgeleitet* | Panels zwischen Grund und Flaeche |
-| Versenkt | `#0E1930` *abgeleitet* | Leisten, Rail, Eingabefelder |
-| Erhoben | `#24405F` *abgeleitet* | Chips, Knoepfe, Hover |
-| Text | `#F6F5F0` Off-White | Text auf Dunkel, primaerer Knopf |
-| Fliesstext | `#E1ECEF` Eisblau | Lauftext auf Dunkel |
-| Gedaempft | `#8C9CB3` Stahlblau | Kicker, Meta, Platzhalter — **nie** Fliesstext |
-| Linie | `rgba(246,245,240,.14)` | Trenner, Kartenoberkante; `.35` fuer Outline-Knopf |
-| **Signal** | `#D6402E` Tally-Rot | siehe unten |
-| Status | `#2F7D5C` · `#C8892B` · `#B04A3F` | **nur** Meldungen |
+| Rolle | Hell | Dunkel | Token |
+|---|---|---|---|
+| Grund | `#FAFAF8` | `#1E1F23` | `--av-bg` |
+| Flaeche (Panels, Karten) | `#FFFFFF` | `#28292E` | `--av-surface-1` |
+| Flaeche 2 (Felder, Toolbars, Hover) | `#F1F1EE` | `#33343A` | `--av-surface-2` |
+| Versenkt (Rail, Statusleiste) | `#F4F4F1` | `#19191D` | `--av-surface-3` |
+| Erhoben (Menues, Popover, Dialog) | `#FFFFFF` | `#3B3C42` | `--av-surface-4` |
+| Text stark | `#16181D` | `#F6F5F0` | `--av-text` |
+| Text | `#2B2E35` | `#E6E6E3` | `--av-text-secondary` |
+| Text gedaempft | `#6A6E77` | `#A9ACB4` | `--av-text-muted` |
+| Linie | `rgba(22,24,29,.08)` | `rgba(246,245,240,.09)` | `--av-border` |
+| Linie stark | `rgba(22,24,29,.18)` | `rgba(246,245,240,.20)` | `--av-border-strong` |
+| **Akzent** | `#1D324F` Zumpe Navy | `#B9C7D8` helles Markenblau | `--av-accent` |
+| Text auf Akzent | `#F6F5F0` | `#132040` | `--av-accent-text` |
+| Akzent weich | Akzent 10 % | Akzent 12 % | `--av-accent-dim` |
+| Logo | `#1D324F` | `#F6F5F0` | `--av-logo` (Punkt: `--av-logo-dot`) |
+| **Signal** | `#D6402E` | `#D6402E` | `--av-signal` |
+| Status | `#2F7D5C` · `#C8892B` · `#B04A3F` | gleich | `--av-ok` · `--av-warn` · `--av-danger` |
+| Schein | `rgba(29,50,79,.10)` / `rgba(200,137,43,.10)` | `rgba(185,199,216,.16)` / gleich | `--av-glow-1` / `-2` |
+
+- **Flaechen sind neutral.** Dunkel heisst Anthrazit — nicht Schwarz, nicht
+  Navy; jede Ebene sichtbar heller als die darunter.
+- **Blau ist Akzent**, hoechstens ein Zehntel der Flaeche: Hauptknopf,
+  Auswahl, Fortschritt, Links, Kennzahlen.
+- **Das Logo traegt nur Kit-Farben** und haengt nie am Akzent: Navy auf
+  Hell, Off-White auf Dunkel, der Punkt immer Tally-Rot. Logo, Tally-Punkt
+  und Canvas-Symbole, die Hardware zeigen, bleiben eckig.
+- Kontrast **WCAG AA in beiden Modi**.
 
 ### Die Regel, an der nicht gedreht wird
 
 Tally-Rot ist **kein Farbton aus der Palette, sondern das Aufnahmelicht.**
-Es erscheint an genau drei Orten:
+Es erscheint nur:
 
-1. dem Tastatur-Fokusring (2 px, 3 px Abstand),
-2. dem Punkt am **einen** primaeren Knopf eines Abschnitts,
-3. dem Live-/Aufnahme-Zustand (Tally, Stream, Record).
+1. am Tastatur-Fokusring (2 px, 2 px Abstand),
+2. im Live-/REC-/Tally-Zustand,
+3. am Claim-Punkt und im Logo,
+4. in Erfolgsmomenten.
 
-Nie als Flaeche, nie als Text, nie als Rahmen, **nie zweimal in einem
-Sichtfeld**. Wer Rot fuer einen Fehler braucht, nimmt `--av-danger` — ein
-anderer Ton (`#B04A3F`) fuer einen anderen Zweck. Der Test haelt fest, dass
-`#D6402E` in der ganzen Stylesheet-Datei **genau einmal** vorkommt: in der
-Definition von `--av-signal`.
+Nie als Flaeche, nie als Text, nie als Rahmen. Wer Rot fuer einen Fehler
+braucht, nimmt `--av-danger` — ein anderer Ton fuer einen anderen Zweck. Der
+Test haelt fest, dass `#D6402E` im Stilblatt **genau einmal** vorkommt: in
+der Definition von `--av-signal`. Ein roter Punkt am Primaerknopf ist **keine
+Pflicht mehr** und entfaellt in Werkzeugen.
 
 ### Modul-Identitaet ohne Farbton
 
-Die frueheren Modul-Akzente (violett, cyan, amber, pink) sind entfallen. Sie
-waren ein zweites Farbsystem neben der Marke und machten jede Ansicht zu einer
-anderen Anwendung. **Das Modul erkennt man am Kicker in der Kopfzeile, nicht
-am Farbton** — dieselbe Entscheidung, die der Guide fuer die Marke trifft:
-Struktur statt Buntheit. Die `--mod-*`-Namen bleiben (damit `[data-module]`
-nichts bricht) und zeigen alle auf `--av-accent`.
+Die frueheren Modul-Akzente (violett, cyan, amber, pink) bleiben entfallen.
+**Das Modul erkennt man am Titel**, nicht am Farbton. Die `--mod-*`-Namen
+bleiben (damit `[data-module]` nichts bricht) und zeigen alle auf
+`--av-accent`.
 
 ---
 
 ## 2. Typografie — eine Familie, zwei Leitern
 
-Public Sans, mit der Ersatzkette, die der Guide selbst nennt
-(`system-ui, 'Segoe UI', Roboto, Arial`). Open Sans kommt **nirgends** im
-Layout vor: sie ist im Logo eine Kontur, keine Schrift.
+Public Sans, **lokal ausgeliefert** (`@fontsource-variable/public-sans`),
+mit der Ersatzkette des Guides (`system-ui, 'Segoe UI', Roboto, Arial`).
+Open Sans kommt **nirgends** im Layout vor: sie ist im Logo eine Kontur.
+
+**Satzschreibung ueberall.** Versalien nur fuer kleine Overlines und Badges
+bis 12 px (`.av-kicker`, gesperrt `.08em`).
 
 | Rolle | Groesse | Schnitt |
 |---|---|---|
-| Kicker / Label | 12 px | Bold, Versalien, `letter-spacing: .16em` |
-| Meta / Zahl | 11 px | Regular — nie fuer Saetze |
-| **Werkzeugtext** | **13 px** | Regular — Tabellen, Panels, Formulare |
+| Overline / Badge | 11–12 px | Semibold, Versalien erlaubt |
+| **Werkzeugtext** | **13–14 px** | Regular — Tabellen, Panels, Formulare |
+| Panel-Titel | 14 px | 600–700, Satzschreibung |
 | **Lesetext** | **16 px** | Regular — Hinweise, leere Zustaende, Dialog-Einleitung |
-| Zwischentitel | 20 px | ExtraBold |
-| Dialogtitel | 26 px | ExtraBold |
+| Zwischentitel | 20 px | Bold |
+| Dialog-/Ansichtstitel | 17–26 px | Bold |
 
 ### Die Abweichung, benannt
 
 Der Guide nennt fuer Fliesstext im Web 16–18 px. Eine Patchliste mit achtzig
-Zeilen ist damit nicht bedienbar. Deshalb **zwei Leitern**, und die Grenze
-zwischen ihnen ist scharf gezogen: *liest man darin, oder arbeitet man darin?*
-Wo gearbeitet wird — Tabelle, Panel, Formular — sind es 13 px. Wo gelesen
-wird — der Satz, der erklaert, was diese Seite tut — sind es die 16 px des
-Handbuchs. Eine stillschweigende Verkleinerung auf 13 px ueberall waere die
-schlechtere Loesung gewesen: dann waere der Guide-Wert nirgends mehr sichtbar
-und die Abweichung nirgends mehr begruendet.
+Zeilen ist damit nicht bedienbar. Deshalb **zwei Leitern**: *liest man darin,
+oder arbeitet man darin?* Wo gearbeitet wird — Tabelle, Panel, Formular —
+sind es 13–14 px. Wo gelesen wird, die 16 px des Handbuchs.
 
 ---
 
-## 3. Form — was es nicht gibt
+## 3. Form — weich, ueber Tokens
 
-> „Keine Rundungen, keine Schatten, keine Verläufe, keine Rahmen, keine
-> Eckwinkel, keine Kreise außer dem Punkt." (Guide S. 10)
+| Token | Wert | Einsatz |
+|---|---|---|
+| `--av-r-s` | 6 px | Chips, kleine Felder, Kbd |
+| `--av-r-m` = `--av-r-control` | 10 px | Knoepfe, Felder, Menues |
+| `--av-r-l` = `--av-r-card` | 20 px | Karten, Panels, Kacheln |
+| `--av-r-xl` = `--av-r-modal` | 24 px | Dialoge, Sheets |
+| `--av-r-full` = `--av-r-pill` | 999 px | Pills, Schalter, Avatare, Status-Punkte |
 
-Radius ist **null**, ueberall. Die Tokens `--av-r-control/-card/-modal/-pill`
-bleiben mit dem Wert `0` bestehen, damit kein Aufrufer umgebaut werden muss.
-Die Schatten-Tokens stehen auf `none`. Auch die Punkte in Badges, Tabs und der
-Rail sind **eckig**: der Tally-Punkt ist der Satzpunkt der Hausschrift, kein
-Kreis.
+| Schatten | Hell | Dunkel | Einsatz |
+|---|---|---|---|
+| `--av-shadow-1` (`-panel`) | `0 1px 2px` .06 | .30 | Karten, gewaehltes Segment |
+| `--av-shadow-2` (`-float`) | `0 4px 16px` .08 | .40 | Menues, schwebende Leisten |
+| `--av-shadow-3` (`-pop`) | `0 16px 48px` .14 | .55 | Dialoge, Kommandopalette |
 
-Struktur entsteht durch **Linie und Weissraum**:
+**Rundungen und Schatten nur ueber diese Tokens** — nie ein roher
+Pixelwert, nie Tailwinds `rounded-*`/`shadow-*` ohne Token dahinter. Schatten
+trennen Ebenen, sie schmuecken nicht. Einziger farbiger Schatten ist der
+weiche Akzentschein unter dem Hauptknopf.
 
-- **Kopflinie** (`.av-kicker` + `.av-headrule`): Kicker in Versalien, darunter
-  eine durchgehende Linie in Stahlblau bis zur rechten Satzkante. **Eine pro
-  Flaeche** — sie ist die Kopfzeile jedes Panels und jedes Dialogs, und sie
-  traegt die Modul-Kennung, die frueher eine Farbe war.
-- **8-px-Raster**: 4 · 8 · 12 · 16 · 24 · 32 · 48. Keine Halbschritte.
-- Inhaltsbreite hoechstens 1280 px, 12 Spalten, 24 px Steg.
+Struktur entsteht zuerst durch **Abstand und Flaechenstufe**, dann durch eine
+Haarlinie. **Panel-Koepfe sind ein normaler Titel** in Satzschreibung,
+optional mit kleiner Overline darueber — keine Pflicht-Kopflinie mehr.
+8-px-Raster: 4 · 8 · 12 · 16 · 24 · 32 · 48.
+
+**Moderne Details, dosiert:** Glas-Kopfzeile (`backdrop-filter: blur(16px)
+saturate(1.4)`, Grund zu 72 %), Karten mit Haarlinie + Schatten 1–2 +
+Radius l, Segment-Controls mit gleitender heller Auswahl, weicher
+Hintergrundschein (`.av-glow-bg`) **nur** auf Start- und Leerflaechen, nie
+hinter dem Canvas.
 
 ---
 
@@ -146,25 +186,46 @@ Struktur entsteht durch **Linie und Weissraum**:
 
 | Art | Aussehen | Regel |
 |---|---|---|
-| Primaer | Off-White-Flaeche, Navy-Text, **roter Punkt links** | **einer** pro Abschnitt/Dialog |
-| Sekundaer | Outline Off-White 35 %, Hover 100 % | beliebig viele |
-| Ghost | ohne Flaeche, Text gedaempft | Werkzeugleisten |
-| Link | Off-White, Hover unterstrichen + Eisblau | im Fliesstext |
+| Primaer | Pill in `--av-accent`, Text `--av-accent-text`, weicher Akzentschein, Hover hebt um 1 px | **einer** pro Ansicht/Dialog |
+| Sekundaer („soft") | Akzent weich hinterlegt, Text im Akzent | beliebig viele |
+| Ghost | ohne Flaeche, Hover `--av-surface-2` | Werkzeugleisten |
+| Link | Akzent, Hover unterstrichen | im Fliesstext |
 
-Der Punkt am Primaerknopf ist nicht Dekor: er macht sichtbar, **welcher** der
-eine ist. Zwei Punkte in einem Sichtfeld heisst, dass einer der beiden kein
-Primaerknopf sein darf.
-
-Off-White auf Navy ergibt 13:1 — der Guide begruendet die Wahl ausdruecklich
-damit, dass Weiss auf Rot nur 4:1 erreicht.
+Kein Outline-Knopf. Gedrueckt = `scale(.97)`. Klickflaechen mindestens 32 px
+am Desktop, 44 px auf Touch.
 
 ---
 
 ## 5. Bewegung
 
-`cubic-bezier(.2,.8,.2,1)`, 350 ms, **nie ueber 450 ms**. Nichts federt,
-nichts schwingt ueber. „Die Marke bewegt sich wie ein Schnitt: schnell, kurz,
-dann still."
+| Token | Dauer | Einsatz |
+|---|---|---|
+| `--av-dur-1` | 120 ms | Hover, Druck |
+| `--av-dur-2` | 220 ms | Menues, Sheets, Segment-Auswahl |
+| `--av-dur-3` | 360 ms | Ansichtswechsel |
+
+Kurve `cubic-bezier(.2,.8,.2,1)` (`--av-ease`). Eine Feder-Kurve
+(`--av-ease-spring`) nur fuer Erfolgsmomente, hoechstens 600 ms.
+`prefers-reduced-motion` → nur Ueberblendung.
+
+---
+
+## 5a. Hell und Dunkel — immer beide, sichtbar umschaltbar
+
+- Jede Oberflaeche hat **beide Modi**, gleich sorgfaeltig gestaltet — nicht
+  invertiert.
+- Ein **sichtbarer Umschalter Auto · Hell · Dunkel** sitzt in der Kopfzeile,
+  vor den Einstellungen (die bleiben der letzte Bedienpunkt, Abschnitt 6).
+  Auto folgt dem System; die Wahl wird gespeichert.
+- Technik: Hell ist der Grundzustand von `:root`;
+  `@media (prefers-color-scheme: dark)` greift, solange nicht
+  `data-theme='light'` gesetzt ist; `data-theme='dark'` erzwingt Dunkel.
+  Beide Dunkel-Bloecke sind identisch (der Test haelt das fest).
+- In `@avplan/ui`: `useTheme()` (Wahl, Speicherung, `data-theme`) und
+  `<ThemeSwitch>` (das Segment). Eingebettete Planer bekommen das
+  aufgeloeste Theme ueber `connectShellTheme()`.
+- Canvas, Konva, Print und SVG holen ihre Farben aus `paletteFor(theme)` —
+  nie einen eigenen Satz Hexwerte.
 
 ---
 
@@ -218,7 +279,7 @@ Von aussen nach innen:
   wo die Einstellungen sitzen. „File" in einer deutschen Oberflaeche waere
   Sprachmix, und gegen den steht in dieser Suite ein eigener Zaehler.
 - **Modul-Rail links**, 56 px, senkrecht, mit Beschriftung unter dem Zeichen.
-  Der aktive Eintrag ist Off-White auf versenkter Flaeche — kein Farbton.
+  Der aktive Eintrag ist im Akzent weich hinterlegt, mit kurzem Strich links.
 - **Inspektor rechts.** Eigenschaften des Ausgewaehlten, nie links.
 
 - **Die Statusleiste fuehrt jede App mit einem Arbeitsbereich** (nachgetragen
@@ -271,10 +332,8 @@ Von aussen nach innen:
     unterschreitet die Norm, die fuer Regler schon gilt.
   - **Die Wahl ueberlebt den Neustart.** Wer zuklappt, tut das fuer seine
     Arbeitsweise, nicht fuer eine Sitzung.
-  - **Jedes Panel traegt die Kopflinie** aus Abschnitt 3. Sie stand dort als
-    „die Kopfzeile jedes Panels und jedes Dialogs" — bis zum 2026-09-11
-    trugen sie in allen drei grossen Apps nur die Dialoge und die
-    Kommandopalette.
+  - **Jedes Panel hat einen Kopf** mit seinem Titel (Abschnitt 3) — als
+    normaler Titel in Satzschreibung, ohne Pflicht-Linie.
 
   - **Und die Kopfzeile nennt die Spalte beim Namen** (ergaenzt am
     2026-09-11, zweite Runde). Der Satz darueber sagte, dass es eine
@@ -348,8 +407,8 @@ Von aussen nach innen:
   > Entscheidung und keine Ableitung.
 - **Kommandopalette** auf `Strg/Cmd + K` in jeder App — derselbe Griff
   ueberall.
-- **Dialoge** sind Flaechen, keine Karten: kein Radius, kein Schatten,
-  Kopflinie oben, Aktionen unten rechts, Primaerknopf ganz rechts.
+- **Dialoge**: Radius xl, Schatten 3, Titel oben, Aktionen unten rechts,
+  Primaerknopf ganz rechts.
 - Ein Dialog, der laenger ist als sein Fenster, **scrollt in seinem Rumpf** —
   die Fusszeile mit den Aktionen bleibt stehen. (Das war ein gemeldeter
   Fehler: der Drucken-Knopf im Export-Dialog war nicht erreichbar.)
@@ -377,11 +436,10 @@ Die Regeln gelten ab sofort fuer **neuen** Code. Bestehende Oberflaechen
 werden in dieser Reihenfolge nachgezogen — jede Stufe ist fuer sich lieferbar:
 
 1. ~~**`@avplan/ui`**~~ — **erledigt** mit diesem ADR (Tokens, Primitive, Test).
-2. ~~**Shell**~~ — **erledigt** (`suite#151`, Rahmen und Kopflinie; `suite#153`
-   die Kommandopalette). Las die Tokens schon ueber `--av-*`; offen war nur
-   die Kopflinie in den Panels.
+2. ~~**Shell**~~ — **erledigt** (`suite#151`, Rahmen und Panel-Koepfe;
+   `suite#153` die Kommandopalette). Las die Tokens schon ueber `--av-*`.
 3. ~~**cable-planner**~~ — **erledigt** (`cable#760` Tokens, `cable#762`
-   Kopfzeile 40 px / Statusleiste 24 px / Dialog-Kopflinie). Die `--cp-*`-Schicht
+   Kopfzeile 40 px / Statusleiste 24 px / Dialog-Kopf). Die `--cp-*`-Schicht
    zeigte auf Tailwinds `slate` und traegt jetzt die Marken-Werte
    (`--cp-surface-2: #1D324F`, Zumpe Navy); die Utilities blieben
    unveraendert — genau dafuer war die Token-Schicht da.
@@ -426,18 +484,27 @@ Was **nicht** passiert ist: eine grosse Umbau-Runde durch alle Repos an einem
 Tag. Die Token-Schicht war genau dafuer da, dass die Umstellung pro App eine
 Datei ist — und in den fuenf Stufen war sie es auch.
 
+**Umstellung auf die Fassung vom 2026-10-13.** `@avplan/ui` und die Shell
+tragen die neuen Werte, den Umschalter und den Test seit `design/2026-10-modern`.
+Die Planer stellen in ihren eigenen Repos um (Branch `design/2026-10-modern`,
+dort mit umgebautem `form:check`/`kopfzeile:check`/Palettentest) und kommen
+wie ueblich per Vendoring in die Suite. `chrome:parity` prueft den Spaltenkopf
+seither nur noch als Struktur, nicht mehr seine Linie.
+
 ---
 
 ## Was diese Entscheidung kostet
 
 Der Verlust der Modul-Farben ist echt: wer bisher am Violett erkannt hat,
-dass er im Signal-Modul ist, muss jetzt den Kicker lesen. Das ist bewusst in
+dass er im Signal-Modul ist, muss jetzt den Titel lesen. Das ist bewusst in
 Kauf genommen — vier bunte Akzente neben einer blau-roten Marke waren der
 Grund, warum die Suite nicht wie ein Produkt aussah.
 
-Der Verzicht auf Rundungen und Schatten laesst die Oberflaeche haerter
-wirken. Auch das ist Absicht und steht so im Handbuch. Ein Control-Surface
-fuer Broadcast darf haerter aussehen als eine Marketing-Seite.
+Zwei Modi heissen doppelte Pruefarbeit: jede Ansicht wird hell UND dunkel
+angesehen, jeder Kontrast zweimal gemessen. Weiche Formen und Schatten
+brauchen Tokens und Waechter, damit sie nicht wieder zu je App eigenen Zahlen
+zerfallen — `form:check` in den Planern prueft deshalb „nur ueber Tokens"
+statt „Radius null".
 
 ---
 

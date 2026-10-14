@@ -3,6 +3,7 @@ export { herunterladen, dateiName } from './herunterladen'
 export type { Anwesend, MitmachFlaeche, Stand, Staende } from './mitmachen'
 export { FLAECHE, STILLE_MS, fuehreFlaecheZusammen, juenger, markiere, nochDa, seither } from './mitmachen'
 export { useTheme, resolveTheme, type ThemePreference, type ResolvedTheme } from './theme'
+export { ThemeSwitch, THEME_OPTIONS, type ThemeSwitchProps } from './ThemeSwitch'
 export { Icon, type IconName, type IconProps } from './icons'
 export {
   Button,
@@ -138,12 +139,17 @@ export {
   BRAND_STATUS,
   BRAND_LINES,
   DERIVED_SURFACES,
+  PALETTE_LIGHT,
+  PALETTE_DARK,
+  paletteFor,
+  type ThemePalette,
   TYPE_SCALE,
   KICKER_TRACKING_EM,
   SPACE,
   MOTION,
   FOCUS,
-  RADIUS_PX,
+  RADIUS,
+  SHADOWS,
   GRID,
   FONT_SANS,
   FONT_MONO,

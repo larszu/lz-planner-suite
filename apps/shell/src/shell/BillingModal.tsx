@@ -357,7 +357,7 @@ function BillingBody({ project, onPersistSettings, onRecordInvoice }: { project:
           <ul className="flex flex-col gap-1">
             {[...project.show.invoices].reverse().map((inv) => (
               <li key={inv.id} className="flex items-center gap-2 text-[12.5px]">
-                <span className="flex-none rounded bg-av-surface-3 px-1.5 py-0.5 text-[10.5px] text-av-text-secondary">{inv.kind === 'invoice' ? t('billing.kind.invoice', 'Rechnung') : t('billing.kind.quotation', 'Angebot')}</span>
+                <span className="flex-none rounded-av-s bg-av-surface-3 px-1.5 py-0.5 text-[10.5px] text-av-text-secondary">{inv.kind === 'invoice' ? t('billing.kind.invoice', 'Rechnung') : t('billing.kind.quotation', 'Angebot')}</span>
                 <span className="av-num flex-none text-av-text-muted">{inv.date}</span>
                 <span className="min-w-0 flex-1 truncate text-av-text">{inv.recipientName}</span>
                 <span className="av-num flex-none text-av-text-secondary">{eur(inv.gross)}</span>
@@ -441,7 +441,7 @@ function BillingBody({ project, onPersistSettings, onRecordInvoice }: { project:
                     </td>
                     <td className="py-1 px-1"><NumField value={it.discountPercent ?? 0} onChange={(n) => patchItem(i, { discountPercent: n })} min={0} max={100} decimal className="w-16" ariaLabel={t('billing.col.discount', 'Rabatt %')} /></td>
                     <td className="py-1 pl-1 text-right">
-                      <button type="button" aria-label={t('billing.removeItem', 'Position entfernen')} className="av-focus rounded px-1.5 text-av-text-faint hover:text-av-danger" onClick={() => removeItem(i)}>×</button>
+                      <button type="button" aria-label={t('billing.removeItem', 'Position entfernen')} className="av-focus rounded-av-s px-1.5 text-av-text-faint hover:text-av-danger" onClick={() => removeItem(i)}>×</button>
                     </td>
                   </tr>
                 ))}

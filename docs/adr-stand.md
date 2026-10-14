@@ -17,14 +17,14 @@ einer Stelle fest, statt sie jedes Mal neu zusammenzusuchen.
 | **004** Dokument-Stempel | **umgesetzt** | `stamp:check` in drei Repos, `stamp:parity` als CI-Gate der Suite |
 | **005** Verlustfrei oder laut | **umgesetzt** | R1: `CablePlannerProject.avForeign` hält fremde Slots in der DATEI. R3: `unrepresented`/`unresolved` in `sourceMap.ts` und `graphml/semantics.ts`. R4: `tests/avplan.test.ts` und `tests/avplanUnknownSlots.test.ts` halten die Zusage; `light-planner` fährt `avplan:check` |
 | **006** Werkzeug-Schnitt | **teilweise** | Lager (`inventory-planner`) und Gebäude (`larszu-facility-planner`) sind ausgelagert, Ladeplanung nach ADR-010 entschieden und gebaut. **Crew & Geld nicht:** sieben Module liegen weiter in `cable-planner/src/renderer/lib` (`crewBilling`, `crewCalendar`, `crewNetworkSheet`, `labourCost`, `costComparison`, `receiptChain`, `receiptRead`). **Gerätekataloge:** vertagt, Bedingung längst erfüllt, nie wieder angefasst — Widerspruch A |
-| **007** Oberflächen-Regeln | **umgesetzt, Wächter läuft nicht überall** | `packages/ui/src/brand.ts`, `styles.css` und `test/brand.test.ts` sind da. Aber `ci:complete` — der Wächter, der prüft, dass jeder `*:check` auch im CI steht — existiert nur in `light-planner` und der Suite. Widerspruch E |
+| **007** Oberflächen-Regeln | **geändert 2026-10-13; Paket und Shell umgesetzt, Planer ziehen nach** | Neue Fassung (neutrale Flächen, Blau nur als Akzent, Hell + Dunkel mit Umschalter, Rundung/Schatten nur über Tokens): `packages/ui/src/brand.ts` (`PALETTE_LIGHT`/`PALETTE_DARK`), `styles.css`, `ThemeSwitch.tsx`, `test/brand.test.ts`; die Shell nutzt sie. Die vendorierten Planer tragen bis zum nächsten Vendoring noch die Fassung vom 2026-09-07. `ci:complete` läuft seit 2026-09-19 überall — Widerspruch E behoben |
 | **008** B4-Objektivsteuerung, Ablage | **entschieden, nicht gebaut** | `sony-camera-bridge/packages/` hat `firmware`, nicht `firmware-b4`; kein Lens-Backend unter `packages/bridge/src/cameras/`. Das Quellmaterial liegt wie entschieden in `docs/b4/` |
 | **009** ESP-IDF als Laufzeit | **entschieden, nicht gebaut** | Sagt selbst: „Es gibt noch keine Firmware." Die Mitentscheidung zur CI („zunächst nicht") ist eingehalten |
 | **010** Ladeplanung im Lager | **umgesetzt** | Modul des `inventory-planner`, einschließlich Fahrzeug-Stammdaten und 3D-Laderaum |
 | **011** Ein universelles Gerät | **Stufe 1 von 4** | `packages/ui/src/geraet.ts`; die drei Listen im Seed sind Sichten. Stufen 2–4 stehen im ADR |
 
 **Summe:** fünf ganz umgesetzt (003, 004, 005, 010, und 002 bis auf die Eigentumsregel), vier
-teilweise (001, 006, 007, 011), zwei entschieden und bewusst noch nicht gebaut (008, 009).
+teilweise (001, 006, 007 — Planer-Umstellung 2026-10 läuft —, 011), zwei entschieden und bewusst noch nicht gebaut (008, 009).
 
 ## Die Widersprüche
 

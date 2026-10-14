@@ -202,7 +202,7 @@ export function RuntimeFrame({
                     {format(t('chrome.runtime.exited', 'Beendet (Code {code}).'), { code: String(lauf.code) })}
                   </div>
                   {lauf.zeilen.length > 0 && (
-                    <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap rounded bg-av-surface-3 p-2 text-[11px] text-av-text-muted">
+                    <pre className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap rounded-av-s bg-av-surface-3 p-2 text-[11px] text-av-text-muted">
                       {lauf.zeilen.slice(-8).join('\n')}
                     </pre>
                   )}

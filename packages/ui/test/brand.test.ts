@@ -4,137 +4,214 @@ import { describe, expect, it } from 'vitest'
 import {
   BRAND_COLORS,
   BRAND_STATUS,
-  DERIVED_SURFACES,
   FOCUS,
   MOTION,
-  RADIUS_PX,
+  PALETTE_DARK,
+  PALETTE_LIGHT,
+  RADIUS,
+  SHADOWS,
   TYPE_SCALE,
+  paletteFor,
 } from '../src/brand'
 
 // ───────────────────────────────────────────────────────────────────────────
-// Nutzer-Meldung: „die UI ist nicht konsistent. lege globale UI-Regeln fest,
-// die für alle Repos gelten."
+// WARUM ES DAS GIBT
 //
-// Regeln, die nur in einem Dokument stehen, driften. Dieser Test hält die
-// drei Fassungen derselben Entscheidung zusammen: `brand.ts` (die Werte),
-// `styles.css` (was der Browser sieht) und ADR-007 (warum).
+// 2026-09-07: „die ui ist nicht konsistent." Regeln, die nur in einem
+// Dokument stehen, driften. Dieser Test haelt die drei Fassungen derselben
+// Entscheidung zusammen: `brand.ts` (die Werte), `styles.css` (was der
+// Browser sieht) und ADR-007 (warum).
 //
-// Er prüft NICHT, ob die Werte hübsch sind — das entscheidet das
-// Marken-Handbuch. Er prüft, dass es nur EINE Antwort gibt.
+// 2026-10-13 umgebaut auf das geaenderte ADR-007 (lz-planner-suite): neutrale
+// Flaechen, Blau nur als Akzent, Hell UND Dunkel mit Umschalter, Rundungen
+// und Schatten nur ueber Tokens. Er prueft nicht, ob die Werte huebsch sind,
+// sondern dass es nur EINE Antwort gibt — in beiden Modi.
 // ───────────────────────────────────────────────────────────────────────────
 
-const css = readFileSync(
-  fileURLToPath(new URL('../src/styles.css', import.meta.url)),
-  'utf8',
-)
+const lies = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
+const css = lies('../src/styles.css')
+const umschalter = lies('../src/ThemeSwitch.tsx')
 
-/** Der Dark-Block — die Werte, die ein `data-theme="dark"` erzwingt. */
-const darkBlock = css.slice(css.indexOf(":root[data-theme='dark']"))
-  .slice(0, css.slice(css.indexOf(":root[data-theme='dark']")).indexOf('}'))
+const blockAb = (start: number): string => css.slice(start, css.indexOf('}', start))
+const block = (selector: string): string => {
+  const i = css.indexOf(selector)
+  return i < 0 ? '' : blockAb(i)
+}
+const lightBlock = block(':root {')
+const darkBlock = block(":root[data-theme='dark'] {")
+const autoDarkBlock = block(":root:not([data-theme='light']) {")
 
-const wert = (block: string, name: string): string => {
-  const m = block.match(new RegExp(`${name}:\\s*([^;]+);`))
+const wert = (b: string, name: string): string => {
+  const m = b.match(new RegExp(`${name}:\\s*([^;]+);`))
   return m ? m[1].trim() : ''
 }
+const norm = (v: string) => v.replace(/\s/g, '').toUpperCase()
 
-describe('die Palette steht in styles.css so, wie brand.ts sie führt', () => {
-  it('trägt Deep Navy als Grund und Zumpe Navy als Fläche', () => {
-    expect(wert(darkBlock, '--av-bg').toUpperCase()).toBe(BRAND_COLORS.deepNavy)
-    expect(wert(darkBlock, '--av-surface-2').toUpperCase()).toBe(BRAND_COLORS.zumpeNavy)
+const ROLLEN: [string, keyof typeof PALETTE_LIGHT][] = [
+  ['--av-bg', 'bg'],
+  ['--av-surface-1', 'surface'],
+  ['--av-surface-2', 'surface2'],
+  ['--av-surface-3', 'sunken'],
+  ['--av-surface-4', 'raised'],
+  ['--av-text', 'textStrong'],
+  ['--av-text-secondary', 'text'],
+  ['--av-text-muted', 'textMuted'],
+  ['--av-border', 'line'],
+  ['--av-border-strong', 'lineStrong'],
+  ['--av-accent', 'accent'],
+  ['--av-accent-text', 'onAccent'],
+  ['--av-logo', 'logo'],
+  ['--av-glow-1', 'glow1'],
+  ['--av-glow-2', 'glow2'],
+]
+
+describe('beide Modi stehen in styles.css so, wie brand.ts sie fuehrt', () => {
+  it.each(ROLLEN)('hell: %s', (token, rolle) => {
+    expect(norm(wert(lightBlock, token))).toBe(norm(PALETTE_LIGHT[rolle]))
   })
 
-  it('setzt Off-White als Text und Eisblau als Fließtext', () => {
-    expect(wert(darkBlock, '--av-text').toUpperCase()).toBe(BRAND_COLORS.offWhite)
-    expect(wert(darkBlock, '--av-text-secondary').toUpperCase()).toBe(BRAND_COLORS.eisblau)
+  it.each(ROLLEN)('dunkel: %s', (token, rolle) => {
+    expect(norm(wert(darkBlock, token))).toBe(norm(PALETTE_DARK[rolle]))
   })
 
-  it('nutzt Stahlblau für Gedämpftes — nie für Fließtext', () => {
-    expect(wert(darkBlock, '--av-text-muted').toUpperCase()).toBe(BRAND_COLORS.stahlblau)
+  it('Auto (System dunkel) und die ausdrueckliche Wahl Dunkel sind derselbe Block', () => {
+    expect(autoDarkBlock).not.toBe('')
+    expect(css).toContain('@media (prefers-color-scheme: dark)')
+    const ohneKopf = (b: string) => b.slice(b.indexOf('{') + 1).replace(/\s/g, '')
+    expect(ohneKopf(autoDarkBlock)).toBe(ohneKopf(darkBlock))
   })
 
-  it('nennt die abgeleiteten Flächen mit denselben Werten', () => {
-    expect(wert(darkBlock, '--av-surface-3').toUpperCase()).toBe(DERIVED_SURFACES.darkSunken)
-    expect(wert(darkBlock, '--av-surface-1').toUpperCase()).toBe(DERIVED_SURFACES.darkPanel)
+  it('Dunkel ist Anthrazit, nicht Navy — und Hell ist neutral', () => {
+    expect(PALETTE_DARK.bg).toBe('#1E1F23')
+    expect(PALETTE_LIGHT.bg).toBe('#FAFAF8')
+    for (const p of [PALETTE_LIGHT, PALETTE_DARK]) {
+      for (const f of [p.bg, p.surface, p.surface2, p.raised, p.sunken]) {
+        expect([BRAND_COLORS.deepNavy, BRAND_COLORS.zumpeNavy]).not.toContain(f)
+      }
+    }
   })
 
-  it('führt Tally-Rot genau einmal, als --av-signal', () => {
-    expect(css).toContain(`--av-signal: ${BRAND_COLORS.tallyRot}`)
+  it('Blau ist der Akzent: Navy auf Hell, helles Markenblau auf Dunkel', () => {
+    expect(PALETTE_LIGHT.accent).toBe(BRAND_COLORS.zumpeNavy)
+    expect(PALETTE_DARK.accent).toBe('#B9C7D8')
+    expect(PALETTE_DARK.onAccent).toBe(BRAND_COLORS.deepNavy)
+  })
+
+  it('paletteFor waehlt nach dem aufgeloesten Theme', () => {
+    expect(paletteFor('light')).toBe(PALETTE_LIGHT)
+    expect(paletteFor('dark')).toBe(PALETTE_DARK)
+  })
+})
+
+describe('das Logo traegt nur Kit-Farben', () => {
+  it('Navy auf Hell, Off-White auf Dunkel, der Punkt immer Tally-Rot', () => {
+    expect(PALETTE_LIGHT.logo).toBe(BRAND_COLORS.zumpeNavy)
+    expect(PALETTE_DARK.logo).toBe(BRAND_COLORS.offWhite)
+    expect(PALETTE_LIGHT.logoDot).toBe(BRAND_COLORS.tallyRot)
+    expect(PALETTE_DARK.logoDot).toBe(BRAND_COLORS.tallyRot)
+    expect(wert(css, '--av-logo-dot')).toBe('var(--av-signal)')
+  })
+
+  it('haengt nicht am Akzent', () => {
+    expect(wert(lightBlock, '--av-logo')).not.toContain('var(')
+    expect(wert(darkBlock, '--av-logo')).not.toContain('var(')
+    expect(PALETTE_DARK.logo).not.toBe(PALETTE_DARK.accent)
+  })
+})
+
+describe('Rot ist das Signal, keine Farbe', () => {
+  it('steht genau einmal in der Datei: in der Definition von --av-signal', () => {
+    const rot = BRAND_COLORS.tallyRot.toLowerCase()
+    const treffer = css
+      .split('\n')
+      .filter((z) => z.toLowerCase().includes(rot))
+      .map((z) => z.trim())
+    expect(treffer).toHaveLength(1)
+    expect(treffer[0]).toMatch(/^--av-signal:/)
   })
 
   it('trennt Status von Signal — Fehlerrot ist ein anderer Ton', () => {
     expect(css).toContain(`--av-danger: ${BRAND_STATUS.danger}`)
     expect(BRAND_STATUS.danger).not.toBe(BRAND_COLORS.tallyRot)
   })
-})
 
-describe('Rot ist das Signal, keine Farbe', () => {
-  it('steht nirgends als Fläche oder Text-Token', () => {
-    const rot = BRAND_COLORS.tallyRot.toLowerCase()
-    const treffer = css
-      .split('\n')
-      .filter((z) => z.toLowerCase().includes(rot))
-      .map((z) => z.trim())
-    // Genau eine Stelle: die Definition von --av-signal. Alles andere
-    // referenziert sie über var().
-    expect(treffer).toHaveLength(1)
-    expect(treffer[0]).toContain('--av-signal')
+  it('wird nie als Flaeche, Text oder Rahmen eines Bedienelements verwendet', () => {
+    expect(css).not.toMatch(/(?<!outline: 2px solid )(?:color|border(?:-[a-z]+)?):\s*var\(--av-signal\)/)
   })
 
-  it('trägt den Fokusring — 2 px, 3 px Abstand', () => {
+  it('traegt den Fokusring — 2 px, 2 px Abstand', () => {
     expect(css).toContain(`outline: ${FOCUS.widthPx}px solid var(--av-signal)`)
     expect(css).toContain(`outline-offset: ${FOCUS.offsetPx}px`)
   })
-
-  it('setzt den Punkt an den primären Knopf, nicht dessen Fläche', () => {
-    const knopf = css.slice(css.indexOf(".av-btn[data-variant='primary']::before"))
-    expect(knopf.slice(0, 200)).toContain('background: var(--av-signal)')
-  })
 })
 
-describe('keine Rundungen, keine Schatten, keine Verläufe', () => {
-  it('setzt jede Radius-Stufe auf null', () => {
-    for (const name of ['--av-r-control', '--av-r-card', '--av-r-modal', '--av-r-pill']) {
-      expect(wert(css, name)).toBe(String(RADIUS_PX))
+describe('Rundungen und Schatten nur ueber Tokens', () => {
+  it('die Radius-Tokens tragen die Vertragswerte', () => {
+    expect(wert(css, '--av-r-s')).toBe(`${RADIUS.s}px`)
+    expect(wert(css, '--av-r-m')).toBe(`${RADIUS.m}px`)
+    expect(wert(css, '--av-r-l')).toBe(`${RADIUS.l}px`)
+    expect(wert(css, '--av-r-xl')).toBe(`${RADIUS.xl}px`)
+    expect(wert(css, '--av-r-full')).toBe(`${RADIUS.full}px`)
+  })
+
+  it('die alten Namen bleiben und zeigen auf die Stufen', () => {
+    expect(wert(css, '--av-r-control')).toBe('var(--av-r-m)')
+    expect(wert(css, '--av-r-card')).toBe('var(--av-r-l)')
+    expect(wert(css, '--av-r-modal')).toBe('var(--av-r-xl)')
+    expect(wert(css, '--av-r-pill')).toBe('var(--av-r-full)')
+  })
+
+  it('jedes border-radius ausserhalb der Token-Definition ist ein Token', () => {
+    const roh = [...css.matchAll(/border-radius:\s*([^;!]+)/g)].map((m) => m[1].trim())
+    expect(roh.length).toBeGreaterThan(0)
+    for (const r of roh) expect(r).toMatch(/^var\(--av-r-[a-z-]+\)$/)
+  })
+
+  it('die Schatten-Tokens tragen die Werte je Modus', () => {
+    for (const s of [1, 2, 3] as const) {
+      expect(norm(wert(lightBlock, `--av-shadow-${s}`))).toBe(norm(SHADOWS.light[s]))
+      expect(norm(wert(darkBlock, `--av-shadow-${s}`))).toBe(norm(SHADOWS.dark[s]))
     }
   })
 
-  it('lässt keinen harten Radius in den Primitiven stehen', () => {
-    expect(css).not.toMatch(/border-radius:\s*(50%|[1-9])/)
-  })
-
-  it('setzt die Schatten-Tokens auf none — die Namen bleiben für Aufrufer', () => {
-    for (const name of ['--av-shadow-panel', '--av-shadow-pop', '--av-shadow-float']) {
-      expect(wert(css, name)).toBe('none')
-    }
-  })
-
-  it('kennt keinen Verlauf', () => {
-    expect(css).not.toMatch(/linear-gradient|radial-gradient/)
+  it('jedes box-shadow ist ein Token — einzige Ausnahme der Akzentschein am Hauptknopf', () => {
+    const roh = [...css.matchAll(/box-shadow:\s*([^;]+)/g)].map((m) => m[1].trim())
+    const fremd = roh.filter((r) => !/^var\(--av-shadow-[a-z0-9-]+\)$/.test(r))
+    expect(fremd).toHaveLength(1)
+    expect(fremd[0]).toContain('var(--av-accent)')
   })
 })
 
-describe('Bewegung: schnell, kurz, dann still', () => {
-  it('führt Kurve und Dauer als Token', () => {
+describe('Hell und Dunkel sind umschaltbar: Auto · Hell · Dunkel', () => {
+  it('der Umschalter fuehrt die drei Wahlen in dieser Folge', () => {
+    const ids = [...umschalter.matchAll(/id: '(system|light|dark)'/g)].map((m) => m[1])
+    expect(ids).toEqual(['system', 'light', 'dark'])
+  })
+
+  it('hat ein Stilblatt und ueberstimmt das System in beide Richtungen', () => {
+    expect(css).toContain('.av-theme-switch')
+    expect(css).toContain(":root[data-theme='light']")
+    expect(css).toContain(":root[data-theme='dark']")
+  })
+})
+
+describe('Bewegung: kurz und weich', () => {
+  it('fuehrt Kurve und die drei Dauern als Token', () => {
     expect(wert(css, '--av-ease').replace(/\s/g, '')).toBe(MOTION.easing.replace(/\s/g, ''))
-    expect(wert(css, '--av-dur')).toBe(`${MOTION.durationMs}ms`)
+    expect(wert(css, '--av-dur-1')).toBe(`${MOTION.durationsMs.fast}ms`)
+    expect(wert(css, '--av-dur-2')).toBe(`${MOTION.durationsMs.medium}ms`)
+    expect(wert(css, '--av-dur-3')).toBe(`${MOTION.durationsMs.slow}ms`)
   })
 
-  it('bleibt unter der Obergrenze des Handbuchs', () => {
-    expect(MOTION.durationMs).toBeLessThanOrEqual(MOTION.maxDurationMs)
-    expect(MOTION.maxDurationMs).toBe(450)
+  it('bleibt unter 600 ms und respektiert reduzierte Bewegung', () => {
+    expect(MOTION.maxDurationMs).toBe(600)
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)')
   })
 })
 
 describe('die Typo-Leiter ist eine Leiter', () => {
-  it('steigt lückenlos', () => {
-    const stufen = [
-      TYPE_SCALE.micro,
-      TYPE_SCALE.kicker,
-      TYPE_SCALE.body,
-      TYPE_SCALE.read,
-      TYPE_SCALE.title,
-      TYPE_SCALE.display,
-    ]
+  it('steigt lueckenlos', () => {
+    const stufen = [TYPE_SCALE.micro, TYPE_SCALE.kicker, TYPE_SCALE.body, TYPE_SCALE.read, TYPE_SCALE.title, TYPE_SCALE.display]
     expect([...stufen].sort((a, b) => a - b)).toEqual(stufen)
     expect(new Set(stufen).size).toBe(stufen.length)
   })
@@ -145,37 +222,22 @@ describe('die Typo-Leiter ist eine Leiter', () => {
     expect(wert(css, '--av-fs-kicker')).toBe(`${TYPE_SCALE.kicker}px`)
   })
 
-  it('lässt den Leseschritt beim Guide-Wert — die Abweichung gilt nur fürs Werkzeug', () => {
-    expect(TYPE_SCALE.read).toBe(16)
+  it('Panel-Koepfe stehen in Satzschreibung — Versalien nur bis 12 px', () => {
+    expect(block('.av-panel-title {')).not.toContain('text-transform: uppercase')
+    expect(TYPE_SCALE.kicker).toBeLessThanOrEqual(12)
   })
 })
 
-describe('das Modul erkennt man am Kicker, nicht am Farbton', () => {
+describe('das Modul erkennt man am Titel, nicht am Farbton', () => {
   it('zeigt alle Modul-Akzente auf denselben Wert', () => {
     for (const m of ['raum', 'signal', 'cameras', 'licht', 'overview', 'board']) {
       expect(css).toContain(`--mod-${m}: var(--av-accent);`)
     }
   })
-
-  it('trägt die Kopflinie als eigenes Element', () => {
-    expect(css).toContain('.av-kicker');
-    expect(css).toContain('.av-headrule');
-  })
 })
 
-
-// ───────────────────────────────────────────────────────────────────────────
-// ADR-007 Abschnitt 6 — der Rahmen. Die Masse stehen im ADR, damit alle acht
-// Werkzeuge denselben haben; hier werden sie festgehalten, damit „eben mal
-// vier Pixel mehr" nicht unbemerkt durchgeht.
-// ───────────────────────────────────────────────────────────────────────────
-
-const block = (selector: string): string => {
-  const i = css.indexOf(selector)
-  if (i < 0) return ''
-  return css.slice(i, css.indexOf('}', i))
-}
-
+// ADR-007 Abschnitt 6 — der Rahmen. Die Optik hat sich am 2026-10-13
+// geaendert, die Masse nicht.
 describe('der Rahmen hat feste Masse', () => {
   it('Kopfzeile 40 px', () => {
     expect(block('.av-topbar {')).toContain('height: 40px')
@@ -187,18 +249,5 @@ describe('der Rahmen hat feste Masse', () => {
 
   it('Statusleiste 24 px', () => {
     expect(block('.av-statusbar {')).toContain('height: 24px')
-  })
-})
-
-describe('die Kopflinie ist die Kopflinie', () => {
-  it('traegt die Linie in Stahlblau, nicht den gedaempften Rahmen', () => {
-    expect(block('.av-panel-head {')).toContain('border-bottom: 1px solid var(--av-accent-line)')
-  })
-
-  it('setzt den Kicker in Versalien und gesperrt', () => {
-    const t = block('.av-panel-title {')
-    expect(t).toContain('text-transform: uppercase')
-    expect(t).toContain('letter-spacing: var(--av-tracking-kicker)')
-    expect(t).toContain('font-size: var(--av-fs-kicker)')
   })
 })
