@@ -159,6 +159,16 @@ describe('Licht und Wand', () => {
     expect((k.material as THREE.ShaderMaterial).defines.SCHRITTE).toBe(24)
   })
 
+  it('Dichte und Ende lassen sich fuer photometrisch rechnende Planer festlegen', () => {
+    const basis = { von: new THREE.Vector3(0, 10, 0), nach: new THREE.Vector3(0, 0, 0), feldwinkelDeg: 7, farbe: '#fff', dunst: 0.5 }
+    const u = (k: THREE.Mesh) => (k.material as THREE.ShaderMaterial).uniforms
+    expect(u(erzeugeDunstStrahl(basis)).uIntensitaet.value).toBeGreaterThan(1)
+    const fest = u(erzeugeDunstStrahl({ ...basis, lichtstaerke: 0.4, endeWeich: false, vorwaerts: 0.6 }))
+    expect(fest.uIntensitaet.value).toBe(0.4)
+    expect(fest.uEndeWeich.value).toBe(0)
+    expect(fest.uHG.value).toBe(0.6)
+  })
+
   it('Scheinwerfer: echtes Licht nur auf Wunsch, sonst Lichtfleck', () => {
     const basis = { von: new THREE.Vector3(0, 8, 0), nach: new THREE.Vector3(0, 0, 2), farbe: '#fff', feldwinkelDeg: 25, dunst: 0.4 }
     const mit = erzeugeScheinwerfer({ ...basis, licht: true, schatten: true })
