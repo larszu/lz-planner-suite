@@ -104,14 +104,16 @@ describe('Raum im Austauschformat', () => {
     const roh = {
       ceilingHeightM: 12,
       floorMaterial: 'wood',
+      wallMaterial: 'brick',
       seatingBlocks: [block(), { id: 3 }, null],
       videoWalls: [{ id: 'w', x: 1, y: 2, widthM: 6, heightM: 3 }, 'x'],
     }
     const r = raumAus(roh)
     expect(r.ceilingHeightM).toBe(12)
     expect(r.floorMaterial).toBe('wood')
+    expect(r.wallMaterial).toBe('brick')
     expect(r.seatingBlocks).toHaveLength(1)
     expect(r.videoWalls).toHaveLength(1)
-    expect(raumAus({ floorMaterial: 'lava', ceilingHeightM: -3 })).toEqual({})
+    expect(raumAus({ floorMaterial: 'lava', wallMaterial: 'glass', ceilingHeightM: -3 })).toEqual({})
   })
 })
