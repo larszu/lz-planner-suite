@@ -214,6 +214,18 @@ export function Topbar({
   }
 
   const ghost = 'av-btn'
+  const themeSwitch = (
+    <ThemeSwitch
+      preference={themePreference}
+      onChange={onSetThemePreference}
+      ariaLabel={t('chrome.settings.appearance', 'Erscheinungsbild (Theme)')}
+      labels={{
+        system: t('chrome.settings.theme.system', 'System'),
+        light: t('chrome.settings.theme.light', 'Hell'),
+        dark: t('chrome.settings.theme.dark', 'Dunkel'),
+      }}
+    />
+  )
 
   // ADR-007 Abschnitt 6 — Hoehe und Rahmen kommen aus `.av-topbar`; eine
   // eigene Inline-Hoehe hier waere die zweite Zahl fuer dieselbe Regel.
@@ -254,9 +266,13 @@ export function Topbar({
               <MenuSeparator />
               <MenuItem icon={<Icon name="library" size={15} />} disabled={!project} onClick={() => { onOpenBilling(); close() }}>{t('billing.menu.open', 'Beleg erstellen (Lexware)…')}</MenuItem>
               <MenuSeparator />
-              <MenuItem icon={<Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />} onClick={() => { onToggleTheme(); close() }}>
-                {theme === 'dark' ? t('chrome.topbar.view.lightTheme', 'Helles Theme') : t('chrome.topbar.view.darkTheme', 'Dunkles Theme')}
-              </MenuItem>
+              {/* Unter 640 px ist der Umschalter in der Kopfzeile ausgeblendet;
+                  hier steht er vollstaendig (Auto · Hell · Dunkel), damit Auto
+                  auch mobil erreichbar ist (ADR-007 Abschnitt 5a). */}
+              <div className="flex items-center justify-between gap-3 px-2 py-1 sm:hidden">
+                <span className="text-[13px] text-av-text">{t('chrome.topbar.appearance', 'Darstellung')}</span>
+                {themeSwitch}
+              </div>
               <MenuItem icon={<Icon name="settings" size={15} />} onClick={() => { close(); onOpenSettings() }}>{t('chrome.topbar.view.settings', 'Einstellungen…')}</MenuItem>
               <MenuItem icon={<Icon name="modules" size={15} />} onClick={() => { close(); setAboutOpen(true) }}>{t('chrome.topbar.help.about', 'Über die Suite…')}</MenuItem>
               <MenuSeparator />
@@ -369,16 +385,7 @@ export function Topbar({
 
           {project && <Badge tone="ok" dot>{project.meta.saved ? t('chrome.topbar.saved', 'Gespeichert') : t('chrome.topbar.unsaved', 'Ungespeichert')}</Badge>}
 
-          <ThemeSwitch
-            preference={themePreference}
-            onChange={onSetThemePreference}
-            ariaLabel={t('chrome.settings.appearance', 'Erscheinungsbild (Theme)')}
-            labels={{
-              system: t('chrome.settings.theme.system', 'System'),
-              light: t('chrome.settings.theme.light', 'Hell'),
-              dark: t('chrome.settings.theme.dark', 'Dunkel'),
-            }}
-          />
+          {themeSwitch}
 
           <IconButton label={t('chrome.topbar.settings', 'Einstellungen')} onClick={onOpenSettings}>
             <Icon name="settings" size={17} />

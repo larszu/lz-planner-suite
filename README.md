@@ -78,7 +78,7 @@ The common workspace (`apps/shell`) that hosts all three planners: a module rail
 hotkeys (Overview / Signal / Cameras / Light / Board), a topbar with a **⌘K command palette**,
 a tab deck with a floating toolbar, context-aware **library** and **properties** panels, a
 project overview dashboard, a Milanote-style creative **board**, and a shared light and dark
-mode with a visible **Auto · Light · Dark** switch in the topbar (Auto follows the system, the
+mode with a visible **Auto · Light · Dark** switch in the topbar (in the menu on phones; Auto follows the system, the
 choice is remembered). Embeds the planners as isolated iframe modules and speaks to them over
 a small postMessage bridge. **React 19 · Vite · Tailwind.**
 
