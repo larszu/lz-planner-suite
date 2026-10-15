@@ -38,6 +38,17 @@ Stelle.
 | Kalibrier-Dialog | light `ScaleDialog` (beste Bestätigung) | offen |
 | Wände, Messen | light `PlanCanvas` | offen, bleibt vorerst in light |
 | Räume in Metern | facility `RaumLage` | offen |
+| Vektor lesen | **niemand** — PDF lag überall nur als Bild vor | ✓ neu: `pdfVektor.ts` (pdf.js-Operatorliste, Ebenen), `dxf.ts` |
+| Maßstab aus dem Plan | **niemand** — der Nutzer kalibrierte von Hand | ✓ neu: `bemassung.ts` (Bemaßungsketten, Schriftfeld 1:n) |
+| Wände, Öffnungen, Räume erkennen | **niemand** | ✓ neu: `planErkennung.ts` |
+| KI nur dort, wo Geometrie fehlt | multicam `planAnalysis.ts` (zeichnete falsch ein) | ✓ neu: `kiPlan.ts` + `einrasten.ts` |
+
+**Befund Plan-Erkennung** (2026-10-15): Ein Architekten-PDF trägt die Zeichnung als Vektoren —
+gefüllte Wandpolygone, Bemaßungsketten mit Maßtext, Raumstempel, ArchiCAD-Ebenen („Wände neu",
+„Bemaßung"). Daraus kommen Wände, Wandstärken, Türen, Fenster, Stützen, Treppen und Raumumrisse
+maßstäblich heraus, ohne KI. Die vorherige KI-Analyse im multicam-planner schätzte dagegen
+Meter je Pixel aus einem verkleinerten Bild und zeichnete dadurch systematisch daneben
+(Messung und Protokoll im multicam-planner, `docs/plan-import.md`).
 
 **Befund Gebäude-Planer** (`larszu-facility-planner/src/ui/Grundriss.tsx`): Der Grundriss war ein
 getippter Pfad (`quelle`) direkt als `<img src>`. Es gab keinen Drop-Handler, deshalb verschluckte

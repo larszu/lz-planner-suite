@@ -15,6 +15,12 @@ import {
 const datei = (name: string, type: string) => ({ name, type }) as File
 
 describe('welche Dateien ein Plan sein koennen', () => {
+  it('nimmt DXF nur an, wenn der Planer es liest', () => {
+    expect(istPlanDatei(datei('eg.dxf', ''), { pdf: true })).toBe(false)
+    expect(istPlanDatei(datei('eg.dxf', ''), { dxf: true })).toBe(true)
+    expect(planAccept({ pdf: true, dxf: true })).toBe('image/*,application/pdf,.pdf,.dxf')
+  })
+
   it('nimmt Rasterbilder, auch ohne MIME-Typ an der Endung', () => {
     expect(istBildDatei(datei('eg.png', 'image/png'))).toBe(true)
     expect(istBildDatei(datei('EG.JPG', ''))).toBe(true)
