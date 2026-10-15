@@ -131,6 +131,14 @@ describe('Einrasten', () => {
     expect(r.ergebnis.y2).toBeCloseTo(5, 6)
     expect(r.ergebnis.x1).toBeCloseTo(1, 6)
   })
+  it('behaelt die Laenge der KI-Wand, wenn nur ein Stueckchen darunter liegt', () => {
+    // Ein 8-cm-Wandstueck am Ende einer 10-m-Wand darf aus ihr keinen Rest machen.
+    const r = wandEinrasten({ x1: 0, y1: 5.1, x2: 10, y2: 5.1 }, [{ x1: 9.9, y1: 5, x2: 9.98, y2: 5 }], 0.5)
+    expect(r.eingerastet).toBe(true)
+    expect(r.ergebnis.x1).toBeCloseTo(0, 6)
+    expect(r.ergebnis.x2).toBeCloseTo(10, 6)
+    expect(r.ergebnis.y1).toBeCloseTo(5, 6)
+  })
   it('laesst eine KI-Wand ohne Gegenstueck stehen', () => {
     expect(wandEinrasten({ x1: 1, y1: 20, x2: 9, y2: 20 }, [{ x1: 0, y1: 5, x2: 10, y2: 5 }], 0.8).eingerastet).toBe(false)
   })
