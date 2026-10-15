@@ -159,6 +159,10 @@ describe('Plan-Erkennung an einem gezeichneten Raum', () => {
     expect(Math.abs(r.umrissFlaecheM2! - 24) / 24).toBeLessThan(0.03)
   })
 
+  it('meldet keine Raumprobe bei einem einzigen Raum', () => {
+    expect(p.raumProbe).toBeUndefined()
+  })
+
   it('gibt den Raumwaenden die Raumhoehe aus dem Stempel', () => {
     expect(echte.every((w) => w.hoeheM === 3.5)).toBe(true)
   })
