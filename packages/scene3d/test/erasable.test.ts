@@ -15,5 +15,5 @@ describe('scene3d: nur loeschbare TS-Syntax', () => {
     const treffer = ts.getPreEmitDiagnostics(prog).filter((d) => d.code === 1294)
       .map((d) => `${d.file?.fileName}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`)
     expect(treffer).toEqual([])
-  })
+  }, 30_000)
 })

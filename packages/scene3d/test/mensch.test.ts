@@ -71,7 +71,7 @@ describe('Mensch: Gestalt', () => {
         }
       }
     }
-  })
+  }, 30_000) // ~5 s lokal, auf dem CI-Runner knapp ueber dem Standard-Timeout
 
   it('Sakko bringt eine eigene Huelle, Rock und Kleid auch', () => {
     const basis = dreiecke(koerperGeometrie('stehen', { oberteil: 'hemd' }))
