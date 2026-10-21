@@ -36,6 +36,7 @@ export const ZIELE = {
     'multicam-planner': 'src/avplan/floorplan',
   },
   scene3d: {
+    'cable-planner': 'src/renderer/avplan/scene3d',
     'light-planner': 'src/avplan/scene3d',
     'multicam-planner': 'src/avplan/scene3d',
   },
