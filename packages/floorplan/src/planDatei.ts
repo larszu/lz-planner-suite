@@ -23,6 +23,15 @@
  *  nicht mehr; ein 12-Megapixel-Foto sprengte sonst die Projektdatei und die
  *  Wiederherstellungskopie im Browser-Speicher. */
 export const PLAN_MAX_KANTE = 3000
+/**
+ * Laengste Kante einer gerenderten PDF-Seite. Ein PDF ist eine Zeichnung:
+ * gerastert wird es einmal beim Laden, und beim Heranzoomen gibt es nur noch
+ * die Pixel von damals. Bei 2000 px war ein A1-Plan nach zwei Zoomstufen
+ * unleserlich (cable-planner #1206); 6000 px sind rund 180 dpi auf A1.
+ */
+export const PLAN_PDF_MAX_KANTE = 6000
+/** Groesste Canvas-Kante, die alle Browser (Safari eingeschlossen) zeichnen. */
+const CANVAS_MAX_KANTE = 8192
 /** Groesste PDF-Datei, die gelesen wird (multicam-Grenze). */
 export const PLAN_PDF_MAX_BYTES = 50 * 1024 * 1024
 /** Groesste Bilddatei vor dem Verkleinern. */
@@ -60,6 +69,8 @@ export interface GeladenerPlan {
 
 export interface PlanLadeOptionen {
   maxKante?: number
+  /** Fuer PDF-Seiten, Vorgabe `PLAN_PDF_MAX_KANTE` — siehe dort. */
+  pdfMaxKante?: number
   pdf?: PdfSeitenRenderer
   seite?: number
 }
@@ -140,7 +151,7 @@ export async function ladePlanDatei(datei: File, o: PlanLadeOptionen = {}): Prom
     const seite = Math.max(0, Math.floor(o.seite ?? 0))
     let r: Awaited<ReturnType<PdfSeitenRenderer>>
     try {
-      r = await o.pdf(new Uint8Array(await datei.arrayBuffer()), seite, maxKante)
+      r = await o.pdf(new Uint8Array(await datei.arrayBuffer()), seite, o.pdfMaxKante ?? PLAN_PDF_MAX_KANTE)
     } catch (e) {
       throw e instanceof PlanDateiFehler ? e : new PlanDateiFehler('pdf', e instanceof Error ? e.message : String(e))
     }
@@ -192,7 +203,7 @@ export const pdfjsRenderer =
       const nr = Math.min(Math.max(0, seite), pdf.numPages - 1) + 1
       const page = await pdf.getPage(nr)
       const basis = page.getViewport({ scale: 1 })
-      const scale = Math.min(zielKante, 2000) / Math.max(basis.width, basis.height, 1)
+      const scale = Math.min(zielKante, CANVAS_MAX_KANTE) / Math.max(basis.width, basis.height, 1)
       const viewport = page.getViewport({ scale })
       const canvas = document.createElement('canvas')
       canvas.width = Math.round(viewport.width)
